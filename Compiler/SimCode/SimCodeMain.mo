@@ -67,6 +67,7 @@ import CodegenC;
 import CodegenEmbeddedC;
 import CodegenFMU;
 import CodegenFMUCpp;
+import CodegenOMSICpp;
 import CodegenFMUCppHpcom;
 import CodegenAdevs;
 import CodegenSparseFMI;
@@ -244,6 +245,7 @@ public function generateModelCode "
   input String filenamePrefix;
   input Option<SimCode.SimulationSettings> simSettingsOpt;
   input Absyn.FunctionArgs args;
+  input BackendDAE.SymbolicJacobians inFMIDer = {};
   output list<String> libs;
   output String fileDir;
   output Real timeSimCode;
@@ -270,7 +272,7 @@ algorithm
   fileDir := CevalScriptBackend.getFileDir(a_cref, p);
 
   (libs, libPaths, includes, includeDirs, recordDecls, functions, literals) := SimCodeUtil.createFunctions(p, inBackendDAE.shared.functionTree);
-  simCode := createSimCode(inBackendDAE, inInitDAE, inInitDAE_lambda0, inInlineData, inRemovedInitialEquationLst, className, filenamePrefix, fileDir, functions, includes, includeDirs, libs,libPaths, p, simSettingsOpt, recordDecls, literals, args);
+  simCode := createSimCode(inBackendDAE, inInitDAE, inInitDAE_lambda0, inInlineData, inRemovedInitialEquationLst, className, filenamePrefix, fileDir, functions, includes, includeDirs, libs,libPaths, p, simSettingsOpt, recordDecls, literals, args,inFMIDer=inFMIDer);
   timeSimCode := System.realtimeTock(ClockIndexes.RT_CLOCK_SIMCODE);
   ExecStat.execStat("SimCode");
 
@@ -489,7 +491,13 @@ algorithm
           generatedObjects := AvlSetString.add(generatedObjects, "OMCpp" + simCode.fileNamePrefix + str);
         end for;
       then ();
-
+   case "omsicpp"
+      algorithm
+        callTargetTemplatesOMSICpp(simCode);
+        for str in {"CalcHelperMain.o\n",".so\n"} loop
+          generatedObjects := AvlSetString.add(generatedObjects, "OMCpp" + simCode.fileNamePrefix + str);
+        end for;
+      then ();
     case "Adevs" equation
       Tpl.tplNoret(CodegenAdevs.translateModel, simCode);
     then ();
@@ -649,7 +657,17 @@ algorithm
     Tpl.tplNoret(CodegenCpp.translateModel, iSimCode);
   end if;
 end callTargetTemplatesCPP;
+protected function callTargetTemplatesOMSICpp
+  input SimCode.SimCode iSimCode;
+  protected
+  String fmuVersion;
+  String fmuType;
+algorithm
 
+	 fmuVersion:="2.0";
+	 fmuType:="me";
+     Tpl.tplNoret3(CodegenOMSICpp.translateModel, iSimCode, fmuVersion, fmuType);
+end callTargetTemplatesOMSICpp;
 protected function callTargetTemplatesFMU
 "Generate target code by passing the SimCode data structure to templates."
   input SimCode.SimCode simCode;
@@ -766,6 +784,7 @@ algorithm
       Boolean isFMI2;
       String fmiVersion;
       BackendDAE.SymbolicJacobians fmiDer;
+      Boolean symJacBackup;
       DAE.FunctionTree funcs;
       list<Option<Integer>> allRoots;
 
@@ -832,13 +851,13 @@ algorithm
         else false;
       end match;
       // FMI 2.0: enable postOptModule to create alias variables for output states
-      strOptPostOptModules := if isFMI2 then SOME("createAliasVarsForOutputStates"::BackendDAEUtil.getPostOptModulesString()) else NONE();
+      strOptPostOptModules := if (isFMI2 or (Config.simCodeTarget() ==  "omsicpp"))then SOME("createAliasVarsForOutputStates"::BackendDAEUtil.getPostOptModulesString()) else NONE();
 
       //BackendDump.printBackendDAE(dlow);
       (dlow, initDAE, initDAE_lambda0, inlineData, removedInitialEquationLst) := BackendDAEUtil.getSolvedSystem(dlow,inFileNamePrefix,strPostOptModules=strOptPostOptModules);
 
       // generate derivatives
-      if isFMI2 then
+      if (isFMI2 or (Config.simCodeTarget() ==  "omsicpp")) then
         // activate symolic jacobains for fmi 2.0
         // to provide dependence information and partial derivatives
         (fmiDer, funcs) := SymbolicJacobian.createFMIModelDerivatives(dlow);
@@ -860,7 +879,7 @@ algorithm
       (libs, file_dir, timeSimCode, timeTemplates) := match kind
         case TranslateModelKind.NORMAL()
           algorithm
-            (libs, file_dir, timeSimCode, timeTemplates) := generateModelCode(dlow, initDAE, initDAE_lambda0, inlineData, removedInitialEquationLst, SymbolTable.getAbsyn(), className, filenameprefix, inSimSettingsOpt, args);
+            (libs, file_dir, timeSimCode, timeTemplates) := generateModelCode(dlow, initDAE, initDAE_lambda0, inlineData, removedInitialEquationLst, SymbolTable.getAbsyn(), className, filenameprefix, inSimSettingsOpt, args,fmiDer);
           then (libs, file_dir, timeSimCode, timeTemplates);
         case TranslateModelKind.FMU()
           algorithm

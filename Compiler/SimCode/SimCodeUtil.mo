@@ -284,7 +284,7 @@ algorithm
 
     System.tmpTickReset(0);
     uniqueEqIndex := 1;
-    ifcpp := stringEqual(Config.simCodeTarget(), "Cpp");
+    ifcpp := (stringEqual(Config.simCodeTarget(), "Cpp") or stringEqual(Config.simCodeTarget(), "omsicpp"));
 
     backendMapping := setUpBackendMapping(inBackendDAE);
     if Flags.isSet(Flags.VISUAL_XML) then
@@ -486,7 +486,7 @@ algorithm
     if debug then execStat("simCode: collect and index LS/NLS in modelInfo"); end if;
 
     // collect fmi partial derivative
-    if FMI.isFMIVersion20(FMUVersion) then
+    if FMI.isFMIVersion20(FMUVersion) or Config.simCodeTarget() ==  "omsicpp"  then
       (SymbolicJacsFMI, modelStructure, modelInfo, SymbolicJacsTemp, uniqueEqIndex) := createFMIModelStructure(inFMIDer, modelInfo, uniqueEqIndex);
       SymbolicJacsNLS := listAppend(SymbolicJacsTemp, SymbolicJacsNLS);
       if debug then execStat("simCode: create FMI model structure"); end if;
@@ -565,9 +565,11 @@ algorithm
 
     execStat("simCode: some other stuff during SimCode phase");
 
-    if Config.simCodeTarget() <> "Cpp" then
+
+     if ((Config.simCodeTarget() <> "Cpp") and (Config.simCodeTarget()<>"omsicpp"))then
       reasonableSize := Util.nextPrime(10+integer(1.4*(BackendDAEUtil.equationArraySizeBDAE(inBackendDAE)+BackendDAEUtil.equationArraySizeBDAE(inInitDAE)+listLength(parameterEquations))));
       eqCache := HashTableSimCodeEqCache.emptyHashTableSized(reasonableSize);
+
 
       // Alias equations to other equations.
       // The C++ codegen does things differently and will not handle this
@@ -3243,7 +3245,7 @@ algorithm
       (beqs, sources) = BackendDAEUtil.getEqnSysRhs(inEquationArray, inVars, SOME(inFuncs));
       beqs = listReverse(beqs);
       simJac = List.map1(jac, jacToSimjac, inVars);
-    if (Config.simCodeTarget()=="Cpp") then
+     if ((Config.simCodeTarget()=="Cpp") or (Config.simCodeTarget()=="omsicpp")) then
     simJac = List.sort(simJac,simJacCSRToCSC);
     end if;
 
@@ -6902,7 +6904,7 @@ algorithm
   sortSimvars(simVars);
   if debug then execStat("createVars: sortSimVars"); end if;
 
-  if stringEqual(Config.simCodeTarget(), "Cpp") then
+   if (stringEqual(Config.simCodeTarget(), "Cpp") or (Config.simCodeTarget()=="omsicpp")) then
     extendIncompleteArray(simVars);
     if debug then execStat("createVars: Cpp, extendIncompleteArray"); end if;
   end if;
@@ -7934,7 +7936,7 @@ protected function fixIndex
 protected
   Integer ix=0;
   list<SimCodeVar.SimVar> lst;
-  Boolean isCpp = Config.simCodeTarget() == "Cpp";
+  Boolean isCpp = (Config.simCodeTarget() == "Cpp" or Config.simCodeTarget() == "omsicpp");
 algorithm
   for i in SimVarsIndex.state : SimVarsIndex.realOptimizeFinalConstraints loop
     lst := Dangerous.arrayGetNoBoundsChecking(simVars,Integer(i));
@@ -8036,9 +8038,14 @@ algorithm
     outHT := List.fold(vars.intConstVars, addSimVarToHashTable, outHT);
     outHT := List.fold(vars.boolConstVars, addSimVarToHashTable, outHT);
     outHT := List.fold(vars.stringConstVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.sensitivityVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.jacobianVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.seedVars, addSimVarToHashTable, outHT);
+    if (Config.simCodeTarget()=="Cpp" or Config.simCodeTarget()=="omsicpp") then
+      // Not needed in the hashtable (actually breaks code generation
+      // due to bad indexes, no information that they are seed variables
+      // and so on...
+      outHT := List.fold(vars.sensitivityVars, addSimVarToHashTable, outHT);
+      outHT := List.fold(vars.jacobianVars, addSimVarToHashTable, outHT);
+      outHT := List.fold(vars.seedVars, addSimVarToHashTable, outHT);
+    end if;
     outHT := List.fold(vars.realOptimizeConstraintsVars, addSimVarToHashTable, outHT);
     outHT := List.fold(vars.realOptimizeFinalConstraintsVars, addSimVarToHashTable, outHT);
   else
@@ -12400,7 +12407,7 @@ public function getStateSimVarIndexFromIndex
 protected
   SimCodeVar.SimVar stateVar;
 algorithm
-  stateVar := listGet(inStateVars, inIndex + 1 - (if Config.simCodeTarget()=="Cpp" then 0 else listLength(inStateVars)) /* SimVar indexes start from zero */);
+  stateVar := listGet(inStateVars, inIndex + 1 - (if (Config.simCodeTarget()=="Cpp" or Config.simCodeTarget()=="omsicpp") then 0 else listLength(inStateVars)) /* SimVar indexes start from zero */);
   outVariableIndex := getVariableIndex(stateVar);
 end getStateSimVarIndexFromIndex;
 
@@ -12433,7 +12440,8 @@ algorithm
       String valueReference;
     case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.NEGATEDALIAS(_)), false, _) then
       getDefaultValueReference(inSimVar, inSimCode.modelInfo.varInfo);
-    case (_, _, "Cpp") algorithm
+    case (_, _, _) guard(stringEqual(Config.simCodeTarget(), "Cpp") or stringEqual(Config.simCodeTarget(), "omsicpp"))
+    algorithm
       // resolve aliases to get multi-dimensional arrays right
       // (this should possibly be done in getVarIndexByMapping?)
       simVar := match inSimVar

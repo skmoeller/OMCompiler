@@ -2890,6 +2890,10 @@ algorithm
     case ("Cpp","WIN32")
        then ".bat";
     case ("Cpp","WIN64")
+        then ".bat";
+    case ("omsicpp","WIN64")
+     then ".bat";
+    case ("omsicpp","WIN32")
        then ".bat";
     else System.getExeExt();
   end match;
@@ -4902,7 +4906,11 @@ algorithm
         (cache,simSettings) := calculateSimulationSettings(cache, env, values, msg);
         SimCode.SIMULATION_SETTINGS(method = method_str, outputFormat = outputFormat_str)
            := simSettings;
-
+        if Config.simCodeTarget() ==  "omsicpp"  then
+           // NOTE: The FMUs use fileNamePrefix for the internal name when it would be expected to be fileNamePrefix that decides the .fmu filename
+           //       The scripting environment from a user's perspective is like that. fmuTargetName is the name of the .fmu in the templates, etc.
+           filenameprefix:= Util.stringReplaceChar(if filenameprefix == "<default>" then Absyn.pathString(classname) else filenameprefix, ".", "_");
+        end if;
         (success,cache,libs,file_dir,resultValues) := translateModel(cache,env, classname, filenameprefix,true, SOME(simSettings));
         //cname_str = Absyn.pathString(classname);
         //SimCodeUtil.generateInitData(indexed_dlow_1, classname, filenameprefix, init_filename,

@@ -205,8 +205,8 @@ runtimeCPPmsvc: getMSVCversion
 	cmd /c build.bat
 
 	# move folder to build dir
-	cp -R Build_MSVC/tmp/* $(builddir_build)
-
+	cp -R --verbose Build_MSVC/tmp/* $(builddir_build)
+	cp -R --verbose Build_MSVC_static/tmp/lib/* $(builddir_build)/lib
 omcCAPIinstall:
 	mkdir -p Build_CAPI;
 	(cd ./Build_CAPI; echo "change to Build_CAPI"; \
