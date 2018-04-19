@@ -41,6 +41,7 @@ package CodegenEquations
 import interface SimCodeTV;
 import interface SimCodeBackendTV;
 import CodegenUtil;
+import CodegenCFunctions;
 import CodegenUtilSimulation.*;
 
 template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
@@ -63,12 +64,32 @@ template equationFunction(SimEqSystem eq, String modelNamePrefixStr)
   /*
   <%equationInfos%>
   */
-  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*Data_Struct_something data, *Data_Struct_something threadData){
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*sim_data_t data, double* writeData){
     const int equationIndexes[2] = {1,<%ix%>};
     <%equationCode%>
+    
     /*
-     *Hier muss erst festgelegt werden, wie die Datenstrukturen aufgeteilt werden sollen.
+      0 1   2      3    4 5 6
+      x,y,der(x),der(y),v,w,a
+    */
+    
+    
+    /*
+     * der(x) = sin(a*2*x):
      */
+     data->real_vars[2] = sin(data->real_vars[6]*2*data->real_vars[0]);
+     
+     /* 
+       (v) = f1(der(x),y,w)
+       (w) = f2(der(x),y,v)
+     */
+    linear_solver_system(0, v, w);
+    
+    
+    /*
+     * der(y) = der(x)*y:
+     */
+     data->real_vars[3] = data->real_vars[2]*data->real_vars[5];
   }
   >>
 end equationFunction;
