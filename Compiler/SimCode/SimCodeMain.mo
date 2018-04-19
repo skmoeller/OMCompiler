@@ -74,6 +74,7 @@ import CodegenSparseFMI;
 import CodegenCSharp;
 import CodegenCpp;
 import CodegenCppHpcom;
+import CodegenOMSIC;
 import CodegenXML;
 import CodegenJava;
 import CodegenJS;
@@ -715,6 +716,10 @@ algorithm
         SimCodeUtil.resetFunctionIndex();
         Tpl.tplNoret3(CodegenFMU.translateModel, simCode, FMUVersion, FMUType);
         Tpl.closeFile(Tpl.tplCallWithFailError4(CodegenFMU.fmuMakefile,Config.simulationCodeTarget(),simCode,FMUVersion,SimCodeUtil.getFunctionIndex(),txt=Tpl.redirectToFile(Tpl.emptyTxt, simCode.fileNamePrefix+".fmutmp/sources/Makefile.in")));
+      then ();
+    case (_,"omsic")
+      equation
+        Tpl.tplNoret3(CodegenOMSIC.translateModel, simCode, FMUVersion, FMUType);
       then ();
     case (_,"Cpp")
       equation
