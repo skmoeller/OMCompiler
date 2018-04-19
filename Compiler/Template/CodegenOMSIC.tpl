@@ -53,6 +53,8 @@ template translateModel(SimCode simCode, String FMUVersion, String FMUType)
   let () = textFile( CodegenFMU2.fmiModelDescription(simCode, guid, FMUType), 'modelDescription.xml')
   let () = textFile( generateOMSIC(simCode), '<%fileNamePrefix%>_omsic.c')
   let () = textFile( CodegenEquations.generateEquationFiles(allEquations, fileNamePrefix), '<%fileNamePrefix%>_eqns.c')
+  let () = textFile( CodegenEquations.generateEquationFilesHeader(allEquations, fileNamePrefix), '<%fileNamePrefix%>_eqns.h')
+  //let () = textFile( DataStructOMSIC.generateData(allEquations, fileNamePrefix), '<%fileNamePrefix%>_data.h')
  <<>>
 end translateModel;
 
@@ -61,8 +63,7 @@ template generateOMSIC(SimCode simCode)
   match simCode
   case SIMCODE(__) then
 <<
-// translated model <%fileNamePrefix%> to OMSIC
-
+// translated model <%fileNamePrefix%> to OMSIC <%\n%>
 >>
 end generateOMSIC;
 

@@ -41,42 +41,107 @@ package CodegenEquations
 import interface SimCodeTV;
 import interface SimCodeBackendTV;
 import CodegenUtil;
-import CodegenUtilSimulation;
+import CodegenUtilSimulation.*;
 
-template equationName(SimEqSystem eq, String modelNamePrefixStr)
- "Generates an equation.
-  This template should not be used for a SES_RESIDUAL.
-  Residual equations are handled differently."
+template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
+ "Generates prototype for an equation function"
+::=
+  let ix = CodegenUtilSimulation.equationIndex(eq)
+  <<
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*Data_Struct_something data, *Data_Struct_something threadData);<%\n%>
+  >>
+end equationFunctionPrototypes;
+
+
+template equationFunction(SimEqSystem eq, String modelNamePrefixStr)
+ "Generates C-function for an equation evaluation"
+::=
+  let ix = CodegenUtilSimulation.equationIndex(eq)
+  let equationInfos = dumpEqs(fill(eq,1))
+  let equationCode =""
+  <<
+  /*
+  <%equationInfos%>
+  */
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*Data_Struct_something data, *Data_Struct_something threadData){
+    const int equationIndexes[2] = {1,<%ix%>};
+    <%equationCode%>
+    /*
+     *Hier muss erst festgelegt werden, wie die Datenstrukturen aufgeteilt werden sollen.
+     */
+  }
+  >>
+end equationFunction;
+
+
+template equationCall(SimEqSystem eq, String modelNamePrefixStr)
+ "Generates call function for evaluating functions"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   <<
   <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(data, threadData);
-
   >>
-end equationName;
+end equationCall;
+
 
 template generateEquationFiles(list<SimEqSystem> allEquations, String fileNamePrefix)
-"
-//let &eqFuncs += equationFuction(eqn, contextSimulationDiscrete, fileNamePrefix)
-"
+"Generates content of fileNamePrefix_eqns.c"
 ::=
   let eqFuncs = ""
-  let eqCalls = ""
-  let _ =  allEquations |> eqn => (
-            let &eqCalls += equationName(eqn, fileNamePrefix)
+            let _ = allEquations |> eqn => (
+            let &eqFuncs += equationFunction(eqn, fileNamePrefix) + "\n\n"
             <<>>
             )
+  let eqCalls = ""
+  let _ =  allEquations |> eqn => (
+            let &eqCalls += equationCall(eqn, fileNamePrefix) + "\n"
+            <<>>
+            )
+
   <<
-  <%eqFuncs%>
+  #include "<%fileNamePrefix%>_eqns.h"
   
+  /* Equation functions */
+  <%eqFuncs%>
+  /* Equations evaluation */
   int evalEquations(){
 
     <%eqCalls%>
 
+    return 0;
   }
   >>
 end generateEquationFiles;
 
+
+template generateEquationFilesHeader(list<SimEqSystem> allEquations, String fileNamePrefix)
+"Generates content of header file fileNamePrefix_eqns.h"
+::=
+  let eqFuncsPrototypes = ""
+            let _ = allEquations |> eqn => (
+            let &eqFuncsPrototypes += equationFunctionPrototypes(eqn, fileNamePrefix)
+            <<>>
+            )
+
+  <<
+  #ifndef <%fileNamePrefix%>_eqns
+  #define <%fileNamePrefix%>_eqns
+
+  /* Equation functions prototypes */
+  #if defined(__cplusplus)
+  extern "C" {
+  #endif
+
+  int evalEquations(Blablabla);
+  <%eqFuncsPrototypes%>
+
+  #if defined(__cplusplus)
+  }
+  #endif
+
+  #endif
+  >>
+end generateEquationFilesHeader;
 
 
 annotation(__OpenModelica_Interface="backend");
