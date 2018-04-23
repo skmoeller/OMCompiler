@@ -200,6 +200,9 @@ struct sim_data_t
 	bool* zerocrossings_vars;
 	//pre conditions of zerocrossing functions
 	bool* pre_zerocrossings_vars;
+
+	// time variable
+	double time_variable;
 };
 
 /*

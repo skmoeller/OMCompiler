@@ -4040,6 +4040,7 @@ template contextCref(ComponentRef cr, Context context, Text &auxFunction)
       >>
     else "_" + System.unquoteIdentifier(crefStr(cr))
     )
+  case OMSI_CONTEXT(__) then crefOMSI(cr, context)
   else cref(cr)
 end contextCref;
 
@@ -4153,6 +4154,21 @@ template crefToCStrDefine(ComponentRef cr)
   case WILD(__) then ''
   else "CREF_NOT_IDENT_OR_QUAL"
 end crefToCStrDefine;
+
+template crefOMSI(ComponentRef cref, Context context)
+"lhs componentReference generation"
+::=
+  match cref
+  case CREF_IDENT(ident = "time") then "sim_data->time_variable"
+  else
+  match cref2simvar(cref, getSimCode())
+    case v as SIMVAR(__) then
+      let index = getValueReference(v, getSimCode(), false)
+      let c_comment = '/* <%escapeCComments(crefStrNoUnderscore(v.name))%> <%variabilityString(varKind)%> */'
+      'sim_data-><%crefShortType(name)%>_vars[<%index%>] <%c_comment%>'
+    else "CREF_NOT_FOUND"
+  end match
+end crefOMSI;
 
 template subscriptsToCStr(list<Subscript> subscripts)
 ::=

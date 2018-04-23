@@ -55,7 +55,7 @@ template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
 end equationFunctionPrototypes;
 
 
-template equationFunction(SimEqSystem eq, String modelNamePrefixStr)
+template equationFunction(SimEqSystem eq, Context context, String modelNamePrefixStr)
  "Generates C-function for an equation evaluation"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
@@ -63,39 +63,38 @@ template equationFunction(SimEqSystem eq, String modelNamePrefixStr)
 
   let &varDecls = buffer ""
   let &auxFunction = buffer ""
-  //let equationCode = CodegenC.equationSimpleAssign(eq, contextSimulationNonDiscrete, &varDecls, &auxFunction) //sinnvollen context angeben
-  let equationCode = myEquationSimpleAssign(eq, contextSimulationNonDiscrete, &varDecls, &auxFunction) //sinnvollen context angeben
+  let equationCode = equationCStr(eq, context, &varDecls, &auxFunction) //sinnvollen context angeben
 
   <<
   /*
   <%equationInfos%>
   */
-  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*sim_data_t data, double* writeData){
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*sim_data_t sim_data, double* writeData){
     const int equationIndexes[2] = {1,<%ix%>};
+    <%varDecls%>
+    <%auxFunction%>
     <%equationCode%>
-    
-    /* Change path: data->localData[0]->realVars[..] to data->realVars[..]
-    and data->simulationInfo->realParameter[..] to model_data->realVars[..]
-    */
   }
   >>
 end equationFunction;
 
 
-template myEquationSimpleAssign(SimEqSystem eq, Context context, Text &varDecls, Text &auxFunction)
+template equationCStr(SimEqSystem eq, Context context, Text &varDecls, Text &auxFunction)
  "Generates an equation that is just a simple assignment."
 ::=
 match eq
 case SES_SIMPLE_ASSIGN(__) then
   let &preExp = buffer ""
   let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
-
+  let crefStr = CodegenCFunctions.contextCref(cref, context, &auxFunction)
   <<
-  <%CodegenCFunctions.cref(cref)%> = <%expPart%>;
-  data->realVars[index of ComponentRef] = <%expPart%>;
+  <%crefStr%> = <%expPart%>;
   >>
-
-end myEquationSimpleAssign;
+case SES_LINEAR(__) then
+  <<
+  ERROR: LINEAR SYSTEM NOT IMPLEMENTED YET!
+  >>
+end equationCStr;
 
 
 template equationCall(SimEqSystem eq, String modelNamePrefixStr)
@@ -113,7 +112,7 @@ template generateEquationFiles(list<SimEqSystem> allEquations, String fileNamePr
 ::=
   let eqFuncs = ""
   let _ = allEquations |> eqn => (
-    let &eqFuncs += equationFunction(eqn, fileNamePrefix) + "\n\n"
+    let &eqFuncs += equationFunction(eqn, contextOMSI, fileNamePrefix) + "\n\n"
     <<>>
   )
   let eqCalls = ""
@@ -129,7 +128,7 @@ template generateEquationFiles(list<SimEqSystem> allEquations, String fileNamePr
   /* Equation functions */
   <%eqFuncs%>
   /* Equations evaluation */
-  int evalEquations(sim_data_t data){
+  int evalEquations(sim_data_t sim_data){
 
     <%eqCalls%>
 

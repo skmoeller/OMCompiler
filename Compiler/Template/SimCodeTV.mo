@@ -836,6 +836,8 @@ package SimCodeFunction
     end FMI_CONTEXT;
     record DAE_MODE_CONTEXT
     end DAE_MODE_CONTEXT;
+    record OMSI_CONTEXT
+    end OMSI_CONTEXT;
   end Context;
 
   constant Context contextSimulationNonDiscrete;
@@ -851,6 +853,7 @@ package SimCodeFunction
   constant Context contextOptimization;
   constant Context contextFMI;
   constant Context contextDAEmode;
+  constant Context contextOMSI;
   constant list<DAE.Exp> listExpLength1;
   constant list<SimCodeFunction.Variable> boxedRecordOutVars;
 end SimCodeFunction;
