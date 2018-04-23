@@ -41,6 +41,7 @@ package CodegenEquations
 import interface SimCodeTV;
 import interface SimCodeBackendTV;
 import CodegenUtil;
+import CodegenC;
 import CodegenCFunctions;
 import CodegenUtilSimulation.*;
 
@@ -59,7 +60,12 @@ template equationFunction(SimEqSystem eq, String modelNamePrefixStr)
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   let equationInfos = dumpEqs(fill(eq,1))
-  let equationCode =""
+
+  let &varDecls = buffer ""
+  let &auxFunction = buffer ""
+  //let equationCode = CodegenC.equationSimpleAssign(eq, contextSimulationNonDiscrete, &varDecls, &auxFunction) //sinnvollen context angeben
+  let equationCode = myEquationSimpleAssign(eq, contextSimulationNonDiscrete, &varDecls, &auxFunction) //sinnvollen context angeben
+
   <<
   /*
   <%equationInfos%>
@@ -68,31 +74,28 @@ template equationFunction(SimEqSystem eq, String modelNamePrefixStr)
     const int equationIndexes[2] = {1,<%ix%>};
     <%equationCode%>
     
-    /*
-      0 1   2      3    4 5 6
-      x,y,der(x),der(y),v,w,a
+    /* Change path: data->localData[0]->realVars[..] to data->realVars[..]
+    and data->simulationInfo->realParameter[..] to model_data->realVars[..]
     */
-    
-    
-    /*
-     * der(x) = sin(a*2*x):
-     */
-     data->real_vars[2] = sin(data->real_vars[6]*2*data->real_vars[0]);
-     
-     /* 
-       (v) = f1(der(x),y,w)
-       (w) = f2(der(x),y,v)
-     */
-    linear_solver_system(0, v, w);
-    
-    
-    /*
-     * der(y) = der(x)*y:
-     */
-     data->real_vars[3] = data->real_vars[2]*data->real_vars[5];
   }
   >>
 end equationFunction;
+
+
+template myEquationSimpleAssign(SimEqSystem eq, Context context, Text &varDecls, Text &auxFunction)
+ "Generates an equation that is just a simple assignment."
+::=
+match eq
+case SES_SIMPLE_ASSIGN(__) then
+  let &preExp = buffer ""
+  let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
+
+  <<
+  <%CodegenCFunctions.cref(cref)%> = <%expPart%>;
+  data->realVars[index of ComponentRef] = <%expPart%>;
+  >>
+
+end myEquationSimpleAssign;
 
 
 template equationCall(SimEqSystem eq, String modelNamePrefixStr)
@@ -100,7 +103,7 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr)
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   <<
-  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(data, threadData);
+  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(data);
   >>
 end equationCall;
 
@@ -109,23 +112,24 @@ template generateEquationFiles(list<SimEqSystem> allEquations, String fileNamePr
 "Generates content of fileNamePrefix_eqns.c"
 ::=
   let eqFuncs = ""
-            let _ = allEquations |> eqn => (
-            let &eqFuncs += equationFunction(eqn, fileNamePrefix) + "\n\n"
-            <<>>
-            )
+  let _ = allEquations |> eqn => (
+    let &eqFuncs += equationFunction(eqn, fileNamePrefix) + "\n\n"
+    <<>>
+  )
   let eqCalls = ""
   let _ =  allEquations |> eqn => (
-            let &eqCalls += equationCall(eqn, fileNamePrefix) + "\n"
-            <<>>
-            )
+    let &eqCalls += equationCall(eqn, fileNamePrefix) + "\n"
+    <<>>
+  )
 
   <<
+  #include "omsi.h"
   #include "<%fileNamePrefix%>_eqns.h"
   
   /* Equation functions */
   <%eqFuncs%>
   /* Equations evaluation */
-  int evalEquations(){
+  int evalEquations(sim_data_t data){
 
     <%eqCalls%>
 
