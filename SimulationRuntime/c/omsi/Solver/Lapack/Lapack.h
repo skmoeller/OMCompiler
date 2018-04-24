@@ -42,8 +42,8 @@
 #include "../omsi_math/omsi_vector.h"
 
 #include "../omsi_math/omsi_math.h"
-#include "../../../../OSI/omsi.h"
-#include "../../../../OSI/omsi_eqns_system.h"
+#include "../../../../OMSI/include/omsi.h"
+#include "../../../../OMSI/include/omsi_eqns_system.h"
 #include "../../../util/rtclock.h"
 
 typedef struct DATA_LAPACK

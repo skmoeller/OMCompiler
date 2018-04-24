@@ -1,5 +1,5 @@
-#ifndef _OSI_JACOBIAN_H
-#define _OSI_JACOBIAN_H
+#ifndef _OMSI_JACOBIAN_H
+#define _OMSI_JACOBIAN_H
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,10 +1,10 @@
 #include<stdio.h>
 #include "Lapack.h"
 #include "TotalPivot_Interface.h"
-#include "Newton.h"
-#include "newtonIteration.h"
-#include "omsi.h"
-#include "omsi_eqns_system.h"
+//#include "Newton.h"
+//#include "newtonIteration.h"
+#include "../../../../OMSI/include/omsi.h"
+#include "../../../../OMSI/include/omsi_eqns_system.h"
 
 #include "../omsi_math/omsi_math.h"
 #include "../omsi_math/omsi_vector.h"
@@ -74,8 +74,8 @@ void assign_function_pointers(omsi_linear_system_t *linearSystem){
 }
 
 void test_lapack(){
-	struct omsi_linear_system_t* linearSystem = malloc(sizeof(struct omsi_linear_system_t));
-	struct omsi_t* omsiData = malloc(sizeof(struct omsi_t));
+	omsi_linear_system_t* linearSystem = malloc(sizeof(omsi_linear_system_t));
+	omsi_t *omsiData = malloc(sizeof(omsi_t));
 	omsiData->sim_data.real_vars = (double*) malloc(8*sizeof(double));
 	fill_system_with_values(linearSystem, omsiData);
 	assign_function_pointers(linearSystem);
@@ -100,8 +100,8 @@ void test_lapack(){
 }
 
 void test_totalpivot(){
-	struct omsi_linear_system_t* linearSystem = malloc(sizeof(struct omsi_linear_system_t));
-	struct omsi_t* omsiData = malloc(sizeof(struct omsi_t));
+	omsi_linear_system_t* linearSystem = malloc(sizeof(omsi_linear_system_t));
+	omsi_t* omsiData = malloc(sizeof(omsi_t));
 	omsiData->sim_data.real_vars = (double*) malloc(8*sizeof(double));
 	fill_system_with_values(linearSystem, omsiData);
 	assign_function_pointers(linearSystem);
@@ -152,9 +152,9 @@ void test_totalpivot(){
 //}
 
 int main() {
-	//test_lapack();
+	test_lapack();
 	//test_totalpivot();
-	test_newton();
+	//test_newton();
 }
 
 
