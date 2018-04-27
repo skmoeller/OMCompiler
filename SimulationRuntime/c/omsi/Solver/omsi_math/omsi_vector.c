@@ -61,6 +61,24 @@ omsi_vector_t* _omsi_allocateVectorData(const omsi_size_t size) {
   return vec;
 }
 
+/* TODO: change behaviour of all _omsi_allocate... functions to work with pointers.
+ *      Use advantage of similar function behaving similar i.e. with _omsi_dealloc...
+ * allocates memory for a given pointer to an OMSI vector of any size
+ *
+
+int _omsi_allocateVectorData(omsi_vector_t *vec, const omsi_size_t size) {
+
+    vec = (omsi_vector_t*) malloc(sizeof(omsi_vector_t));
+    //assertStreamPrint(NULL, NULL != vec, "out of memory");
+
+    vec->data = (omsi_scalar_t*) malloc(size * sizeof(omsi_scalar_t));
+    //assertStreamPrint(NULL, NULL != data, "out of memory");
+
+    vec->size = size;
+
+    return 0;
+} */
+
 /*! \fn void _omsi_deallocateVectorData(omsi_vector_t* vec)
  *
  *  free memory in data

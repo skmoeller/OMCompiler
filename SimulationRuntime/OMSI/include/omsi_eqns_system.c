@@ -28,19 +28,24 @@
  *
  */
 
-#ifndef OMSI_MATH_H_
-#define OMSI_MATH_H_
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "omsi_eqns_system.h";
 
-typedef double omsi_scalar_t;
-#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__)
-typedef int omsi_integer_t;
-typedef unsigned int omsi_size_t;
-#else
-typedef long int omsi_integer_t;
-typedef unsigned long int omsi_size_t;
-#endif
 
-#endif
+
+int omsi_linear_system_t_get_x(omsi_t* omsi_data, omsi_vector_t* vector) {
+
+    vector->data[0]=omsi_data->sim_data->real_vars[6];
+    vector->data[1]=omsi_data->sim_data->real_vars[7];
+    return 1;
+
+}
+
+int omsi_linear_system_t_get_x_new(omsi_t* omsi_data, omsi_vector_t* vector) {
+
+    memcpy(vector->data, sim_data->real_vars[startIndex],sizeof(double)*vector->size);
+    return 1;
+
+}
+
+
+

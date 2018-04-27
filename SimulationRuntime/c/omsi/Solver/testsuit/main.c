@@ -3,18 +3,17 @@
 #include "TotalPivot_Interface.h"
 //#include "Newton.h"
 //#include "newtonIteration.h"
-#include "../../../../OMSI/include/omsi.h"
-#include "../../../../OMSI/include/omsi_eqns_system.h"
+#include "omsi.h"
+#include "omsi_eqns_system.h"
+#include "omsi_math.h"
+#include "omsi_vector.h"
 
-#include "../omsi_math/omsi_math.h"
-#include "../omsi_math/omsi_vector.h"
 
-
-int get_x(sim_data_t* data, omsi_vector_t* vector){
-    vector->data[0]=data->real_vars[6];
-    vector->data[1]=data->real_vars[7];
-    return 1;
-}
+//int get_x(sim_data_t* data, omsi_vector_t* vector){
+//    vector->data[0]=data->real_vars[6];
+//    vector->data[1]=data->real_vars[7];
+//    return 1;
+//}
 
 int set_x(sim_data_t* data, omsi_vector_t* vector){
 	data->real_vars[6]=vector->data[0];
@@ -66,23 +65,18 @@ int eval_residual(sim_data_t* data,  omsi_vector_t* x,  omsi_vector_t* f, int if
 }
 
 void assign_function_pointers(omsi_linear_system_t *linearSystem){
-	linearSystem->get_x = &get_x;
+	//linearSystem->get_x = &get_x;
 	linearSystem->set_x = &set_x;
 	linearSystem->get_a_matrix = &get_a_matrix;
 	linearSystem->get_b_vector = &get_b_vector;
 	linearSystem->eval_residual = &eval_residual;
 }
 
-void test_lapack(){
-	omsi_linear_system_t* linearSystem = malloc(sizeof(omsi_linear_system_t));
-	omsi_t *omsiData = malloc(sizeof(omsi_t));
-	omsiData->sim_data.real_vars = (double*) malloc(8*sizeof(double));
-	fill_system_with_values(linearSystem, omsiData);
-	assign_function_pointers(linearSystem);
-	omsi_vector_t* x = _omsi_allocateVectorData(2);
+int test_lapack(omsi_linear_system_t *linearSystem, omsi_t *omsiData){
 
-	void *lapackData;
+	DATA_LAPACK *lapackData;
 	allocateLapackData(linearSystem->n_system, &lapackData);
+	omsi_vector_t* x = _omsi_allocateVectorData(2);
 
 	int i;
 	if (!solveLapack(lapackData, omsiData, linearSystem))
@@ -93,10 +87,40 @@ void test_lapack(){
 	 for(i=0; i<linearSystem->n_system; ++i)
 	   printf("x[%d] = %f\n", i+1, x->data[i]);
 	}
+	else {
+	    printf("Something went wrong. Ws not able to solve loop with LAPACK\n");
+		freeLapackData(lapackData);
+		_omsi_deallocateVectorData(x);
+		return 1;
+	}
 
-	freeLapackData(&lapackData);
-	free(linearSystem);
-	free(omsiData);
+	freeLapackData(lapackData);
+	_omsi_deallocateVectorData(x);
+	return 0;
+
+}
+int test_lapack_new(omsi_t *omsiData, int dimLinSystem) {
+
+	/* Variables */
+	int i, success;
+	omsi_vector_t *x = _omsi_allocateVectorData(2);
+
+	/* solve linear equation using LAPACK dgesv */
+	success = solveLapack_new(omsiData, x);
+	if (success) {
+	  printf("ERROR: ...");
+	  return -1;
+	}
+
+	/* print solution */
+	printf("Yeah, first loop solved successful with Lapack!\n");
+	printf("Solution:\n");
+	for (i=0; i<dimLinSystem; i++) {
+		printf("x[%d] = %f\n", i+1, x->data[i]);
+	}
+	printf("\n");
+
+	return 0;
 }
 
 void test_totalpivot(){
@@ -151,10 +175,28 @@ void test_totalpivot(){
 //	free(omsiData);
 //}
 
-int main() {
-	test_lapack();
+int main(int argc, char* argv[]) {
+
+	omsi_linear_system_t* linearSystem = malloc(sizeof(omsi_linear_system_t));
+	omsi_t *omsiData = malloc(sizeof(omsi_t));
+	omsiData->sim_data.real_vars = (double*) malloc(8*sizeof(double));
+	omsiData->model_data.n_states = 2;
+	fill_system_with_values(linearSystem, omsiData);
+	assign_function_pointers(linearSystem);
+
+	//test_lapack(linearSystem, omsiData);
 	//test_totalpivot();
 	//test_newton();
+
+	/* test lapack_new */
+	test_lapack_new(omsiData, linearSystem->n_system);
+
+	/* free memory */
+    free(omsiData->sim_data.real_vars);
+    free(omsiData);
+    free(linearSystem);
+
+	return 0;
 }
 
 

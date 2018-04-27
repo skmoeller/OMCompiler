@@ -40,15 +40,19 @@
 
 #include "../omsi_math/omsi_matrix.h"
 #include "../omsi_math/omsi_vector.h"
-
 #include "../omsi_math/omsi_math.h"
 #include "../../../../OMSI/include/omsi.h"
 #include "../../../../OMSI/include/omsi_eqns_system.h"
 #include "../../../util/rtclock.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct DATA_LAPACK
 {
   int *ipiv;  /* vector pivot values */
+  int n;	  /* number of linear equations and unknowns */
   int nrhs;   /* number of righthand sides*/
   int info;   /* output */
   omsi_vector_t* work;
@@ -60,9 +64,18 @@ typedef struct DATA_LAPACK
 
 } DATA_LAPACK;
 
-int allocateLapackData(int size, void **data);
-int freeLapackData(void **data);
-int solveLapack(DATA_LAPACK* lapackData, omsi_t *omsiData, omsi_linear_system_t *linearSystem);
+/* function prototypes */
+extern int dgesv_(int *n, int *nrhs, double *a, int *lda, int *ipiv,
+                  double *b, int *ldb, int *info);
+int allocateLapackData(int size, DATA_LAPACK **data);
+int freeLapackData(DATA_LAPACK *data);
+int setLapackData(DATA_LAPACK *lapackData, sim_data_t *sim_data, int n);
+int getLapackData(DATA_LAPACK *lapackData, sim_data_t *sim_data);
+int solveLapack(DATA_LAPACK* lapackData, omsi_t *omsiData,
+                omsi_linear_system_t *linearSystem);
+int solveLapack_new(omsi_t *omsiData, omsi_vector_t *result_x);
 
+#ifdef __cplusplus
+}   /* end of extern "C" { */
 #endif
-
+#endif

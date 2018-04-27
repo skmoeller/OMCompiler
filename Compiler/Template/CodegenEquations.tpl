@@ -90,9 +90,32 @@ case SES_SIMPLE_ASSIGN(__) then
   <<
   <%crefStr%> = <%expPart%>;
   >>
-case SES_LINEAR(__) then
+case SES_LINEAR(lSystem=ls as LINEARSYSTEM(__)) then    //only for rectangular case
+  let dimLinearSystem = ls.nUnknowns
+  let crefStr = ""
   <<
   ERROR: LINEAR SYSTEM NOT IMPLEMENTED YET!
+
+  int sucess;
+
+  /* allocate memory for LAPACK */
+  void *lapackData;
+  allocateLapackData(<%dimLinearSystem%>, &lapackData);
+
+  /* set lapackData  */
+  setLapackData(lapackData, omsiData)
+
+  /* solve linear equation using LAPACK dgesv */
+  sucess = solveLapack(lapackData, omsiData, linearSystem)
+  if !sucess {
+    ERROR: ...
+  }
+
+  /* copy solution in sim_data */
+  memcpy(<%crefStr%>, lapackData->A, sizeof(double)*<%dimLinearSystem%>);
+
+  /* free memory */
+  freeLapackData(&lapackData);
   >>
 end equationCStr;
 

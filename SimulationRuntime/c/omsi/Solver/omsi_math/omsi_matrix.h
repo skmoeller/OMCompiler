@@ -32,7 +32,13 @@
 #define OSIMATRIX_H_
 
 #include "omsi_math.h"
+#include "omsi_vector.h"
 
+typedef struct {
+  omsi_size_t rows;
+  omsi_size_t cols;
+  omsi_scalar_t *data;
+} omsi_matrix_t;
 
 /* memory management matrix */
 omsi_matrix_t* _omsi_allocateMatrixData(const omsi_size_t rows, const omsi_size_t cols);

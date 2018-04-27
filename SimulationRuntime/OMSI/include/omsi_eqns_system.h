@@ -14,6 +14,8 @@ typedef struct omsi_sparsity_pattern omsi_sparsity_pattern;
 //typedef struct omsi_vector_t omsi_vector_t;
 //typedef struct omsi_matrix_t omsi_matrix_t;
 
+/* function prototypes for omsi_linear_system_t functions */
+typedef int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* vector);
 
 /**
  *
@@ -27,7 +29,8 @@ typedef struct {
   bool (*get_coditions)(sim_data_t* data, bool* vector);
   bool (*set_coditions)( sim_data_t* data, bool* vector);
 
-  int (*get_x)(sim_data_t* data, omsi_vector_t* vector);
+  //int (*get_x)(sim_data_t* data, omsi_vector_t* vector);
+  omsi_linear_system_get_x get_x;
   int (*set_x)(sim_data_t* data, omsi_vector_t* vector);
 
   /* easy driver */

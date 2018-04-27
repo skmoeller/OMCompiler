@@ -33,6 +33,10 @@
 
 #include "omsi_math.h"
 
+typedef struct {
+  omsi_size_t size;
+  omsi_scalar_t *data;
+} omsi_vector_t;
 
 /* memory management vector */
 omsi_vector_t* _omsi_allocateVectorData(const omsi_size_t size);

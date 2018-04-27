@@ -93,7 +93,7 @@ int solveSystemWithTotalPivotSearchLS(int n, double* x, double* A, int* indRow, 
       debugIntLS(LOG_LS,"rank = ", *rank);
       break;
     }
-    *
+    */
     /* swap row indices */
     if (pRow!=i) {
       hInt = indRow[i];

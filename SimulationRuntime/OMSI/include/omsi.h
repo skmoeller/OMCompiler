@@ -8,9 +8,6 @@ extern "C" {
 #endif
 
 
-/* forward some types */
-//struct sim_data_t;
-
  /**
   *   for delay handling
   */
@@ -132,19 +129,19 @@ typedef struct {
 	unsigned int states_index;
 	//start index of derivative variables in real vars array
 	unsigned int der_states_index;
-  //start index of input real variables in real vars array
+	//start index of input real variables in real vars array
 	unsigned int inputs_real_index;
 	//start index of input integer variables in real vars array
 	unsigned int inputs_int_index;
 	//start index of input boolean variables in real vars array
 	unsigned int inputs_bool_index;
-  //start index of output real variables in real vars array
+	//start index of output real variables in real vars array
 	unsigned int outputs_real_index;
 	//start index of output integer variables in integer vars array
 	unsigned int outputs_int_index;
 	//start index of output boolean variables in boolean vars array
 	unsigned int outputs_bool_index;
-  //start index of discrete real variables in real vars array
+	//start index of discrete real variables in real vars array
 	unsigned int discrete_reals_index;
 
 
@@ -207,11 +204,11 @@ typedef struct {
 	omsi_experiment_t* experiment;
 } omsi_t;
 
-
 int omsi_initiatiate_osu(omsi_t** omsi);
 int omsi_initialize_model(omsi_t** omsi);
 int omsi_initialize_solver(omsi_t** omsi);
 int omsi_intialize_simulation(omsi_t** omsi);
+
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

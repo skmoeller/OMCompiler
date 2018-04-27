@@ -33,18 +33,55 @@
 
 #include "Lapack.h"
 
-extern int dgesv_(int *n, int *nrhs, double *a, int *lda,
-                  int *ipiv, double *b, int *ldb, int *info);
+/* TODO: build these functions in omsi_eqns_system.c */
+//int get_x(sim_data_t* data, omsi_vector_t* vector){
+//    vector->data[0]=data->real_vars[6];
+//    vector->data[1]=data->real_vars[7];
+//    return 1;
+//}
+
+int set_x(sim_data_t* data, omsi_vector_t* vector){
+    data->real_vars[6]=vector->data[0];
+    data->real_vars[7]=vector->data[1];
+    return 1;
+}
+
+int get_a_matrix(sim_data_t* data, omsi_matrix_t* matrix){
+    matrix->data[0]=data->real_vars[0];
+    matrix->data[1]=data->real_vars[1];
+    matrix->data[2]=data->real_vars[2];
+    matrix->data[3]=data->real_vars[3];
+    return 1;
+}
+
+int get_b_vector(sim_data_t* data, omsi_vector_t* vector){
+    vector->data[0]=data->real_vars[4];
+    vector->data[1]=data->real_vars[5];
+    return 1;
+}
+int eval_residual(sim_data_t* data,  omsi_vector_t* x,  omsi_vector_t* f, int iflag)
+{
+  // f = A*x - b
+  double* xd = x->data;
+  double* fd = f->data;
+
+  fd[0] = data->real_vars[0]*xd[0] + data->real_vars[1]*xd[1] - data->real_vars[4];
+  fd[1] = data->real_vars[2]*xd[0] + data->real_vars[3]*xd[1] - data->real_vars[5];
+
+  return iflag;
+}
+/* Ende löschen! */
 
 /*! \fn allocate memory for linear system solver lapack
  *
  */
-int allocateLapackData(int size, void** voiddata)
+int allocateLapackData(int size, DATA_LAPACK **lapackData)
 {
-  DATA_LAPACK* data = (DATA_LAPACK*) malloc(sizeof(DATA_LAPACK));
+  DATA_LAPACK *data = (DATA_LAPACK*) malloc(sizeof(DATA_LAPACK));
 
   data->ipiv = (int*) malloc(size*sizeof(int));
   //assertStreamPrint(NULL, 0 != data->ipiv, "Could not allocate data for linear solver lapack.");
+  data->n = 0;
   data->nrhs = 1;
   data->info = 0;
   data->work = _omsi_allocateVectorData(size);
@@ -53,17 +90,14 @@ int allocateLapackData(int size, void** voiddata)
   data->b = _omsi_allocateVectorData(size);
   data->A = _omsi_allocateMatrixData(size, size);
 
-  *voiddata = (void*)data;
+  *lapackData = data;
   return 0;
 }
 
 /*! \fn free memory of lapack
  *
  */
-int freeLapackData(void **voiddata)
-{
-  DATA_LAPACK* data = (DATA_LAPACK*) *voiddata;
-
+int freeLapackData(DATA_LAPACK *data) {
   free(data->ipiv);
   _omsi_deallocateVectorData(data->work);
 
@@ -73,6 +107,116 @@ int freeLapackData(void **voiddata)
 
   return 0;
 }
+
+/*
+ * copy data into LAPACK_DATA format for usage in solveLapack
+ */
+int setLapackData(DATA_LAPACK *lapackData, sim_data_t *sim_data, int n){
+	/*
+	 * Insert detailed description
+	 */
+
+	//
+	lapackData->n = n;
+	//lapackData->nrhs = 1;					// TODO: better to set here than in allocateLapackData()
+	//get_A(lapackData, omsiData);
+	get_a_matrix(sim_data, lapackData->A);
+	//get_b(lapackData, omsiData);
+	get_b_vector(sim_data, lapackData->b);
+
+
+
+
+
+
+	return 0;
+}
+
+/*
+ * description something
+ */
+int getLapackData(DATA_LAPACK *lapackData, sim_data_t *sim_data){
+
+    double residualNorm;
+
+    /* take the solution */
+    lapackData->x = _omsi_addVectorVector(lapackData->x, lapackData->x, lapackData->b); // x = xold(work) + xnew(b)
+
+    /* update inner equations */
+    eval_residual(sim_data, lapackData->x, lapackData->work, 0);
+    residualNorm = _omsi_euclideanVectorNorm(lapackData->work);
+
+    if ((isnan(residualNorm)) || (residualNorm>1e-4)){
+        /*
+        warningStreamPrint(LOG_LS, 0,
+            "Failed to solve linear system of equations (no. %d) at time %f. Residual norm is %.15g.",
+            (int)linearSystem->equation_index, omsiData->sim_data->time_value, residualNorm);
+        */
+        printf("Residual norm to high %f or not a number\n", residualNorm);
+        return -1;
+    }
+    else
+    {
+        set_x(sim_data, lapackData->x);
+    }
+	return 0;
+}
+
+/*
+ * Get an equation system A*x=b in omsiData format.
+ * Compute the solution using LAPACK DGESV and
+ * return the solution in omsiData format.
+ */
+int solveLapack_new(omsi_t *omsiData, omsi_vector_t *result_x){
+
+    /* local variables */
+	DATA_LAPACK *lapackData;
+	omsi_vector_t *x;
+	int success=0;
+
+
+	/* allocate memory */
+	allocateLapackData(omsiData->model_data.n_states, &lapackData);
+	x = _omsi_allocateVectorData(omsiData->model_data.n_states);
+
+	/* set lapackData  */
+	setLapackData(lapackData, &omsiData->sim_data, omsiData->model_data.n_states);
+
+	/* solve equation system */
+	dgesv_(&lapackData->n,
+		   &lapackData->nrhs,
+		    lapackData->A->data,
+		   &lapackData->n,
+		    lapackData->ipiv,
+			lapackData->b->data,
+		   &lapackData->n,
+		   &lapackData->info);
+
+	success = lapackData->info;
+	if (success < 0) {
+	    printf("ERROR solving linear system: the %d-th argument had an illegal value\n", (-1)*success);
+	    freeLapackData(lapackData);
+	    return -1;
+	}
+	else if (success > 0) {
+	    printf("ERROR solving linear system:  U(%d,%d) is exactly zero.\n", success, success);
+	    printf("The factorization has been completed, but the factor U is exactly"
+                "singular, so the solution could not be computed\n");
+	    freeLapackData(lapackData);
+	    return -1;
+	}
+
+	/* copy solution in result_x */
+	success = getLapackData(lapackData, &omsiData->sim_data);
+	memcpy((void *)result_x->data, (void *)lapackData->x->data, lapackData->n*sizeof(double));
+
+	/* free memory */
+	freeLapackData(lapackData);
+
+	return success;
+}
+
+
 
 /*! \fn solve linear system with lapack method
  *
@@ -109,7 +253,7 @@ int solveLapack(DATA_LAPACK* lapackData, omsi_t *omsiData, omsi_linear_system_t 
   //tmpJacEvalTime = rt_ext_tp_tock(&(lapackData->timeClock));
   //infoStreamPrint(LOG_LS_V, 0, "###  %f  time to set Matrix A and vector b.", tmpJacEvalTime);
 
-  /* Log A*x=b 
+  /* Log A*x=b
   if(ACTIVE_STREAM(LOG_LS_V)){
     _omsi_printVector(lapackData->x, "Vector old x", LOG_LS_V);
     _omsi_printMatrix(lapackData->A, "Matrix A", LOG_LS_V);
@@ -143,7 +287,7 @@ int solveLapack(DATA_LAPACK* lapackData, omsi_t *omsiData, omsi_linear_system_t 
 
     success = lapackData->info;
 
-    /* debug output 
+    /* debug output
     if (ACTIVE_STREAM(LOG_LS)){
       _omsi_printMatrix(lapackData->A, "Matrix U", LOG_LS);
 

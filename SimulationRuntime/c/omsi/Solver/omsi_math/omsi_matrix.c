@@ -33,9 +33,6 @@
 
 #include "omsi_matrix.h"
 
-#include <string.h> /* memcpy */
-//#include <math.h>
-
 
 /*! \fn omsi_matrix_t* _omsi_allocateMatrixData(omsi_size_t rows, omsi_size_t cols)
  *
