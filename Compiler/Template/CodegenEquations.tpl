@@ -41,6 +41,8 @@ package CodegenEquations
 import interface SimCodeTV;
 import interface SimCodeBackendTV;
 import CodegenUtil;
+import CodegenC;
+import CodegenCFunctions;
 import CodegenUtilSimulation.*;
 
 template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
@@ -53,25 +55,69 @@ template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
 end equationFunctionPrototypes;
 
 
-template equationFunction(SimEqSystem eq, String modelNamePrefixStr)
+template equationFunction(SimEqSystem eq, Context context, String modelNamePrefixStr)
  "Generates C-function for an equation evaluation"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   let equationInfos = dumpEqs(fill(eq,1))
-  let equationCode =""
+
+  let &varDecls = buffer ""
+  let &auxFunction = buffer ""
+  let equationCode = equationCStr(eq, context, &varDecls, &auxFunction) //sinnvollen context angeben
+
   <<
   /*
   <%equationInfos%>
   */
-  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*Data_Struct_something data, *Data_Struct_something threadData){
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*sim_data_t sim_data, double* writeData){
     const int equationIndexes[2] = {1,<%ix%>};
+    <%varDecls%>
+    <%auxFunction%>
     <%equationCode%>
-    /*
-     *Hier muss erst festgelegt werden, wie die Datenstrukturen aufgeteilt werden sollen.
-     */
   }
   >>
 end equationFunction;
+
+
+template equationCStr(SimEqSystem eq, Context context, Text &varDecls, Text &auxFunction)
+ "Generates an equation that is just a simple assignment."
+::=
+match eq
+case SES_SIMPLE_ASSIGN(__) then
+  let &preExp = buffer ""
+  let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
+  let crefStr = CodegenCFunctions.contextCref(cref, context, &auxFunction)
+  <<
+  <%crefStr%> = <%expPart%>;
+  >>
+case SES_LINEAR(lSystem=ls as LINEARSYSTEM(__)) then    //only for rectangular case
+  let dimLinearSystem = ls.nUnknowns
+  let crefStr = ""
+  <<
+  ERROR: LINEAR SYSTEM NOT IMPLEMENTED YET!
+
+  int sucess;
+
+  /* allocate memory for LAPACK */
+  void *lapackData;
+  allocateLapackData(<%dimLinearSystem%>, &lapackData);
+
+  /* set lapackData  */
+  setLapackData(lapackData, omsiData)
+
+  /* solve linear equation using LAPACK dgesv */
+  sucess = solveLapack(lapackData, omsiData, linearSystem)
+  if !sucess {
+    ERROR: ...
+  }
+
+  /* copy solution in sim_data */
+  memcpy(<%crefStr%>, lapackData->A, sizeof(double)*<%dimLinearSystem%>);
+
+  /* free memory */
+  freeLapackData(&lapackData);
+  >>
+end equationCStr;
 
 
 template equationCall(SimEqSystem eq, String modelNamePrefixStr)
@@ -79,7 +125,7 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr)
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   <<
-  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(data, threadData);
+  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(data);
   >>
 end equationCall;
 
@@ -88,23 +134,24 @@ template generateEquationFiles(list<SimEqSystem> allEquations, String fileNamePr
 "Generates content of fileNamePrefix_eqns.c"
 ::=
   let eqFuncs = ""
-            let _ = allEquations |> eqn => (
-            let &eqFuncs += equationFunction(eqn, fileNamePrefix) + "\n\n"
-            <<>>
-            )
+  let _ = allEquations |> eqn => (
+    let &eqFuncs += equationFunction(eqn, contextOMSI, fileNamePrefix) + "\n\n"
+    <<>>
+  )
   let eqCalls = ""
   let _ =  allEquations |> eqn => (
-            let &eqCalls += equationCall(eqn, fileNamePrefix) + "\n"
-            <<>>
-            )
+    let &eqCalls += equationCall(eqn, fileNamePrefix) + "\n"
+    <<>>
+  )
 
   <<
+  #include "omsi.h"
   #include "<%fileNamePrefix%>_eqns.h"
   
   /* Equation functions */
   <%eqFuncs%>
   /* Equations evaluation */
-  int evalEquations(){
+  int evalEquations(sim_data_t sim_data){
 
     <%eqCalls%>
 

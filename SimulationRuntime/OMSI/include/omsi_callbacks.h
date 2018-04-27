@@ -1,5 +1,5 @@
-#ifndef OIS_CALLBACKS_H
-#define OIS_CALLBACKS_H
+#ifndef OMSI_CALLBACKS_H
+#define OMSI_CALLBACKS_H
 
 #ifdef __cplusplus
 extern "C" {
