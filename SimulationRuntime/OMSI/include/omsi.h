@@ -159,27 +159,6 @@ typedef struct {
  *
  */
 typedef struct {
-  int nCandidates;
-  int nStates;
-  int nDummyStates;    /* nCandidates - nStates */
-
-  model_variable_info_t* A;
-  int* rowPivot;
-  int* colPivot;
-  double* J;
-
-  model_variable_info_t** states;
-  model_variable_info_t** statescandidates;
-
-  /* jacobian */
-  int (*get_jacobian)(sim_data_t* data, void* matrix);
-} state_set_t;
-
-
-/**
- *
- */
-typedef struct {
 	unsigned int n_states;
 	unsigned int n_derivatives;
 	unsigned int n_real_vars;
