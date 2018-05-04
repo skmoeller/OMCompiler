@@ -103,10 +103,10 @@ case SES_LINEAR(lSystem=ls as LINEARSYSTEM(__)) then    //only for rectangular c
   allocateLapackData(<%dimLinearSystem%>, &lapackData);
 
   /* set lapackData  */
-  setLapackData(lapackData, omsiData)
+  setLapackData(lapackData, omsiData);
 
   /* solve linear equation using LAPACK dgesv */
-  sucess = solveLapack(lapackData, omsiData, linearSystem)
+  sucess = solveLapack(lapackData, omsiData, linearSystem);
   if !sucess {
     ERROR: ...
   }
@@ -123,7 +123,7 @@ end equationCStr;
 template equationCall(SimEqSystem eq, String modelNamePrefixStr)
  "Generates call function for evaluating functions"
 ::=
-  let ix = CodegenUtilSimulation.equationIndex(eq)
+  let ix = ""
   <<
   <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(data);
   >>
@@ -150,6 +150,7 @@ template generateEquationFiles(list<SimEqSystem> allEquations, String fileNamePr
   
   /* Equation functions */
   <%eqFuncs%>
+
   /* Equations evaluation */
   int evalEquations(sim_data_t sim_data){
 
