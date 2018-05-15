@@ -17,23 +17,42 @@ typedef struct omsi_sparsity_pattern omsi_sparsity_pattern;
 /* function prototypes for omsi_linear_system_t functions */
 typedef int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* vector);
 
+enum omsi_data_type {
+  OMSI_TYPE_UNKNOWN,
+  OMSI_TYPE_DOUBLE,
+  OMSI_TYPE_INTEGER,
+  OMSI_TYPE_BOOLEAN,
+  OMSI_TYPE_STRING
+};
+
+
+typedef struct {
+  omsi_data_type type;
+  int index;
+} omsi_index_type;
+
+
 /**
  *
  */
 typedef struct {
-  int n_system;
-  int n_non_zeros;
-  int n_conditions;
+
   int equation_index;       /* index for EQUATION_INFO */
 
-  bool (*get_coditions)(sim_data_t* data, bool* vector);
-  bool (*set_coditions)( sim_data_t* data, bool* vector);
+  int n_iteration_vars;
+  omsi_index_type *iteration_vars_indices;/* = {(OMSI_TYPE_DOUBLE, 4), (OMSI_TYPE_INTEGER,4)}; */
 
-  int (*get_x)(sim_data_t* data, omsi_vector_t* vector);
-  int (*set_x)(sim_data_t* data, omsi_vector_t* vector);
+  int n_inputs_vars;
+  omsi_index_type *input_vars_indices;/* = {(OMSI_TYPE_DOUBLE, 4), (OMSI_TYPE_INTEGER,4)}; */
+
+  int n_inner_vars;
+  omsi_index_type *inner_vars_indices;/* = {(OMSI_TYPE_DOUBLE, 4), (OMSI_TYPE_INTEGER,4)}; */
+
+  int n_conditions;
+  int *zc_index; /* index of zero crossings */
 
   /* easy driver */
-  int (*get_a_matrix)(sim_data_t* data, omsi_matrix_t* matrix);
+  int (*get_a_matrix)(omsi_linear_system_t* linearSystem, void (*set_matrix_element)(int row, int col, double* val, void* data), void* data);
   int (*get_b_vector)(sim_data_t* data, omsi_vector_t* vector);
 
   /* advanced drivers */
@@ -41,6 +60,7 @@ typedef struct {
   int (*eval_residual)(sim_data_t* data, omsi_vector_t* x, omsi_vector_t* f, int ifail);
   int (*get_jacobian_column)(sim_data_t* data, omsi_vector_t* column); /* get symbolic directional derivatives */
 } omsi_linear_system_t;
+
 
 /**
  *
