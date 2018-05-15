@@ -216,6 +216,7 @@ fmi2Status setReal(const fmi2ValueReference vr[], size_t nvr,
 		else switch (*vr) {
 		  default:
 			throw std::invalid_argument("setReal with wrong value reference " + omcpp::to_string(*vr));
+			// TODO: insert return fmi2Error; in error cases
 		}
 	  }
 	}
@@ -397,7 +398,7 @@ fmi2Status getInteger(const fmi2ValueReference vr[], size_t nvr,
 	  }
   }
   else
-	  throw std::invalid_argument("getReal with wrong bool vars memory allocation");
+	  throw std::invalid_argument("getInteger with wrong vars memory allocation");
 
 
   return fmi2OK;

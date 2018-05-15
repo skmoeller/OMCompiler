@@ -1,19 +1,75 @@
-#ifndef OSI_OSU_H
-#define OSI_OSU_H
+/*
+ * This file is part of OpenModelica.
+ *
+ * Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
+ * c/o Linköpings universitet, Department of Computer and Information Science,
+ * SE-58183 Linköping, Sweden.
+ *
+ * All rights reserved.
+ *
+ * THIS PROGRAM IS PROVIDED UNDER THE TERMS OF THE BSD NEW LICENSE OR THE
+ * GPL VERSION 3 LICENSE OR THE OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
+ * ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+ * RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
+ * ACCORDING TO RECIPIENTS CHOICE.
+ *
+ * The OpenModelica software and the OSMC (Open Source Modelica Consortium)
+ * Public License (OSMC-PL) are obtained from OSMC, either from the above
+ * address, from the URLs: http://www.openmodelica.org or
+ * http://www.ida.liu.se/projects/OpenModelica, and in the OpenModelica
+ * distribution. GNU version 3 is obtained from:
+ * http://www.gnu.org/copyleft/gpl.html. The New BSD License is obtained from:
+ * http://www.opensource.org/licenses/BSD-3-Clause.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, EXCEPT AS
+ * EXPRESSLY SET FORTH IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE
+ * CONDITIONS OF OSMC-PL.
+ *
+ */
 
-#include "osu_utils.h"
-#include "osu_GettersAndSetters.h"
-#include "osu_EventSimulation.h"
-#include "osu_ContinuousSimulation.h"
-#include "osu_Initialization.h"
+/*
+ * Author name [e-mail]
+ * This file defines functions for the FMI model exchange used via the
+ * OpenModelica Simulation Interface (OMSI).
+ */
+
+#ifndef OMSI_ME_H
+#define OMSI_ME_H
+
+// OpenModelica Simulation Unit / OpenModelica Simulation Interface
+#include "omsu_utils.h"
+#include "omsu_GettersAndSetters.h"
+#include "omsu_EventSimulation.h"
+#include "omsu_ContinuousSimulation.h"
+#include "omsu_Initialization.h"
 
 #include "fmi2/fmi2Functions.h"
-#include "omsi.h"
+#include "include/omsi.h"
 
-#include "simulation_data.h"
+//C Simulation kernel includes
+#include "../simulation_data.h"
+#include "../simulation/solver/stateset.h"
+#include "../simulation_data.h"
+#include "../simulation/solver/stateset.h"
+#include "../simulation/solver/model_help.h"
+#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
+#include "../simulation/solver/nonlinearSystem.h"
+#endif
+#if !defined(OMC_NUM_LINEAR_SYSTEMS) || OMC_NUM_LINEAR_SYSTEMS>0
+#include "../simulation/solver/linearSystem.h"
+#endif
+#if !defined(OMC_NUM_MIXED_SYSTEMS) || OMC_NUM_MIXED_SYSTEMS>0
+#include "../simulation/solver/mixedSystem.h"
+#endif
+#include "../simulation/solver/delay.h"
+#include "../simulation/simulation_info_json.h"
+#include "../simulation/simulation_input_xml.h"
+
 #include "openmodelica.h"
 
 #define NUMBER_OF_CATEGORIES 11
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -262,8 +318,8 @@ typedef struct osu_t
 	fmi2CallbackFunctions* fmiCallbackFunctions;
 } osu_t;
 
-fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo);
 
+/* Extern functions */
 extern void omsic_model_setup_data(osu_t* OSU);
 extern fmi2Real getReal(osu_t* OSU, const fmi2ValueReference vr);
 extern fmi2Status setReal(osu_t* OSU, const fmi2ValueReference vr, const fmi2Real value);
@@ -275,7 +331,10 @@ extern fmi2String getString(osu_t* OSU, const fmi2ValueReference vr);
 extern fmi2Status setString(osu_t* OSU, const fmi2ValueReference vr, fmi2String value);
 extern fmi2Status setExternalFunction(osu_t* OSU, const fmi2ValueReference vr, const void* value);
 
-//unsupported functions
+/* Function prototypes */
+fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo);
+
+/* unsupported functions */
 
 /*! \fn omsi_free_fmu_state
  *

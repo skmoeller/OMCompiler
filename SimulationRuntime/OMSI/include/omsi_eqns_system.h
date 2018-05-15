@@ -29,8 +29,7 @@ typedef struct {
   bool (*get_coditions)(sim_data_t* data, bool* vector);
   bool (*set_coditions)( sim_data_t* data, bool* vector);
 
-  //int (*get_x)(sim_data_t* data, omsi_vector_t* vector);
-  omsi_linear_system_get_x get_x;
+  int (*get_x)(sim_data_t* data, omsi_vector_t* vector);
   int (*set_x)(sim_data_t* data, omsi_vector_t* vector);
 
   /* easy driver */

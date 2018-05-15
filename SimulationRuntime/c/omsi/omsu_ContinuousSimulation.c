@@ -1,15 +1,48 @@
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "omsu_ContinuousSimulation.h"
+/*
+ * This file is part of OpenModelica.
+ *
+ * Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
+ * c/o Linköpings universitet, Department of Computer and Information Science,
+ * SE-58183 Linköping, Sweden.
+ *
+ * All rights reserved.
+ *
+ * THIS PROGRAM IS PROVIDED UNDER THE TERMS OF THE BSD NEW LICENSE OR THE
+ * GPL VERSION 3 LICENSE OR THE OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
+ * ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+ * RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
+ * ACCORDING TO RECIPIENTS CHOICE.
+ *
+ * The OpenModelica software and the OSMC (Open Source Modelica Consortium)
+ * Public License (OSMC-PL) are obtained from OSMC, either from the above
+ * address, from the URLs: http://www.openmodelica.org or
+ * http://www.ida.liu.se/projects/OpenModelica, and in the OpenModelica
+ * distribution. GNU version 3 is obtained from:
+ * http://www.gnu.org/copyleft/gpl.html. The New BSD License is obtained from:
+ * http://www.opensource.org/licenses/BSD-3-Clause.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, EXCEPT AS
+ * EXPRESSLY SET FORTH IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE
+ * CONDITIONS OF OSMC-PL.
+ *
+ */
 
+/*
+ * Author name [e-mail]
+ * This file defines functions for the FMI continuous simulation used via the OpenModelica
+ * Simulation Interface (OMSI). These are the functions to evaluate the
+ * model equations during continuous-time mode with OMSI.
+ */
+
+#include "omsu_ContinuousSimulation.h"
 
 fmi2Status omsi_new_discrete_state(fmi2Component  c, fmi2EventInfo* eventInfo){
 	osu_t *OSU = (osu_t *)c;
 	double nextSampleEvent = 0;
 	fmi2Status returnValue = fmi2OK;
 
-	if (invalidState(OSU, "fmi2NewDiscreteStates", modelEventMode, ~0))
+	if (invalidState((fmi2Component) OSU, "fmi2NewDiscreteStates", modelEventMode, ~0))
 		return fmi2Error;
 	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2NewDiscreteStates")
 
@@ -185,7 +218,7 @@ fmi2Status omsi_get_directional_derivative(fmi2Component c,
                 const fmi2ValueReference vUnknown_ref[], size_t nUnknown,
                 const fmi2ValueReference vKnown_ref[],   size_t nKnown,
                 const fmi2Real dvKnown[], fmi2Real dvUnknown[]){
-  int i,j;
+  int i;
   osu_t *OSU = (osu_t *)c;
   if (invalidState(OSU, "fmi2GetDirectionalDerivative", modelInstantiated|modelEventMode|modelContinuousTimeMode, ~0))
     return fmi2Error;
@@ -215,8 +248,3 @@ fmi2Status omsi_get_directional_derivative(fmi2Component c,
   /***************************************/
   return fmi2OK;
 }
-
-
-#ifdef __cplusplus
-}
-#endif

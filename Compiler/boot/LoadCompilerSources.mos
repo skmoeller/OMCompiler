@@ -375,6 +375,7 @@ if true then /* Suppress output */
     "../Template/CodegenFMU2.mo",
     "../Template/CodegenFMUCommon.mo",
     "../Template/CodegenFMUCpp.mo",
+    "../Template/CodegenOMSI_common.mo",
 	  "../Template/CodegenOMSICpp.mo",
     "../Template/CodegenOMSIC.mo",
     "../Template/CodegenEquations.mo",

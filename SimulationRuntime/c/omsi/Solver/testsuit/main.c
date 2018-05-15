@@ -9,11 +9,11 @@
 #include "omsi_vector.h"
 
 
-//int get_x(sim_data_t* data, omsi_vector_t* vector){
-//    vector->data[0]=data->real_vars[6];
-//    vector->data[1]=data->real_vars[7];
-//    return 1;
-//}
+int get_x(sim_data_t* data, omsi_vector_t* vector){
+    vector->data[0]=data->real_vars[6];
+    vector->data[1]=data->real_vars[7];
+    return 1;
+}
 
 int set_x(sim_data_t* data, omsi_vector_t* vector){
 	data->real_vars[6]=vector->data[0];
