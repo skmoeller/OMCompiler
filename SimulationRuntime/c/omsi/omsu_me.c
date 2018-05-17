@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI model exchange used via the
  * OpenModelica Simulation Interface (OMSI).
  */

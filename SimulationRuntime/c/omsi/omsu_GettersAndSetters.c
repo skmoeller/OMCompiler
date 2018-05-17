@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI used via the OpenModelica Simulation
  * Interface (OMSI). These are the common functions for getting and setting
  * variables and FMI informations.

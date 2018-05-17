@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI event mode used via the OpenModelica
  * Simulation Interface (OMSI). These are the core functions to evaluate the
  * model equations with OMSI.

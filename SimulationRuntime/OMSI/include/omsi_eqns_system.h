@@ -3,6 +3,10 @@
 
 #include <stdbool.h>
 #include "../../c/omsi/Solver/omsi_math/omsi_math.h"
+#include "../../c/omsi/Solver/omsi_math/omsi_vector.h"
+#include "../../c/omsi/Solver/omsi_math/omsi_matrix.h"
+#include "omsi_jacobian.h"
+//#include "omsi.h"   //ToDo: should be pretty wrong
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,20 +14,21 @@ extern "C" {
 
 
 /* forward some types */
+typedef struct _sim_data_t sim_data_t;
+typedef struct _equation_info_t equation_info_t;
+typedef struct _omsi_linear_system_t omsi_linear_system_t;
 typedef struct omsi_sparsity_pattern omsi_sparsity_pattern;
-//typedef struct omsi_vector_t omsi_vector_t;
-//typedef struct omsi_matrix_t omsi_matrix_t;
 
 /* function prototypes for omsi_linear_system_t functions */
 typedef int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* vector);
 
-enum omsi_data_type {
+typedef enum {
   OMSI_TYPE_UNKNOWN,
   OMSI_TYPE_DOUBLE,
   OMSI_TYPE_INTEGER,
   OMSI_TYPE_BOOLEAN,
   OMSI_TYPE_STRING
-};
+}omsi_data_type;
 
 
 typedef struct {
@@ -36,6 +41,65 @@ typedef struct {
  *
  */
 typedef struct {
+    unsigned int n_columns;
+    unsigned int n_rows;
+    double* tmp_vars;
+    double* seed_vars;
+    double* result_vars;
+
+    //sparsity_pattern_t* sparsity_pattern;
+}omsi_analytical_jacobian;
+
+/**
+ * general algebraic system
+ */
+typedef struct {
+    equation_info_t* info;
+    unsigned int n_iteration_vars;
+    unsigned int n_input_vars;
+    unsigned int n_inner_vars;
+
+    // pointer to sim_data_t->real_vars
+    omsi_index_type iteration_vars_indices;
+    omsi_index_type input_vars_indices;
+    omsi_index_type inner_vars_indices;
+
+    unsigned int n_conditions;
+    int *zerocrossing_indices;
+
+    bool isLinear;      // linear system=true and non-linear system=false
+    void **loop;        // points on array of omsi_linear_loop or omsi_non-linear_loop
+
+    int (*evaluateF) (double* real_vars, double *f);
+    int (*directionalDerivative) (double *real_vars, omsi_analytical_jacobian *jacobian);
+
+}omsi_algebraic_system_t;
+
+
+/**
+ * linear system
+ */
+typedef struct {
+    //model_variables_info_t *info;
+    void *solverData;
+    double *real_vars;
+
+    omsi_analytical_jacobian *jacobian;
+}omsi_linear_loop;
+
+
+/**
+ * linear system
+ */
+typedef struct {
+    // ToDo: complete
+}omsi_nonlinear_loop;
+
+
+/**
+ *
+ */
+typedef struct _omsi_linear_system_t{
 
   int equation_index;       /* index for EQUATION_INFO */
 

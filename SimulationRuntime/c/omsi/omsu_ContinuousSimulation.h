@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI continuous simulation used via the OpenModelica
  * Simulation Interface (OMSI). These are the functions to evaluate the
  * model equations during continuous-time mode with OMSI.
@@ -45,7 +44,6 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_me.h"
 #include "omsu_utils.h"
 #include "fmi2/fmi2Functions.h"
 
@@ -55,7 +53,7 @@ extern "C" {
  *
  *  \param [ref] [data]
  */
-fmi2Status omsi_new_discrete_state(fmi2Component  c, fmi2EventInfo* fmiEventInfo);
+fmi2Status omsi_new_discrete_state(fmi2Component  c, fmi2EventInfo* eventInfo);
 
 /*! \fn  omsi_enter_continuous_time_mode
  *

@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI used via the OpenModelica Simulation
  * Interface (OMSI). These functions are used for instantiation and initialization
  * of the FMU.
@@ -44,7 +43,6 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_me.h"
 #include "omsu_utils.h"
 #include "fmi2/fmi2Functions.h"
 

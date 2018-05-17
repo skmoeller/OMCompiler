@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI used via the OpenModelica Simulation
  * Interface (OMSI). These are helper functions used for the other omsu functions.
  */
@@ -44,8 +43,8 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_me.h"
-#include "fmi2/fmi2Functions.h"
+#include "omsu_common.h"
+//#include "fmi2/fmi2Functions.h"
 #include "../simulation/solver/initialization/initialization.h"
 
 //used for filtered_log

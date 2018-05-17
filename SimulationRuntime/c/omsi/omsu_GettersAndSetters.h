@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI used via the OpenModelica Simulation
  * Interface (OMSI). These are the common functions for getting and setting
  * variables and FMI informations.
@@ -41,7 +40,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_me.h"
 #include "omsu_utils.h"
 #include "fmi2/fmi2Functions.h"
 

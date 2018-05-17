@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI continuous simulation used via the OpenModelica
  * Simulation Interface (OMSI). These are the functions to evaluate the
  * model equations during continuous-time mode with OMSI.
@@ -42,7 +41,7 @@ fmi2Status omsi_new_discrete_state(fmi2Component  c, fmi2EventInfo* eventInfo){
 	double nextSampleEvent = 0;
 	fmi2Status returnValue = fmi2OK;
 
-	if (invalidState((fmi2Component) OSU, "fmi2NewDiscreteStates", modelEventMode, ~0))
+	if (invalidState(OSU, "fmi2NewDiscreteStates", modelEventMode, ~0))
 		return fmi2Error;
 	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2NewDiscreteStates")
 

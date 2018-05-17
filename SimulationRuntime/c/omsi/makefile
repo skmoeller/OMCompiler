@@ -37,7 +37,8 @@ OBJS=$(SRCS:%.c=%.o)
 # varibales for OMSU library creation
 OMSU_SRCS = omsu_ContinuousSimulation.c omsu_EventSimulation.c omsu_GettersAndSetters.c omsu_Initialization.c omsu_me.c omsu_utils.c fmi2/osi_fmi2_wrapper.c
 OMSU_HDRS = omsu_ContinuousSimulation.h omsu_EventSimulation.h omsu_GettersAndSetters.h omsu_Initialization.h omsu_me.h omsu_utils.h
-OMSU_INCS = -I./ -I./fmi2 -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/omsi/ -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/ -I/d/workspace/OpenModelica/OMCompiler/3rdParty/gc/include/ -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/OMSI/
+OMSU_INCS = -I./ -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/omsi/ -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/ -I/d/workspace/OpenModelica/OMCompiler/3rdParty/gc/include/ -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/OMSI/
+#OMSU_INCS = -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/
 OMSU_OBJS = $(OMSU_SRCS:%.c=%.o)
 
 .PHONY: all
@@ -57,11 +58,10 @@ test: ./Solver/testsuit/main.c $(SRCS) $(HDRS)
 libomsu: $(OMSU_OBJS)
 	$(CC) $(LDFLAGS) -o omsu.$(TARGET_LIB) $^
 
-$(OMSU_OBJS): $(OMSU_SRCS)
+$(OMSU_OBJS:%.o): $(OMSU_SRCS:%.c)
 	$(CC) $(CFLAGS) $(OMSU_INCS) -c -o $@ $<
 
 $(OMSU_SRCS): $(OMSU_HDRS)
-
 
 .PHONY: clean
 clean: clean_solver clean_omsu

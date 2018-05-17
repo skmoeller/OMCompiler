@@ -1,7 +1,38 @@
+/*
+ * This file is part of OpenModelica.
+ *
+ * Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
+ * c/o Linköpings universitet, Department of Computer and Information Science,
+ * SE-58183 Linköping, Sweden.
+ *
+ * All rights reserved.
+ *
+ * THIS PROGRAM IS PROVIDED UNDER THE TERMS OF THE BSD NEW LICENSE OR THE
+ * GPL VERSION 3 LICENSE OR THE OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
+ * ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+ * RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
+ * ACCORDING TO RECIPIENTS CHOICE.
+ *
+ * The OpenModelica software and the OSMC (Open Source Modelica Consortium)
+ * Public License (OSMC-PL) are obtained from OSMC, either from the above
+ * address, from the URLs: http://www.openmodelica.org or
+ * http://www.ida.liu.se/projects/OpenModelica, and in the OpenModelica
+ * distribution. GNU version 3 is obtained from:
+ * http://www.gnu.org/copyleft/gpl.html. The New BSD License is obtained from:
+ * http://www.opensource.org/licenses/BSD-3-Clause.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, EXCEPT AS
+ * EXPRESSLY SET FORTH IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE
+ * CONDITIONS OF OSMC-PL.
+ *
+ */
+
 #ifndef _OMSI_H
 #define _OMSI_H
 
 #include <stdbool.h>
+#include "omsi_eqns_system.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,7 +71,7 @@ typedef struct {
 /**
  *   additional equation information for debugging
  */
-typedef struct {
+typedef struct _equation_info_t{
   int id;
   int profileBlockIndex;
   int parent;
@@ -121,7 +152,7 @@ typedef struct {
 /**
  *
  */
-typedef struct {
+typedef struct _sim_data_t{
 	double* real_vars;
 	int* int_vars;
 	bool* bool_vars;
@@ -153,6 +184,8 @@ typedef struct {
 	bool* zerocrossings_vars;
 	//pre conditions of zerocrossing functions
 	bool* pre_zerocrossings_vars;
+
+	int state;  // current state in fmi2 functions
 } sim_data_t;
 
 /**
@@ -172,6 +205,9 @@ typedef struct {
 	unsigned int n_zerocrossings;
 	model_variable_info_t* model_vars_info_t;
 	equation_info_t*  equation_info_t;
+
+	omsi_algebraic_system_t* algebraic_system_t;
+	unsigned int n_algebraic_system;
 } model_data_t;
 
 /**

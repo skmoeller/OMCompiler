@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI used via the OpenModelica Simulation
  * Interface (OMSI). These are helper functions used for the other omsu functions.
  */
@@ -60,7 +59,7 @@ const char* stateToString(fmi2Component c)
    return "Unknown";
  }
 
-fmi2Boolean invalidState(fmi2Component c, const char *f, int meStates, int csStates)
+fmi2Boolean invalidState(fmi2Component c, const char *f, int meStates, int csStates)    //ToDo: maybe omsi_data instead of fmi2Component data type
 {
   osu_t* OSU = (osu_t *)c;
   if (!OSU)

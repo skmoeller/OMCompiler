@@ -29,7 +29,6 @@
  */
 
 /*
- * Author name [e-mail]
  * This file defines functions for the FMI used via the OpenModelica Simulation
  * Interface (OMSI). These functions are used for instantiation and initialization
  * of the FMU.
@@ -135,174 +134,174 @@ fmi2Component omsi_instantiate(fmi2String instanceName,
 
 fmi2Status omsi_enter_initialization_mode(fmi2Component c)
 {
-	osu_t* OSU = (osu_t *)c;
-	threadData_t *threadData = OSU->threadData;
-	double nextSampleEvent;
+    osu_t* OSU = (osu_t *)c;
+    threadData_t *threadData = OSU->threadData;
+    double nextSampleEvent;
 
-	threadData->currentErrorStage = ERROR_SIMULATION;
-	if (invalidState(OSU, "fmi2EnterInitializationMode", modelInstantiated, ~0))
-		return fmi2Error;
+    threadData->currentErrorStage = ERROR_SIMULATION;
+    if (invalidState(OSU, "fmi2EnterInitializationMode", modelInstantiated, ~0))
+        return fmi2Error;
 
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EnterInitializationMode...")
-	/* set zero-crossing tolerance */
-	setZCtol(OSU->tolerance);
+    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EnterInitializationMode...")
+    /* set zero-crossing tolerance */
+    setZCtol(OSU->tolerance);
 
-	//setStartValues(OSU);
-	copyStartValuestoInitValues(OSU->old_data);
+    //setStartValues(OSU);
+    copyStartValuestoInitValues(OSU->old_data);
 
-	/* try */
-	MMC_TRY_INTERNAL(simulationJumpBuffer)
+    /* try */
+    MMC_TRY_INTERNAL(simulationJumpBuffer)
 
-	if (initialization(OSU->old_data, OSU->threadData, "", "", 0.0)) {
-		OSU->state = modelError;
-		FILTERED_LOG(OSU, fmi2Error, LOG_FMI2_CALL, "fmi2EnterInitializationMode: failed")
-		return fmi2Error;
-		}
-	else
-	{
-		/*TODO: Simulation stop time is need to calculate in before hand all sample events
-				  We shouldn't generate them all in beforehand */
-		initSample(OSU->old_data, OSU->threadData, OSU->old_data->localData[0]->timeValue, 100 /*should be stopTime*/);
-		#if !defined(OMC_NDELAY_EXPRESSIONS) || OMC_NDELAY_EXPRESSIONS>0
-			initDelay(OSU->old_data, OSU->old_data->localData[0]->timeValue);
-		#endif
-		/* due to an event overwrite old values */
-		overwriteOldSimulationData(OSU->old_data);
+    if (initialization(OSU->old_data, OSU->threadData, "", "", 0.0)) {
+        OSU->state = modelError;
+        FILTERED_LOG(OSU, fmi2Error, LOG_FMI2_CALL, "fmi2EnterInitializationMode: failed")
+        return fmi2Error;
+        }
+    else
+    {
+        /*TODO: Simulation stop time is need to calculate in before hand all sample events
+                  We shouldn't generate them all in beforehand */
+        initSample(OSU->old_data, OSU->threadData, OSU->old_data->localData[0]->timeValue, 100 /*should be stopTime*/);
+        #if !defined(OMC_NDELAY_EXPRESSIONS) || OMC_NDELAY_EXPRESSIONS>0
+            initDelay(OSU->old_data, OSU->old_data->localData[0]->timeValue);
+        #endif
+        /* due to an event overwrite old values */
+        overwriteOldSimulationData(OSU->old_data);
 
-		OSU->eventInfo.terminateSimulation = fmi2False;
-		OSU->eventInfo.valuesOfContinuousStatesChanged = fmi2True;
+        OSU->eventInfo.terminateSimulation = fmi2False;
+        OSU->eventInfo.valuesOfContinuousStatesChanged = fmi2True;
 
-		/* Get next event time (sample calls)*/
-		nextSampleEvent = 0;
-		nextSampleEvent = getNextSampleTimeFMU(OSU->old_data);
-		if (nextSampleEvent == -1) {
-			OSU->eventInfo.nextEventTimeDefined = fmi2False;
-		} else {
-			OSU->eventInfo.nextEventTimeDefined = fmi2True;
-			OSU->eventInfo.nextEventTime = nextSampleEvent;
-			fmi2EventUpdate(OSU, &(OSU->eventInfo));
-		}
-		OSU->state = modelInitializationMode;
-		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EnterInitializationMode: succeed")
-		return fmi2OK;
-	}
+        /* Get next event time (sample calls)*/
+        nextSampleEvent = 0;
+        nextSampleEvent = getNextSampleTimeFMU(OSU->old_data);
+        if (nextSampleEvent == -1) {
+            OSU->eventInfo.nextEventTimeDefined = fmi2False;
+        } else {
+            OSU->eventInfo.nextEventTimeDefined = fmi2True;
+            OSU->eventInfo.nextEventTime = nextSampleEvent;
+            fmi2EventUpdate(OSU, &(OSU->eventInfo));
+        }
+        OSU->state = modelInitializationMode;
+        FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EnterInitializationMode: succeed")
+        return fmi2OK;
+    }
 
-	/* catch */
-	MMC_CATCH_INTERNAL(simulationJumpBuffer)
+    /* catch */
+    MMC_CATCH_INTERNAL(simulationJumpBuffer)
 
-	FILTERED_LOG(OSU, fmi2Error, LOG_FMI2_CALL, "fmi2EnterInitializationMode: terminated by an assertion.")
-	return fmi2Error;
+    FILTERED_LOG(OSU, fmi2Error, LOG_FMI2_CALL, "fmi2EnterInitializationMode: terminated by an assertion.")
+    return fmi2Error;
 }
 
 
 fmi2Status omsi_exit_initialization_mode(fmi2Component c)
 {
-	osu_t* OSU = (osu_t *)c;
-	if (invalidState(OSU, "fmi2ExitInitializationMode", modelInitializationMode, ~0))
-		return fmi2Error;
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2ExitInitializationMode...")
+    osu_t* OSU = (osu_t *)c;
+    if (invalidState(OSU, "fmi2ExitInitializationMode", modelInitializationMode, ~0))
+        return fmi2Error;
+    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2ExitInitializationMode...")
 
-	OSU->state = modelEventMode;
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2ExitInitializationMode: succeed")
-		return fmi2OK;
+    OSU->state = modelEventMode;
+    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2ExitInitializationMode: succeed")
+        return fmi2OK;
 }
 
 
 fmi2Status omsi_setup_experiment(fmi2Component c, fmi2Boolean toleranceDefined, fmi2Real tolerance, fmi2Real startTime, fmi2Boolean stopTimeDefined, fmi2Real stopTime)
 {
-	osu_t* OSU = (osu_t *)c;
+    osu_t* OSU = (osu_t *)c;
 
-	if (invalidState(OSU, "fmi2SetupExperiment", modelInstantiated, ~0))
-		return fmi2Error;
+    if (invalidState(OSU, "fmi2SetupExperiment", modelInstantiated, ~0))
+        return fmi2Error;
 
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetupExperiment: toleranceDefined=%d tolerance=%g startTime=%g stopTimeDefined=%d stopTime=%g", toleranceDefined, tolerance,
-	  startTime, stopTimeDefined, stopTime)
+    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetupExperiment: toleranceDefined=%d tolerance=%g startTime=%g stopTimeDefined=%d stopTime=%g", toleranceDefined, tolerance,
+      startTime, stopTimeDefined, stopTime)
 
-	OSU->toleranceDefined = toleranceDefined;
-	OSU->tolerance = tolerance;
-	OSU->startTime = startTime;
-	OSU->stopTimeDefined = stopTimeDefined;
-	OSU->stopTime = stopTime;
-	return fmi2OK;
+    OSU->toleranceDefined = toleranceDefined;
+    OSU->tolerance = tolerance;
+    OSU->startTime = startTime;
+    OSU->stopTimeDefined = stopTimeDefined;
+    OSU->stopTime = stopTime;
+    return fmi2OK;
 }
 
 
 void omsi_free_instance(fmi2Component c)
 {
-	osu_t* OSU = (osu_t *)c;
-	int meStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError;
-	int csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError;
+    osu_t* OSU = (osu_t *)c;
+    int meStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError;
+    int csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError;
 
-	if (invalidState(OSU, "fmi2FreeInstance", meStates, csStates))
-	return;
+    if (invalidState(OSU, "fmi2FreeInstance", meStates, csStates))
+    return;
 
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2FreeInstance")
+    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2FreeInstance")
 
-	/* free simuation data */
-	OSU->fmiCallbackFunctions->freeMemory(OSU->old_data->modelData);
-	OSU->fmiCallbackFunctions->freeMemory(OSU->old_data->simulationInfo);
+    /* free simuation data */
+    OSU->fmiCallbackFunctions->freeMemory(OSU->old_data->modelData);
+    OSU->fmiCallbackFunctions->freeMemory(OSU->old_data->simulationInfo);
 
-	/* free fmuData */
-	OSU->fmiCallbackFunctions->freeMemory(OSU->threadData);
-	OSU->fmiCallbackFunctions->freeMemory(OSU->old_data);
-	/* free instanceName & GUID */
-	if (OSU->instanceName) OSU->fmiCallbackFunctions->freeMemory((void*)OSU->instanceName);
-	if (OSU->GUID) OSU->fmiCallbackFunctions->freeMemory((void*)OSU->GUID);
-	/* free comp */
-	OSU->fmiCallbackFunctions->freeMemory(OSU);
+    /* free fmuData */
+    OSU->fmiCallbackFunctions->freeMemory(OSU->threadData);
+    OSU->fmiCallbackFunctions->freeMemory(OSU->old_data);
+    /* free instanceName & GUID */
+    if (OSU->instanceName) OSU->fmiCallbackFunctions->freeMemory((void*)OSU->instanceName);
+    if (OSU->GUID) OSU->fmiCallbackFunctions->freeMemory((void*)OSU->GUID);
+    /* free comp */
+    OSU->fmiCallbackFunctions->freeMemory(OSU);
 }
 
 
 fmi2Status omsi_reset(fmi2Component c)
 {
-	osu_t* OSU = (osu_t *)c;
-	if (invalidState(OSU, "fmi2Reset", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
-		return fmi2Error;
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2Reset")
+    osu_t* OSU = (osu_t *)c;
+    if (invalidState(OSU, "fmi2Reset", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
+        return fmi2Error;
+    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2Reset")
 
-	if (OSU->state & modelTerminated) {
-	  /* initialize modelData */
-	  omsic_model_setup_data(OSU);
-		initializeDataStruc(OSU->old_data, OSU->threadData);
-	}
-	/* reset the values to start */
-	//setDefaultStartValues(OSU);
-	setAllVarsToStart(OSU->old_data);
-	setAllParamsToStart(OSU->old_data);
+    if (OSU->state & modelTerminated) {
+      /* initialize modelData */
+      omsic_model_setup_data(OSU);
+        initializeDataStruc(OSU->old_data, OSU->threadData);
+    }
+    /* reset the values to start */
+    //setDefaultStartValues(OSU);
+    setAllVarsToStart(OSU->old_data);
+    setAllParamsToStart(OSU->old_data);
 
-	OSU->state = modelInstantiated;
-	return fmi2OK;
+    OSU->state = modelInstantiated;
+    return fmi2OK;
 }
 
 
 fmi2Status omsi_terminate(fmi2Component c)
 {
-	osu_t* OSU = (osu_t *)c;
-	if (invalidState(OSU, "fmi2Terminate", modelEventMode|modelContinuousTimeMode, ~0))
-		return fmi2Error;
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2Terminate")
+    osu_t* OSU = (osu_t *)c;
+    if (invalidState(OSU, "fmi2Terminate", modelEventMode|modelContinuousTimeMode, ~0))
+        return fmi2Error;
+    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2Terminate")
 
-	/* call external objects destructors */
-	OSU->osu_functions->callExternalObjectDestructors(OSU->old_data, OSU->threadData);
-	#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
-	/* free nonlinear system data */
-	freeNonlinearSystems(OSU->old_data, OSU->threadData);
-	#endif
-	#if !defined(OMC_NUM_MIXED_SYSTEMS) || OMC_NUM_MIXED_SYSTEMS>0
-	/* free mixed system data */
-	freeMixedSystems(OSU->old_data, OSU->threadData);
-	#endif
-	#if !defined(OMC_NUM_LINEAR_SYSTEMS) || OMC_NUM_LINEAR_SYSTEMS>0
-	/* free linear system data */
-	freeLinearSystems(OSU->old_data, OSU->threadData);
-	#endif
-	#if !defined(OMC_NO_STATESELECTION)
-	/* free stateset data */
-	freeStateSetData(OSU->old_data);
-	#endif
-	/* free data struct */
-	deInitializeDataStruc(OSU->old_data);
+    /* call external objects destructors */
+    OSU->osu_functions->callExternalObjectDestructors(OSU->old_data, OSU->threadData);
+    #if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
+    /* free nonlinear system data */
+    freeNonlinearSystems(OSU->old_data, OSU->threadData);
+    #endif
+    #if !defined(OMC_NUM_MIXED_SYSTEMS) || OMC_NUM_MIXED_SYSTEMS>0
+    /* free mixed system data */
+    freeMixedSystems(OSU->old_data, OSU->threadData);
+    #endif
+    #if !defined(OMC_NUM_LINEAR_SYSTEMS) || OMC_NUM_LINEAR_SYSTEMS>0
+    /* free linear system data */
+    freeLinearSystems(OSU->old_data, OSU->threadData);
+    #endif
+    #if !defined(OMC_NO_STATESELECTION)
+    /* free stateset data */
+    freeStateSetData(OSU->old_data);
+    #endif
+    /* free data struct */
+    deInitializeDataStruc(OSU->old_data);
 
-	OSU->state = modelTerminated;
-	return fmi2OK;
+    OSU->state = modelTerminated;
+    return fmi2OK;
 }
