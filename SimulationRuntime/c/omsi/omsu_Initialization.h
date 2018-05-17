@@ -44,6 +44,7 @@ extern "C" {
 #include <stdlib.h>
 #include <stdarg.h>
 #include "omsu_utils.h"
+#include "omsu_me.h"
 #include "fmi2/fmi2Functions.h"
 
 /*! \fn omsi_me_instantiate
@@ -52,8 +53,7 @@ extern "C" {
  *
  *  \param [ref] [data]
  */
-fmi2Component omsi_me_instantiate(
-                               fmi2String    instanceName,
+fmi2Component omsi_instantiate(fmi2String    instanceName,
                                fmi2Type      fmuType,
                                fmi2String    fmuGUID,
                                fmi2String    fmuResourceLocation,

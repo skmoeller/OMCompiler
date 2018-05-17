@@ -36,19 +36,20 @@
 #ifndef OMSU_UTILS__H_
 #define OMSU_UTILS__H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include "omsu_common.h"
-//#include "fmi2/fmi2Functions.h"
-#include "../simulation/solver/initialization/initialization.h"
+#include "fmi2/fmi2Functions.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //used for filtered_log
-#define LOG_EVENTS                      0
+//#define LOG_EVENTS                      0     //ToDo: is already defined. use enum in future
 #define LOG_SINGULARLINEARSYSTEMS       1
 #define LOG_NONLINEARSYSTEMS            2
 #define LOG_DYNAMICSTATESELECTION       3

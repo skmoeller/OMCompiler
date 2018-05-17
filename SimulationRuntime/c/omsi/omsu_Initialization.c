@@ -106,7 +106,8 @@ fmi2Component omsi_instantiate(fmi2String instanceName,
   /* create init.xml filename  */
   char* initFilename = (fmi2String)functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(char));
   sprintf(initFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
-  read_input_xml(OSU->old_data->modelData, OSU->old_data->simulationInfo, initFilename);
+  //read_input_xml(OSU->old_data->modelData, OSU->old_data->simulationInfo, initFilename);
+  read_input_xml(OSU->old_data->modelData, OSU->old_data->simulationInfo);
 
   OSU->GUID = fmuGUID;
   if (strcmp(fmuGUID, OSU->old_data->modelData->modelGUID) != 0) {

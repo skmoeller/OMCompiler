@@ -35,12 +35,11 @@
 #ifndef OMSU_COMMON_H
 #define OMSU_COMMON_H
 
+#include "fmi2/osi_fmi2_wrapper.h"
 #include "fmi2/fmi2Functions.h"
 #include "../../OMSI/include/omsi.h"
 
 //C Simulation kernel includes
-#include "../simulation_data.h"
-#include "../simulation/solver/stateset.h"
 #include "../simulation_data.h"
 #include "../simulation/solver/stateset.h"
 #include "../simulation/solver/model_help.h"
@@ -54,6 +53,7 @@
 #include "../simulation/solver/mixedSystem.h"
 #endif
 #include "../simulation/solver/delay.h"
+#include "../simulation/solver/initialization/initialization.h"
 #include "../simulation/simulation_info_json.h"
 #include "../simulation/simulation_input_xml.h"
 

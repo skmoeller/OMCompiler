@@ -85,7 +85,8 @@ fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo)
       if((i == 0) || (OSU->old_data->simulationInfo->nextSampleTimes[i] < OSU->old_data->simulationInfo->nextSampleEvent))
         OSU->old_data->simulationInfo->nextSampleEvent = OSU->old_data->simulationInfo->nextSampleTimes[i];
 
-    if(OSU->old_data->callback->checkForDiscreteChanges(OSU->old_data, OSU->threadData) || OSU->old_data->simulationInfo->needToIterate || checkRelations(OSU->old_data) || eventInfo->valuesOfContinuousStatesChanged)
+    //if(OSU->old_data->callback->checkForDiscreteChanges(OSU->old_data, OSU->threadData) || OSU->old_data->simulationInfo->needToIterate || checkRelations(OSU->old_data) || eventInfo->valuesOfContinuousStatesChanged)
+    if(OSU->osu_functions->checkForDiscreteChanges(OSU->old_data, OSU->threadData) || OSU->old_data->simulationInfo->needToIterate || checkRelations(OSU->old_data) || eventInfo->valuesOfContinuousStatesChanged)
     {
       FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EventUpdate: Need to iterate(discrete changes)!")
       eventInfo->newDiscreteStatesNeeded  = fmi2True;
