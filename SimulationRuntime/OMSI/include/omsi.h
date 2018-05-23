@@ -52,7 +52,7 @@ typedef struct {
 	double stop_time;
 	double step_size;
 	unsigned int num_outputs;
-	double tollerance;
+	double tolerance;
 	const char * solver_name;
 } omsi_experiment_t;
 
@@ -192,22 +192,22 @@ typedef struct _sim_data_t{
  *
  */
 typedef struct {
-	unsigned int n_states;
-	unsigned int n_derivatives;
-	unsigned int n_real_vars;
-	unsigned int n_int_vars;
-	unsigned int n_bool_vars;
-	unsigned int n_string_vars;
-	unsigned int n_real_parameters;
-	unsigned int n_int_parameters;
-	unsigned int n_bool_parameters;
-	//number of zero crossings
-	unsigned int n_zerocrossings;
-	model_variable_info_t* model_vars_info_t;
-	equation_info_t*  equation_info_t;
+    char*                   modelGUID;
+	unsigned int            n_states;
+	unsigned int            n_derivatives;
+	unsigned int            n_real_vars;
+	unsigned int            n_int_vars;
+	unsigned int            n_bool_vars;
+	unsigned int            n_string_vars;
+	unsigned int            n_real_parameters;
+	unsigned int            n_int_parameters;
+	unsigned int            n_bool_parameters;
+	unsigned int            n_zerocrossings;        //number of zero crossings
+	model_variable_info_t*  model_vars_info_t;
+	equation_info_t*        equation_info_t;
 
 	omsi_algebraic_system_t* algebraic_system_t;
-	unsigned int n_algebraic_system;
+	unsigned int            n_algebraic_system;
 } model_data_t;
 
 /**

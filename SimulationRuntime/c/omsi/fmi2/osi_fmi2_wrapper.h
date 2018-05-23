@@ -40,6 +40,7 @@
 #include "../omsu_common.h"
 #include "../omsu_utils.h"
 #include "../omsu_Initialization.h"
+
 //FMI2 interface
 #include "fmi2Functions.h"
 #include "fmi2FunctionTypes.h"
@@ -48,6 +49,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* forward struct */
 
 /* Function prototypes */
 FMI2_Export const char* fmi2GetTypesPlatform();

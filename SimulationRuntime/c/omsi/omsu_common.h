@@ -65,8 +65,7 @@
 extern "C" {
 #endif
 
-typedef struct {
-
+typedef struct omsi_functions_t{
   /* Function for calling external object deconstructors */
   void (*callExternalObjectDestructors)(DATA *_data, threadData_t*);
 
@@ -257,48 +256,50 @@ typedef enum {
   modelError              = 1<<6  // ME and CS
 } ModelState;
 
-typedef struct {
-  // open modelica simulation interface data
-    omsi_t                        osu_data;
-
-    omsi_functions_t*       osu_functions;
+typedef struct osu_t {
+    // open modelica simulation interface data
+    omsi_t *                osu_data;       // ToDo: is now pointer, change every call / usage
+    omsi_functions_t *      osu_functions;
 
     // temporary data for current implementation
-    DATA* old_data;
-    threadData_t *threadData;
+    DATA*                   old_data;
+    threadData_t *          threadData;
 
-    int _need_update;
-    int _has_jacobian;
-    ModelState state;
-    fmi2Boolean logCategories[NUMBER_OF_CATEGORIES];
-    fmi2Boolean loggingOn;
-    fmi2String GUID;
-    fmi2String instanceName;
-    fmi2EventInfo eventInfo;
-    fmi2Boolean toleranceDefined;
-    fmi2Real tolerance;
-    fmi2Real startTime;
-    fmi2Boolean stopTimeDefined;
-    fmi2Real stopTime;
-    fmi2Type type;
-    fmi2ValueReference* vrStates;
-    fmi2ValueReference* vrStatesDerivatives;
+    int                     _need_update;
+    int                     _has_jacobian;
+    ModelState              state;
+    fmi2Boolean             logCategories[NUMBER_OF_CATEGORIES];
+    fmi2Boolean             loggingOn;
+    fmi2String              GUID;
+    fmi2String              instanceName;
+    fmi2EventInfo           eventInfo;
+//    fmi2Boolean             toleranceDefined;   // ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info
+//    fmi2Real                tolerance;
+//    fmi2Real                startTime;
+//    fmi2Boolean             stopTimeDefined;
+//    fmi2Real                stopTime;
+    fmi2Type                type;
+    fmi2ValueReference*     vrStates;
+    fmi2ValueReference*     vrStatesDerivatives;
 
-    fmi2CallbackFunctions* fmiCallbackFunctions;
+    fmi2CallbackFunctions*  fmiCallbackFunctions;
 } osu_t;
 
-/* Extern functions */
+/* extern functions */
 extern void omsic_model_setup_data(osu_t* OSU);
-extern fmi2Real getReal(osu_t* OSU, const fmi2ValueReference vr);
-extern fmi2Status setReal(osu_t* OSU, const fmi2ValueReference vr, const fmi2Real value);
-extern fmi2Integer getInteger(osu_t* OSU, const fmi2ValueReference vr);
-extern fmi2Status setInteger(osu_t* OSU, const fmi2ValueReference vr, const fmi2Integer value);
-extern fmi2Boolean getBoolean(osu_t* OSU, const fmi2ValueReference vr);
-extern fmi2Status setBoolean(osu_t* OSU, const fmi2ValueReference vr, const fmi2Boolean value);
-extern fmi2String getString(osu_t* OSU, const fmi2ValueReference vr);
-extern fmi2Status setString(osu_t* OSU, const fmi2ValueReference vr, fmi2String value);
 extern fmi2Status setExternalFunction(osu_t* OSU, const fmi2ValueReference vr, const void* value);
+extern void mmc_catch_dummy_fn(void);
 
+
+/* function prototypes */
+fmi2Real getReal(osu_t* OSU, const fmi2ValueReference vr);
+fmi2Status setReal(osu_t* OSU, const fmi2ValueReference vr, const fmi2Real value);
+fmi2Integer getInteger(osu_t* OSU, const fmi2ValueReference vr);
+fmi2Status setInteger(osu_t* OSU, const fmi2ValueReference vr, const fmi2Integer value);
+fmi2Boolean getBoolean(osu_t* OSU, const fmi2ValueReference vr);
+fmi2Status setBoolean(osu_t* OSU, const fmi2ValueReference vr, const fmi2Boolean value);
+fmi2String getString(osu_t* OSU, const fmi2ValueReference vr);
+fmi2Status setString(osu_t* OSU, const fmi2ValueReference vr, fmi2String value);
 
 #ifdef __cplusplus
 extern } /* end of extern "C" */

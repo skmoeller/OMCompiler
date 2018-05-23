@@ -47,6 +47,8 @@
 extern "C" {
 #endif
 
+typedef struct osu_t osu_t;
+
 //getter and setter functions for the omsu struct
 
 /*! \fn omsi_get_boolean

@@ -46,9 +46,10 @@ fmi2Status omsi_get_boolean(fmi2Component c, const fmi2ValueReference vr[], size
 	if (nvr > 0 && nullPointer(OSU, "fmi2GetBoolean", "value[]", value))
 		return fmi2Error;
 	for (i = 0; i < nvr; i++){
-		if (vrOutOfRange(OSU, "fmi2GetBoolean", vr[i], OSU->osu_data.model_data.n_bool_vars))
-			return fmi2Error;
-		value[i] = getBoolean(OSU, vr[i]); // to be implemented by the includer of this file
+		if (vrOutOfRange(OSU, "fmi2GetBoolean", vr[i], OSU->osu_data.model_data.n_bool_vars)) {
+		    return fmi2Error;
+		}
+		value[i] = getBoolean(OSU, vr[i]);
 		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetBoolean: #b%u# = %s", vr[i], value[i]? "true" : "false")
 	}
 	return fmi2OK;
@@ -64,10 +65,10 @@ fmi2Status omsi_get_integer(fmi2Component c, const fmi2ValueReference vr[], size
     if (nvr > 0 && nullPointer(OSU, "fmi2GetInteger", "value[]", value))
       return fmi2Error;
     for (i = 0; i < nvr; i++) {
-      if (vrOutOfRange(OSU, "fmi2GetInteger", vr[i], OSU->osu_data.model_data.n_int_vars))
-    	printf("vr out of range");
+      if (vrOutOfRange(OSU, "fmi2GetInteger", vr[i], OSU->osu_data.model_data.n_int_vars)) {
         return fmi2Error;
-      value[i] = getInteger(OSU, vr[i]); // to be implemented by the includer of this file
+      }
+      value[i] = getInteger(OSU, vr[i]);
       FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetInteger: #i%u# = %d", vr[i], value[i])
     }
     return fmi2OK;
@@ -75,8 +76,7 @@ fmi2Status omsi_get_integer(fmi2Component c, const fmi2ValueReference vr[], size
 
 fmi2Status omsi_get_real(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Real value[]){
     int i;
-    osu_t* OSU = (osu_t *)c;
-
+    osu_t *OSU = (osu_t *)c;
     if (invalidState(OSU, "fmi2GetReal", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
       return fmi2Error;
     if (nvr > 0 && nullPointer(OSU, "fmi2GetReal", "vr[]", vr))
@@ -84,12 +84,13 @@ fmi2Status omsi_get_real(fmi2Component c, const fmi2ValueReference vr[], size_t 
     if (nvr > 0 && nullPointer(OSU, "fmi2GetReal", "value[]", value))
       return fmi2Error;
 
-    if (OSU->old_data->modelData->nVariablesReal>0){
+    if (OSU->osu_data.model_data.n_real_vars > 0) {
 		for (i = 0; i < nvr; i++) {
-		  if (vrOutOfRange(OSU, "fmi2GetReal", vr[i], OSU->old_data->modelData->nVariablesReal+OSU->old_data->modelData->nParametersReal))
-			return fmi2Error;
-		  value[i] = getReal(OSU, vr[i]); // TODO: to be implemented by the includer of this file
-		  FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetReal: vr=%i, value = %f", vr[i], value[i])
+		  if (vrOutOfRange(OSU, "fmi2GetReal", vr[i], OSU->osu_data.model_data.n_real_vars)) {
+		    return fmi2Error;
+		  }
+		  value[i] = getReal(OSU, vr[i]);
+		  FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetReal: vr = %i, value = %f", vr[i], value[i])
 		}
     }
     return fmi2OK;

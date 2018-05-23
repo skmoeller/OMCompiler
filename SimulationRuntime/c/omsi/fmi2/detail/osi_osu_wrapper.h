@@ -32,9 +32,9 @@
 #define OIS_FMI2_OSI_callbacks_H
 
 
-#include <iostream>
-#include <string>
-#include <vector>
+#include <stdio.h>
+#include <string.h>
+//#include <vector>
 #include <assert.h>
 
 //Cpp Simulation kernel includes

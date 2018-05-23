@@ -35,10 +35,9 @@ INCS=-I$(SOLVER_INC_DIRS) -I$(OMSI_MATH_DIR) -I$(OMSI_HEADERS_DIR) -I$(OMC_HEADE
 OBJS=$(SRCS:%.c=%.o)
 
 # varibales for OMSU library creation
-OMSU_SRCS = omsu_ContinuousSimulation.c omsu_EventSimulation.c omsu_GettersAndSetters.c omsu_Initialization.c omsu_me.c omsu_utils.c omsu_common.c fmi2/osi_fmi2_wrapper.c
-OMSU_HDRS = omsu_ContinuousSimulation.h omsu_EventSimulation.h omsu_GettersAndSetters.h omsu_Initialization.h omsu_me.h omsu_utils.h omsu_common.h fmi2/osi_fmi2_wrapper.h
-#OMSU_INCS = -I./ -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/omsi/ -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/ -I/d/workspace/OpenModelica/OMCompiler/3rdParty/gc/include/ -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/OMSI/
-OMSU_INCS = -I/d/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/ -I/d/workspace/OpenModelica/OMCompiler/3rdParty/gc/include/
+OMSU_SRCS = omsu_ContinuousSimulation.c omsu_EventSimulation.c omsu_GettersAndSetters.c omsu_Initialization.c omsu_me.c omsu_utils.c omsu_common.c omsu_helper.c fmi2/osi_fmi2_wrapper.c
+OMSU_HDRS = omsu_ContinuousSimulation.h omsu_EventSimulation.h omsu_GettersAndSetters.h omsu_Initialization.h omsu_me.h omsu_utils.h omsu_common.h omsu_helper.h fmi2/osi_fmi2_wrapper.h
+OMSU_INCS = -I. -I../ -I../../ -I../../../3rdParty/gc/include -I./fmi2/detail -I./fmi2/ -I../meta
 OMSU_OBJS = $(OMSU_SRCS:%.c=%.o)
 
 .PHONY: all
@@ -55,8 +54,8 @@ $(SRCS): $(HDRS)
 test: ./Solver/testsuit/main.c $(SRCS) $(HDRS)
 	$(CC) $(INCS) -Wl,-rpath=$(RUNTIMEPATH),libomsisolver.$(TARGET_LIB) $(LIB_DIR) $(LIBS) -o test ./Solver/testsuit/main.c
 
-libomsu: $(OMSU_OBJS)
-	$(CC) $(LDFLAGS) -o omsu.$(TARGET_LIB) $^
+libomsu: $(OMSU_OBJS) $(OMSU_HDRS)
+	$(CC) $(LDFLAGS) $(OMSU_INCS) -o omsu.$(TARGET_LIB) $^
 
 $(OMSU_OBJS): $(OMSU_SRCS)
 	$(CC) $(CFLAGS) $(OMSU_INCS) -c -o $@ $(@:%.o=%.c)

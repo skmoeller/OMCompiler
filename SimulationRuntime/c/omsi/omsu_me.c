@@ -65,7 +65,7 @@ fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo)
       if(OSU->old_data->simulationInfo->nextSampleTimes[i] <= OSU->old_data->localData[0]->timeValue)
       {
         OSU->old_data->simulationInfo->samples[i] = 1;
-        infoStreamPrint(LOG_EVENTS, 0, "[%ld] sample(%g, %g)", OSU->old_data->modelData->samplesInfo[i].index, OSU->old_data->modelData->samplesInfo[i].start, OSU->old_data->modelData->samplesInfo[i].interval);
+        //infoStreamPrint(LOG_EVENTS, 0, "[%ld] sample(%g, %g)", OSU->old_data->modelData->samplesInfo[i].index, OSU->old_data->modelData->samplesInfo[i].start, OSU->old_data->modelData->samplesInfo[i].interval);        //ToDO: implement
       }
     }
 

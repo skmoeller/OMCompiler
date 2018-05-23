@@ -28,4 +28,80 @@
  *
  */
 
+/*
+ * ToDo: Description
+ */
+
 #include "omsu_common.h"
+
+
+/*
+ * gets real number of struct OSU with value reference vr
+ */
+fmi2Real getReal (osu_t* OSU, const fmi2ValueReference vr) {
+    fmi2Real output = (fmi2Real) OSU->osu_data.sim_data.real_vars[vr];
+    return output;
+}
+
+/*
+ * sets real number of struct OSU for index reference vr with value
+ */
+fmi2Status setReal(osu_t* OSU, const fmi2ValueReference vr, const fmi2Real value) {
+    OSU->osu_data.sim_data.real_vars[vr] = (double) value;
+    return fmi2OK;
+}
+
+
+/*
+ * gets integer number of struct OSU with value reference vr
+ */
+fmi2Integer getInteger (osu_t* OSU, const fmi2ValueReference vr) {
+    fmi2Integer output = (fmi2Integer) OSU->osu_data.sim_data.int_vars[vr];
+    return output;
+}
+
+/*
+ * sets integer number of struct OSU for index reference vr with value
+ */
+fmi2Status setInteger(osu_t* OSU, const fmi2ValueReference vr, const fmi2Integer value) {
+    OSU->osu_data.sim_data.int_vars[vr] = (int) value;
+    return fmi2OK;
+}
+
+
+/*
+ * gets boolean variable of struct OSU with value reference vr
+ */
+fmi2Boolean getBoolean (osu_t* OSU, const fmi2ValueReference vr) {
+    fmi2Boolean output = (fmi2Boolean) OSU->osu_data.sim_data.bool_vars[vr];
+    return output;
+}
+
+/*
+ * sets boolean variable of struct OSU for index reference vr with value
+ */
+fmi2Status setBoolean(osu_t* OSU, const fmi2ValueReference vr, const fmi2Boolean value) {
+    OSU->osu_data.sim_data.bool_vars[vr] = (bool) value;
+    return fmi2OK;
+}
+
+
+/*
+ * gets stringe of struct OSU with value reference vr
+ * ToDO: implement string in sim_data_t
+ */
+fmi2String getString (osu_t* OSU, const fmi2ValueReference vr) {
+    return "ERROR";
+}
+
+/*
+ * sets string of struct OSU for index reference vr with value
+ *  * ToDO: implement string in sim_data_t
+ */
+fmi2Status setString(osu_t* OSU, const fmi2ValueReference vr, const fmi2String value) {
+    return fmi2Error;
+}
+
+
+
+

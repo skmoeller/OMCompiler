@@ -43,9 +43,17 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "omsu_helper.h"
 #include "omsu_utils.h"
 #include "omsu_me.h"
 #include "fmi2/fmi2Functions.h"
+
+/* forward struct */
+typedef struct osu_t _osu_t;
+
+/* extern functions */
+extern void omsic_model_setup_data(_osu_t* OSU);
+
 
 /*! \fn omsi_me_instantiate
  *
