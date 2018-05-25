@@ -193,16 +193,17 @@ typedef struct _sim_data_t{
  */
 typedef struct {
     char*                   modelGUID;
-	unsigned int            n_states;
+	unsigned int            n_states;				// number of continous states
 	unsigned int            n_derivatives;
-	unsigned int            n_real_vars;
-	unsigned int            n_int_vars;
-	unsigned int            n_bool_vars;
-	unsigned int            n_string_vars;
-	unsigned int            n_real_parameters;
-	unsigned int            n_int_parameters;
-	unsigned int            n_bool_parameters;
-	unsigned int            n_zerocrossings;        //number of zero crossings
+	unsigned int            n_real_vars;			// number of real algebraic variables
+	unsigned int            n_int_vars;				// number of integer algebraic variables
+	unsigned int            n_bool_vars;			// number of boolean algebraic variables
+	unsigned int            n_string_vars;			// number of string algebraic variables
+	unsigned int            n_real_parameters;		// number of real parameters
+	unsigned int            n_int_parameters;		// number of integer parameters
+	unsigned int            n_bool_parameters;		// number of boolean parameters
+	unsigned int			n_string_parameters;	// number of string parameters
+	unsigned int            n_zerocrossings;        // number of zero crossings
 	model_variable_info_t*  model_vars_info_t;
 	equation_info_t*        equation_info_t;
 

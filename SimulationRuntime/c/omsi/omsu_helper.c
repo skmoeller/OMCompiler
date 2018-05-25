@@ -44,6 +44,26 @@ void overwriteOldSimulationData(DATA *data) {
 
 
 /*
+ * Helper function for read_input_xml.
+ * Reads simulation variables from xml file.
+ */
+void read_variables_xml(void* out, omc_ModelInput in, var_type attributeKind, nVariables){
+	int i,j;
+
+	j = start;
+	for (i=0; i<nVariables; i++) {
+		VAR_INFO *info = &out[j].info;
+
+
+
+
+
+
+		j++;
+	}
+}
+
+/*
  * Reads input values from a xml file.
  */
 void read_input_xml(omsi_t* osu_data, char* filename) {
@@ -79,9 +99,24 @@ void read_input_xml(omsi_t* osu_data, char* filename) {
     read_value_real(findHashStringString(mi.de,"tolerance"), &(osu_data->experiment->tolerance), 1e-5);
     read_value_string(findHashStringString(mi.de,"solver"), &(osu_data->experiment->solver_name));
 
-    /* */
+    /* read all model values */
+    read_value_string(findHashStringStringNull(mi.md,"guid"), &(osu_data->model_data->modelGUID));
+    read_value_long(findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data->n_states), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data->n_derivatives), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfRealAlgebraicVariables"), &(osu_data->model_data->n_real_vars), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfIntegerAlgebraicVariables"), &(osu_data->model_data->n_int_vars), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfBooleanAlgebraicVariables"), &(osu_data->model_data->n_bool_vars), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfStringAlgebraicVariables"), &(osu_data->model_data->n_string_vars), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfRealParameters"), &(osu_data->model_data->n_real_parameters), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfIntegerParameters"), &(osu_data->model_data->n_int_parameters), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfBooleanParameters"), &(osu_data->model_data->n_bool_parameters), 0);
+    read_value_long(findHashStringString(mi.md,"numberOfStringParameters"), &(osu_data->model_data->n_string_parameters), 0);
+    // ToDo: read n_zerocrossings, model_vars_info_t, equation_info_t, algebraic_system_t, n_algebraic_system
+
+    /* read all simulation values */
 
 
+    XML_ParserFree(parser);
 }
 
 int initializeNonlinearSystems(DATA *data, threadData_t *threadData) {
