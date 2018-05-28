@@ -14,7 +14,7 @@ extern "C" {
 
 
 /* forward some types */
-typedef struct _sim_data_t sim_data_t;
+typedef struct sim_data_t sim_data_t;
 typedef struct _equation_info_t equation_info_t;
 typedef struct _omsi_linear_system_t omsi_linear_system_t;
 typedef struct omsi_sparsity_pattern omsi_sparsity_pattern;

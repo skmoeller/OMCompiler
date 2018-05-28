@@ -63,16 +63,28 @@ fmi2Component omsi_instantiate(fmi2String                   instanceName,
     functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Missing instance name.");
     return NULL;
   }
-
+  if (!fmuGUID || strlen(fmuGUID) == 0) {
+    functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Missing GUID.");
+    return NULL;
+  }
 
   /* allocate memory for Openmodelica Simulation Unit */
   OSU = functions->allocateMemory(1, sizeof(osu_t));
   if (!OSU) {
-    functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Not enough memory..");
+    functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Not enough memory.");
     return NULL;
   }
 
-  OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
+  /* read xml filename  */
+  char* initFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(char));
+  sprintf(initFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
+  read_input_xml(OSU->osu_data, initFilename, fmuGUID, instanceName, functions);
+
+  if (!omsu_allocate_osu_data(OSU->osu_data, functions, strlen(fmuGUID))) {     // ToDo: needs some information beforehand
+    functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Not enough memory.");
+    omsu_free_osu_data(OSU->osu_data, functions);
+    reutrn NULL;
+  }
   OSU->osu_functions = functions->allocateMemory(1, sizeof(omsi_functions_t));
   OSU->instanceName = functions->allocateMemory(1 + strlen(instanceName), sizeof(char));
   OSU->vrStates = functions->allocateMemory(1, sizeof(fmi2ValueReference));
@@ -80,8 +92,7 @@ fmi2Component omsi_instantiate(fmi2String                   instanceName,
   OSU->fmiCallbackFunctions = functions->allocateMemory(1, sizeof(fmi2CallbackFunctions));
 
   // ToDo: implement error case out of memory for OSU->...
-  // ToDo: initialize OSU->osu_functions first or use different function
-  OSU->osu_functions->omsi_instantiate(OSU->osu_data);      // ToDo: add instantiate for omsi_t* osu_data, maybe in omsi_functions_t
+
 
 
   /* initialize OSU */
@@ -92,19 +103,12 @@ fmi2Component omsi_instantiate(fmi2String                   instanceName,
   }
   OSU->loggingOn = loggingOn;
   OSU->GUID = fmuGUID;
-  strcpy((char*)OSU->instanceName, (const char*)instanceName);
+  strcpy((char*)OSU->instanceName, (const char*)instanceName);      // ToDo: Do we need to allocate memory for string?
   OSU->type = fmuType;
-  memcpy(OSU->fmiCallbackFunctions, functions, sizeof(fmi2CallbackFunctions));
+  OSU->fmiCallbackFunctions = functions;
 
-  /* create init.xml filename  */
-  char* initFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(char));
-  sprintf(initFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
-  read_input_xml(OSU->osu_data, initFilename);        // ToDo: implement for new data struct. Is it even needed?
-
-  if (strcmp(fmuGUID, OSU->osu_data->model_data->modelGUID) != 0) {
-    OSU->fmiCallbackFunctions->logger(OSU->fmiCallbackFunctions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Wrong GUID %s. Expected %s.", fmuGUID, OSU->old_data->modelData->modelGUID);
-    return NULL;
-  }
+  /* setup simulation data with default start values */
+  OSU->osu_functions->setupStartValues(OSU->osu_data);       // ToDo: implement. Probably pointer to generated function to set up default start data
 
   OSU->state = modelInstantiated;
   FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2Instantiate: GUID=%s", fmuGUID)
@@ -246,8 +250,9 @@ void omsi_free_instance(fmi2Component c)
     FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2FreeInstance")
 
     /* free OSU data */
-    omsic_model_free_data(OSU);     // ToDo: implement, should free everything inside osu_data and osu_functions
+    omsu_free_osu_data(OSU->osu_data, functions);     // ToDo: implement, should free everything inside osu_data
     OSU->fmiCallbackFunctions->freeMemory(OSU->osu_data);
+    // ToDo: free everithing inside osu_functions
     OSU->fmiCallbackFunctions->freeMemory(OSU->osu_functions);
 
     /* free fmuData */

@@ -77,7 +77,7 @@ fmi2Status omsi_set_continuous_states(fmi2Component c, const fmi2Real x[], size_
 	if (invalidState(OSU, "fmi2SetContinuousStates", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode, ~0))
 	/*if (invalidState(OSU, "fmi2SetContinuousStates", modelContinuousTimeMode))*/
 		return fmi2Error;
-	if (invalidNumber(OSU, "fmi2SetContinuousStates", "nx", nx, OSU->osu_data.model_data.n_states))
+	if (invalidNumber(OSU, "fmi2SetContinuousStates", "nx", nx, OSU->osu_data->model_data.n_states))
 		return fmi2Error;
 	if (nullPointer(OSU, "fmi2SetContinuousStates", "x[]", x))
 		return fmi2Error;
@@ -100,7 +100,7 @@ fmi2Status omsi_get_continuous_states(fmi2Component c, fmi2Real x[], size_t nx) 
 	osu_t* OSU = (osu_t *)c;
 	if (invalidState(OSU, "fmi2GetContinuousStates", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
 		return fmi2Error;
-	if (invalidNumber(OSU, "fmi2GetContinuousStates", "nx", nx, OSU->osu_data.model_data.n_states))
+	if (invalidNumber(OSU, "fmi2GetContinuousStates", "nx", nx, OSU->osu_data->model_data.n_states))
 		return fmi2Error;
 	if (nullPointer(OSU, "fmi2GetContinuousStates", "states[]", x))
 		return fmi2Error;
@@ -120,7 +120,7 @@ fmi2Status omsi_get_nominals_of_continuous_states(fmi2Component c, fmi2Real x_no
 	osu_t* OSU = (osu_t *)c;
 	if (invalidState(OSU, "fmi2GetNominalsOfContinuousStates", modelInstantiated|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
 		return fmi2Error;
-	if (invalidNumber(OSU, "fmi2GetNominalsOfContinuousStates", "nx", nx, OSU->osu_data.model_data.n_states))
+	if (invalidNumber(OSU, "fmi2GetNominalsOfContinuousStates", "nx", nx, OSU->osu_data->model_data.n_states))
 		return fmi2Error;
 	if (nullPointer(OSU, "fmi2GetNominalsOfContinuousStates", "x_nominal[]", x_nominal))
 		return fmi2Error;
@@ -182,7 +182,7 @@ fmi2Status omsi_get_derivatives(fmi2Component c, fmi2Real derivatives[], size_t 
 
   if (invalidState(OSU, "fmi2GetDerivatives", modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
     return fmi2Error;
-  if (invalidNumber(OSU, "fmi2GetDerivatives", "nx", nx, OSU->osu_data.model_data.n_states))
+  if (invalidNumber(OSU, "fmi2GetDerivatives", "nx", nx, OSU->osu_data->model_data.n_states))
     return fmi2Error;
   if (nullPointer(OSU, "fmi2GetDerivatives", "derivatives[]", derivatives))
     return fmi2Error;
@@ -230,13 +230,13 @@ fmi2Status omsi_get_directional_derivative(fmi2Component c,
   // This is true for the actual OMC FMUs.
   // Anyway we'll check that the references are in the valid range
   for (i = 0; i < nUnknown; i++) {
-    if (vUnknown_ref[i]>=OSU->osu_data.model_data.n_states)
+    if (vUnknown_ref[i]>=OSU->osu_data->model_data.n_states)
         // We are only computing the A part of the Jacobian for now
         // so unknowns can only be states
         return fmi2Error;
   }
   for (i = 0; i < nKnown; i++) {
-    if (vKnown_ref[i]>=2*OSU->osu_data.model_data.n_states) {
+    if (vKnown_ref[i]>=2*OSU->osu_data->model_data.n_states) {
         // We are only computing the A part of the Jacobian for now
         // so knowns can only be states derivatives
         return fmi2Error;

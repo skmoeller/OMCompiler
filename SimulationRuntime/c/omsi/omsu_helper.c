@@ -29,6 +29,10 @@
  */
 
 #include "omsu_helper.h"
+#include "../simulation/simulation_input_xml.c"     // ToDo: Change! Needing structs, but those are not in .h defined
+
+#define MAX_LENGTH_STRING 42      //ToDo: find matching Macro or set to something smarter
+
 
 void storePreValues (DATA *data) {
     //TODO: implement for new data structure
@@ -44,57 +48,217 @@ void overwriteOldSimulationData(DATA *data) {
 
 
 /*
- * Helper function for read_input_xml.
- * Reads simulation variables from xml file.
+ * Allocates memory for omsi_t struct and all its components.
+ * read_input_xml () must be called beforehand.
  */
-void read_variables_xml(void* out, omc_ModelInput in, var_type attributeKind, nVariables){
-	int i,j;
+int omsu_allocate_osu_data(omsi_t* omsi_data, const fmi2CallbackFunctions* functions, size_t lengthGUID) {
 
-	j = start;
-	for (i=0; i<nVariables; i++) {
-		VAR_INFO *info = &out[j].info;
+    int i,j;
+
+    /* allocate memory for model data */
+    omsi_data->model_data->model_vars_info_t = functions->allocateMemory(omsi_data->model_data->n_states, sizeof(model_variable_info_t));
+    if (!omsi_data->model_data || !omsi_data->model_data->modelGUID || !omsi_data->model_data->model_vars_info_t) {
+        return -1;
+    }   // ToDo: add error cases for allocateMemory after every call. Should also return some error
 
 
+    // allocate memory for model_variable_info_t
+    for (i=0; i<omsi_data->model_data->n_real_vars; i++) {
+        omsi_data->model_data->model_vars_info_t[i]->name = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));
+        omsi_data->model_data->model_vars_info_t[i]->comment = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));
 
+        // allocate memory for attribute
+        real_var_attribute_t* attribute = functions->allocateMemory(1, sizeof(real_var_attribute_t));
+        attribute->unit = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));
+        attribute->displayUnit = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));
+        omsi_data->model_data->model_vars_info_t[i]->attribute = attribute;
+    }
+    j = i;
+    for (i=j; i<omsi_data->model_data->n_int_vars+j; i++) {
+        omsi_data->model_data->model_vars_info_t[i]->name = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));      // ToDo: find matching Macro
+        omsi_data->model_data->model_vars_info_t[i]->comment = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));
+        omsi_data->model_data->model_vars_info_t[i]->attribute = (int_var_attribute_t) functions->allocateMemory(1, sizeof(int_var_attribute_t));
+    }
+    j = i;
+    for (i=j; i<omsi_data->model_data->n_bool_vars+j; i++) {
+        omsi_data->model_data->model_vars_info_t[i]->name = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));      // ToDo: find matching Macro
+        omsi_data->model_data->model_vars_info_t[i]->comment = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));
+        omsi_data->model_data->model_vars_info_t[i]->attribute = (bool_var_attribute_t) functions->allocateMemory(1, sizeof(bool_var_attribute_t));
+    }
+    j = i;
+    for (i=j; i<omsi_data->model_data->n_string_vars+j; i++) {
+        omsi_data->model_data->model_vars_info_t[i]->name = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));      // ToDo: find matching Macro
+        omsi_data->model_data->model_vars_info_t[i]->comment = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));
+        omsi_data->model_data->model_vars_info_t[i]->attribute = (string_var_attribute_t) functions->allocateMemory(1, sizeof(string_var_attribute_t));
+    }
 
+    // allocate memory for equation info
+    omsi_data->model_data->equation_info_t = functions->allocateMemory(omsi_data->model_data->n_equations, sizeof(equation_info_t));
+    for (i=0; i<omsi_data->model_data->n_equations; i++) {
+        omsi_data->model_data->equation_info_t[i]->variables = functions->allocateMemory(omsi_data->model_data->equation_info_t[i]->numVar, sizeof(int));
+    }
 
+    // allocate memory for algebraic systems
+    omsi_data->model_data->algebraic_system_t = functions->allocateMemory(omsi_data->model_data->n_algebraic_system, sizeof(omsi_algebraic_system_t));
+    // ToDo: for loop to allocate inner stuff of algebraic systems
 
-		j++;
-	}
+    /* allocate memory for simulation data */
+    omsi_data->sim_data = functions->allocateMemory(1, sizeof(sim_data_t));
+    omsi_data->sim_data->real_vars = functions->allocateMemory(omsi_data->model_data->n_real_vars + omsi_data->model_data->n_real_parameters, sizeof(real));
+    omsi_data->sim_data->int_vars = functions->allocateMemory(omsi_data->model_data->n_int_vars + omsi_data->model_data->n_int_parameters, sizeof(int));
+    omsi_data->sim_data->bool_vars = functions->allocateMemory(omsi_data->model_data->n_bool_vars + omsi_data->model_data->n_bool_parameters, sizeof(bool));
+
+    omsi_data->sim_data->pre_real_vars = functions->allocateMemory(omsi_data->model_data->n_real_vars + omsi_data->model_data->n_real_parameters, sizeof(real));
+    omsi_data->sim_data->pre_int_vars = functions->allocateMemory(omsi_data->model_data->n_int_vars + omsi_data->model_data->n_int_parameters, sizeof(int));
+    omsi_data->sim_data->pre_bool_vars = functions->allocateMemory(omsi_data->model_data->n_bool_vars + omsi_data->model_data->n_bool_parameters, sizeof(bool));
+
+    omsi_data->sim_data->zerocrossings_vars = functions->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(bool));
+    omsi_data->sim_data->pre_zerocrossings_vars = functions->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(bool));
+
+    /* allocate memory for experiment data */
+    // already allocated in read_input_xml
+
+    return 0;
 }
+
+
+/*
+ * frees memory for omsi_t struct and all its components
+ */
+void omsu_free_osu_data(omsi_t* omsi_data,const fmi2CallbackFunctions* functions) {
+
+    int i;
+
+    /* free memory for model data */
+    functions->freeMemory(omsi_data->model_data->modelGUID);
+
+    for (i=0; i<omsi_data->model_data->n_real_vars; i++) {
+        functions->freeMemory (omsi_data->model_data->model_vars_info_t[i]->name);
+        functions->freeMemory (omsi_data->model_data->model_vars_info_t[i]->comment);
+        real_var_attribute_t* attribute = omsi_data->model_data->model_vars_info_t[i]->attribute;
+        free (attribute->unit);
+        free (attribute->displayUnit);
+        free (attribute);
+        functions->freeMemory (omsi_data->model_data->model_vars_info_t[i]);    // ToDo: is this one really necessary? Or just  free(omsi_data->model_data->model_vars_info_t) at the end?
+    }
+    for (i=omsi_data->model_data->n_real_vars; i<omsi_data->model_data->n_states; i++) {
+        functions->freeMemory (omsi_data->model_data->model_vars_info_t[i]->name);
+        functions->freeMemory (omsi_data->model_data->model_vars_info_t[i]->comment);
+        functions->freeMemory (omsi_data->model_data->model_vars_info_t[i]->attribute);
+        functions->freeMemory (omsi_data->model_data->model_vars_info_t[i]);    // ToDo: is this one really necessary? Or just  free(omsi_data->model_data->model_vars_info_t) at the end?
+    }
+    functions->freeMemory (omsi_data->model_data->model_vars_info_t);
+
+    for (i=0; i<omsi_data->model_data->n_equations; i++) {
+        functions->freeMemory (omsi_data->model_data->equation_info_t[i]->variables);
+    }
+    functions->freeMemory (omsi_data->model_data->equation_info_t);
+
+    for (i=0; i<omsi_data->model_data->n_algebraic_system; i++) {
+        // functions->freeMemory (omsi_data->model_data->algebraic_system_t[i]->...);
+    }
+    functions->freeMemory (omsi_data->model_data->algebraic_system_t);
+
+    functions->freeMemory (omsi_data->model_data);
+
+    /* free memory for simulation data */
+    functions->freeMemory (omsi_data->sim_data->real_vars);
+    functions->freeMemory (omsi_data->sim_data->int_vars);
+    functions->freeMemory (omsi_data->sim_data->bool_vars);
+    functions->freeMemory (omsi_data->sim_data->pre_real_vars);
+    functions->freeMemory (omsi_data->sim_data->pre_int_vars);
+    functions->freeMemory (omsi_data->sim_data->pre_bool_vars);
+    functions->freeMemory (omsi_data->sim_data->zerocrossings_vars);
+    functions->freeMemory (omsi_data->sim_data->pre_zerocrossings_vars);
+    functions->freeMemory (omsi_data->sim_data);
+
+    /* free memory for experiment data */
+    functions->freeMemory (omsi_data->experiment->solver_name);
+    functions->freeMemory (omsi_data->experiment);
+
+    /* free memory for omsi data */
+    functions->freeMemory (omsi_data);
+
+    return;
+}
+
 
 /*
  * Reads input values from a xml file.
+ * Allocates some memory for osu_data. All other memory is allocated in function omsu_allocate_osu_data().
  */
-void read_input_xml(omsi_t* osu_data, char* filename) {
+void read_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID, fmi2String instanceName, const fmi2CallbackFunctions* functions) {
 
     /* Variables */
+    int i,j;
+    int done;
+    const char *guid;
+    char buf[BUFSIZ] = {0};
+
     omc_ModelInput mi = {0};
     FILE* file = NULL;
+    XML_Parser parser = NULL;
 
-    /* open the xml file */
+    /* open xml file */
     file = fopen(filename, "r");
     if(!file) {
-        throwStreamPrint(NULL, "In file omsu_helper.c in function read_input_xml: Error: can not read file %s as setup file to the generated simulation code.", filename);
+        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+                        "fmi2Instantiate: Can not read model description file %s.", filename);
     }
 
     /* create the XML parser */
     parser = XML_ParserCreate(NULL);
     if(!parser) {
         fclose(file);
-        throwStreamPrint(NULL, "In file omsu_helper.c in function read_input_xml: Error: couldn't allocate memory for the XML parser!");
+        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+                                "fmi2Instantiate: Out of memory.");
     }
     /* set our user data */
     XML_SetUserData(parser, &mi);
     /* set the handlers for start/end of element. */
     XML_SetElementHandler(parser, startElement, endElement);
 
-    // deal with override???
+    /* read XML */
+    do {
+        size_t len = fread(buf, 1, sizeof(buf), file);
+        done = len < sizeof(buf);
+        if(XML_STATUS_ERROR == XML_Parse(parser, buf, len, done)) {
+            fclose(file);
+            functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+                "fmi2Instantiate: failed to read the XML file %s: %s at line %lu.", filename,
+                XML_ErrorString(XML_GetErrorCode(parser)),
+                XML_GetCurrentLineNumber(parser));
+            XML_ParserFree(parser);
+        }
+    } while(!done);
+    fclose(file);
+
+    // check model GUID
+    guid = findHashStringStringNull(mi.md,"guid");
+    if (NULL==guid) {
+        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+                "fmi2Instantiate: Model GUID %s is not set in model description %s.",
+                fmuGUID, filename);
+    }
+    else if (strcmp(fmuGUID, guid)) {
+        XML_ParserFree(parser);
+        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+            "fmi2Instantiate: Wrong GUID %s in file %s. Expected %s.",
+            guid, filename, fmuGUID);
+    }
+
+    /* allocate necessary memory */
+    osu_data = functions->allocateMemory(1, sizeof(omsi_t));
+    osu_data->experiment = functions->allocateMemory(1, sizeof(omsi_experiment_t));
+    osu_data->experiment->solver_name = functions->allocateMemory(MAX_LENGTH_STRING, sizeof(char));
+    osu_data->model_data = functions->allocateMemory(1, sizeof(model_data_t));
+    osu_data->model_data->modelGUID = functions->allocateMemory(fmuGUID + 1, sizeof(char));
+    // ToDo: add error case
 
     /* read all experiment values */
     read_value_real(findHashStringString(mi.de,"startTime"), &(osu_data->experiment->start_time), 0);
     read_value_real(findHashStringString(mi.de,"stopTime"), &(osu_data->experiment->stop_time), osu_data->experiment->start_time+1);
-    read_value_real(findHashStringString(mi.de,"stepSize"), &(osu_data->experiment->step_size), (simulationInfo->stopTime - simulationInfo->startTime) / 500);
+    read_value_real(findHashStringString(mi.de,"stepSize"), &(osu_data->experiment->step_size), (osu_data->experiment->stop_time - osu_data->experiment->start_time) / 500);
     // ToDo: num_outputs missing in xml file?
     read_value_real(findHashStringString(mi.de,"tolerance"), &(osu_data->experiment->tolerance), 1e-5);
     read_value_string(findHashStringString(mi.de,"solver"), &(osu_data->experiment->solver_name));
@@ -113,8 +277,7 @@ void read_input_xml(omsi_t* osu_data, char* filename) {
     read_value_long(findHashStringString(mi.md,"numberOfStringParameters"), &(osu_data->model_data->n_string_parameters), 0);
     // ToDo: read n_zerocrossings, model_vars_info_t, equation_info_t, algebraic_system_t, n_algebraic_system
 
-    /* read all simulation values */
-
+    // ToDo: make stuff for alias variables, internal variables
 
     XML_ParserFree(parser);
 }

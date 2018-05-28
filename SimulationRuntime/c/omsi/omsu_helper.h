@@ -36,6 +36,8 @@
 /* forward struct */
 typedef struct osu_t osu_t;
 
+// ToDo: include all headers neccesary for XML parser, delete others
+
 //C Simulation kernel includes
 #include "../simulation_data.h"
 #include "../simulation/solver/stateset.h"

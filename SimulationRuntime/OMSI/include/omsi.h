@@ -152,7 +152,7 @@ typedef struct {
 /**
  *
  */
-typedef struct _sim_data_t{
+typedef struct sim_data_t{
 	double* real_vars;
 	int* int_vars;
 	bool* bool_vars;
@@ -205,10 +205,10 @@ typedef struct {
 	unsigned int			n_string_parameters;	// number of string parameters
 	unsigned int            n_zerocrossings;        // number of zero crossings
 	model_variable_info_t*  model_vars_info_t;
+	unsigned int            n_equations;            // ToDo: or is this information already somewhere else?
 	equation_info_t*        equation_info_t;
-
+	unsigned int            n_algebraic_system;     // number of algebraic systems
 	omsi_algebraic_system_t* algebraic_system_t;
-	unsigned int            n_algebraic_system;
 } model_data_t;
 
 /**

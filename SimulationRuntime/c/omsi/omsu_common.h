@@ -258,7 +258,7 @@ typedef enum {
 
 typedef struct osu_t {
     // open modelica simulation interface data
-    omsi_t *                osu_data;       // ToDo: is now pointer, change every call / usage
+    omsi_t                  osu_data;       // ToDo: is not pointer any more, change every call / usage again
     omsi_functions_t *      osu_functions;
 
     // temporary data for current implementation
@@ -273,11 +273,11 @@ typedef struct osu_t {
     fmi2String              GUID;
     fmi2String              instanceName;
     fmi2EventInfo           eventInfo;
-//    fmi2Boolean             toleranceDefined;   // ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info
-//    fmi2Real                tolerance;
-//    fmi2Real                startTime;
-//    fmi2Boolean             stopTimeDefined;
-//    fmi2Real                stopTime;
+    fmi2Boolean             toleranceDefined;   // ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info
+    fmi2Real                tolerance;
+    fmi2Real                startTime;
+    fmi2Boolean             stopTimeDefined;
+    fmi2Real                stopTime;
     fmi2Type                type;
     fmi2ValueReference*     vrStates;
     fmi2ValueReference*     vrStatesDerivatives;
