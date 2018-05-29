@@ -22,20 +22,6 @@ typedef struct omsi_sparsity_pattern omsi_sparsity_pattern;
 /* function prototypes for omsi_linear_system_t functions */
 typedef int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* vector);
 
-typedef enum {
-  OMSI_TYPE_UNKNOWN,
-  OMSI_TYPE_DOUBLE,
-  OMSI_TYPE_INTEGER,
-  OMSI_TYPE_BOOLEAN,
-  OMSI_TYPE_STRING
-}omsi_data_type;
-
-
-typedef struct {
-  omsi_data_type type;
-  int index;
-} omsi_index_type;
-
 
 /**
  *
@@ -47,6 +33,8 @@ typedef struct {
     double* seed_vars;
     double* result_vars;
 
+    equation_system_t* equations;
+    int (*directionalDerivative) (equation_system_t *real_vars, omsi_analytical_jacobian *jacobian);
     //sparsity_pattern_t* sparsity_pattern;
 }omsi_analytical_jacobian;
 
@@ -59,19 +47,13 @@ typedef struct {
     unsigned int n_input_vars;
     unsigned int n_inner_vars;
 
-    // pointer to sim_data_t->real_vars
-    omsi_index_type iteration_vars_indices;
-    omsi_index_type input_vars_indices;
-    omsi_index_type inner_vars_indices;
-
     unsigned int n_conditions;
     int *zerocrossing_indices;
 
     bool isLinear;      // linear system=true and non-linear system=false
-    void **loop;        // points on array of omsi_linear_loop or omsi_non-linear_loop
+    void *loop;        // points on array of omsi_linear_loop or omsi_non-linear_loop
 
-    int (*evaluateF) (double* real_vars, double *f);
-    int (*directionalDerivative) (double *real_vars, omsi_analytical_jacobian *jacobian);
+    equation_system_t* equations;
 
 }omsi_algebraic_system_t;
 
@@ -82,14 +64,12 @@ typedef struct {
 typedef struct {
     //model_variables_info_t *info;
     void *solverData;
-    double *real_vars;
-
     omsi_analytical_jacobian *jacobian;
+
 }omsi_linear_loop;
 
-
 /**
- * linear system
+ * non-linear system
  */
 typedef struct {
     // ToDo: complete

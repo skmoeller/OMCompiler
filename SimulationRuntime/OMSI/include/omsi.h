@@ -149,17 +149,60 @@ typedef struct {
 	file_info info;
 } model_variable_info_t;
 
+typedef enum {
+  OMSI_TYPE_UNKNOWN,
+  OMSI_TYPE_DOUBLE,
+  OMSI_TYPE_INTEGER,
+  OMSI_TYPE_BOOLEAN,
+  OMSI_TYPE_STRING
+}omsi_data_type;
+
+
+typedef struct {
+  omsi_data_type type;
+  int index;
+} omsi_index_type;
+
+typedef struct {
+  double* reals;
+  int* ints;
+  bool* bools;
+} omsi_values;
+
+
+
+typedef struct equation_system_t{
+
+    unsigned int n_output_vars;
+    unsigned int n_input_vars;
+    unsigned int n_inner_vars;
+
+    unsigned int            n_algebraic_system;     // number of algebraic systems
+    omsi_algebraic_system_t* algebraic_system_t;
+
+    omsi_values* equation_vars;
+
+    /* index to sim_data_t->[real|int|bool]_vars */
+    omsi_index_type* output_vars_indices;
+    omsi_index_type* input_vars_indices;
+    omsi_index_type* inner_vars_indices;
+
+    int (*evaluate) (equation_system_t* equation_system, omsi_values* model_vars_and_params);
+
+};
+
+
 /**
  *
  */
 typedef struct sim_data_t{
-	double* real_vars;
-	int* int_vars;
-	bool* bool_vars;
-	//start index of state variables in real vars array
-	unsigned int states_index;
-	//start index of derivative variables in real vars array
-	unsigned int der_states_index;
+
+	equation_system_t* initialization;
+
+	equation_system_t* simulation;
+
+	omsi_values* model_vars_and_params;
+
 	//start index of input real variables in real vars array
 	unsigned int inputs_real_index;
 	//start index of input integer variables in real vars array
@@ -185,7 +228,6 @@ typedef struct sim_data_t{
 	//pre conditions of zerocrossing functions
 	bool* pre_zerocrossings_vars;
 
-	int state;  // current state in fmi2 functions
 } sim_data_t;
 
 /**
@@ -204,11 +246,10 @@ typedef struct {
 	unsigned int            n_bool_parameters;		// number of boolean parameters
 	unsigned int			n_string_parameters;	// number of string parameters
 	unsigned int            n_zerocrossings;        // number of zero crossings
-	model_variable_info_t*  model_vars_info_t;
+
+	model_variable_info_t*  model_vars_info_t;		// N = n_$all_vars + n_$all_parameters  $all={real,int,bool}
 	unsigned int            n_equations;            // ToDo: or is this information already somewhere else?
 	equation_info_t*        equation_info_t;
-	unsigned int            n_algebraic_system;     // number of algebraic systems
-	omsi_algebraic_system_t* algebraic_system_t;
 } model_data_t;
 
 /**
