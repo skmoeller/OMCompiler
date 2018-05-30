@@ -1,10 +1,4 @@
-/**
- *  \file omsi.cpp
- *  \brief Brief
- */
 /*
- * Implement OSU.
- *
  * This file is part of OpenModelica.
  *
  * Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
@@ -34,17 +28,7 @@
  *
  */
 
-//Cpp Simulation kernel includes
-#include <Core/ModelicaDefine.h>
-#include <Core/Modelica.h>
-#include <Core/SimController/ISimController.h>
-#include <Core/System/FactoryExport.h>
-#include <Core/Utils/extension/logger.hpp>
-#include <omsi_global_settings.h>
-#include "omsi_fmi2_log.h"
-#include "omsi_fmi2_wrapper.h"
-#include <omsi_factory.h>
-
+#include "osi_osu_wrapper.h"
 
 static fmi2String const _LogCategoryFMUNames[] = {
   "logEvents",
@@ -216,11 +200,12 @@ fmi2Status setReal(const fmi2ValueReference vr[], size_t nvr,
 		else switch (*vr) {
 		  default:
 			throw std::invalid_argument("setReal with wrong value reference " + omcpp::to_string(*vr));
+			// TODO: insert return fmi2Error; in error cases
 		}
 	  }
 	}
   else
-	  throw std::invalid_argument("getReal with wrong real vars memory allocation");
+	  throw std::invalid_argument("setReal with wrong real vars memory allocation");
 
   _need_update = true;
   return fmi2OK;
@@ -397,7 +382,7 @@ fmi2Status getInteger(const fmi2ValueReference vr[], size_t nvr,
 	  }
   }
   else
-	  throw std::invalid_argument("getReal with wrong bool vars memory allocation");
+	  throw std::invalid_argument("getInteger with wrong vars memory allocation");
 
 
   return fmi2OK;

@@ -1,7 +1,38 @@
+/*
+ * This file is part of OpenModelica.
+ *
+ * Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
+ * c/o Linköpings universitet, Department of Computer and Information Science,
+ * SE-58183 Linköping, Sweden.
+ *
+ * All rights reserved.
+ *
+ * THIS PROGRAM IS PROVIDED UNDER THE TERMS OF THE BSD NEW LICENSE OR THE
+ * GPL VERSION 3 LICENSE OR THE OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
+ * ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+ * RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
+ * ACCORDING TO RECIPIENTS CHOICE.
+ *
+ * The OpenModelica software and the OSMC (Open Source Modelica Consortium)
+ * Public License (OSMC-PL) are obtained from OSMC, either from the above
+ * address, from the URLs: http://www.openmodelica.org or
+ * http://www.ida.liu.se/projects/OpenModelica, and in the OpenModelica
+ * distribution. GNU version 3 is obtained from:
+ * http://www.gnu.org/copyleft/gpl.html. The New BSD License is obtained from:
+ * http://www.opensource.org/licenses/BSD-3-Clause.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, EXCEPT AS
+ * EXPRESSLY SET FORTH IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE
+ * CONDITIONS OF OSMC-PL.
+ *
+ */
+
 #ifndef _OMSI_H
 #define _OMSI_H
 
 #include <stdbool.h>
+#include "omsi_eqns_system.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,7 +52,7 @@ typedef struct {
 	double stop_time;
 	double step_size;
 	unsigned int num_outputs;
-	double tollerance;
+	double tolerance;
 	const char * solver_name;
 } omsi_experiment_t;
 
@@ -40,7 +71,7 @@ typedef struct {
 /**
  *   additional equation information for debugging
  */
-typedef struct {
+typedef struct _equation_info_t{
   int id;
   int profileBlockIndex;
   int parent;
@@ -118,17 +149,60 @@ typedef struct {
 	file_info info;
 } model_variable_info_t;
 
+typedef enum {
+  OMSI_TYPE_UNKNOWN,
+  OMSI_TYPE_DOUBLE,
+  OMSI_TYPE_INTEGER,
+  OMSI_TYPE_BOOLEAN,
+  OMSI_TYPE_STRING
+}omsi_data_type;
+
+
+typedef struct {
+  omsi_data_type type;
+  int index;
+} omsi_index_type;
+
+typedef struct {
+  double* reals;
+  int* ints;
+  bool* bools;
+} omsi_values;
+
+
+
+typedef struct equation_system_t{
+
+    unsigned int n_output_vars;
+    unsigned int n_input_vars;
+    unsigned int n_inner_vars;
+
+    unsigned int            n_algebraic_system;     // number of algebraic systems
+    omsi_algebraic_system_t* algebraic_system_t;
+
+    omsi_values* equation_vars;
+
+    /* index to sim_data_t->[real|int|bool]_vars */
+    omsi_index_type* output_vars_indices;
+    omsi_index_type* input_vars_indices;
+    omsi_index_type* inner_vars_indices;
+
+    int (*evaluate) (equation_system_t* equation_system, omsi_values* model_vars_and_params);
+
+};
+
+
 /**
  *
  */
-typedef struct {
-	double* real_vars;
-	int* int_vars;
-	bool* bool_vars;
-	//start index of state variables in real vars array
-	unsigned int states_index;
-	//start index of derivative variables in real vars array
-	unsigned int der_states_index;
+typedef struct sim_data_t{
+
+	equation_system_t* initialization;
+
+	equation_system_t* simulation;
+
+	omsi_values* model_vars_and_params;
+
 	//start index of input real variables in real vars array
 	unsigned int inputs_real_index;
 	//start index of input integer variables in real vars array
@@ -153,25 +227,29 @@ typedef struct {
 	bool* zerocrossings_vars;
 	//pre conditions of zerocrossing functions
 	bool* pre_zerocrossings_vars;
+
 } sim_data_t;
 
 /**
  *
  */
 typedef struct {
-	unsigned int n_states;
-	unsigned int n_derivatives;
-	unsigned int n_real_vars;
-	unsigned int n_int_vars;
-	unsigned int n_bool_vars;
-	unsigned int n_string_vars;
-	unsigned int n_real_parameters;
-	unsigned int n_int_parameters;
-	unsigned int n_bool_parameters;
-	//number of zero crossings
-	unsigned int n_zerocrossings;
-	model_variable_info_t* model_vars_info_t;
-	equation_info_t*  equation_info_t;
+    char*                   modelGUID;
+	unsigned int            n_states;				// number of continous states
+	unsigned int            n_derivatives;
+	unsigned int            n_real_vars;			// number of real algebraic variables
+	unsigned int            n_int_vars;				// number of integer algebraic variables
+	unsigned int            n_bool_vars;			// number of boolean algebraic variables
+	unsigned int            n_string_vars;			// number of string algebraic variables
+	unsigned int            n_real_parameters;		// number of real parameters
+	unsigned int            n_int_parameters;		// number of integer parameters
+	unsigned int            n_bool_parameters;		// number of boolean parameters
+	unsigned int			n_string_parameters;	// number of string parameters
+	unsigned int            n_zerocrossings;        // number of zero crossings
+
+	model_variable_info_t*  model_vars_info_t;		// N = n_$all_vars + n_$all_parameters  $all={real,int,bool}
+	unsigned int            n_equations;            // ToDo: or is this information already somewhere else?
+	equation_info_t*        equation_info_t;
 } model_data_t;
 
 /**
