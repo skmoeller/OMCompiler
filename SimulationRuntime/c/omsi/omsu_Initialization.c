@@ -75,16 +75,19 @@ fmi2Component omsi_instantiate(fmi2String                   instanceName,
     return NULL;
   }
 
-  /* read xml filename  */
+  /* read xml file and allocate memory for osu_data  */
+  OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
   char* initFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(char));
   sprintf(initFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
-  read_input_xml(OSU->osu_data, initFilename, fmuGUID, instanceName, functions);
-
-  if (!omsu_allocate_osu_data(OSU->osu_data, functions, strlen(fmuGUID))) {     // ToDo: needs some information beforehand
-    functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Not enough memory.");
+  if (!omsu_process_input_xml(OSU->osu_data, initFilename, fmuGUID, instanceName, functions)) {     // ToDo: needs some information beforehand
+    functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Could not process %s.", initFilename);
     omsu_free_osu_data(OSU->osu_data, functions);
     reutrn NULL;
   }
+  /* read JSON file */
+  // ToDo: Do some crazy stuff
+
+
   OSU->osu_functions = functions->allocateMemory(1, sizeof(omsi_functions_t));
   OSU->instanceName = functions->allocateMemory(1 + strlen(instanceName), sizeof(char));
   OSU->vrStates = functions->allocateMemory(1, sizeof(fmi2ValueReference));

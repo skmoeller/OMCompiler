@@ -44,10 +44,11 @@ extern "C" {
   */
 struct RINGBUFFER;
 
+
 /**
  *  simulation parameter
  */
-typedef struct {
+typedef struct omsi_experiment_t {
 	double start_time;
 	double stop_time;
 	double step_size;
@@ -56,10 +57,11 @@ typedef struct {
 	const char * solver_name;
 } omsi_experiment_t;
 
+
 /**
  *   additional file information for debugging
  */
-typedef struct {
+typedef struct file_info {
 	const char* filename;
 	int lineStart;
 	int colStart;
@@ -68,16 +70,18 @@ typedef struct {
 	int readonly;
 } file_info;
 
+
 /**
  *   additional equation information for debugging
  */
-typedef struct _equation_info_t{
+typedef struct equation_info_t{
   int id;
   int profileBlockIndex;
   int parent;
   int numVar;      // number of unknown variables
   int* variables;  // unknown variables
 } equation_info_t;
+
 
 /**
  *   variable attributes
@@ -93,10 +97,11 @@ typedef enum {
   TYPE_MAX
 } var_type;
 
+
 /**
  * real variable attributes
  */
-typedef struct {
+typedef struct real_var_attribute_t {
 	const char * unit; /* = "" */
 	const char * displayUnit; /* = "" */
 	double min; /* = -Inf */
@@ -108,10 +113,11 @@ typedef struct {
 	double start; /* = 0.0 */
 } real_var_attribute_t;
 
+
 /**
  * integer variable attributes
  */
-typedef struct {
+typedef struct int_var_attribute_t {
 	int min; /* = -Inf */
 	int max; /* = +Inf */
 	bool fixed; /* depends on the type */
@@ -119,35 +125,38 @@ typedef struct {
 	int start; /* = 0 */
 } int_var_attribute_t;
 
+
 /**
  * boolean variable attributes
  */
-typedef struct {
+typedef struct bool_var_attribute_t {
 	bool fixed; /* depends on the type */
 	bool useStart; /* = false */
 	bool start; /* = false */
 } bool_var_attribute_t;
 
+
 /**
  * string variable attributes
  */
-typedef struct {
+typedef struct string_var_attribute_t {
 	bool useStart; /* = false */
 	bool start; /* = "" */
 } string_var_attribute_t;
 
+
 /**
  *
  */
-typedef struct {
+typedef struct model_variable_info_t {
 	int id;
 	const char *name;
 	const char *comment;
 	int var_type;
-	//pointer to variable attribute e.g real_var_attribute
-	void* attribute;
+	void* attribute;    //pointer to variable attribute  ( real_var_attribute | int_var_attribute | bool_var_attribute | string_var_attribute )
 	file_info info;
 } model_variable_info_t;
+
 
 typedef enum {
   OMSI_TYPE_UNKNOWN,
@@ -158,20 +167,20 @@ typedef enum {
 }omsi_data_type;
 
 
-typedef struct {
+typedef struct omsi_index_type {
   omsi_data_type type;
   int index;
 } omsi_index_type;
 
-typedef struct {
+
+typedef struct omsi_values {
   double* reals;
   int* ints;
   bool* bools;
 } omsi_values;
 
 
-
-typedef struct equation_system_t{
+typedef struct equation_system_t {
 
     unsigned int n_output_vars;
     unsigned int n_input_vars;
@@ -189,7 +198,7 @@ typedef struct equation_system_t{
 
     int (*evaluate) (equation_system_t* equation_system, omsi_values* model_vars_and_params);
 
-};
+} equation_system_t;
 
 
 /**
@@ -220,9 +229,9 @@ typedef struct sim_data_t{
 
 
 	double time_value; // current system time
-	double* pre_real_vars;
-	int* pre_int_vars;
-	bool* pre_bool_vars;
+//	double* pre_real_vars;
+//	int* pre_int_vars;
+//	bool* pre_bool_vars;
 	//conditions of zerocrossing functions
 	bool* zerocrossings_vars;
 	//pre conditions of zerocrossing functions
@@ -233,9 +242,9 @@ typedef struct sim_data_t{
 /**
  *
  */
-typedef struct {
+typedef struct model_data_t {
     char*                   modelGUID;
-	unsigned int            n_states;				// number of continous states
+	unsigned int            n_states;				// number of continuous states
 	unsigned int            n_derivatives;
 	unsigned int            n_real_vars;			// number of real algebraic variables
 	unsigned int            n_int_vars;				// number of integer algebraic variables
@@ -246,16 +255,16 @@ typedef struct {
 	unsigned int            n_bool_parameters;		// number of boolean parameters
 	unsigned int			n_string_parameters;	// number of string parameters
 	unsigned int            n_zerocrossings;        // number of zero crossings
+    unsigned int            n_equations;            // ToDo: or is this information already somewhere else?
 
 	model_variable_info_t*  model_vars_info_t;		// N = n_$all_vars + n_$all_parameters  $all={real,int,bool}
-	unsigned int            n_equations;            // ToDo: or is this information already somewhere else?
 	equation_info_t*        equation_info_t;
 } model_data_t;
 
 /**
  *
  */
-typedef struct {
+typedef struct omsi_t {
 	model_data_t model_data;
 	sim_data_t sim_data;
 	omsi_experiment_t* experiment;

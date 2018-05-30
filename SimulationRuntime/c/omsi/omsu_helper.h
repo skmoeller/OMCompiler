@@ -63,7 +63,7 @@ void storePreValues (DATA *data);
 int stateSelection(DATA *data, threadData_t *threadData, char reportError, int switchStates);
 void overwriteOldSimulationData(DATA *data);
 void initializeDataStruc(DATA *data, threadData_t *threadData);
-void read_input_xml(MODEL_DATA* modelData, SIMULATION_INFO* simulationInfo);
+void omsu_read_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID, fmi2String instanceName, const fmi2CallbackFunctions* functions) {
 int initializeNonlinearSystems(DATA *data, threadData_t *threadData);
 int initializeLinearSystems(DATA *data, threadData_t *threadData);
 int initializeMixedSystems(DATA *data, threadData_t *threadData);
