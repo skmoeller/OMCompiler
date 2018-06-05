@@ -54,7 +54,7 @@ FMI2_Export fmi2Status fmi2SetDebugLogging(fmi2Component c,fmi2Boolean loggingOn
   return omsi_set_debug_logging(c, loggingOn, nCategories, categories);
 }
 
-FMI2_Export fmi2Component fmi2Instantiate(fmi2String instanceName,fmi2Type   fmuType,fmi2String fmuGUID,fmi2String fmuResourceLocation,const fmi2CallbackFunctions* functions, fmi2Boolean visible,fmi2Boolean loggingOn)
+FMI2_Export fmi2Component fmi2Instantiate(fmi2String instanceName, fmi2Type fmuType, fmi2String fmuGUID, fmi2String fmuResourceLocation, const fmi2CallbackFunctions* functions, fmi2Boolean visible, fmi2Boolean loggingOn)
 {
   return omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, visible, loggingOn);
 }

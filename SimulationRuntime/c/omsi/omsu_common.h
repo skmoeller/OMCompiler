@@ -41,21 +41,21 @@
 
 //C Simulation kernel includes
 #include "../simulation_data.h"
-#include "../simulation/solver/stateset.h"
-#include "../simulation/solver/model_help.h"
-#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
-#include "../simulation/solver/nonlinearSystem.h"
-#endif
-#if !defined(OMC_NUM_LINEAR_SYSTEMS) || OMC_NUM_LINEAR_SYSTEMS>0
-#include "../simulation/solver/linearSystem.h"
-#endif
-#if !defined(OMC_NUM_MIXED_SYSTEMS) || OMC_NUM_MIXED_SYSTEMS>0
-#include "../simulation/solver/mixedSystem.h"
-#endif
-#include "../simulation/solver/delay.h"
-#include "../simulation/solver/initialization/initialization.h"
-#include "../simulation/simulation_info_json.h"
-#include "../simulation/simulation_input_xml.h"
+//#include "../simulation/solver/stateset.h"
+//#include "../simulation/solver/model_help.h"
+//#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
+//#include "../simulation/solver/nonlinearSystem.h"
+//#endif
+//#if !defined(OMC_NUM_LINEAR_SYSTEMS) || OMC_NUM_LINEAR_SYSTEMS>0
+//#include "../simulation/solver/linearSystem.h"
+//#endif
+//#if !defined(OMC_NUM_MIXED_SYSTEMS) || OMC_NUM_MIXED_SYSTEMS>0
+//#include "../simulation/solver/mixedSystem.h"
+//#endif
+//#include "../simulation/solver/delay.h"
+//#include "../simulation/solver/initialization/initialization.h"
+//#include "../simulation/simulation_info_json.h"
+//#include "../simulation/simulation_input_xml.h"
 
 #include "openmodelica.h"
 
@@ -258,7 +258,7 @@ typedef enum {
 
 typedef struct osu_t {
     // open modelica simulation interface data
-    omsi_t                  osu_data;       // ToDo: is not pointer any more, change every call / usage again
+    omsi_t *                osu_data;       // ToDo: is now pointer, change every call / usage again
     omsi_functions_t *      osu_functions;
 
     // temporary data for current implementation

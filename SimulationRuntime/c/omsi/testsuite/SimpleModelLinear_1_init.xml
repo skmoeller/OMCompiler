@@ -1,0 +1,895 @@
+<?xml version = "1.0" encoding="UTF-8"?>
+
+<!-- description of the model interface using an extention of the FMI standard -->
+<fmiModelDescription
+  fmiVersion                          = "1.0"
+
+  modelName                           = "SimpleModelLinear_1"
+  modelIdentifier                     = "SimpleModelLinear_1"
+
+  OPENMODELICAHOME                    = "D:/PortableApps/OpenModelica1.13.0-dev-64bit"
+
+  guid                                = "{e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}"
+
+  description                         = ""
+  generationTool                      = "OpenModelica Compiler v1.13.0-dev-612-g65d57a519 (64-bit)"
+  generationDateAndTime               = "2018-06-04T14:33:49Z"
+
+  variableNamingConvention            = "structured"
+
+  numberOfEventIndicators             = "1"  cmt_numberOfEventIndicators             = "NG:       number of zero crossings,                           FMI"
+  numberOfTimeEvents                  = "0"  cmt_numberOfTimeEvents                  = "NG_SAM:   number of zero crossings that are samples,          OMC"
+
+  numberOfInputVariables              = "0"  cmt_numberOfInputVariables              = "NI:       number of inputvar on topmodel,                     OMC"
+  numberOfOutputVariables             = "0"  cmt_numberOfOutputVariables             = "NO:       number of outputvar on topmodel,                    OMC"
+
+  numberOfExternalObjects             = "0"  cmt_numberOfExternalObjects             = "NEXT:     number of external objects,                         OMC"
+  numberOfFunctions                   = "0"  cmt_numberOfFunctions                   = "NFUNC:    number of functions used by the simulation,         OMC"
+
+  numberOfContinuousStates            = "1"  cmt_numberOfContinuousStates            = "NX:       number of states,                                   FMI"
+  numberOfRealAlgebraicVariables      = "14"  cmt_numberOfRealAlgebraicVariables      = "NY:       number of real variables,                           OMC"
+  numberOfRealAlgebraicAliasVariables = "27"  cmt_numberOfRealAlgebraicAliasVariables = "NA:       number of alias variables,                          OMC"
+  numberOfRealParameters              = "23"  cmt_numberOfRealParameters              = "NP:       number of parameters,                               OMC"
+
+  numberOfIntegerAlgebraicVariables   = "0"  cmt_numberOfIntegerAlgebraicVariables   = "NYINT:    number of alg. int variables,                       OMC"
+  numberOfIntegerAliasVariables       = "0"  cmt_numberOfIntegerAliasVariables       = "NAINT:    number of alias int variables,                      OMC"
+  numberOfIntegerParameters           = "0"  cmt_numberOfIntegerParameters           = "NPINT:    number of int parameters,                           OMC"
+
+  numberOfStringAlgebraicVariables    = "0"  cmt_numberOfStringAlgebraicVariables    = "NYSTR:    number of alg. string variables,                    OMC"
+  numberOfStringAliasVariables        = "0"  cmt_numberOfStringAliasVariables        = "NASTR:    number of alias string variables,                   OMC"
+  numberOfStringParameters            = "0"  cmt_numberOfStringParameters            = "NPSTR:    number of string parameters,                        OMC"
+
+  numberOfBooleanAlgebraicVariables   = "0"  cmt_numberOfBooleanAlgebraicVariables   = "NYBOOL:   number of alg. bool variables,                      OMC"
+  numberOfBooleanAliasVariables       = "0"  cmt_numberOfBooleanAliasVariables       = "NABOOL:   number of alias bool variables,                     OMC"
+  numberOfBooleanParameters           = "3"  cmt_numberOfBooleanParameters           = "NPBOOL:   number of bool parameters,                          OMC" >
+
+
+  <!-- startTime, stopTime, tolerance are FMI specific, all others are OMC specific -->
+  <DefaultExperiment
+    startTime      = "0"
+    stopTime       = "1"
+    stepSize       = "0.002"
+    tolerance      = "1e-006"
+    solver        = "dassl"
+    outputFormat      = "mat"
+    variableFilter      = ".*" />
+
+  <!-- variables in the model -->
+  <ModelVariables>
+
+  <ScalarVariable
+    name = "capacitor1.v"
+    valueReference = "1000"
+    description = "Voltage drop between the two pins (= p.v - n.v)"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "0" classType = "rSta"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "173" startColumn = "5" endLine = "173" endColumn = "67" fileWritable = "true">
+    <Real start="0.0" fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "der(capacitor1.v)"
+    valueReference = "1001"
+    description = "der(Voltage drop between the two pins (= p.v - n.v))"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "0" classType = "rDer"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "173" startColumn = "5" endLine = "173" endColumn = "67" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="km2.s-4.A-1.g" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "capacitor1.i"
+    valueReference = "1002"
+    description = "Current flowing from pin p to pin n"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "0" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "174" startColumn = "5" endLine = "174" endColumn = "55" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "ground1.p.i"
+    valueReference = "1003"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "1" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "13" startColumn = "5" endLine = "18" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "ground1.p.v"
+    valueReference = "1004"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "2" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "7" startColumn = "5" endLine = "12" endColumn = "61" fileWritable = "true">
+    <Real fixed="true" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.LossPower"
+    valueReference = "1005"
+    description = "Loss power leaving component via heatPort"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "3" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "312" startColumn = "5" endLine = "312" endColumn = "67" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="W" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.R_actual"
+    valueReference = "1006"
+    description = "Actual resistance = R*(1 + alpha*(T_heatPort - T_ref))"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "4" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "62" startColumn = "5" endLine = "63" endColumn = "63" fileWritable = "true">
+    <Real fixed="true" useNominal="false" unit="Ohm" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.i"
+    valueReference = "1007"
+    description = "Current flowing from pin p to pin n"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "5" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "174" startColumn = "5" endLine = "174" endColumn = "55" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.v"
+    valueReference = "1008"
+    description = "Voltage drop between the two pins (= p.v - n.v)"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "6" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "173" startColumn = "5" endLine = "173" endColumn = "67" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.LossPower"
+    valueReference = "1009"
+    description = "Loss power leaving component via heatPort"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "7" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "312" startColumn = "5" endLine = "312" endColumn = "67" fileWritable = "true">
+    <Real start="0.0" fixed="false" useNominal="false" unit="W" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.R_actual"
+    valueReference = "1010"
+    description = "Actual resistance = R*(1 + alpha*(T_heatPort - T_ref))"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "8" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "62" startColumn = "5" endLine = "63" endColumn = "63" fileWritable = "true">
+    <Real fixed="true" useNominal="false" unit="Ohm" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.i"
+    valueReference = "1011"
+    description = "Current flowing from pin p to pin n"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "9" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "174" startColumn = "5" endLine = "174" endColumn = "55" fileWritable = "true">
+    <Real start="0.0" fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.LossPower"
+    valueReference = "1012"
+    description = "Loss power leaving component via heatPort"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "10" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "312" startColumn = "5" endLine = "312" endColumn = "67" fileWritable = "true">
+    <Real start="0.0" fixed="false" useNominal="false" unit="W" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.R_actual"
+    valueReference = "1013"
+    description = "Actual resistance = R*(1 + alpha*(T_heatPort - T_ref))"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "11" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "62" startColumn = "5" endLine = "63" endColumn = "63" fileWritable = "true">
+    <Real fixed="true" useNominal="false" unit="Ohm" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.i"
+    valueReference = "1014"
+    description = "Current flowing from pin p to pin n"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "12" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "174" startColumn = "5" endLine = "174" endColumn = "55" fileWritable = "true">
+    <Real start="0.0" fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.v"
+    valueReference = "1015"
+    description = "Voltage drop between the two pins (= p.v - n.v)"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "13" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "173" startColumn = "5" endLine = "173" endColumn = "67" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "capacitor1.C"
+    valueReference = "1016"
+    description = "Capacitance"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "0" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "262" startColumn = "5" endLine = "262" endColumn = "54" fileWritable = "true">
+    <Real start="0.1" fixed="true" useNominal="false" min="0.0" unit="F" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.R"
+    valueReference = "1017"
+    description = "Resistance at temperature T_ref"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "1" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "54" startColumn = "5" endLine = "55" endColumn = "40" fileWritable = "true">
+    <Real start="10.0" fixed="true" useNominal="false" unit="Ohm" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.T"
+    valueReference = "1018"
+    description = "Fixed device temperature if useHeatPort = false"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "2" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "306" startColumn = "5" endLine = "307" endColumn = "99" fileWritable = "true">
+    <Real start="288.15" fixed="true" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.T_ref"
+    valueReference = "1019"
+    description = "Reference temperature"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "3" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "56" startColumn = "5" endLine = "56" endColumn = "66" fileWritable = "true">
+    <Real start="300.15" fixed="true" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.alpha"
+    valueReference = "1020"
+    description = "Temperature coefficient of resistance (R_actual = R*(1 + alpha*(T_heatPort - T_ref))"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "4" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "57" startColumn = "5" endLine = "58" endColumn = "93" fileWritable = "true">
+    <Real start="0.0" fixed="true" useNominal="false" unit="1/K" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.R"
+    valueReference = "1021"
+    description = "Resistance at temperature T_ref"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "5" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "54" startColumn = "5" endLine = "55" endColumn = "40" fileWritable = "true">
+    <Real start="10.0" fixed="true" useNominal="false" unit="Ohm" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.T"
+    valueReference = "1022"
+    description = "Fixed device temperature if useHeatPort = false"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "6" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "306" startColumn = "5" endLine = "307" endColumn = "99" fileWritable = "true">
+    <Real start="288.15" fixed="true" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.T_ref"
+    valueReference = "1023"
+    description = "Reference temperature"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "7" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "56" startColumn = "5" endLine = "56" endColumn = "66" fileWritable = "true">
+    <Real start="300.15" fixed="true" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.alpha"
+    valueReference = "1024"
+    description = "Temperature coefficient of resistance (R_actual = R*(1 + alpha*(T_heatPort - T_ref))"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "8" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "57" startColumn = "5" endLine = "58" endColumn = "93" fileWritable = "true">
+    <Real start="0.0" fixed="true" useNominal="false" unit="1/K" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.R"
+    valueReference = "1025"
+    description = "Resistance at temperature T_ref"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "9" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "54" startColumn = "5" endLine = "55" endColumn = "40" fileWritable = "true">
+    <Real start="10.0" fixed="true" useNominal="false" unit="Ohm" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.T"
+    valueReference = "1026"
+    description = "Fixed device temperature if useHeatPort = false"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "10" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "306" startColumn = "5" endLine = "307" endColumn = "99" fileWritable = "true">
+    <Real start="288.15" fixed="true" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.T_ref"
+    valueReference = "1027"
+    description = "Reference temperature"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "11" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "56" startColumn = "5" endLine = "56" endColumn = "66" fileWritable = "true">
+    <Real start="300.15" fixed="true" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.alpha"
+    valueReference = "1028"
+    description = "Temperature coefficient of resistance (R_actual = R*(1 + alpha*(T_heatPort - T_ref))"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "12" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Basic.mo" startLine = "57" startColumn = "5" endLine = "58" endColumn = "93" fileWritable = "true">
+    <Real start="0.0" fixed="true" useNominal="false" unit="1/K" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.V"
+    valueReference = "1029"
+    description = "Amplitude of sine wave"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "13" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Sources.mo" startLine = "282" startColumn = "5" endLine = "282" endColumn = "61" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.freqHz"
+    valueReference = "1030"
+    description = "Frequency of sine wave"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "14" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Sources.mo" startLine = "284" startColumn = "5" endLine = "284" endColumn = "68" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" unit="Hz" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.offset"
+    valueReference = "1031"
+    description = "Voltage offset"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "15" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "425" startColumn = "5" endLine = "425" endColumn = "51" fileWritable = "true">
+    <Real start="0.0" fixed="true" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.phase"
+    valueReference = "1032"
+    description = "Phase of sine wave"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "16" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Sources.mo" startLine = "283" startColumn = "5" endLine = "283" endColumn = "52" fileWritable = "true">
+    <Real start="0.0" fixed="true" useNominal="false" unit="rad" displayUnit="deg" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.signalSource.amplitude"
+    valueReference = "1033"
+    description = "Amplitude of sine wave"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "17" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Blocks/Sources.mo" startLine = "553" startColumn = "5" endLine = "553" endColumn = "56" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.signalSource.freqHz"
+    valueReference = "1034"
+    description = "Frequency of sine wave"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "18" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Blocks/Sources.mo" startLine = "554" startColumn = "5" endLine = "554" endColumn = "73" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" unit="Hz" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.signalSource.offset"
+    valueReference = "1035"
+    description = "Offset of output signal"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "19" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Blocks/Sources.mo" startLine = "556" startColumn = "5" endLine = "556" endColumn = "54" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.signalSource.phase"
+    valueReference = "1036"
+    description = "Phase of sine wave"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "20" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Blocks/Sources.mo" startLine = "555" startColumn = "5" endLine = "555" endColumn = "57" fileWritable = "true">
+    <Real fixed="true" useNominal="false" unit="rad" displayUnit="deg" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.signalSource.startTime"
+    valueReference = "1037"
+    description = "Output = offset for time &lt; startTime"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "21" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Blocks/Sources.mo" startLine = "557" startColumn = "5" endLine = "557" endColumn = "78" fileWritable = "true">
+    <Real fixed="true" useNominal="false" unit="s" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.startTime"
+    valueReference = "1038"
+    description = "Time offset"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "22" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "426" startColumn = "5" endLine = "426" endColumn = "48" fileWritable = "true">
+    <Real start="0.0" fixed="true" useNominal="false" unit="s" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "capacitor1.n.i"
+    valueReference = "1039"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "negatedAlias" aliasVariable="capacitor1.i"
+    classIndex = "0" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "93" startColumn = "5" endLine = "98" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "capacitor1.n.v"
+    valueReference = "1040"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="ground1.p.v"
+    classIndex = "1" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "87" startColumn = "5" endLine = "92" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "capacitor1.p.i"
+    valueReference = "1041"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="capacitor1.i"
+    classIndex = "2" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "53" startColumn = "5" endLine = "58" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "capacitor1.p.v"
+    valueReference = "1042"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="capacitor1.v"
+    classIndex = "3" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "47" startColumn = "5" endLine = "52" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.T_heatPort"
+    valueReference = "1043"
+    description = "Temperature of heatPort"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="resistor1.T"
+    classIndex = "4" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "313" startColumn = "5" endLine = "313" endColumn = "56" fileWritable = "true">
+    <Real start="288.15" fixed="false" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.n.i"
+    valueReference = "1044"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "negatedAlias" aliasVariable="resistor1.i"
+    classIndex = "5" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "93" startColumn = "5" endLine = "98" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.n.v"
+    valueReference = "1045"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="capacitor1.v"
+    classIndex = "6" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "87" startColumn = "5" endLine = "92" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.p.i"
+    valueReference = "1046"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="resistor1.i"
+    classIndex = "7" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "53" startColumn = "5" endLine = "58" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.p.v"
+    valueReference = "1047"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "negatedAlias" aliasVariable="sineVoltage1.v"
+    classIndex = "8" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "47" startColumn = "5" endLine = "52" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.T_heatPort"
+    valueReference = "1048"
+    description = "Temperature of heatPort"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="resistor2.T"
+    classIndex = "9" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "313" startColumn = "5" endLine = "313" endColumn = "56" fileWritable = "true">
+    <Real start="288.15" fixed="false" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.n.i"
+    valueReference = "1049"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "negatedAlias" aliasVariable="resistor2.i"
+    classIndex = "10" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "93" startColumn = "5" endLine = "98" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.n.v"
+    valueReference = "1050"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="ground1.p.v"
+    classIndex = "11" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "87" startColumn = "5" endLine = "92" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.p.i"
+    valueReference = "1051"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="resistor2.i"
+    classIndex = "12" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "53" startColumn = "5" endLine = "58" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.p.v"
+    valueReference = "1052"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="capacitor1.v"
+    classIndex = "13" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "47" startColumn = "5" endLine = "52" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.v"
+    valueReference = "1053"
+    description = "Voltage drop between the two pins (= p.v - n.v)"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="capacitor1.v"
+    classIndex = "14" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "173" startColumn = "5" endLine = "173" endColumn = "67" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.T_heatPort"
+    valueReference = "1054"
+    description = "Temperature of heatPort"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="resistor3.T"
+    classIndex = "15" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "313" startColumn = "5" endLine = "313" endColumn = "56" fileWritable = "true">
+    <Real start="288.15" fixed="false" useNominal="true" nominal="300.0" min="0.0" unit="K" displayUnit="degC" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.n.i"
+    valueReference = "1055"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "negatedAlias" aliasVariable="resistor3.i"
+    classIndex = "16" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "93" startColumn = "5" endLine = "98" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.n.v"
+    valueReference = "1056"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="ground1.p.v"
+    classIndex = "17" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "87" startColumn = "5" endLine = "92" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.p.i"
+    valueReference = "1057"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="resistor3.i"
+    classIndex = "18" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "53" startColumn = "5" endLine = "58" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.p.v"
+    valueReference = "1058"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="capacitor1.v"
+    classIndex = "19" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "47" startColumn = "5" endLine = "52" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.v"
+    valueReference = "1059"
+    description = "Voltage drop between the two pins (= p.v - n.v)"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="capacitor1.v"
+    classIndex = "20" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "173" startColumn = "5" endLine = "173" endColumn = "67" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.i"
+    valueReference = "1060"
+    description = "Current flowing from pin p to pin n"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="resistor1.i"
+    classIndex = "21" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "174" startColumn = "5" endLine = "174" endColumn = "55" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.n.i"
+    valueReference = "1061"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "negatedAlias" aliasVariable="resistor1.i"
+    classIndex = "22" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "93" startColumn = "5" endLine = "98" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.n.v"
+    valueReference = "1062"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "negatedAlias" aliasVariable="sineVoltage1.v"
+    classIndex = "23" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "87" startColumn = "5" endLine = "92" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.p.i"
+    valueReference = "1063"
+    description = "Current flowing into the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="resistor1.i"
+    classIndex = "24" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "53" startColumn = "5" endLine = "58" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="A" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.p.v"
+    valueReference = "1064"
+    description = "Potential at the pin"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="ground1.p.v"
+    classIndex = "25" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "47" startColumn = "5" endLine = "52" endColumn = "61" fileWritable = "true">
+    <Real fixed="false" useNominal="false" unit="V" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "sineVoltage1.signalSource.y"
+    valueReference = "1065"
+    description = "Connector of Real output signal"
+    variability = "continuous" isDiscrete = "false"
+    causality = "internal" isValueChangeable = "false"
+    alias = "alias" aliasVariable="sineVoltage1.v"
+    classIndex = "26" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Blocks/Interfaces.mo" startLine = "269" startColumn = "5" endLine = "270" endColumn = "56" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor1.useHeatPort"
+    valueReference = "1066"
+    description = "=true, if heatPort is enabled"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "0" classType = "bPar"
+    isProtected = "false" hideResult = "true"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "304" startColumn = "5" endLine = "305" endColumn = "71" fileWritable = "true">
+    <Boolean start="false" fixed="true" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor2.useHeatPort"
+    valueReference = "1067"
+    description = "=true, if heatPort is enabled"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "1" classType = "bPar"
+    isProtected = "false" hideResult = "true"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "304" startColumn = "5" endLine = "305" endColumn = "71" fileWritable = "true">
+    <Boolean start="false" fixed="true" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "resistor3.useHeatPort"
+    valueReference = "1068"
+    description = "=true, if heatPort is enabled"
+    variability = "parameter" isDiscrete = "true"
+    causality = "internal" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "2" classType = "bPar"
+    isProtected = "false" hideResult = "true"
+    fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "304" startColumn = "5" endLine = "305" endColumn = "71" fileWritable = "true">
+    <Boolean start="false" fixed="true" />
+  </ScalarVariable>
+
+
+
+  </ModelVariables>
+
+
+</fmiModelDescription>
+

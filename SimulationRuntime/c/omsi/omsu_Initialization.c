@@ -79,11 +79,12 @@ fmi2Component omsi_instantiate(fmi2String                   instanceName,
   OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
   char* initFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(char));
   sprintf(initFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
-  if (!omsu_process_input_xml(OSU->osu_data, initFilename, fmuGUID, instanceName, functions)) {     // ToDo: needs some information beforehand
+  if (omsu_process_input_xml(OSU->osu_data, initFilename, fmuGUID, instanceName, functions)) {     // ToDo: needs some information beforehand
     functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate: Could not process %s.", initFilename);
     omsu_free_osu_data(OSU->osu_data, functions);
-    reutrn NULL;
+    return NULL;
   }
+
   /* read JSON file */
   // ToDo: Do some crazy stuff
 
@@ -96,8 +97,6 @@ fmi2Component omsi_instantiate(fmi2String                   instanceName,
 
   // ToDo: implement error case out of memory for OSU->...
 
-
-
   /* initialize OSU */
   omsic_model_setup_data(OSU);      // ToDo: implement, set model data, experiment data
   // set all categories to on or off. fmi2SetDebugLogging should be called to choose specific categories.
@@ -106,15 +105,16 @@ fmi2Component omsi_instantiate(fmi2String                   instanceName,
   }
   OSU->loggingOn = loggingOn;
   OSU->GUID = fmuGUID;
-  strcpy((char*)OSU->instanceName, (const char*)instanceName);      // ToDo: Do we need to allocate memory for string?
+  OSU->instanceName = strdup(instanceName);
   OSU->type = fmuType;
   OSU->fmiCallbackFunctions = functions;
 
   /* setup simulation data with default start values */
-  OSU->osu_functions->setupStartValues(OSU->osu_data);       // ToDo: implement. Probably pointer to generated function to set up default start data
+  //OSU->osu_functions->setupStartValues(OSU->osu_data);       // ToDo: implement. Probably pointer to generated function to set up default start data
 
   OSU->state = modelInstantiated;
   FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2Instantiate: GUID=%s", fmuGUID)
+  omsu_print_debug(OSU);      // ToDo: delete
   return OSU;
 }
 
@@ -253,7 +253,7 @@ void omsi_free_instance(fmi2Component c)
     FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2FreeInstance")
 
     /* free OSU data */
-    omsu_free_osu_data(OSU->osu_data, functions);     // ToDo: implement, should free everything inside osu_data
+    omsu_free_osu_data(OSU->osu_data, OSU->fmiCallbackFunctions->freeMemory);     // ToDo: implement, should free everything inside osu_data
     OSU->fmiCallbackFunctions->freeMemory(OSU->osu_data);
     // ToDo: free everithing inside osu_functions
     OSU->fmiCallbackFunctions->freeMemory(OSU->osu_functions);

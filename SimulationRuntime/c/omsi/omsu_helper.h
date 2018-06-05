@@ -32,29 +32,102 @@
 #define OMSU_HELPER_H
 
 #include "omsu_common.h"
+#include "fmi2/osi_fmi2_wrapper.h"      // ToDo: Should not be needed here
+#include "fmi2/fmi2Functions.h"
 
-/* forward struct */
+#include <expat.h>
+#include "util/uthash.h"
+
+/* forward struct */    // ToDo: Sort header files in a better way. Ther are always some loops...
 typedef struct osu_t osu_t;
+typedef struct omsi_t omsi_t;
+
 
 // ToDo: include all headers neccesary for XML parser, delete others
 
 //C Simulation kernel includes
 #include "../simulation_data.h"
-#include "../simulation/solver/stateset.h"
-#include "../simulation/solver/model_help.h"
-#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
-#include "../simulation/solver/nonlinearSystem.h"
-#endif
-#if !defined(OMC_NUM_LINEAR_SYSTEMS) || OMC_NUM_LINEAR_SYSTEMS>0
-#include "../simulation/solver/linearSystem.h"
-#endif
-#if !defined(OMC_NUM_MIXED_SYSTEMS) || OMC_NUM_MIXED_SYSTEMS>0
-#include "../simulation/solver/mixedSystem.h"
-#endif
-#include "../simulation/solver/delay.h"
-#include "../simulation/solver/initialization/initialization.h"
-#include "../simulation/simulation_info_json.h"
-#include "../simulation/simulation_input_xml.h"
+//#include "../simulation/solver/stateset.h"
+//#include "../simulation/solver/model_help.h"
+//#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
+//#include "../simulation/solver/nonlinearSystem.h"
+//#endif
+//#if !defined(OMC_NUM_LINEAR_SYSTEMS) || OMC_NUM_LINEAR_SYSTEMS>0
+//#include "../simulation/solver/linearSystem.h"
+//#endif
+//#if !defined(OMC_NUM_MIXED_SYSTEMS) || OMC_NUM_MIXED_SYSTEMS>0
+//#include "../simulation/solver/mixedSystem.h"
+//#endif
+//#include "../simulation/solver/delay.h"
+//#include "../simulation/solver/initialization/initialization.h"
+//#include "../simulation/simulation_info_json.h"
+//#include "../simulation/simulation_input_xml.h"
+
+
+
+/* some stuff from simulation_input_xml.c
+ * ToDo: implement for new data struct
+ */
+typedef struct hash_string_string
+{
+  const char *id;
+  const char *val;
+  UT_hash_handle hh;
+} hash_string_string;
+
+typedef hash_string_string omc_ModelDescription;
+typedef hash_string_string omc_DefaultExperiment;
+typedef hash_string_string omc_ScalarVariable;
+
+typedef struct hash_long_var
+{
+  long id;
+  omc_ScalarVariable *val;
+  UT_hash_handle hh;
+} hash_long_var;
+
+typedef hash_long_var omc_ModelVariables;
+
+typedef struct hash_string_long
+{
+  const char *id;
+  long val;
+  UT_hash_handle hh;
+} hash_string_long;
+
+/* structure used to collect data from the xml input file */
+typedef struct omc_ModelInput
+{
+  omc_ModelDescription  *md; /* model description */
+  omc_DefaultExperiment *de; /* default experiment */
+
+  omc_ModelVariables    *rSta; /* states */
+  omc_ModelVariables    *rDer; /* derivatives */
+  omc_ModelVariables    *rAlg; /* algebraic */
+  omc_ModelVariables    *rPar; /* parameters */
+  omc_ModelVariables    *rAli; /* aliases */
+  omc_ModelVariables    *rSen; /* sensitivities */
+
+  omc_ModelVariables    *iAlg; /* int algebraic */
+  omc_ModelVariables    *iPar; /* int parameters */
+  omc_ModelVariables    *iAli; /* int aliases */
+
+  omc_ModelVariables    *bAlg; /* bool algebraic */
+  omc_ModelVariables    *bPar; /* bool parameters */
+  omc_ModelVariables    *bAli; /* bool aliases */
+
+  omc_ModelVariables    *sAlg; /* string algebraic */
+  omc_ModelVariables    *sPar; /* string parameters */
+  omc_ModelVariables    *sAli; /* string aliases */
+
+  /* these two we need to know to be able to add
+     the stuff in <Real ... />, <String ... /> to
+     the correct variable in the correct map */
+  mmc_sint_t            lastCI; /* index */
+  omc_ModelVariables**  lastCT; /* type (classification) */
+} omc_ModelInput;
+
+
 
 #include "openmodelica.h"
 
@@ -63,7 +136,7 @@ void storePreValues (DATA *data);
 int stateSelection(DATA *data, threadData_t *threadData, char reportError, int switchStates);
 void overwriteOldSimulationData(DATA *data);
 void initializeDataStruc(DATA *data, threadData_t *threadData);
-void omsu_read_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID, fmi2String instanceName, const fmi2CallbackFunctions* functions) {
+int omsu_process_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID, fmi2String instanceName, const fmi2CallbackFunctions* functions);
 int initializeNonlinearSystems(DATA *data, threadData_t *threadData);
 int initializeLinearSystems(DATA *data, threadData_t *threadData);
 int initializeMixedSystems(DATA *data, threadData_t *threadData);
