@@ -59,8 +59,7 @@ const char* stateToString(fmi2Component c)
    return "Unknown";
  }
 
-fmi2Boolean invalidState(fmi2Component c, const char *f, int meStates, int csStates)    //ToDo: maybe omsi_data instead of fmi2Component data type
-{
+fmi2Boolean invalidState(fmi2Component c, const char *f, int meStates, int csStates) {   //ToDo: maybe omsi_data instead of fmi2Component data type
   osu_t* OSU = (osu_t *)c;
   if (!OSU)
     return fmi2True;
@@ -71,8 +70,7 @@ fmi2Boolean invalidState(fmi2Component c, const char *f, int meStates, int csSta
   else /* fmi2CoSimulation */
     statesExpected = csStates;
 
-  if (!(OSU->state & statesExpected))
-  {
+  if (!(OSU->state & statesExpected)) {
 	OSU->state=statesExpected;
     FILTERED_LOG(OSU, fmi2Error, LOG_STATUSERROR, "%s: Illegal call sequence. %s is not allowed in %s state.", f, f, stateToString(OSU))
 	OSU->state = modelError;
@@ -96,7 +94,7 @@ fmi2Boolean nullPointer(fmi2Component c, const char *f, const char *arg, const v
 fmi2Boolean vrOutOfRange(fmi2Component c, const char *f, fmi2ValueReference vr, int end)
 {
   osu_t* OSU = (osu_t *)c;
-  if (vr >= end) {
+  if ((int)vr >= end) {
     OSU->state = modelError;
     FILTERED_LOG(OSU, fmi2Error, LOG_STATUSERROR, "%s: Illegal value reference %u.", f, vr)
     return fmi2True;
@@ -133,12 +131,12 @@ fmi2Boolean invalidNumber(fmi2Component c, const char *f, const char *arg, int n
  */
 fmi2Status omsi_set_debug_logging(fmi2Component c, fmi2Boolean loggingOn, size_t nCategories, const fmi2String categories[])
 {
-  int i, j;
+  size_t i, j;
   osu_t* OSU = (osu_t *)c;
   OSU->loggingOn = loggingOn;
 
-  for (j = 0; j < NUMBER_OF_CATEGORIES; j++) {
-    OSU->logCategories[j] = fmi2False;
+  for (i = 0; i < NUMBER_OF_CATEGORIES; i++) {
+    OSU->logCategories[i] = fmi2False;
   }
   for (i = 0; i < nCategories; i++) {
     fmi2Boolean categoryFound = fmi2False;

@@ -38,7 +38,6 @@
 
 fmi2Status omsi_new_discrete_state(fmi2Component  c, fmi2EventInfo* eventInfo){
 	osu_t *OSU = (osu_t *)c;
-	double nextSampleEvent = 0;
 	fmi2Status returnValue = fmi2OK;
 
 	if (invalidState(OSU, "fmi2NewDiscreteStates", modelEventMode, ~0))
@@ -69,7 +68,6 @@ fmi2Status omsi_enter_continuous_time_mode(fmi2Component c){
 
 fmi2Status omsi_set_continuous_states(fmi2Component c, const fmi2Real x[], size_t nx){
 	osu_t *OSU = (osu_t *)c;
-	int i;
 
 	/* According to FMI RC2 specification fmi2SetContinuousStates should only be allowed in Continuous-Time Mode.
 	* The following code is done only to make the FMUs compatible with Dymola because Dymola is trying to call fmi2SetContinuousStates after fmi2EnterInitializationMode.
@@ -82,7 +80,7 @@ fmi2Status omsi_set_continuous_states(fmi2Component c, const fmi2Real x[], size_
 	if (nullPointer(OSU, "fmi2SetContinuousStates", "x[]", x))
 		return fmi2Error;
 
-	for (i = 0; i < nx; i++) {
+	for (size_t i = 0; i < nx; i++) {
 		fmi2ValueReference vr = OSU->vrStates[i];
 		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetContinuousStates: #r%d# = %.16g", vr, x[i])
 		if (setReal(OSU, vr, x[i]) != fmi2OK) {
@@ -96,7 +94,6 @@ fmi2Status omsi_set_continuous_states(fmi2Component c, const fmi2Real x[], size_
 
 
 fmi2Status omsi_get_continuous_states(fmi2Component c, fmi2Real x[], size_t nx) {
-	int i;
 	osu_t* OSU = (osu_t *)c;
 	if (invalidState(OSU, "fmi2GetContinuousStates", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
 		return fmi2Error;
@@ -105,7 +102,7 @@ fmi2Status omsi_get_continuous_states(fmi2Component c, fmi2Real x[], size_t nx) 
 	if (nullPointer(OSU, "fmi2GetContinuousStates", "states[]", x))
 		return fmi2Error;
 
-	for (i = 0; i < nx; i++) {
+	for (size_t i = 0; i < nx; i++) {
 		fmi2ValueReference vr = OSU->vrStates[i];
 		x[i] = getReal(OSU, vr); // to be implemented by the includer of this file
 		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetContinuousStates: #r%u# = %.16g", vr, x[i])
@@ -116,7 +113,6 @@ fmi2Status omsi_get_continuous_states(fmi2Component c, fmi2Real x[], size_t nx) 
 
 
 fmi2Status omsi_get_nominals_of_continuous_states(fmi2Component c, fmi2Real x_nominal[], size_t nx){
-	int i;
 	osu_t* OSU = (osu_t *)c;
 	if (invalidState(OSU, "fmi2GetNominalsOfContinuousStates", modelInstantiated|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
 		return fmi2Error;
@@ -126,7 +122,7 @@ fmi2Status omsi_get_nominals_of_continuous_states(fmi2Component c, fmi2Real x_no
 		return fmi2Error;
 	x_nominal[0] = 1;
 	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetNominalsOfContinuousStates: x_nominal[0..%d] = 1.0", nx-1)
-	for (i = 0; i < nx; i++)
+	for (size_t i = 0; i < nx; i++)
 		x_nominal[i] = 1;
 	return fmi2OK;
 }
@@ -198,7 +194,7 @@ fmi2Status omsi_get_derivatives(fmi2Component c, fmi2Real derivatives[], size_t 
       OSU->_need_update = 0;
     }
 
-    for (int i = 0; i < nx; i++) {
+    for (size_t i = 0; i < nx; i++) {
       fmi2ValueReference vr = OSU->vrStatesDerivatives[i];
       derivatives[i] = getReal(OSU, vr); // to be implemented by the includer of this file
       FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetDerivatives: #r%d# = %.16g", vr, derivatives[i])
@@ -217,7 +213,7 @@ fmi2Status omsi_get_directional_derivative(fmi2Component c,
                 const fmi2ValueReference vUnknown_ref[], size_t nUnknown,
                 const fmi2ValueReference vKnown_ref[],   size_t nKnown,
                 const fmi2Real dvKnown[], fmi2Real dvUnknown[]){
-  int i;
+  size_t i;
   osu_t *OSU = (osu_t *)c;
   if (invalidState(OSU, "fmi2GetDirectionalDerivative", modelInstantiated|modelEventMode|modelContinuousTimeMode, ~0))
     return fmi2Error;

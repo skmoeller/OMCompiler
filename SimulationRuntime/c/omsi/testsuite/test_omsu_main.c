@@ -124,10 +124,11 @@ void test_1 () {
     // import xml
     c = fmi2Instantiate(instanceName, fmi2ModelExchange, guid, fmuResourceLocation, &callbacks, visible, loggingOn);
     // print data struct
-    //omsu_print_debug(c);
-
 
     // free data
+    fmi2FreeInstance(c);
+
+    printf("\nFinished test run!\n");
 }
 
 

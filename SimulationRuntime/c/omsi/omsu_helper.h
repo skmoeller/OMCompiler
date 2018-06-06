@@ -131,7 +131,9 @@ typedef struct omc_ModelInput
 
 #include "openmodelica.h"
 
-
+void omsu_print_debug (osu_t* OSU);     // ToDo: delete later
+int omsu_allocate_sim_data(omsi_t* omsi_data, const fmi2CallbackAllocateMemory allocateMemory);
+void omsu_free_osu_data(omsi_t* omsi_data,const fmi2CallbackFreeMemory freeMemory);
 void storePreValues (DATA *data);
 int stateSelection(DATA *data, threadData_t *threadData, char reportError, int switchStates);
 void overwriteOldSimulationData(DATA *data);

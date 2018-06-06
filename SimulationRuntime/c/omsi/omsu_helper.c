@@ -29,9 +29,9 @@
  */
 
 #include "omsu_helper.h"
-//#include "../simulation/simulation_input_xml.c"     // ToDo: Change! Needing structs, but those are not in .h defined
 
-#define MAX_LENGTH_STRING 42      //ToDo: find matching Macro or set to something smarter
+/* global function */
+fmi2CallbackAllocateMemory global_allocateMemory = NULL;
 
 
 void storePreValues (DATA *data) {
@@ -40,6 +40,7 @@ void storePreValues (DATA *data) {
 
 int stateSelection(DATA *data, threadData_t *threadData, char reportError, int switchStates) {
     //TODO: implement for new data structure
+    return -1;
 }
 
 void overwriteOldSimulationData(DATA *data) {
@@ -53,45 +54,43 @@ void overwriteOldSimulationData(DATA *data) {
 /*
  * frees memory for omsi_t struct and all its components
  */
-void omsu_free_osu_data(omsi_t* omsi_data,const fmi2CallbackFreeMemory freeMemory) {
+void omsu_free_osu_data(omsi_t* omsi_data, const fmi2CallbackFreeMemory freeMemory) {
 
-    int i;
-    int n_vars_and_params;
+//    int i;
+//    int n_vars_and_params;
 
     /* free memory for model data */
-    freeMemory(omsi_data->model_data.modelGUID);
+    freeMemory((char *)omsi_data->model_data.modelGUID);
 
-    for (i=0; i<omsi_data->model_data.n_real_vars; i++) {
-        freeMemory (omsi_data->model_data.model_vars_info_t[i].name);
-        freeMemory (omsi_data->model_data.model_vars_info_t[i].comment);
-        real_var_attribute_t* attribute = omsi_data->model_data.model_vars_info_t[i].attribute;
-        freeMemory (attribute->unit);
-        freeMemory (attribute->displayUnit);
-        freeMemory (attribute);
-        freeMemory (&(omsi_data->model_data.model_vars_info_t[i]));    // ToDo: is this one really necessary? Or just  free(omsi_data->model_data.model_vars_info_t) at the end?
-    }
-    n_vars_and_params = omsi_data->model_data.n_real_vars + omsi_data->model_data.n_int_vars
-                       + omsi_data->model_data.n_bool_vars + omsi_data->model_data.n_string_vars;
-    for (i=omsi_data->model_data.n_real_vars; i<n_vars_and_params; i++) {
-        freeMemory (omsi_data->model_data.model_vars_info_t[i].name);
-        freeMemory (omsi_data->model_data.model_vars_info_t[i].comment);
-        freeMemory (omsi_data->model_data.model_vars_info_t[i].attribute);
-        freeMemory (&(omsi_data->model_data.model_vars_info_t[i]));    // ToDo: is this one really necessary? Or just  free(omsi_data->model_data.model_vars_info_t) at the end?
-    }
+//    for (i=0; i<omsi_data->model_data.n_real_vars; i++) {
+//        freeMemory (omsi_data->model_data.model_vars_info_t[i].name);
+//        freeMemory (omsi_data->model_data.model_vars_info_t[i].comment);
+//        real_var_attribute_t* attribute = omsi_data->model_data.model_vars_info_t[i].attribute;
+//        freeMemory (attribute->unit);
+//        freeMemory (attribute->displayUnit);
+//        freeMemory (attribute);
+//        freeMemory (&(omsi_data->model_data.model_vars_info_t[i]));    // ToDo: is this one really necessary? Or just  free(omsi_data->model_data.model_vars_info_t) at the end?
+//    }
+//    n_vars_and_params = omsi_data->model_data.n_real_vars + omsi_data->model_data.n_int_vars
+//                       + omsi_data->model_data.n_bool_vars + omsi_data->model_data.n_string_vars;
+//    for (i=omsi_data->model_data.n_real_vars; i<n_vars_and_params; i++) {
+//        freeMemory (omsi_data->model_data.model_vars_info_t[i].name);
+//        freeMemory (omsi_data->model_data.model_vars_info_t[i].comment);
+//        freeMemory (omsi_data->model_data.model_vars_info_t[i].attribute);
+//        freeMemory (&(omsi_data->model_data.model_vars_info_t[i]));    // ToDo: is this one really necessary? Or just  free(omsi_data->model_data.model_vars_info_t) at the end?
+//    }
     freeMemory (omsi_data->model_data.model_vars_info_t);
 
-    for (i=0; i<omsi_data->model_data.n_equations; i++) {
-        freeMemory (omsi_data->model_data.equation_info_t[i].variables);
-    }
+//    for (i=0; i<omsi_data->model_data.n_equations; i++) {
+//        freeMemory (omsi_data->model_data.equation_info_t[i].variables);
+//    }
     freeMemory (omsi_data->model_data.equation_info_t);
-
 
     /* free memory for simulation data */
     // ToDo: free inner stuff of initialization
     freeMemory (omsi_data->sim_data.initialization);
     // ToDo: free inner stuff of initialization
     freeMemory (omsi_data->sim_data.simulation);
-
 
     freeMemory (omsi_data->sim_data.model_vars_and_params->reals);
     freeMemory (omsi_data->sim_data.model_vars_and_params->ints);
@@ -101,18 +100,15 @@ void omsu_free_osu_data(omsi_t* omsi_data,const fmi2CallbackFreeMemory freeMemor
     freeMemory (omsi_data->sim_data.pre_zerocrossings_vars);
 
     /* free memory for experiment data */
-    freeMemory (omsi_data->experiment->solver_name);
+    freeMemory ((char *)omsi_data->experiment->solver_name);        // type-cast to shut of warning when compiling
     freeMemory (omsi_data->experiment);
-
-    /* free memory of omsi_data */
-    freeMemory (omsi_data);
-
-    return;
 }
 
 
-static inline const char* omsu_findHashStringStringNull(hash_string_string *ht, const char *key)
-{
+/*
+ *
+ */
+static const char* omsu_findHashStringStringNull(hash_string_string *ht, const char *key) {
   hash_string_string *res;
   HASH_FIND_STR( ht, key, res );
   return res ? res->val : NULL;
@@ -122,39 +118,40 @@ static inline const char* omsu_findHashStringStringNull(hash_string_string *ht, 
 /*
  *
  */
-static inline const char* omsu_findHashStringString(hash_string_string *ht, const char *key) {
+static const char* omsu_findHashStringString(hash_string_string *ht, const char *key) {
   const char *res = omsu_findHashStringStringNull(ht,key);
   if (0==res) {
     hash_string_string *c, *tmp;
     HASH_ITER(hh, ht, c, tmp) {
-      fprintf(stderr, "HashMap contained: %s->%s\n", c->id, c->val);
+      fprintf(stderr, "HashMap contained: %s->%s\n", c->id, c->val);            // ToDo: Use logger everywhere
     }
-    //functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error", "fmi2Instantiate in function omsu_findHashStringString: Failed to lookup %s in hashmap %p.", key, ht);
-    printf("Failed to lookup %s in hashmap %p\n", key, ht); // ToDo delete
     //throwStreamPrint(NULL, "Failed to lookup %s in hashmap %p", key, ht);     // ToDo: add Error message
   }
   return res;
 }
 
-static inline void omsu_addHashLongVar(hash_long_var **ht, long key, omc_ScalarVariable *val)
-{
-  hash_long_var *v = (hash_long_var*) calloc(1, sizeof(hash_long_var));
+/*
+ *
+ */
+static void omsu_addHashLongVar(hash_long_var **ht, long key, omc_ScalarVariable *val) {
+  hash_long_var *v = (hash_long_var*) global_allocateMemory(1, sizeof(hash_long_var));
   v->id=key;
   v->val=val;
   HASH_ADD_INT( *ht, id, v );
 }
 
-static inline void omsu_addHashStringString(hash_string_string **ht, const char *key, const char *val)
-{
-  hash_string_string *v = (hash_string_string*) calloc(1, sizeof(hash_string_string));
+/*
+ *
+ */
+static void omsu_addHashStringString(hash_string_string **ht, const char *key, const char *val) {
+  hash_string_string *v = (hash_string_string*) global_allocateMemory(1, sizeof(hash_string_string));
   v->id=strdup(key);
   v->val=strdup(val);
   HASH_ADD_KEYPTR( hh, *ht, v->id, strlen(v->id), v );
 }
 
-/* reads int value from a string */
-static inline void omsu_read_value_int(const char *s, int* res)
-{
+/* reads integer value from a string */
+static void omsu_read_value_int(const char *s, int* res) {
     if (s==NULL) {
         *res = 0;       // default value, if no string was found
         return;
@@ -166,11 +163,26 @@ static inline void omsu_read_value_int(const char *s, int* res)
     } else {
         *res = strtol(s, (char **) NULL, 10);
     }
-
 }
 
-static inline omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht, long key)
-{
+/* reads integer value from a string */
+static void omsu_read_value_uint(const char *s, unsigned int* res) {
+    if (s==NULL) {
+        *res = 0;       // default value, if no string was found
+        return;
+    }
+    if (0 == strcmp(s, "true")) {
+        *res = 1;
+    } else if (0 == strcmp(s, "false")) {
+        *res = 0;
+    } else {
+        *res = strtol(s, (char **) NULL, 10);
+    }
+}
+
+
+/* ToDo: comment me  */
+static omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht, long key) {
   hash_long_var *res;
   HASH_FIND_INT( ht, &key, res );
   if (0==res) {
@@ -185,8 +197,7 @@ static inline omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht, long 
 
 
 /* reads double value from a string */
-static inline void omsu_read_value_real(const char *s, modelica_real* res, modelica_real default_value)
-{
+static void omsu_read_value_real(const char *s, modelica_real* res, modelica_real default_value) {
   if (*s == '\0') {
     *res = default_value;
   } else if (0 == strcmp(s, "true")) {
@@ -198,11 +209,12 @@ static inline void omsu_read_value_real(const char *s, modelica_real* res, model
   }
 }
 
+
 /*
  *  Reads modelica_string value from a string.
  *  Allocates memory for string and copies string.
  */
-static inline void omsu_read_value_string(const char *s, const char **str) {
+static void omsu_read_value_string(const char *s, const char **str) {
     if(str == NULL) {
         //warningStreamPrint(LOG_SIMULATION, 0, "error read_value, no data allocated for storing string");    // ToDo: Use same log everywhere
         return;
@@ -237,7 +249,7 @@ static void XMLCALL startElement(void *userData, const char *name, const char **
   /* handle ScalarVariable */
   if(!strcmp(name, "ScalarVariable"))
   {
-    omc_ScalarVariable *v = NULL, *vfind;
+    omc_ScalarVariable *v = NULL;
     const char *ci, *ct;
     int fail=0;
     mi->lastCI = -1;
@@ -249,7 +261,8 @@ static void XMLCALL startElement(void *userData, const char *name, const char **
     ci = omsu_findHashStringString(v, "classIndex");
     ct = omsu_findHashStringString(v, "classType");
     /* transform to mmc_sint_t  */
-    mi->lastCI = atoi(ci);
+    //mi->lastCI = atoi(ci);
+    mi->lastCI = strtol(ci, NULL, 10);
 
     /* which one of the classifications?  */
     if (strlen(ct) == 4) {
@@ -328,19 +341,73 @@ static void XMLCALL startElement(void *userData, const char *name, const char **
   /* anything else, we don't handle! */
 }
 
-static void XMLCALL endElement(void *userData, const char *name)
-{
+static void XMLCALL endElement(void *userData, const char *name) {
   /* do nothing! */
 }
 
+/* deallocates memory for oms_ModelInput struct */
+void omsu_free_ModelInput(omc_ModelInput mi, omsi_t* omsi_data, const fmi2CallbackFreeMemory freeMemory) {
+
+    unsigned int i;
+
+    freeMemory((char *)mi.md->id);
+    freeMemory((char *)mi.md->val);
+    freeMemory(mi.md);
+
+    freeMemory((char *)mi.de->id);
+    freeMemory((char *)mi.de->val);
+    freeMemory(mi.de);
+
+    for (i=0; i<omsi_data->model_data.n_states ; i++) {
+        freeMemory((char *)mi.rSta[i].val->id);
+        freeMemory((char *)mi.rSta[i].val->val);
+        freeMemory(mi.rSta[i].val);
+    }
+    freeMemory(mi.rSta);
+    for (i=0; i<omsi_data->model_data.n_derivatives ; i++) {
+        freeMemory((char *)mi.rDer[i].val->id);
+        freeMemory((char *)mi.rDer[i].val->val);
+        freeMemory(mi.rDer[i].val);
+    }
+    freeMemory(mi.rDer);
+
+//    for (i=0; i<omsi_data->model_data.n_real_vars ; i++) {
+//        freeMemory(mi.rAlg[i].val->id);
+//        freeMemory(mi.rAlg[i].val->val);
+//        freeMemory(mi.rAlg[i].val);
+//    }
+    // ToDo: getting segmentation fault when freeing inner memory
+    // ToDo: free inner stuff also for integer, boolean and string
+    freeMemory(mi.rAlg);
+    freeMemory(mi.rPar);
+    freeMemory(mi.rAli);
+    freeMemory(mi.rSen);        // ToDo: What are sensitives?
+
+    freeMemory(mi.iAlg);
+    freeMemory(mi.iPar);
+    freeMemory(mi.iAli);
+
+    freeMemory(mi.bAlg);
+    freeMemory(mi.bPar);
+    freeMemory(mi.bAli);
+
+    freeMemory(mi.sAlg);
+    freeMemory(mi.sPar);
+    freeMemory(mi.sAli);
+
+    // ToDo: What to free for lastCT???
+
+}
 
 /*
  * Reads input values from a xml file and allocates memory for osu_data struct.
  */
 int omsu_process_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID, fmi2String instanceName, const fmi2CallbackFunctions* functions) {
 
+    /* set global function pointer */
+    global_allocateMemory = functions->allocateMemory;
+
     /* Variables */
-    int i,j;
     int done;
     int n_model_vars_and_params;
     const char *guid;
@@ -415,24 +482,24 @@ int omsu_process_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID,
     omsu_read_value_real(omsu_findHashStringString(mi.de,"startTime"), &(osu_data->experiment->start_time), 0);
     omsu_read_value_real(omsu_findHashStringString(mi.de,"stopTime"), &(osu_data->experiment->stop_time), osu_data->experiment->start_time+1);
     omsu_read_value_real(omsu_findHashStringString(mi.de,"stepSize"), &(osu_data->experiment->step_size), (osu_data->experiment->stop_time - osu_data->experiment->start_time) / 500);
-    omsu_read_value_int(omsu_findHashStringString(mi.de,"numberOfOutputVariables"), &(osu_data->experiment->num_outputs));
+    omsu_read_value_uint(omsu_findHashStringString(mi.de,"numberOfOutputVariables"), &(osu_data->experiment->num_outputs));
     omsu_read_value_real(omsu_findHashStringString(mi.de,"tolerance"), &(osu_data->experiment->tolerance), 1e-5);
     omsu_read_value_string(omsu_findHashStringString(mi.de,"solver"), &(osu_data->experiment->solver_name));
 
     /* process all model data */
     omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), &(osu_data->model_data.modelGUID));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data.n_states));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data.n_derivatives));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfRealAlgebraicVariables"), &(osu_data->model_data.n_real_vars));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfIntegerAlgebraicVariables"), &(osu_data->model_data.n_int_vars));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfBooleanAlgebraicVariables"), &(osu_data->model_data.n_bool_vars));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfStringAlgebraicVariables"), &(osu_data->model_data.n_string_vars));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfRealParameters"), &(osu_data->model_data.n_real_parameters));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfIntegerParameters"), &(osu_data->model_data.n_int_parameters));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfBooleanParameters"), &(osu_data->model_data.n_bool_parameters));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfStringParameters"), &(osu_data->model_data.n_string_parameters));
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data.n_zerocrossings));       // ToDo: Is numberOfTimeEvents also part of n_zerocrossings????
-    omsu_read_value_int(omsu_findHashStringString(mi.md,"numberOfEquations"), &(osu_data->model_data.n_equations));      // ToDo: Is numberOfEquations in XML???
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data.n_states));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data.n_derivatives));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealAlgebraicVariables"), &(osu_data->model_data.n_real_vars));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerAlgebraicVariables"), &(osu_data->model_data.n_int_vars));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanAlgebraicVariables"), &(osu_data->model_data.n_bool_vars));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringAlgebraicVariables"), &(osu_data->model_data.n_string_vars));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealParameters"), &(osu_data->model_data.n_real_parameters));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerParameters"), &(osu_data->model_data.n_int_parameters));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanParameters"), &(osu_data->model_data.n_bool_parameters));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringParameters"), &(osu_data->model_data.n_string_parameters));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data.n_zerocrossings));       // ToDo: Is numberOfTimeEvents also part of n_zerocrossings????
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEquations"), &(osu_data->model_data.n_equations));      // ToDo: Is numberOfEquations in XML???
 
     // ToDo: read model_vars_info_t, equation_info_t
     n_model_vars_and_params = osu_data->model_data.n_real_vars + osu_data->model_data.n_int_vars
@@ -450,6 +517,8 @@ int omsu_process_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID,
 
     /* now all data from init_xml should be utilized */
     // ToDo: free mi
+    omsu_free_ModelInput(mi, osu_data, functions->freeMemory);
+
 
     // information for model_vars_info_t and equation_info_t are in JSON file
     // ToDo: read JSON file somewhere
@@ -515,8 +584,7 @@ int omsu_allocate_sim_data(omsi_t* omsi_data, const fmi2CallbackAllocateMemory a
  * ToDo: make prettier or delete when finished
  */
 void omsu_print_debug (osu_t* OSU) {
-
-    int i;
+    size_t i;
     int n_vars_and_params;
 
     printf("\n========== omsu_print_debug start ==========\n");
@@ -568,14 +636,17 @@ void omsu_print_debug (osu_t* OSU) {
 
 int initializeNonlinearSystems(DATA *data, threadData_t *threadData) {
     //TODO: implement for new data structure
+    return -1;
 }
 
 int initializeLinearSystems(DATA *data, threadData_t *threadData) {
     //TODO: implement for new data structure
+    return -1;
 }
 
 int initializeMixedSystems(DATA *data, threadData_t *threadData) {
     //TODO: implement for new data structure
+    return -1;
 }
 
 void initializeStateSetJacobians(DATA *data, threadData_t *threadData) {
@@ -592,6 +663,7 @@ void copyStartValuestoInitValues(DATA *data) {
 
 int initialization(DATA *data, threadData_t *threadData, const char* pInitMethod, const char* pInitFile, double initTime) {
     //ToDo: implement for new data structure
+    return -1;
 }
 
 void initSample(DATA* data, threadData_t *threadData, double startTime, double stopTime) {
@@ -604,6 +676,7 @@ void initDelay(DATA* data, double startTime) {
 
 double getNextSampleTimeFMU(DATA *data) {
     //ToDo: implement for new data structure
+    return -1;
 }
 
 void setAllVarsToStart(DATA *data) {
@@ -616,14 +689,17 @@ void setAllParamsToStart(DATA *data) {
 
 int freeNonlinearSystems(DATA *data, threadData_t *threadData) {
     //ToDo: implement for new data structure
+    return -1;
 }
 
 int freeMixedSystems(DATA *data, threadData_t *threadData) {
     //ToDo: implement for new data structure
+    return -1;
 }
 
 int freeLinearSystems(DATA *data, threadData_t *threadData) {
     //ToDo: implement for new data structure
+    return -1;
 }
 
 void freeStateSetData(DATA *data) {
@@ -640,6 +716,7 @@ void updateRelationsPre(DATA *data) {
 
 modelica_boolean checkRelations(DATA *data) {
     //ToDo: implement for new data structure
+    return fmi2False;
 }
 
 void mmc_catch_dummy_fn (void) {

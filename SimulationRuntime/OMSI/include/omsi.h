@@ -243,7 +243,7 @@ typedef struct sim_data_t{
  *
  */
 typedef struct model_data_t {
-    char*                   modelGUID;
+    const char*             modelGUID;
 	unsigned int            n_states;				// number of continuous states
 	unsigned int            n_derivatives;
 	unsigned int            n_real_vars;			// number of real algebraic variables

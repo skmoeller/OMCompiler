@@ -189,7 +189,7 @@ FMI2_Export fmi2Status fmi2SetTime(fmi2Component c, fmi2Real time)
   return omsi_set_time(c, time);
 }
 
-FMI2_Export fmi2Status fmi2SetContinuousStates(fmi2Component c, const fmi2Real x[],size_t nx)
+FMI2_Export fmi2Status fmi2SetContinuousStates(fmi2Component c, const fmi2Real x[], size_t nx)
 {
   return omsi_set_continuous_states(c, x, nx);
 }
