@@ -67,7 +67,7 @@ typedef struct file_info {
 	int colStart;
 	int lineEnd;
 	int colEnd;
-	int readonly;
+	int fileWritable;
 } file_info;
 
 
@@ -109,7 +109,7 @@ typedef struct real_var_attribute_t {
 	bool fixed; /* depends on the type */
 	bool useNominal; /* = false */
 	double nominal; /* = 1.0 */
-	bool useStart; /* = false */
+	//bool useStart; /* = false */        // ToDo: is this variable necessary? Use always start and if this one whould be false use default start 0.0
 	double start; /* = 0.0 */
 } real_var_attribute_t;
 
@@ -121,7 +121,7 @@ typedef struct int_var_attribute_t {
 	int min; /* = -Inf */
 	int max; /* = +Inf */
 	bool fixed; /* depends on the type */
-	bool useStart; /* = false */
+	//bool useStart; /* = false */
 	int start; /* = 0 */
 } int_var_attribute_t;
 
@@ -131,7 +131,7 @@ typedef struct int_var_attribute_t {
  */
 typedef struct bool_var_attribute_t {
 	bool fixed; /* depends on the type */
-	bool useStart; /* = false */
+	//bool useStart; /* = false */
 	bool start; /* = false */
 } bool_var_attribute_t;
 
@@ -140,8 +140,8 @@ typedef struct bool_var_attribute_t {
  * string variable attributes
  */
 typedef struct string_var_attribute_t {
-	bool useStart; /* = false */
-	bool start; /* = "" */
+	//bool useStart; /* = false */
+	char * start; /* = "" */
 } string_var_attribute_t;
 
 
@@ -152,7 +152,7 @@ typedef struct model_variable_info_t {
 	int id;
 	const char *name;
 	const char *comment;
-	int var_type;
+	var_type variable_type;
 	void* attribute;    //pointer to variable attribute  ( real_var_attribute | int_var_attribute | bool_var_attribute | string_var_attribute )
 	file_info info;
 } model_variable_info_t;
@@ -247,17 +247,17 @@ typedef struct model_data_t {
 	unsigned int            n_states;				// number of continuous states
 	unsigned int            n_derivatives;
 	unsigned int            n_real_vars;			// number of real algebraic variables
-	unsigned int            n_int_vars;				// number of integer algebraic variables
-	unsigned int            n_bool_vars;			// number of boolean algebraic variables
-	unsigned int            n_string_vars;			// number of string algebraic variables
 	unsigned int            n_real_parameters;		// number of real parameters
+	unsigned int            n_int_vars;				// number of integer algebraic variables
 	unsigned int            n_int_parameters;		// number of integer parameters
+	unsigned int            n_bool_vars;			// number of boolean algebraic variables
 	unsigned int            n_bool_parameters;		// number of boolean parameters
+	unsigned int            n_string_vars;			// number of string algebraic variables
 	unsigned int			n_string_parameters;	// number of string parameters
 	unsigned int            n_zerocrossings;        // number of zero crossings
     unsigned int            n_equations;            // ToDo: or is this information already somewhere else?
 
-	model_variable_info_t*  model_vars_info_t;		// N = n_$all_vars + n_$all_parameters  $all={real,int,bool}
+	model_variable_info_t*  model_vars_info_t;		// N = n_states + n_derivatives n_$all_vars + n_$all_parameters  $all={real,int,bool}
 	equation_info_t*        equation_info_t;
 } model_data_t;
 
