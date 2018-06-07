@@ -465,14 +465,14 @@ static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* mo
         break;
 
         case TYPE_BOOL:
-                attribute_bool = (int_var_attribute_t *) global_allocateMemory(1, sizeof(bool_var_attribute_t));
+                attribute_bool = (bool_var_attribute_t *) global_allocateMemory(1, sizeof(bool_var_attribute_t));
                 omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_bool->fixed);
                 omsu_read_value_bool_default(omsu_findHashStringString(v,"start"), &attribute_bool->start, 0);
 
                 model_var_info->attribute = attribute_bool;
         break;
         case TYPE_STRING:
-                attribute_string = (int_var_attribute_t *) global_allocateMemory(1, sizeof(string_var_attribute_t));
+                attribute_string = (string_var_attribute_t *) global_allocateMemory(1, sizeof(string_var_attribute_t));
                 omsu_read_value_string(omsu_findHashStringStringEmpty(v,"start"), &attribute_int->start);
 
                 model_var_info->attribute = attribute_string;
@@ -675,7 +675,7 @@ int omsu_process_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID,
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
-    omsu_process_info_json();
+    //omsu_process_info_json();
 
 
     /* allocate memory for sim_data_t */
@@ -795,7 +795,7 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | comment:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].comment);
         printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].variable_type);
         printf("| | | attribute:\n");
-        real_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
+        int_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
         printf("| | | | min:\t\t\t%f\n", attribute->min);
         printf("| | | | max:\t\t\t%f\n", attribute->max);
         printf("| | | | fixed:\t\t\t%s\n", attribute->fixed ? "true" : "false");
@@ -816,9 +816,9 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | comment:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].comment);
         printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].variable_type);
         printf("| | | attribute:\n");
-        real_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
+        bool_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
         printf("| | | | fixed:\t\t\t%s\n", attribute->fixed ? "true" : "false");
-        printf("| | | | start:\t\t\t%f\n", attribute->start);
+        printf("| | | | start:\t\t\t%s\n", attribute->start ? "true" : "false");
 
         printf("| | | file info:\n");
         printf("| | | | filename:\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].info.filename);
@@ -835,8 +835,8 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | comment:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].comment);
         printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].variable_type);
         printf("| | | attribute:\n");
-        real_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
-        printf("| | | | start:\t\t\t%f\n", attribute->start);
+        string_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
+        printf("| | | | start:\t\t\t%s\n", attribute->start);
 
         printf("| | | file info:\n");
         printf("| | | | filename:\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].info.filename);
