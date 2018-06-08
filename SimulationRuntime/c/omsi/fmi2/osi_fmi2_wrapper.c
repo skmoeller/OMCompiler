@@ -54,7 +54,7 @@ FMI2_Export fmi2Status fmi2SetDebugLogging(fmi2Component c,fmi2Boolean loggingOn
   return omsi_set_debug_logging(c, loggingOn, nCategories, categories);
 }
 
-FMI2_Export fmi2Component fmi2Instantiate(fmi2String instanceName,fmi2Type   fmuType,fmi2String fmuGUID,fmi2String fmuResourceLocation,const fmi2CallbackFunctions* functions, fmi2Boolean visible,fmi2Boolean loggingOn)
+FMI2_Export fmi2Component fmi2Instantiate(fmi2String instanceName, fmi2Type fmuType, fmi2String fmuGUID, fmi2String fmuResourceLocation, const fmi2CallbackFunctions* functions, fmi2Boolean visible, fmi2Boolean loggingOn)
 {
   return omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, visible, loggingOn);
 }
@@ -189,7 +189,7 @@ FMI2_Export fmi2Status fmi2SetTime(fmi2Component c, fmi2Real time)
   return omsi_set_time(c, time);
 }
 
-FMI2_Export fmi2Status fmi2SetContinuousStates(fmi2Component c, const fmi2Real x[],size_t nx)
+FMI2_Export fmi2Status fmi2SetContinuousStates(fmi2Component c, const fmi2Real x[], size_t nx)
 {
   return omsi_set_continuous_states(c, x, nx);
 }

@@ -15,9 +15,12 @@ extern "C" {
 
 /* forward some types */
 typedef struct sim_data_t sim_data_t;
-typedef struct _equation_info_t equation_info_t;
-typedef struct _omsi_linear_system_t omsi_linear_system_t;
+typedef struct equation_info_t equation_info_t;
+typedef struct omsi_linear_system_t omsi_linear_system_t;
 typedef struct omsi_sparsity_pattern omsi_sparsity_pattern;
+typedef struct equation_system_t equation_system_t;
+typedef struct omsi_analytical_jacobian omsi_analytical_jacobian;
+typedef struct omsi_index_type omsi_index_type;
 
 /* function prototypes for omsi_linear_system_t functions */
 typedef int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* vector);
@@ -26,7 +29,7 @@ typedef int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* vecto
 /**
  *
  */
-typedef struct {
+typedef struct omsi_analytical_jacobian{
     unsigned int n_columns;
     unsigned int n_rows;
     double* tmp_vars;
@@ -79,7 +82,7 @@ typedef struct {
 /**
  *
  */
-typedef struct _omsi_linear_system_t{
+typedef struct omsi_linear_system_t{
 
   int equation_index;       /* index for EQUATION_INFO */
 

@@ -49,10 +49,11 @@ extern "C" {
 #include "fmi2/fmi2Functions.h"
 
 /* forward struct */
-typedef struct osu_t _osu_t;
+typedef struct osu_t osu_t;
+typedef struct omsi_t omsi_t;
 
 /* extern functions */
-extern void omsic_model_setup_data(_osu_t* OSU);
+//extern void omsic_model_setup_data(osu_t* OSU);
 
 
 /*! \fn omsi_me_instantiate

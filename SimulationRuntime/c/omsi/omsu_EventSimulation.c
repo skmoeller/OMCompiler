@@ -37,7 +37,7 @@
 #include "omsu_EventSimulation.h"
 
 
-fmi2Status omsi_enter_event_mode(fmi2Component c){
+fmi2Status omsi_enter_event_mode(fmi2Component c) {
 	osu_t *OSU = (osu_t *)c;
 	if (invalidState(OSU, "fmi2EnterEventMode", modelInitializationMode|modelContinuousTimeMode|modelEventMode, ~0))
 		return fmi2Error;
@@ -46,9 +46,7 @@ fmi2Status omsi_enter_event_mode(fmi2Component c){
 	return fmi2OK;
 }
 
-fmi2Status omsi_get_event_indicators(fmi2Component c, fmi2Real eventIndicators[], size_t nx)
-{
-	int i;
+fmi2Status omsi_get_event_indicators(fmi2Component c, fmi2Real eventIndicators[], size_t nx) {
 	osu_t* OSU = (osu_t *)c;
 	threadData_t *threadData = OSU->threadData;
 
@@ -72,7 +70,7 @@ fmi2Status omsi_get_event_indicators(fmi2Component c, fmi2Real eventIndicators[]
 		OSU->_need_update = 0;
 	}
 	OSU->osu_functions->function_ZeroCrossings(OSU->old_data, threadData, OSU->old_data->simulationInfo->zeroCrossings);
-	for (i = 0; i < nx; i++) {
+	for (size_t i = 0; i < nx; i++) {
 		eventIndicators[i] = OSU->old_data->simulationInfo->zeroCrossings[i];
 		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetEventIndicators: z%d = %.16g", i, eventIndicators[i])
 	}

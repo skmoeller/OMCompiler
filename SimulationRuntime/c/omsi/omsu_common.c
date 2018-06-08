@@ -39,7 +39,7 @@
  * gets real number of struct OSU with value reference vr
  */
 fmi2Real getReal (osu_t* OSU, const fmi2ValueReference vr) {
-    fmi2Real output = (fmi2Real) OSU->osu_data.sim_data.real_vars[vr];
+    fmi2Real output = (fmi2Real) OSU->osu_data->sim_data.model_vars_and_params->reals[vr];
     return output;
 }
 
@@ -47,7 +47,7 @@ fmi2Real getReal (osu_t* OSU, const fmi2ValueReference vr) {
  * sets real number of struct OSU for index reference vr with value
  */
 fmi2Status setReal(osu_t* OSU, const fmi2ValueReference vr, const fmi2Real value) {
-    OSU->osu_data.sim_data.real_vars[vr] = (double) value;
+    OSU->osu_data->sim_data.model_vars_and_params->reals[vr] = (double) value;
     return fmi2OK;
 }
 
@@ -56,7 +56,7 @@ fmi2Status setReal(osu_t* OSU, const fmi2ValueReference vr, const fmi2Real value
  * gets integer number of struct OSU with value reference vr
  */
 fmi2Integer getInteger (osu_t* OSU, const fmi2ValueReference vr) {
-    fmi2Integer output = (fmi2Integer) OSU->osu_data.sim_data.int_vars[vr];
+    fmi2Integer output = (fmi2Integer) OSU->osu_data->sim_data.model_vars_and_params->ints[vr];
     return output;
 }
 
@@ -64,7 +64,7 @@ fmi2Integer getInteger (osu_t* OSU, const fmi2ValueReference vr) {
  * sets integer number of struct OSU for index reference vr with value
  */
 fmi2Status setInteger(osu_t* OSU, const fmi2ValueReference vr, const fmi2Integer value) {
-    OSU->osu_data.sim_data.int_vars[vr] = (int) value;
+    OSU->osu_data->sim_data.model_vars_and_params->ints[vr] = (int) value;
     return fmi2OK;
 }
 
@@ -73,7 +73,7 @@ fmi2Status setInteger(osu_t* OSU, const fmi2ValueReference vr, const fmi2Integer
  * gets boolean variable of struct OSU with value reference vr
  */
 fmi2Boolean getBoolean (osu_t* OSU, const fmi2ValueReference vr) {
-    fmi2Boolean output = (fmi2Boolean) OSU->osu_data.sim_data.bool_vars[vr];
+    fmi2Boolean output = (fmi2Boolean) OSU->osu_data->sim_data.model_vars_and_params->bools[vr];
     return output;
 }
 
@@ -81,7 +81,7 @@ fmi2Boolean getBoolean (osu_t* OSU, const fmi2ValueReference vr) {
  * sets boolean variable of struct OSU for index reference vr with value
  */
 fmi2Status setBoolean(osu_t* OSU, const fmi2ValueReference vr, const fmi2Boolean value) {
-    OSU->osu_data.sim_data.bool_vars[vr] = (bool) value;
+    OSU->osu_data->sim_data.model_vars_and_params->bools[vr] = (bool) value;
     return fmi2OK;
 }
 

@@ -51,24 +51,27 @@ $(OBJS:%.o): $(SRCS:%.c)
 
 $(SRCS): $(HDRS)
 
-test: ./Solver/testsuit/main.c $(SRCS) $(HDRS)
-	$(CC) $(INCS) -Wl,-rpath=$(RUNTIMEPATH),libomsisolver.$(TARGET_LIB) $(LIB_DIR) $(LIBS) -o test ./Solver/testsuit/main.c
+test_solver: ./testsuit/test_solver_main.c $(SRCS) $(HDRS)
+	$(CC) $(INCS) -Wl,-rpath=$(RUNTIMEPATH),libomsisolver.$(TARGET_LIB) $(LIB_DIR) $(LIBS) -o testsuite/test_solver ./testsuit/test_solver_main.c
 
 libomsu: $(OMSU_OBJS) $(OMSU_HDRS)
-	$(CC) $(LDFLAGS) $(OMSU_INCS) -o omsu.$(TARGET_LIB) $^
+	$(CC) $(LDFLAGS) $(OMSU_INCS) -o omsu.$(TARGET_LIB) $^ -lexpat
 
 $(OMSU_OBJS): $(OMSU_SRCS)
 	$(CC) $(CFLAGS) $(OMSU_INCS) -c -o $@ $(@:%.o=%.c)
 
 $(OMSU_SRCS): $(OMSU_HDRS)
 
+test_omsu: ./testsuite/test_omsu_main.c libomsu $(OMSU_SRCS) $(OMSU_HDRS)
+	$(CC) $(INCS) -Wl,-rpath=$(RUNTIMEPATH),omsu.$(TARGET_LIB) $(LIB_DIR) $(LIBS) -o testsuite/test_omsu ./testsuite/test_omsu_main.c
+
 .PHONY: clean
 clean: clean_solver clean_omsu
 
 .PHONY: clean_solver
 clean_solver:
-	rm -rf libomsisolver.* $(OBJS) test
+	rm -rf libomsisolver.* $(OBJS) ./testsuite/test_solver.*
 
 .PHONY: clean_omsu
 clean_omsu:
-	rm -rf omsu.* $(OMSU_OBJS)
+	rm -rf omsu.* $(OMSU_OBJS) ./testsuite/test_omsu.*

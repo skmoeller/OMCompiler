@@ -37,7 +37,6 @@
 #include "omsu_GettersAndSetters.h"
 
 fmi2Status omsi_get_boolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Boolean value[]){
-	int i;
 	osu_t *OSU = (osu_t *)c;
 	if (invalidState(OSU, "fmi2GetBoolean", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
 		return fmi2Error;
@@ -45,7 +44,7 @@ fmi2Status omsi_get_boolean(fmi2Component c, const fmi2ValueReference vr[], size
 		return fmi2Error;
 	if (nvr > 0 && nullPointer(OSU, "fmi2GetBoolean", "value[]", value))
 		return fmi2Error;
-	for (i = 0; i < nvr; i++){
+	for (size_t i = 0; i < nvr; i++){
 		if (vrOutOfRange(OSU, "fmi2GetBoolean", vr[i], OSU->osu_data->model_data.n_bool_vars)) {
 		    return fmi2Error;
 		}
@@ -56,7 +55,6 @@ fmi2Status omsi_get_boolean(fmi2Component c, const fmi2ValueReference vr[], size
 }
 
 fmi2Status omsi_get_integer(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Integer value[]){
-    int i;
     osu_t* OSU = (osu_t *)c;
     if (invalidState(OSU, "fmi2GetInteger", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
       return fmi2Error;
@@ -64,7 +62,7 @@ fmi2Status omsi_get_integer(fmi2Component c, const fmi2ValueReference vr[], size
       return fmi2Error;
     if (nvr > 0 && nullPointer(OSU, "fmi2GetInteger", "value[]", value))
       return fmi2Error;
-    for (i = 0; i < nvr; i++) {
+    for (size_t i = 0; i < nvr; i++) {
       if (vrOutOfRange(OSU, "fmi2GetInteger", vr[i], OSU->osu_data->model_data.n_int_vars)) {
         return fmi2Error;
       }
@@ -75,7 +73,6 @@ fmi2Status omsi_get_integer(fmi2Component c, const fmi2ValueReference vr[], size
 }
 
 fmi2Status omsi_get_real(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Real value[]){
-    int i;
     osu_t *OSU = (osu_t *)c;
     if (invalidState(OSU, "fmi2GetReal", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
       return fmi2Error;
@@ -85,7 +82,7 @@ fmi2Status omsi_get_real(fmi2Component c, const fmi2ValueReference vr[], size_t 
       return fmi2Error;
 
     if (OSU->osu_data->model_data.n_real_vars > 0) {
-		for (i = 0; i < nvr; i++) {
+		for (size_t i = 0; i < nvr; i++) {
 		  if (vrOutOfRange(OSU, "fmi2GetReal", vr[i], OSU->osu_data->model_data.n_real_vars)) {
 		    return fmi2Error;
 		  }
@@ -97,7 +94,6 @@ fmi2Status omsi_get_real(fmi2Component c, const fmi2ValueReference vr[], size_t 
 }
 
 fmi2Status omsi_get_string(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2String value[]){
-	int i;
 	osu_t *OSU = (osu_t *)c;
 	if (invalidState(OSU, "fmi2GetString", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
 		return fmi2Error;
@@ -105,7 +101,7 @@ fmi2Status omsi_get_string(fmi2Component c, const fmi2ValueReference vr[], size_
 		return fmi2Error;
 	if (nvr>0 && nullPointer(OSU, "fmi2GetString", "value[]", value))
 		return fmi2Error;
-	for (i=0; i<nvr; i++) {
+	for (size_t i=0; i<nvr; i++) {
 		if (vrOutOfRange(OSU, "fmi2GetString", vr[i], OSU->osu_data->model_data.n_string_vars))
 			return fmi2Error;
 		value[i] = getString(OSU, vr[i]); // to be implemented by the includer of this file
@@ -115,7 +111,6 @@ fmi2Status omsi_get_string(fmi2Component c, const fmi2ValueReference vr[], size_
 }
 
 fmi2Status omsi_set_boolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Boolean value[]){
-	int i;
 	osu_t *OSU = (osu_t *)c;
 	int meStates = modelInstantiated|modelInitializationMode|modelEventMode;
 	int csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
@@ -128,7 +123,7 @@ fmi2Status omsi_set_boolean(fmi2Component c, const fmi2ValueReference vr[], size
 		return fmi2Error;
 	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetBoolean: nvr = %d", nvr)
 
-	for (i = 0; i < nvr; i++) {
+	for (size_t i = 0; i < nvr; i++) {
 		if (vrOutOfRange(OSU, "fmi2SetBoolean", vr[i], OSU->osu_data->model_data.n_bool_vars))
 			return fmi2Error;
 		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false")
@@ -139,8 +134,7 @@ fmi2Status omsi_set_boolean(fmi2Component c, const fmi2ValueReference vr[], size
 	return fmi2OK;
 }
 
-fmi2Status omsi_set_integer(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Integer value[]){
-	int i;
+fmi2Status omsi_set_integer(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Integer value[]) {
 	osu_t *OSU = (osu_t *)c;
 	int meStates = modelInstantiated|modelInitializationMode|modelEventMode;
 	int csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
@@ -153,7 +147,7 @@ fmi2Status omsi_set_integer(fmi2Component c, const fmi2ValueReference vr[], size
 		return fmi2Error;
 	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetInteger: nvr = %d", nvr)
 
-	for (i = 0; i < nvr; i++) {
+	for (size_t i = 0; i < nvr; i++) {
 		if (vrOutOfRange(OSU, "fmi2SetInteger", vr[i], OSU->osu_data->model_data.n_int_vars))
 			return fmi2Error;
 		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetInteger: #i%d# = %d", vr[i], value[i])
@@ -164,8 +158,7 @@ fmi2Status omsi_set_integer(fmi2Component c, const fmi2ValueReference vr[], size
 	return fmi2OK;
 }
 
-fmi2Status omsi_set_real(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Real value[]){
-	int i;
+fmi2Status omsi_set_real(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Real value[]) {
 	osu_t *OSU = (osu_t *)c;
 	int meStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
 	int csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
@@ -178,7 +171,7 @@ fmi2Status omsi_set_real(fmi2Component c, const fmi2ValueReference vr[], size_t 
 		return fmi2Error;
 	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetReal: nvr = %d", nvr)
 	// no check whether setting the value is allowed in the current state
-	for (i = 0; i < nvr; i++) {
+	for (size_t i = 0; i < nvr; i++) {
 		if (vrOutOfRange(OSU, "fmi2SetReal", vr[i], OSU->osu_data->model_data.n_real_vars+OSU->osu_data->model_data.n_states))
 			return fmi2Error;
 		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetReal: #r%d# = %.16g", vr[i], value[i])
@@ -189,8 +182,7 @@ fmi2Status omsi_set_real(fmi2Component c, const fmi2ValueReference vr[], size_t 
 	return fmi2OK;
 }
 
-fmi2Status omsi_set_string(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2String value[]){
-	int i, n;
+fmi2Status omsi_set_string(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2String value[]) {
 	osu_t *OSU = (osu_t *)c;
 	int meStates = modelInstantiated|modelInitializationMode|modelEventMode;
 	int csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
@@ -203,7 +195,7 @@ fmi2Status omsi_set_string(fmi2Component c, const fmi2ValueReference vr[], size_
 		return fmi2Error;
 	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetString: nvr = %d", nvr)
 
-	for (i = 0; i < nvr; i++) {
+	for (size_t i = 0; i < nvr; i++) {
 		if (vrOutOfRange(OSU, "fmi2SetString", vr[i], OSU->osu_data->model_data.n_string_vars))
 			return fmi2Error;
 		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetString: #s%d# = '%s'", vr[i], value[i])
