@@ -160,6 +160,7 @@ void updateRelationsPre(DATA *data);
 modelica_boolean checkRelations(DATA *data);
 
 void mmc_catch_dummy_fn (void);
+
 void omsic_model_setup_data (osu_t* OSU);
 
 #endif

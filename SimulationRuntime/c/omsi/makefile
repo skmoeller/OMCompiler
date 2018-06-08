@@ -6,7 +6,8 @@ LDFLAGS=-shared
 TARGET_LIB = so
 # =dll or =so for dynamic-link library and shared objects
 
-LIB_DIR = -L/d/workspace/Testlab/libs/
+#LIB_DIR = -L/d/workspace/Testlab/libs/
+LIB_DIR = -L/home/wbraun/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/omsi
 LIBS = $(LAPACKLIB) $(BLASLIB)
 LAPACKLIB = -llapack
 BLASLIB = -lblas
@@ -54,8 +55,8 @@ $(SRCS): $(HDRS)
 test_solver: ./testsuit/test_solver_main.c $(SRCS) $(HDRS)
 	$(CC) $(INCS) -Wl,-rpath=$(RUNTIMEPATH),libomsisolver.$(TARGET_LIB) $(LIB_DIR) $(LIBS) -o testsuite/test_solver ./testsuit/test_solver_main.c
 
-libomsu: $(OMSU_OBJS) $(OMSU_HDRS)
-	$(CC) $(LDFLAGS) $(OMSU_INCS) -o omsu.$(TARGET_LIB) $^ -lexpat
+libomsu: $(OMSU_OBJS) 
+	$(CC) $(LDFLAGS) $(OMSU_INCS) -o libomsu.$(TARGET_LIB) $^
 
 $(OMSU_OBJS): $(OMSU_SRCS)
 	$(CC) $(CFLAGS) $(OMSU_INCS) -c -o $@ $(@:%.o=%.c)
@@ -63,7 +64,8 @@ $(OMSU_OBJS): $(OMSU_SRCS)
 $(OMSU_SRCS): $(OMSU_HDRS)
 
 test_omsu: ./testsuite/test_omsu_main.c libomsu $(OMSU_SRCS) $(OMSU_HDRS)
-	$(CC) $(INCS) -Wl,-rpath=$(RUNTIMEPATH),omsu.$(TARGET_LIB) $(LIB_DIR) $(LIBS) -o testsuite/test_omsu ./testsuite/test_omsu_main.c
+	$(CC) -o testsuite/test_omsu_main.o -c ./testsuite/test_omsu_main.c
+	$(CC) ./testsuite/test_omsu_main.o -lomsu -Wl,-rpath,.   -lexpat  $(LIB_DIR) -o testsuite/test_omsu  
 
 .PHONY: clean
 clean: clean_solver clean_omsu
@@ -74,4 +76,4 @@ clean_solver:
 
 .PHONY: clean_omsu
 clean_omsu:
-	rm -rf omsu.* $(OMSU_OBJS) ./testsuite/test_omsu.*
+	rm -rf libomsu.* $(OMSU_OBJS) ./testsuite/test_omsu.*

@@ -65,10 +65,10 @@ void omsu_free_osu_data(omsi_t* omsi_data, const fmi2CallbackFreeMemory freeMemo
     for (i=0; i<omsi_data->model_data.n_real_vars+omsi_data->model_data.n_real_parameters; i++, j++) {
         freeMemory (omsi_data->model_data.model_vars_info_t[j].name);
         freeMemory (omsi_data->model_data.model_vars_info_t[j].comment);
-        real_var_attribute_t* attribute = omsi_data->model_data.model_vars_info_t[j].attribute;
+        real_var_attribute_t* attribute = omsi_data->model_data.model_vars_info_t[j].modelica_attributes;
         freeMemory (attribute->unit);
         freeMemory (attribute->displayUnit);
-        freeMemory (omsi_data->model_data.model_vars_info_t[j].attribute);
+        freeMemory (omsi_data->model_data.model_vars_info_t[j].modelica_attributes);
         freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);
     }
     n_model_vars_and_params = omsi_data->model_data.n_states + omsi_data->model_data.n_derivatives
@@ -79,7 +79,7 @@ void omsu_free_osu_data(omsi_t* omsi_data, const fmi2CallbackFreeMemory freeMemo
     for (i=j; i<n_model_vars_and_params; i++, j++) {
         freeMemory (omsi_data->model_data.model_vars_info_t[j].name);
         freeMemory (omsi_data->model_data.model_vars_info_t[j].comment);
-        freeMemory (omsi_data->model_data.model_vars_info_t[j].attribute);
+        freeMemory (omsi_data->model_data.model_vars_info_t[j].modelica_attributes);
         freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);
     }
     freeMemory (omsi_data->model_data.model_vars_info_t);
@@ -418,13 +418,13 @@ void omsu_free_ModelInput(omc_ModelInput mi, omsi_t* omsi_data, const fmi2Callba
  * Reads variables info and attributes and writes in model_vars_info_t.
  * If one attribute is not found a default value is used.
  */
-static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var_info, var_type type) {
+static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var_info, omsi_data_type type) {
 
     omsu_read_value_int(omsu_findHashStringString(v,"valueReference"), &model_var_info->id, 0);
     omsu_read_value_string(omsu_findHashStringString(v,"name"), &model_var_info->name);
     omsu_read_value_string(omsu_findHashStringStringEmpty(v,"description"), &model_var_info->comment);
 
-    model_var_info->variable_type = type;
+    model_var_info->type_index.type = type;
 
     real_var_attribute_t * attribute_real;
     int_var_attribute_t * attribute_int;
@@ -436,46 +436,45 @@ static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* mo
     /* read attributes in dependence of variable_type */
     switch(type) {
         default:
-        case TYPE_UNKNOWN:
+        case OMSI_TYPE_UNKNOWN:
             // ToDo: add error case
         break;
 
-        case TYPE_REAL:
+        case OMSI_TYPE_REAL:
             attribute_real = (real_var_attribute_t *) global_allocateMemory(1, sizeof(real_var_attribute_t));
             omsu_read_value_string(omsu_findHashStringStringEmpty(v,"unit"), &attribute_real->unit);
             omsu_read_value_string(omsu_findHashStringStringEmpty(v,"displayUnit"), &attribute_real->displayUnit);
             omsu_read_value_real(omsu_findHashStringString(v,"min"), &attribute_real->min, -DOUBLE_INF);              // ToDo: find macro for double infinity resp. -infinity
             omsu_read_value_real(omsu_findHashStringString(v,"max"), &attribute_real->max, DOUBLE_INF);              // ToDo: find macro for double infinity resp. -infinity
             omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_real->fixed);
-            omsu_read_value_bool_default(omsu_findHashStringString(v,"useNominal"), &attribute_real->useNominal, 0);
             omsu_read_value_real(omsu_findHashStringString(v,"nominal"), &attribute_real->nominal, 1);
             omsu_read_value_real(omsu_findHashStringString(v,"start"), &attribute_real->start, 0);
 
-            model_var_info->attribute = attribute_real;
+            model_var_info->modelica_attributes = attribute_real;
         break;
 
-        case TYPE_INTEGER:
+        case OMSI_TYPE_INTEGER:
             attribute_int = (int_var_attribute_t *) global_allocateMemory(1, sizeof(int_var_attribute_t));
             omsu_read_value_int(omsu_findHashStringString(v,"min"), &attribute_int->min, -INTEGER_INF);              // ToDo: find macro for integer infinity resp. -infinity
             omsu_read_value_int(omsu_findHashStringString(v,"max"), &attribute_int->min, INTEGER_INF);              // ToDo: find macro for integer infinity resp. -infinity
             omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_int->fixed);
             omsu_read_value_int(omsu_findHashStringString(v,"start"), &attribute_int->start, 0);
 
-            model_var_info->attribute = attribute_int;
+            model_var_info->modelica_attributes = attribute_int;
         break;
 
-        case TYPE_BOOL:
+        case OMSI_TYPE_BOOLEAN:
                 attribute_bool = (bool_var_attribute_t *) global_allocateMemory(1, sizeof(bool_var_attribute_t));
                 omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_bool->fixed);
                 omsu_read_value_bool_default(omsu_findHashStringString(v,"start"), &attribute_bool->start, 0);
 
-                model_var_info->attribute = attribute_bool;
+                model_var_info->modelica_attributes = attribute_bool;
         break;
-        case TYPE_STRING:
+        case OMSI_TYPE_STRING:
                 attribute_string = (string_var_attribute_t *) global_allocateMemory(1, sizeof(string_var_attribute_t));
                 omsu_read_value_string(omsu_findHashStringStringEmpty(v,"start"), &attribute_int->start);
 
-                model_var_info->attribute = attribute_string;
+                model_var_info->modelica_attributes = attribute_string;
         break;
     }
 
@@ -498,20 +497,20 @@ void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi) {
     /* model vars info for states */
     for (i=0; i<model_data->n_states; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rSta ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_REAL);    // ToDo: Which type for states
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL);    // ToDo: Which type for states
     }
     for (i=0; i<model_data->n_states; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rDer ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_REAL);    // ToDo: Which type for states
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL);    // ToDo: Which type for states
     }
 
     for (i=0; i<model_data->n_real_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rAlg ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_REAL);
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL);
     }
     for (i=0; i<model_data->n_real_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rPar ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_REAL);
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL);
     }
 
     // ToDo: add real aliases???
@@ -519,29 +518,29 @@ void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi) {
 
     for (i=0; i<model_data->n_int_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->iAlg ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_INTEGER);
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_INTEGER);
     }
     for (i=0; i<model_data->n_int_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->iPar ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_INTEGER);
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_INTEGER);
     }
 
     for (i=0; i<model_data->n_bool_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->bAlg ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_BOOL);
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_BOOLEAN);
     }
     for (i=0; i<model_data->n_bool_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->bPar ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_BOOL);
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_BOOLEAN);
     }
 
     for (i=0; i<model_data->n_string_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->sAlg ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_STRING);
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_STRING);
     }
     for (i=0; i<model_data->n_string_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->sPar ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], TYPE_STRING);
+        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_STRING);
     }
 }
 
@@ -768,15 +767,14 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | id:\t\t\t%i\n", OSU->osu_data->model_data.model_vars_info_t[i].id);
         printf("| | | name:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].name);
         printf("| | | comment:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].comment);
-        printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].variable_type);
+        printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].type_index.type);
         printf("| | | attribute:\n");
-        real_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
+        real_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].modelica_attributes;
         printf("| | | | unit:\t\t\t%s\n", attribute->unit);
         printf("| | | | displayUnit:\t\t%s\n", attribute->displayUnit);
         printf("| | | | min:\t\t\t%f\n", attribute->min);
         printf("| | | | max:\t\t\t%f\n", attribute->max);
         printf("| | | | fixed:\t\t\t%s\n", attribute->fixed ? "true" : "false");
-        printf("| | | | useNominal:\t\t%s\n", attribute->useNominal ? "true" : "false");
         printf("| | | | nominal:\t\t%f\n", attribute->nominal);
         printf("| | | | start:\t\t\t%f\n", attribute->start);
 
@@ -793,9 +791,9 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | id:\t\t\t%i\n", OSU->osu_data->model_data.model_vars_info_t[i].id);
         printf("| | | name:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].name);
         printf("| | | comment:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].comment);
-        printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].variable_type);
+        printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].type_index.type);
         printf("| | | attribute:\n");
-        int_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
+        int_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].modelica_attributes;
         printf("| | | | min:\t\t\t%f\n", attribute->min);
         printf("| | | | max:\t\t\t%f\n", attribute->max);
         printf("| | | | fixed:\t\t\t%s\n", attribute->fixed ? "true" : "false");
@@ -814,9 +812,9 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | id:\t\t\t%i\n", OSU->osu_data->model_data.model_vars_info_t[i].id);
         printf("| | | name:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].name);
         printf("| | | comment:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].comment);
-        printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].variable_type);
+        printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].type_index.type);
         printf("| | | attribute:\n");
-        bool_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
+        bool_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].modelica_attributes;
         printf("| | | | fixed:\t\t\t%s\n", attribute->fixed ? "true" : "false");
         printf("| | | | start:\t\t\t%s\n", attribute->start ? "true" : "false");
 
@@ -833,9 +831,9 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | id:\t\t\t%i\n", OSU->osu_data->model_data.model_vars_info_t[i].id);
         printf("| | | name:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].name);
         printf("| | | comment:\t\t\t%s\n", OSU->osu_data->model_data.model_vars_info_t[i].comment);
-        printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].variable_type);
+        printf("| | | variable type:\t\t%d\n", (int)OSU->osu_data->model_data.model_vars_info_t[i].type_index.type);
         printf("| | | attribute:\n");
-        string_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].attribute;
+        string_var_attribute_t* attribute = OSU->osu_data->model_data.model_vars_info_t[i].modelica_attributes;
         printf("| | | | start:\t\t\t%s\n", attribute->start);
 
         printf("| | | file info:\n");
@@ -959,9 +957,11 @@ void mmc_catch_dummy_fn (void) {
     //ToDo: delete
 }
 
+/*
 void omsic_model_setup_data (osu_t* OSU) {
     //ToDo: delete
 }
+*/
 
 extern void omsu_initialization(omsi_t* osu_data) {
     //ToDo: delete

@@ -87,80 +87,8 @@ typedef struct equation_info_t{
  *   variable attributes
  */
 typedef enum {
-  TYPE_UNKNOWN = 0,
-
-  TYPE_REAL,
-  TYPE_INTEGER,
-  TYPE_BOOL,
-  TYPE_STRING,
-
-  TYPE_MAX
-} var_type;
-
-
-/**
- * real variable attributes
- */
-typedef struct real_var_attribute_t {
-	const char * unit; /* = "" */
-	const char * displayUnit; /* = "" */
-	double min; /* = -Inf */
-	double max; /* = +Inf */
-	bool fixed; /* depends on the type */
-	bool useNominal; /* = false */
-	double nominal; /* = 1.0 */
-	//bool useStart; /* = false */        // ToDo: is this variable necessary? Use always start and if this one whould be false use default start 0.0
-	double start; /* = 0.0 */
-} real_var_attribute_t;
-
-
-/**
- * integer variable attributes
- */
-typedef struct int_var_attribute_t {
-	int min; /* = -Inf */
-	int max; /* = +Inf */
-	bool fixed; /* depends on the type */
-	//bool useStart; /* = false */
-	int start; /* = 0 */
-} int_var_attribute_t;
-
-
-/**
- * boolean variable attributes
- */
-typedef struct bool_var_attribute_t {
-	bool fixed; /* depends on the type */
-	//bool useStart; /* = false */
-	bool start; /* = false */
-} bool_var_attribute_t;
-
-
-/**
- * string variable attributes
- */
-typedef struct string_var_attribute_t {
-	//bool useStart; /* = false */
-	char * start; /* = "" */
-} string_var_attribute_t;
-
-
-/**
- *
- */
-typedef struct model_variable_info_t {
-	int id;
-	const char *name;
-	const char *comment;
-	var_type variable_type;
-	void* attribute;    //pointer to variable attribute  ( real_var_attribute | int_var_attribute | bool_var_attribute | string_var_attribute )
-	file_info info;
-} model_variable_info_t;
-
-
-typedef enum {
   OMSI_TYPE_UNKNOWN,
-  OMSI_TYPE_DOUBLE,
+  OMSI_TYPE_REAL,
   OMSI_TYPE_INTEGER,
   OMSI_TYPE_BOOLEAN,
   OMSI_TYPE_STRING
@@ -172,11 +100,66 @@ typedef struct omsi_index_type {
   int index;
 } omsi_index_type;
 
+/**
+ * real variable attributes
+ */
+typedef struct real_var_attribute_t {
+	const char * unit; /* = "" */
+	const char * displayUnit; /* = "" */
+	double min; /* = -Inf */
+	double max; /* = +Inf */
+	bool fixed; /* depends on the type */
+	double nominal; /* = 1.0 */
+	double start; /* = 0.0 */
+} real_var_attribute_t;
+
+
+/**
+ * integer variable attributes
+ */
+typedef struct int_var_attribute_t {
+	int min; /* = -Inf */
+	int max; /* = +Inf */
+	bool fixed; /* depends on the type */
+	int start; /* = 0 */
+} int_var_attribute_t;
+
+
+/**
+ * boolean variable attributes
+ */
+typedef struct bool_var_attribute_t {
+	bool fixed; /* depends on the type */
+	bool start; /* = false */
+} bool_var_attribute_t;
+
+
+/**
+ * string variable attributes
+ */
+typedef struct string_var_attribute_t {
+	char * start; /* = "" */
+} string_var_attribute_t;
+
+/**
+ *
+ */
+typedef struct model_variable_info_t {
+	int id;						/* unique value reference from *_init.xml */
+	const char *name;
+	const char *comment;		/* variable description  or modelica comment*/
+	omsi_index_type type_index;	/* */
+	void* modelica_attributes;  /* pointer to modelica attributes  ( real_var_attribute | int_var_attribute | bool_var_attribute | string_var_attribute ) */
+	int negate;					/* if negated -1 else 1 */
+    int aliasID;				/* pointer to alias if > 0 */
+    file_info info;
+} model_variable_info_t;
+
 
 typedef struct omsi_values {
-  double* reals;
-  int* ints;
-  bool* bools;
+	double* reals;
+	int* ints;
+	bool* bools;
 } omsi_values;
 
 
@@ -220,7 +203,7 @@ typedef struct sim_data_t{
 	unsigned int inputs_bool_index;
 	//start index of output real variables in real vars array
 	unsigned int outputs_real_index;
-	//start index of output integer variables in integer vars array
+	//start index of output integer variables in imodel_variable_info_tnteger vars array
 	unsigned int outputs_int_index;
 	//start index of output boolean variables in boolean vars array
 	unsigned int outputs_bool_index;

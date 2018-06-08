@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+//#include "../fmi2/osi_fmi2_wrapper.h"
 #include "../fmi2/fmi2Functions.h"
 
 typedef struct {
@@ -115,7 +116,8 @@ void test_1 () {
     fmi2CallbackFunctions callbacks = {my_fmuLogger, calloc, free, NULL, &fmu};
     const char *instanceName = "SimpleModelLinear_1";
     const char* guid = "{e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}";
-    char *fmuResourceLocation = "d:\\workspace\\OpenModelica\\OMCompiler\\SimulationRuntime\\c\\omsi\\testsuite";
+    //char *fmuResourceLocation = "d:\\workspace\\OpenModelica\\OMCompiler\\SimulationRuntime\\c\\omsi\\testsuite";
+    char *fmuResourceLocation = "/home/wbraun/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/omsi/testsuite";
     fmi2Boolean visible = fmi2False;
     fmi2Boolean loggingOn = fmi2True;
 
