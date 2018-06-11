@@ -53,7 +53,7 @@ typedef struct osu_t osu_t;
 typedef struct omsi_t omsi_t;
 
 /* extern functions */
-//extern void omsic_model_setup_data(osu_t* OSU);
+extern void omsic_model_setup_data(osu_t* OSU);
 
 
 /*! \fn omsi_me_instantiate

@@ -36,29 +36,37 @@
 #ifndef OSI_FMI2_WRAPPER_H
 #define OSI_FMI2_WRAPPER_H
 
-//OpenModelica Simulation Interface
-#include "../omsu_common.h"
-#include "../omsu_utils.h"
-#include "../omsu_Initialization.h"
-
 //FMI2 interface
 #include "fmi2Functions.h"
 #include "fmi2FunctionTypes.h"
 #include "fmi2TypesPlatform.h"
 
+//OpenModelica Simulation Interface
+#include "../omsu_common.h"
+#include "../omsu_utils.h"
+#include "../omsu_Initialization.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* forward struct */
+/* type definitions of variables */
+typedef fmi2ValueReference omsi_unsignedInt;
+typedef fmi2Real omsi_real;
+typedef fmi2Integer omsi_int;
+typedef fmi2Boolean omsi_bool;
+typedef fmi2Char omsi_char;
+typedef fmi2String omsi_string;
+typedef fmi2Byte omsi_byte;
 
 /* Function prototypes */
-FMI2_Export const char* fmi2GetTypesPlatform();
-FMI2_Export const char* fmi2GetVersion();
+FMI2_Export const char* fmi2GetTypesPlatform(void);
+FMI2_Export const char* fmi2GetVersion(void);
 FMI2_Export fmi2Status fmi2SetDebugLogging(fmi2Component c,fmi2Boolean loggingOn,size_t  nCategories,const fmi2String categories[]);
 FMI2_Export fmi2Component fmi2Instantiate(fmi2String instanceName,fmi2Type   fmuType,fmi2String fmuGUID,fmi2String fmuResourceLocation,const fmi2CallbackFunctions* functions, fmi2Boolean visible,fmi2Boolean loggingOn);
 FMI2_Export void fmi2FreeInstance(fmi2Component c);
-FMI2_Export fmi2Status fmi2SetupExperiment(fmi2Component c,fmi2Boolean   toleranceDefined,fmi2Real      tolerance, fmi2Real      startTime, fmi2Boolean   stopTimeDefined, fmi2Real      stopTime);
+FMI2_Export fmi2Status fmi2SetupExperiment(fmi2Component c, fmi2Boolean toleranceDefined,fmi2Real tolerance, fmi2Real tartTime, fmi2Boolean stopTimeDefined, fmi2Real stopTime);
 FMI2_Export fmi2Status fmi2EnterInitializationMode(fmi2Component c);
 FMI2_Export fmi2Status fmi2ExitInitializationMode(fmi2Component c);
 FMI2_Export fmi2Status fmi2Terminate(fmi2Component c);

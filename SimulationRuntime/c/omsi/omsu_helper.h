@@ -31,6 +31,7 @@
 #ifndef OMSU_HELPER_H
 #define OMSU_HELPER_H
 
+#include "../OMSI/include/omsi.h"
 #include "omsu_common.h"
 #include "fmi2/osi_fmi2_wrapper.h"      // ToDo: Should not be needed here
 #include "fmi2/fmi2Functions.h"
@@ -70,8 +71,8 @@ typedef struct omsi_t omsi_t;
  */
 typedef struct hash_string_string
 {
-  const char *id;
-  const char *val;
+  omsi_string id;
+  omsi_string val;
   UT_hash_handle hh;
 } hash_string_string;
 
@@ -81,7 +82,7 @@ typedef hash_string_string omc_ScalarVariable;
 
 typedef struct hash_long_var
 {
-  long id;
+  omsi_long id;
   omc_ScalarVariable *val;
   UT_hash_handle hh;
 } hash_long_var;
@@ -90,8 +91,8 @@ typedef hash_long_var omc_ModelVariables;
 
 typedef struct hash_string_long
 {
-  const char *id;
-  long val;
+  omsi_string id;
+  omsi_long val;
   UT_hash_handle hh;
 } hash_string_long;
 
@@ -131,29 +132,33 @@ typedef struct omc_ModelInput
 
 #include "openmodelica.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void omsu_print_debug (osu_t* OSU);     // ToDo: delete later
-int omsu_allocate_sim_data(omsi_t* omsi_data, const fmi2CallbackAllocateMemory allocateMemory);
+omsi_int omsu_allocate_sim_data(omsi_t* omsi_data, const fmi2CallbackAllocateMemory allocateMemory);
 void omsu_free_osu_data(omsi_t* omsi_data,const fmi2CallbackFreeMemory freeMemory);
 void storePreValues (DATA *data);
-int stateSelection(DATA *data, threadData_t *threadData, char reportError, int switchStates);
+omsi_int stateSelection(DATA *data, threadData_t *threadData, omsi_char reportError, omsi_int switchStates);
 void overwriteOldSimulationData(DATA *data);
 void initializeDataStruc(DATA *data, threadData_t *threadData);
-int omsu_process_input_xml(omsi_t* osu_data, char* filename, fmi2String fmuGUID, fmi2String instanceName, const fmi2CallbackFunctions* functions);
-int initializeNonlinearSystems(DATA *data, threadData_t *threadData);
-int initializeLinearSystems(DATA *data, threadData_t *threadData);
-int initializeMixedSystems(DATA *data, threadData_t *threadData);
+omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2String fmuGUID, fmi2String instanceName, const fmi2CallbackFunctions* functions);
+omsi_int initializeNonlinearSystems(DATA *data, threadData_t *threadData);
+omsi_int initializeLinearSystems(DATA *data, threadData_t *threadData);
+omsi_int initializeMixedSystems(DATA *data, threadData_t *threadData);
 void initializeStateSetJacobians(DATA *data, threadData_t *threadData);
-void setZCtol(double relativeTol);
+void setZCtol(omsi_real relativeTol);
 void copyStartValuestoInitValues(DATA *data);
-int initialization(DATA *data, threadData_t *threadData, const char* pInitMethod, const char* pInitFile, double initTime);
-void initSample(DATA* data, threadData_t *threadData, double startTime, double stopTime);
-void initDelay(DATA* data, double startTime);
-double getNextSampleTimeFMU(DATA *data);
+omsi_int initialization(DATA *data, threadData_t *threadData, omsi_string pInitMethod, omsi_string pInitFile, omsi_real initTime);
+void initSample(DATA* data, threadData_t *threadData, omsi_real startTime, omsi_real stopTime);
+void initDelay(DATA* data, omsi_real startTime);
+omsi_real getNextSampleTimeFMU(DATA *data);
 void setAllVarsToStart(DATA *data);
 void setAllParamsToStart(DATA *data);
-int freeNonlinearSystems(DATA *data, threadData_t *threadData);
-int freeMixedSystems(DATA *data, threadData_t *threadData);
-int freeLinearSystems(DATA *data, threadData_t *threadData);
+omsi_int freeNonlinearSystems(DATA *data, threadData_t *threadData);
+omsi_int freeMixedSystems(DATA *data, threadData_t *threadData);
+omsi_int freeLinearSystems(DATA *data, threadData_t *threadData);
 void freeStateSetData(DATA *data);
 void deInitializeDataStruc(DATA *data);
 void updateRelationsPre(DATA *data);
@@ -161,6 +166,10 @@ modelica_boolean checkRelations(DATA *data);
 
 void mmc_catch_dummy_fn (void);
 
-void omsic_model_setup_data (osu_t* OSU);
+extern void omsic_model_setup_data (osu_t* OSU);
+
+#ifdef __cplusplus
+}  /* end of extern "C" { */
+#endif
 
 #endif

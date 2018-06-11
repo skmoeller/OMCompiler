@@ -95,7 +95,7 @@ fmi2Component omsi_instantiate(fmi2String                   instanceName,
     }
 
     /* initialize OSU */
-    omsic_model_setup_data(OSU);      // ToDo: implement, set model data
+//    omsic_model_setup_data(OSU);      // ToDo: implement, set model data
 
     // set all categories to on or off. fmi2SetDebugLogging should be called to choose specific categories.
     for (int i = 0; i < NUMBER_OF_CATEGORIES; i++) {
@@ -245,7 +245,7 @@ fmi2Status omsi_reset(fmi2Component c) {
 
     if (OSU->state & modelTerminated) {
       /* initialize OSU */
-      omsic_model_setup_data(OSU);
+//      omsic_model_setup_data(OSU);            // ToDo: implement
     }
     /* reset the values to start */
     setDefaultStartValues(OSU);     // ToDo: implement

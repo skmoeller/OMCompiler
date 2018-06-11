@@ -39,12 +39,12 @@
 
 
 
-FMI2_Export const char* fmi2GetTypesPlatform()
+FMI2_Export const char* fmi2GetTypesPlatform(void)
 {
   return fmi2TypesPlatform;
 }
 
-FMI2_Export const char* fmi2GetVersion()
+FMI2_Export const char* fmi2GetVersion(void)
 {
   return fmi2Version;
 }

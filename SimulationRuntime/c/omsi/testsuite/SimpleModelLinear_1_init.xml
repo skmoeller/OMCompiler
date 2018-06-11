@@ -579,7 +579,7 @@
     description = "Temperature of heatPort"
     variability = "continuous" isDiscrete = "false"
     causality = "internal" isValueChangeable = "false"
-    alias = "alias" aliasVariable="resistor1.T"
+    alias = "alias" aliasVariable="resistor1.T" aliasVariableId="1018"
     classIndex = "4" classType = "rAli"
     isProtected = "false" hideResult = "false"
     fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Electrical/Analog/Interfaces.mo" startLine = "313" startColumn = "5" endLine = "313" endColumn = "56" fileWritable = "true">
@@ -843,7 +843,7 @@
     description = "Connector of Real output signal"
     variability = "continuous" isDiscrete = "false"
     causality = "internal" isValueChangeable = "false"
-    alias = "alias" aliasVariable="sineVoltage1.v"
+    alias = "alias" aliasVariable="sineVoltage1.v" aliasVariableId="1015"
     classIndex = "26" classType = "rAli"
     isProtected = "false" hideResult = "false"
     fileName = "D:/PortableApps/OpenModelica1.13.0-dev-64bit/lib/omlibrary/Modelica 3.2.2/Blocks/Interfaces.mo" startLine = "269" startColumn = "5" endLine = "270" endColumn = "56" fileWritable = "true">
