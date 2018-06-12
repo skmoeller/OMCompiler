@@ -31,7 +31,7 @@
 /*! \file omc_math.c
  */
 
-#include "omsi_vector.h"
+#include "../../../include/Math/omsi_vector.h"
 
 #include <string.h> /* memcpy */
 #include <math.h>

@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 
-#include "newtonIteration.h"
+#include "../../../include/Solver/newtonIteration.h"
 
 
 extern double enorm_(int *n, double *x);

@@ -52,7 +52,7 @@
 #endif
 
 #include "nonlinearSystem.h"
-#include "Homotopy.h"
+#include "../../../include/Solver/Homotopy.h"
 #include "nonlinearSolverHybrd.h"
 
 #ifdef __cplusplus

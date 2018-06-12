@@ -31,7 +31,7 @@
 /*! \file nonlinear_solver.c
  */
 
-#include "Lapack.h"
+#include "../../../include/Solver/Lapack.h"
 
 /* TODO: build these functions in omsi_eqns_system.c */
 //int get_x(sim_data_t* data, omsi_vector_t* vector){
@@ -70,7 +70,7 @@ int eval_residual(sim_data_t* data,  omsi_vector_t* x,  omsi_vector_t* f, int if
 
   return iflag;
 }
-/* Ende löschen! */
+/* Ende lï¿½schen! */
 
 /*! \fn allocate memory for linear system solver lapack
  *

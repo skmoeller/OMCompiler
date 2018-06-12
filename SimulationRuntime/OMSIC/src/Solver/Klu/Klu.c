@@ -45,7 +45,7 @@
 #include "model_help.h"
 
 #include "linearSystem.h"
-#include "Klu.h"
+#include "../../../include/Solver/Klu.h"
 
 
 static void printMatrixCSC(int* Ap, int* Ai, double* Ax, int n);

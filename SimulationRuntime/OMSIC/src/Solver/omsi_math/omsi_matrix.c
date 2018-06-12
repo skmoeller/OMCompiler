@@ -31,7 +31,7 @@
 /*! \file omsi_matrix.c
  */
 
-#include "omsi_matrix.h"
+#include "../../../include/Math/omsi_matrix.h"
 
 
 /*! \fn omsi_matrix_t* _omsi_allocateMatrixData(omsi_size_t rows, omsi_size_t cols)

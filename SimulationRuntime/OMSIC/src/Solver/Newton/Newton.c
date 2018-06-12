@@ -2,8 +2,8 @@
  * This file is part of OpenModelica.
  *
  * Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
- * c/o Linköpings universitet, Department of Computer and Information Science,
- * SE-58183 Linköping, Sweden.
+ * c/o Linkï¿½pings universitet, Department of Computer and Information Science,
+ * SE-58183 Linkï¿½ping, Sweden.
  *
  * All rights reserved.
  *
@@ -53,7 +53,7 @@ extern int dgesv_(int *n, int *nrhs, double *a, int *lda, int *ipiv, double *b, 
 #endif
 
 
-#include "Newton.h"
+#include "../../../include/Solver/Newton.h"
 /*! \fn wrapper_fvec_newton for the residual Function
  *   tensolve calls for the subroutine fcn(n, x, fvec, iflag, data)
  *

@@ -33,7 +33,7 @@
 
 #include "omc_config.h"
 #include "nonlinearSystem.h"
-#include "Kinsol.h"
+#include "../../../include/Solver/Kinsol.h"
 #include "simulation/simulation_info_json.h"
 #include "util/omc_error.h"
 #include "omc_math.h"

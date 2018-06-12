@@ -30,7 +30,7 @@
 
 /*! \file nonlinear_solver.c
  */
-#include "TotalPivot.h"
+#include "../../../include/Solver/TotalPivot.h"
 
 
 
