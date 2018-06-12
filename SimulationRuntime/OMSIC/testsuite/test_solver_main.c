@@ -1,12 +1,13 @@
 #include<stdio.h>
+
+#include "../include/math/omsi_math.h"
+#include "../include/math/omsi_vector.h"
 #include "Lapack.h"
 #include "TotalPivot_Interface.h"
 //#include "Newton.h"
 //#include "newtonIteration.h"
 #include "omsi.h"
 #include "omsi_eqns_system.h"
-#include "omsi_math.h"
-#include "omsi_vector.h"
 
 
 int get_x(sim_data_t* data, omsi_vector_t* vector){

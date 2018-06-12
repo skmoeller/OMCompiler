@@ -34,7 +34,7 @@
  * model equations with OMSI.
  */
 
-#include "omsu_EventSimulation.h"
+#include "omsu/omsu_EventSimulation.h"
 
 
 fmi2Status omsi_enter_event_mode(fmi2Component c) {

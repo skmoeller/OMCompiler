@@ -37,10 +37,10 @@
 
 #include "fmi2/osi_fmi2_wrapper.h"
 #include "fmi2/fmi2Functions.h"
-#include "../../OMSI/include/omsi.h"
+#include "omsi.h"
 
 //C Simulation kernel includes
-#include "../simulation_data.h"
+#include "../../../c/simulation_data.h"
 //#include "../simulation/solver/stateset.h"
 //#include "../simulation/solver/model_help.h"
 //#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0

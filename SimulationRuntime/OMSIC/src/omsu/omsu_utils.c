@@ -33,7 +33,7 @@
  * Interface (OMSI). These are helper functions used for the other omsu functions.
  */
 
-#include "omsu_utils.h"
+#include "omsu/omsu_utils.h"
 
 fmi2Boolean isCategoryLogged(fmi2Component c, int categoryIndex)
 {

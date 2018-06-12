@@ -35,7 +35,7 @@
 /* TODO: implement external functions in FMU wrapper for c++ target
  */
 
-#include "osi_fmi2_wrapper.h"
+#include "fmi2/osi_fmi2_wrapper.h"
 
 
 

@@ -2,9 +2,10 @@
 #define _OMSI_EQNS_SYSTEM_H
 
 #include <stdbool.h>
-#include "../../c/omsi/Solver/omsi_math/omsi_math.h"
-#include "../../c/omsi/Solver/omsi_math/omsi_vector.h"
-#include "../../c/omsi/Solver/omsi_math/omsi_matrix.h"
+
+#include "../../OMSIC/include/math/omsi_math.h"
+#include "../../OMSIC/include/math/omsi_matrix.h"
+#include "../../OMSIC/include/math/omsi_vector.h"
 #include "omsi_jacobian.h"
 //#include "omsi.h"   //ToDo: should be pretty wrong
 

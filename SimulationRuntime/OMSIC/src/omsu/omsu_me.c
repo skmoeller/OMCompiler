@@ -33,7 +33,7 @@
  * OpenModelica Simulation Interface (OMSI).
  */
 
-#include "omsu_me.h"
+#include "omsu/omsu_me.h"
 
 fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo)
 {

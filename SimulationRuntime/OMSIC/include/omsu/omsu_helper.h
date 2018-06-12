@@ -31,7 +31,7 @@
 #ifndef OMSU_HELPER_H
 #define OMSU_HELPER_H
 
-#include "../OMSI/include/omsi.h"
+#include "omsi.h"
 #include "omsu_common.h"
 #include "fmi2/osi_fmi2_wrapper.h"      // ToDo: Should not be needed here
 #include "fmi2/fmi2Functions.h"
@@ -47,7 +47,7 @@ typedef struct omsi_t omsi_t;
 // ToDo: include all headers neccesary for XML parser, delete others
 
 //C Simulation kernel includes
-#include "../simulation_data.h"
+#include "simulation_data.h"
 //#include "../simulation/solver/stateset.h"
 //#include "../simulation/solver/model_help.h"
 //#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
@@ -69,8 +69,7 @@ typedef struct omsi_t omsi_t;
 /* some stuff from simulation_input_xml.c
  * ToDo: implement for new data struct
  */
-typedef struct hash_string_string
-{
+typedef struct hash_string_string {
   omsi_string id;
   omsi_string val;
   UT_hash_handle hh;
@@ -80,8 +79,7 @@ typedef hash_string_string omc_ModelDescription;
 typedef hash_string_string omc_DefaultExperiment;
 typedef hash_string_string omc_ScalarVariable;
 
-typedef struct hash_long_var
-{
+typedef struct hash_long_var {
   omsi_long id;
   omc_ScalarVariable *val;
   UT_hash_handle hh;
@@ -89,16 +87,14 @@ typedef struct hash_long_var
 
 typedef hash_long_var omc_ModelVariables;
 
-typedef struct hash_string_long
-{
+typedef struct hash_string_long {
   omsi_string id;
   omsi_long val;
   UT_hash_handle hh;
 } hash_string_long;
 
 /* structure used to collect data from the xml input file */
-typedef struct omc_ModelInput
-{
+typedef struct omc_ModelInput {
   omc_ModelDescription  *md; /* model description */
   omc_DefaultExperiment *de; /* default experiment */
 

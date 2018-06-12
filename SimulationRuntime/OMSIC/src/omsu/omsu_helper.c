@@ -28,7 +28,7 @@
  *
  */
 
-#include "omsu_helper.h"
+#include "omsu/omsu_helper.h"
 
 #define FMI2_DBL_MAX DBL_MAX
 #define FMI2_INT_MAX INT_MAX

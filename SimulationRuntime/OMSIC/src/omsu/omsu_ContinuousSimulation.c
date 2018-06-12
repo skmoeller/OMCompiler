@@ -34,7 +34,7 @@
  * model equations during continuous-time mode with OMSI.
  */
 
-#include "omsu_ContinuousSimulation.h"
+#include "omsu/omsu_ContinuousSimulation.h"
 
 fmi2Status omsi_new_discrete_state(fmi2Component  c, fmi2EventInfo* eventInfo){
 	osu_t *OSU = (osu_t *)c;

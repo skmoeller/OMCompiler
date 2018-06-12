@@ -34,7 +34,7 @@
  * of the FMU.
  */
 
-#include "omsu_Initialization.h"
+#include "omsu/omsu_Initialization.h"
 
 /*
  * Allocates memory for the Openmodelica Simulation Unit and initializes it.

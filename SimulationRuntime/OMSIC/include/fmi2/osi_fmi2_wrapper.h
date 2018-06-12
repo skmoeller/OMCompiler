@@ -42,9 +42,9 @@
 #include "fmi2TypesPlatform.h"
 
 //OpenModelica Simulation Interface
-#include "../omsu_common.h"
-#include "../omsu_utils.h"
-#include "../omsu_Initialization.h"
+#include "omsu/omsu_common.h"
+#include "omsu/omsu_utils.h"
+#include "omsu/omsu_Initialization.h"
 
 
 #ifdef __cplusplus

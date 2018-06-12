@@ -34,7 +34,7 @@
  * variables and FMI informations.
  */
 
-#include "omsu_GettersAndSetters.h"
+#include "omsu/omsu_GettersAndSetters.h"
 
 fmi2Status omsi_get_boolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Boolean value[]){
 	osu_t *OSU = (osu_t *)c;
