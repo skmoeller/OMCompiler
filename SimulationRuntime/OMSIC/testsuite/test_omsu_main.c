@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdarg.h>
 //#include "../fmi2/osi_fmi2_wrapper.h"
-#include "../fmi2/fmi2Functions.h"
+#include "fmi2/fmi2Functions.h"
 
 typedef struct {
 //    ModelDescription* modelDescription;

@@ -8,10 +8,7 @@ TARGET_LIB = so
 
 LIB_DIR = -L/d/workspace/Testlab/libs/
 #LIB_DIR = -L/home/wbraun/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/omsi
-LIBS = $(LAPACKLIB) $(BLASLIB)
-LAPACKLIB = -llapack
-BLASLIB = -lblas
-RUNTIMEPATH = .
+RUNTIMEPATH = $(PATH_TO_OMSIC)/lib/
 
 PATH_TO_OPENMODELICA = /d/workspace/OpenModelica
 
@@ -26,12 +23,16 @@ OMSI_INCLUDE = $(PATH_TO_OMSI)/include
 
 all:
 	make -C src/omsu libomsu
+	make -C src/solver libomsisolver
+	make -C testsuite test
 
 
 .PHONY: clean
 clean:
 	make -C src/omsu clean_omsu_all
+	make -C src/solver clean_solver_all
 
 .PHONY: clean_o_files
 clean_o_files:
 	make -C src/omsu clean_omsu_o
+	make -C src/solver clean_solver_o

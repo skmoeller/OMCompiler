@@ -42,13 +42,13 @@
 #include <stdlib.h>
 #include <string.h> /* memcpy */
 
-#include "../omsi_math/omsi_matrix.h"
-#include "../omsi_math/omsi_vector.h"
+#include "math/omsi_matrix.h"
+#include "math/omsi_vector.h"
 
-#include "../omsi_math/omsi_math.h"
-#include "../../../../OMSI/include/omsi.h"
-#include "../../../../OMSI/include/omsi_eqns_system.h"
-#include "../../../util/rtclock.h"
+#include "math/omsi_math.h"
+#include "omsi.h"
+#include "omsi_eqns_system.h"
+#include "util/rtclock.h"
 #include "TotalPivot.h"
 
 

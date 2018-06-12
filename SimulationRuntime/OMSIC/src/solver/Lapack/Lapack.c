@@ -31,7 +31,7 @@
 /*! \file nonlinear_solver.c
  */
 
-#include "../../../include/Solver/Lapack.h"
+#include "solver/lapack.h"
 
 /* TODO: build these functions in omsi_eqns_system.c */
 //int get_x(sim_data_t* data, omsi_vector_t* vector){

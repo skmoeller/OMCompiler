@@ -4,7 +4,7 @@ include ../../makefile
 
 # varibales for OMSU library creation
 OMSU_SRCS = omsu_ContinuousSimulation.c omsu_EventSimulation.c omsu_GettersAndSetters.c\
- omsu_Initialization.c omsu_me.c omsu_utils.c omsu_common.c omsu_helper.c
+ omsu_Initialization.c omsu_me.c omsu_utils.c omsu_common.c omsu_helper.c ../fmi2/osi_fmi2_wrapper.c
 
 OMSU_OBJS = $(OMSU_SRCS:%.c=%.o)
 
