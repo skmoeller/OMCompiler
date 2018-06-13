@@ -256,6 +256,26 @@ typedef enum {
   modelError              = 1<<6  // ME and CS
 } ModelState;
 
+// ToDo: is this the right location for these definitions?
+typedef enum {
+	omsi_model_exchange,
+	omsi_co_simulation		// not supported yet
+}omsi_type;
+
+typedef void      (*omsi_callback_logger)        	(void*, omsi_string, fmi2Status, omsi_string, omsi_string, ...);
+typedef void*     (*omsi_callback_allocate_memory)	(omsi_unsigned_int, omsi_unsigned_int);
+typedef void      (*omsi_callback_free_memory)    	(void*);
+typedef void      (*omsi_step_finished)
+
+typedef struct omsi_callback_functions{
+	const omsi_callback_logger         	logger;
+	const omsi_callback_allocate_memory allocateMemory;
+	const omsi_callback_free_memory     freeMemory;
+	const omsi_step_finished           	stepFinished;
+	const void*							componentEnvironment;
+}omsi_callback_functions;
+
+
 typedef struct osu_t {
     // open modelica simulation interface data
     omsi_t *                osu_data;       // ToDo: is now pointer, change every call / usage again
@@ -278,11 +298,11 @@ typedef struct osu_t {
     fmi2Real                startTime;
     fmi2Boolean             stopTimeDefined;
     fmi2Real                stopTime;
-    fmi2Type                type;
+    omsi_type               type;
     fmi2ValueReference*     vrStates;
     fmi2ValueReference*     vrStatesDerivatives;
 
-    fmi2CallbackFunctions*  fmiCallbackFunctions;
+    omsi_callback_functions*  fmiCallbackFunctions;
 } osu_t;
 
 /* extern functions */

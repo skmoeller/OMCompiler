@@ -39,11 +39,11 @@
 /*
  * Allocates memory for the Openmodelica Simulation Unit and initializes it.
  */
-fmi2Component omsi_instantiate(fmi2String                   instanceName,
-                               fmi2Type                     fmuType,
-                               fmi2String                   fmuGUID,
-                               fmi2String                   fmuResourceLocation,
-                               const fmi2CallbackFunctions* functions,
+fmi2Component omsi_instantiate(omsi_string                   instanceName,
+                               omsi_type                     fmuType,
+                               omsi_string                   fmuGUID,
+                               omsi_string                   fmuResourceLocation,
+                               const omsi_callback_functions* functions,
                                fmi2Boolean                  visible,
                                fmi2Boolean                  loggingOn)
 {

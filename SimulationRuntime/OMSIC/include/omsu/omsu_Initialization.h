@@ -44,6 +44,7 @@ extern "C" {
 #include <stdlib.h>
 #include <stdarg.h>
 #include "omsu_helper.h"
+#include "omsu_common.h"
 #include "omsu_utils.h"
 #include "omsu_me.h"
 #include "fmi2/fmi2Functions.h"
