@@ -35,8 +35,7 @@
 #ifndef OMSU_COMMON_H
 #define OMSU_COMMON_H
 
-#include "fmi2/osi_fmi2_wrapper.h"
-#include "fmi2/fmi2Functions.h"
+//#include "fmi2/osi_fmi2_wrapper.h"
 #include "omsi.h"
 
 //C Simulation kernel includes
@@ -271,6 +270,14 @@ typedef struct omsi_callback_functions{
 	const void*							componentEnvironment;
 }omsi_callback_functions;
 
+typedef struct {
+   omsi_bool newDiscreteStatesNeeded;
+   omsi_bool terminateSimulation;
+   omsi_bool nominalsOfContinuousStatesChanged;
+   omsi_bool valuesOfContinuousStatesChanged;
+   omsi_bool nextEventTimeDefined;
+   omsi_real nextEventTime;
+} omsi_event_info;
 
 typedef struct osu_t {
     // open modelica simulation interface data
@@ -288,7 +295,7 @@ typedef struct osu_t {
     omsi_bool           loggingOn;
     omsi_string         GUID;
     omsi_string         instanceName;
-    fmi2EventInfo       eventInfo;
+    omsi_event_info     eventInfo;
     omsi_bool           toleranceDefined;   // ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info
     omsi_real           tolerance;
     omsi_real           startTime;

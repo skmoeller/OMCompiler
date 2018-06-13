@@ -30,12 +30,12 @@
 
 #include "omsu/omsu_helper.h"
 
-#define FMI2_DBL_MAX DBL_MAX
-#define FMI2_INT_MAX INT_MAX
+#define OMSI_DBL_MAX DBL_MAX
+#define OMSI_INT_MAX INT_MAX
 
-/* global function */
-fmi2CallbackAllocateMemory global_allocateMemory = NULL;
-fmi2CallbackFreeMemory global_freeMemory = NULL;
+/* global functions */          // ToDo: is this the best way to go around giving every function a handle to those functions?
+omsi_callback_allocate_memory global_allocateMemory = NULL;
+omsi_callback_free_memory global_freeMemory = NULL;
 
 
 void storePreValues (DATA *data) {
@@ -56,7 +56,7 @@ void overwriteOldSimulationData(DATA *data) {
 /*
  * frees memory for omsi_t struct and all its components
  */
-void omsu_free_osu_data(omsi_t* omsi_data, const fmi2CallbackFreeMemory freeMemory) {
+void omsu_free_osu_data(omsi_t* omsi_data, const omsi_callback_free_memory freeMemory) {
 
     omsi_int i, j=0;
     omsi_int n_model_vars_and_params;
@@ -112,311 +112,7 @@ void omsu_free_osu_data(omsi_t* omsi_data, const fmi2CallbackFreeMemory freeMemo
 }
 
 
-/*
- *
- */
-static omsi_string omsu_findHashStringStringNull(hash_string_string *ht, omsi_string key) {
-  hash_string_string *res;
-  HASH_FIND_STR( ht, key, res );
-  return res ? res->val : NULL;
-}
 
-static inline omsi_string omsu_findHashStringStringEmpty(hash_string_string *ht, omsi_string key)
-{
-  omsi_string res = omsu_findHashStringStringNull(ht,key);
-  return res ? res : "";
-}
-
-static omsi_string omsu_findHashStringString(hash_string_string *ht, omsi_string key) {
-  omsi_string res = omsu_findHashStringStringNull(ht,key);
-  if (0==res) {
-    hash_string_string *c, *tmp;
-    HASH_ITER(hh, ht, c, tmp) {
-      //fprintf(stderr, "HashMap contained: %s->%s\n", c->id, c->val);            // ToDo: Use logger everywhere
-    }
-    //throwStreamPrint(NULL, "Failed to lookup %s in hashmap %p", key, ht);     // ToDo: add Error message
-  }
-  return res;
-}
-
-/*
- *
- */
-static void omsu_addHashLongVar(hash_long_var **ht, omsi_long key, omc_ScalarVariable *val) {
-  hash_long_var *v = (hash_long_var*) global_allocateMemory(1, sizeof(hash_long_var));
-  v->id=key;
-  v->val=val;
-  HASH_ADD_INT( *ht, id, v );
-}
-
-/*
- *
- */
-static void omsu_addHashStringString(hash_string_string **ht, omsi_string key, omsi_string val) {
-  hash_string_string *v = (hash_string_string*) global_allocateMemory(1, sizeof(hash_string_string));
-  v->id=strdup(key);
-  v->val=strdup(val);
-  HASH_ADD_KEYPTR( hh, *ht, v->id, strlen(v->id), v );
-}
-
-/* reads integer value from a string */
-static void omsu_read_value_int(omsi_string s, omsi_int* res, omsi_int default_value) {
-    if (s==NULL || *s == '\0') {
-        *res = default_value;
-    } else if (0 == strcmp(s, "true")) {
-        *res = 1;
-    } else if (0 == strcmp(s, "false")) {
-        *res = 0;
-    } else {
-        *res = strtol(s, (omsi_char **) NULL, 10);
-    }
-}
-
-/* reads integer value from a string */
-static void omsu_read_value_uint(omsi_string s, omsi_unsigned_int* res) {
-    if (s==NULL) {
-        *res = 0;       // default value, if no string was found
-        return;
-    }
-    if (0 == strcmp(s, "true")) {
-        *res = 1;
-    } else if (0 == strcmp(s, "false")) {
-        *res = 0;
-    } else {
-        *res = strtol(s, (omsi_char **) NULL, 10);
-    }
-}
-
-
-/* ToDo: comment me  */
-static omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht, omsi_long key) {
-  hash_long_var *res;
-  HASH_FIND_INT( ht, &key, res );
-  if (0==res) {
-    hash_long_var *c, *tmp;
-    HASH_ITER(hh, ht, c, tmp) {
-      fprintf(stderr, "HashMap contained: %ld->*map*\n", c->id);
-    }
-    // throwStreamPrint(NULL, "Failed to lookup %ld in hashmap %p", key, ht);       // ToDo: add Error message
-  }
-  return &res->val;
-}
-
-
-/* reads double value from a string */
-static void omsu_read_value_real(omsi_string s, modelica_real* res, modelica_real default_value) {
-    if (s== NULL || *s == '\0') {
-        *res = default_value;
-    } else if (0 == strcmp(s, "true")) {
-        *res = 1.0;
-    } else if (0 == strcmp(s, "false")) {
-        *res = 0.0;
-    } else {
-        *res = atof(s);     // ToDo: use strtod()
-    }
-}
-
-
-/* reads boolean value from a string */
-static inline void omsu_read_value_bool(omsi_string s, omsi_bool* res) {
-    *res = 0 == strcmp(s, "true");
-}
-
-static inline void omsu_read_value_bool_default (omsi_string s, omsi_bool* res, omsi_bool default_bool) {
-    if (s == NULL || *s == '\0') {
-        *res = default_bool;
-    }
-    *res = 0 == strcmp(s, "true");
-}
-
-/*
- *  Reads modelica_string value from a string.
- *  Allocates memory for string and copies string s into str.
- */
-static void omsu_read_value_string(omsi_string s, omsi_string *str) {
-    if(str == NULL) {
-        //warningStreamPrint(LOG_SIMULATION, 0, "error read_value, no data allocated for storing string");    // ToDo: Use same log everywhere
-        return;
-    }
-    *str = strdup(s);
-    if (str == NULL) {
-        //warningStreamPrint(LOG_SIMULATION, 0, "error read_value, out of memory");       // ToDo: Use same log everywhere
-        return;
-    }
-}
-
-
-static void XMLCALL startElement(void *userData, omsi_string name, omsi_string *attr) {
-  omc_ModelInput* mi = (omc_ModelInput*)userData;
-  mmc_sint_t i = 0;
-
-  /* handle fmiModelDescription */
-  if(!strcmp(name, "fmiModelDescription")) {
-    for(i = 0; attr[i]; i += 2) {
-      omsu_addHashStringString(&mi->md, attr[i], attr[i+1]);
-    }
-    return;
-  }
-  /* handle DefaultExperiment */
-  if(!strcmp(name, "DefaultExperiment")) {
-    for(i = 0; attr[i]; i += 2) {
-      omsu_addHashStringString(&mi->de, attr[i], attr[i+1]);
-    }
-    return;
-  }
-
-  /* handle ScalarVariable */
-  if(!strcmp(name, "ScalarVariable"))
-  {
-    omc_ScalarVariable *v = NULL;
-    omsi_string ci, ct;
-    omsi_int fail=0;
-    mi->lastCI = -1;
-    mi->lastCT = NULL;
-    for(i = 0; attr[i]; i += 2) {
-      omsu_addHashStringString(&v, attr[i], attr[i+1]);
-    }
-    /* fetch the class index/type  */
-    ci = omsu_findHashStringString(v, "classIndex");
-    ct = omsu_findHashStringString(v, "classType");
-    /* transform to mmc_sint_t  */
-    //mi->lastCI = atoi(ci);
-    mi->lastCI = strtol(ci, NULL, 10);
-
-    /* which one of the classifications?  */
-    if (strlen(ct) == 4) {
-      if (ct[0]=='r') {
-        if (0 == strcmp(ct+1,"Sta")) {
-          mi->lastCT = &mi->rSta;
-        } else if (0 == strcmp(ct+1,"Der")) {
-          mi->lastCT = &mi->rDer;
-        } else if (0 == strcmp(ct+1,"Alg")) {
-          mi->lastCT = &mi->rAlg;
-        } else if (0 == strcmp(ct+1,"Par")) {
-          mi->lastCT = &mi->rPar;
-        } else if (0 == strcmp(ct+1,"Ali")) {
-          mi->lastCT = &mi->rAli;
-        } else if (0 == strcmp(ct+1,"Sen")) {
-          mi->lastCT = &mi->rSen;
-        } else {
-          fail = 1;
-        }
-      } else if (ct[0]=='i') {
-        if (0 == strcmp(ct+1,"Alg")) {
-          mi->lastCT = &mi->iAlg;
-        } else if (0 == strcmp(ct+1,"Par")) {
-          mi->lastCT = &mi->iPar;
-        } else if (0 == strcmp(ct+1,"Ali")) {
-          mi->lastCT = &mi->iAli;
-        } else {
-          fail = 1;
-        }
-      } else if (ct[0]=='b') {
-        if (0 == strcmp(ct+1,"Alg")) {
-          mi->lastCT = &mi->bAlg;
-        } else if (0 == strcmp(ct+1,"Par")) {
-          mi->lastCT = &mi->bPar;
-        } else if (0 == strcmp(ct+1,"Ali")) {
-          mi->lastCT = &mi->bAli;
-        } else {
-          fail = 1;
-        }
-      } else if (ct[0]=='s') {
-        if (0 == strcmp(ct+1,"Alg")) {
-          mi->lastCT = &mi->sAlg;
-        } else if (0 == strcmp(ct+1,"Par")) {
-          mi->lastCT = &mi->sPar;
-        } else if (0 == strcmp(ct+1,"Ali")) {
-          mi->lastCT = &mi->sAli;
-        } else {
-          fail = 1;
-        }
-      } else {
-        fail = 1;
-      }
-    } else {
-      fail = 1;
-    }
-
-    if (fail) {
-      //throwStreamPrint(NULL, "simulation_input_xml.c: error reading the xml file, found unknown class: %s  for variable: %s",ct,omsu_findHashStringString(v,"name"));     // ToDo: Add Error message
-    }
-
-    /* add the ScalarVariable map to the correct map! */
-    omsu_addHashLongVar(mi->lastCT, mi->lastCI, v);
-
-    return;
-  }
-  /* handle Real/Integer/Boolean/String */
-  if(!strcmp(name, "Real") || !strcmp(name, "Integer") || !strcmp(name, "Boolean") || !strcmp(name, "String")) {
-    /* add keys/value to the last variable */
-    for(i = 0; attr[i]; i += 2) {
-      /* add more key/value pairs to the last variable */
-      omsu_addHashStringString(omsu_findHashLongVar(*mi->lastCT, mi->lastCI), attr[i], attr[i+1]);
-    }
-    omsu_addHashStringString(omsu_findHashLongVar(*mi->lastCT, mi->lastCI), "variableType", name);
-    return;
-  }
-  /* anything else, we don't handle! */
-}
-
-static void XMLCALL endElement(void *userData, omsi_string name) {
-  /* do nothing! */
-}
-
-/* deallocates memory for oms_ModelInput struct */
-void omsu_free_ModelInput(omc_ModelInput mi, omsi_t* omsi_data, const fmi2CallbackFreeMemory freeMemory) {
-
-    omsi_unsigned_int i;
-
-    freeMemory((omsi_char *)mi.md->id);
-    freeMemory((omsi_char *)mi.md->val);
-    freeMemory(mi.md);
-
-    freeMemory((omsi_char *)mi.de->id);
-    freeMemory((omsi_char *)mi.de->val);
-    freeMemory(mi.de);
-
-    for (i=0; i<omsi_data->model_data.n_states ; i++) {
-        freeMemory((omsi_char *)mi.rSta[i].val->id);
-        freeMemory((omsi_char *)mi.rSta[i].val->val);
-        freeMemory(mi.rSta[i].val);
-    }
-    freeMemory(mi.rSta);
-    for (i=0; i<omsi_data->model_data.n_derivatives ; i++) {
-        freeMemory((omsi_char *)mi.rDer[i].val->id);
-        freeMemory((omsi_char *)mi.rDer[i].val->val);
-        freeMemory(mi.rDer[i].val);
-    }
-    freeMemory(mi.rDer);
-
-//    for (i=0; i<omsi_data->model_data.n_real_vars ; i++) {
-//        freeMemory(mi.rAlg[i].val->id);
-//        freeMemory(mi.rAlg[i].val->val);
-//        freeMemory(mi.rAlg[i].val);
-//    }
-    // ToDo: getting segmentation fault when freeing inner memory
-    // ToDo: free inner stuff also for integer, boolean and string
-    freeMemory(mi.rAlg);
-    freeMemory(mi.rPar);
-    freeMemory(mi.rAli);
-    freeMemory(mi.rSen);        // ToDo: What are sensitives?
-
-    freeMemory(mi.iAlg);
-    freeMemory(mi.iPar);
-    freeMemory(mi.iAli);
-
-    freeMemory(mi.bAlg);
-    freeMemory(mi.bPar);
-    freeMemory(mi.bAli);
-
-    freeMemory(mi.sAlg);
-    freeMemory(mi.sPar);
-    freeMemory(mi.sAli);
-
-    // ToDo: What to free for lastCT???
-
-}
 
 /*
  * Compute corresponding index for alias variable.
@@ -450,7 +146,7 @@ omsi_int omsu_find_alias_index(omsi_int alias_valueReference, omsi_int n_variabl
  * Reads variables info and attributes and writes in model_vars_info_t.
  * If one attribute is not found a default value is used.
  */
-static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var_info, omsi_data_type type, size_t* variable_index, omsi_int number_of_prev_variables) {
+static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var_info, omsi_data_type type, omsi_unsigned_int* variable_index, omsi_int number_of_prev_variables) {
 
     omsi_string aliasTmp;
 
@@ -477,8 +173,8 @@ static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* mo
             attribute_real = (real_var_attribute_t *) global_allocateMemory(1, sizeof(real_var_attribute_t));
             omsu_read_value_string(omsu_findHashStringStringEmpty(v,"unit"), &attribute_real->unit);
             omsu_read_value_string(omsu_findHashStringStringEmpty(v,"displayUnit"), &attribute_real->displayUnit);
-            omsu_read_value_real(omsu_findHashStringString(v,"min"), &attribute_real->min, -FMI2_DBL_MAX);
-            omsu_read_value_real(omsu_findHashStringString(v,"max"), &attribute_real->max, FMI2_DBL_MAX);
+            omsu_read_value_real(omsu_findHashStringString(v,"min"), &attribute_real->min, -OMSI_DBL_MAX);
+            omsu_read_value_real(omsu_findHashStringString(v,"max"), &attribute_real->max, OMSI_DBL_MAX);
             omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_real->fixed);
             omsu_read_value_real(omsu_findHashStringString(v,"nominal"), &attribute_real->nominal, 1);
             omsu_read_value_real(omsu_findHashStringString(v,"start"), &attribute_real->start, 0);
@@ -487,8 +183,8 @@ static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* mo
 
         case OMSI_TYPE_INTEGER:
             attribute_int = (int_var_attribute_t *) global_allocateMemory(1, sizeof(int_var_attribute_t));
-            omsu_read_value_int(omsu_findHashStringString(v,"min"), &attribute_int->min, -FMI2_INT_MAX);
-            omsu_read_value_int(omsu_findHashStringString(v,"max"), &attribute_int->min, FMI2_INT_MAX);
+            omsu_read_value_int(omsu_findHashStringString(v,"min"), &attribute_int->min, -OMSI_INT_MAX);
+            omsu_read_value_int(omsu_findHashStringString(v,"max"), &attribute_int->min, OMSI_INT_MAX);
             omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_int->fixed);
             omsu_read_value_int(omsu_findHashStringString(v,"start"), &attribute_int->start, 0);
             model_var_info->modelica_attributes = attribute_int;
@@ -509,14 +205,14 @@ static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* mo
 
     omsu_read_value_string(omsu_findHashStringStringNull(v,"alias"), &aliasTmp);
     if (0 == strcmp(aliasTmp,"noAlias")) {
-        model_var_info->isAlias = fmi2False;
+        model_var_info->isAlias = false;
         model_var_info->negate = 1;
         model_var_info->aliasID = -1;
         model_var_info->type_index.index = *variable_index;
         (*variable_index)++;
     }
     else if (0 == strcmp(aliasTmp,"negatedAlias")){
-        model_var_info->isAlias = fmi2True;
+        model_var_info->isAlias = true;
         model_var_info->negate = -1;
         // ToDo: find alias id
         omsu_read_value_int(omsu_findHashStringString(v,"aliasVariableId"), &model_var_info->aliasID, -1);
@@ -524,7 +220,7 @@ static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* mo
         model_var_info->type_index.index = omsu_find_alias_index(model_var_info->aliasID, number_of_prev_variables);
     }
     else {
-        model_var_info->isAlias = fmi2True;
+        model_var_info->isAlias = true;
         model_var_info->negate = 1;
         // ToDo: find alias id
         omsu_read_value_int(omsu_findHashStringString(v,"aliasVariableId"), &model_var_info->aliasID, -1);
@@ -546,7 +242,7 @@ static void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* mo
  */
 void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi) {
 
-    size_t i, j=0;
+    omsi_unsigned_int i, j=0;
     omsi_int variable_index = 0;
     omsi_int prev_variables;
 
@@ -629,7 +325,7 @@ void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi) {
 /*
  * Reads input values from a xml file and allocates memory for osu_data struct.
  */
-omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2String fmuGUID, fmi2String instanceName, const fmi2CallbackFunctions* functions) {
+omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, omsi_string fmuGUID, omsi_string instanceName, const omsi_callback_functions* functions) {
 
     /* set global function pointer */
     global_allocateMemory = functions->allocateMemory;
@@ -648,7 +344,7 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
     /* open xml file */
     file = fopen(filename, "r");
     if(!file) {
-        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
                         "fmi2Instantiate: Can not read input file %s.", filename);
         return -1;
     }
@@ -657,7 +353,7 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
     parser = XML_ParserCreate("UTF-8");
     if(!parser) {
         fclose(file);
-        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
                                 "fmi2Instantiate: Out of memory.");
         return -1;
     }
@@ -668,11 +364,11 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
 
     /* read XML */
     do {
-        size_t len = fread(buf, 1, sizeof(buf), file);
+        omsi_unsigned_int len = fread(buf, 1, sizeof(buf), file);
         done = len < sizeof(buf);
         if(XML_STATUS_ERROR == XML_Parse(parser, buf, len, done)) {
             fclose(file);
-            functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
                 "fmi2Instantiate: failed to read the XML file %s: %s at line %lu.", filename,
                 XML_ErrorString(XML_GetErrorCode(parser)),
                 XML_GetCurrentLineNumber(parser));
@@ -687,13 +383,13 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
     // check model GUID
     guid = omsu_findHashStringStringNull(mi.md,"guid");
     if (NULL==guid) {
-        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Model GUID %s is not set in model description %s.",
             fmuGUID, filename);
         return -1;
     }
     else if (strcmp(fmuGUID, guid)) {
-        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Wrong GUID %s in file %s. Expected %s.",
             guid, filename, fmuGUID);
         return -1;
@@ -702,7 +398,7 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
     /* process experiment data */
     osu_data->experiment = functions->allocateMemory(1, sizeof(omsi_experiment_t));
     if (!osu_data->experiment) {
-        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
@@ -743,7 +439,7 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
                             + osu_data->model_data.n_bool_aliases + osu_data->model_data.n_string_aliases;
     osu_data->model_data.model_vars_info_t = (model_variable_info_t*) functions->allocateMemory(n_model_vars_and_params, sizeof(model_variable_info_t));
     if (!osu_data->model_data.model_vars_info_t) {
-        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
@@ -757,7 +453,7 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
     // ToDo: read equation_info_t from JSON file
     osu_data->model_data.equation_info_t = (equation_info_t*) functions->allocateMemory(osu_data->model_data.n_equations, sizeof(equation_info_t));
     if (!osu_data->model_data.equation_info_t) {
-        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
@@ -766,7 +462,7 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
 
     /* allocate memory for sim_data_t */
     if (omsu_allocate_sim_data(osu_data, functions->allocateMemory)) {
-        functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
@@ -781,7 +477,7 @@ omsi_int omsu_process_input_xml(omsi_t* osu_data, omsi_char* filename, fmi2Strin
  * Allocates memory for sim_data_t struct and all its components.
  * Gets called from omsu_process_input_xml().
  */
-omsi_int omsu_allocate_sim_data(omsi_t* omsi_data, const fmi2CallbackAllocateMemory allocateMemory) {
+omsi_int omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_allocate_memory allocateMemory) {
 
     omsi_int n_model_vars_and_params;
 
@@ -820,13 +516,13 @@ omsi_int omsu_allocate_sim_data(omsi_t* omsi_data, const fmi2CallbackAllocateMem
     return 0;
 }
 
-void omsu_print_debug_helper (model_data_t* model_data, size_t start_index, size_t size, size_t indent) {
+void omsu_print_debug_helper (model_data_t* model_data, omsi_unsigned_int start_index, omsi_unsigned_int size, omsi_unsigned_int indent) {
 
     omsi_string oneIndent = "| ";
     omsi_string allIndent = (omsi_string) global_allocateMemory(100, sizeof(omsi_char));
 
 
-    size_t i;
+    omsi_unsigned_int i;
     for (i=0; i<indent; i++) {
         strcat(allIndent, oneIndent);
     }
@@ -848,13 +544,13 @@ void omsu_print_debug_helper (model_data_t* model_data, size_t start_index, size
             attribute_real = model_data->model_vars_info_t[start_index+i].modelica_attributes;
             printf("| %sunit:\t\t\t%s\n", allIndent, attribute_real->unit);
             printf("| %sdisplayUnit:\t\t%s\n", allIndent, attribute_real->displayUnit);
-            if (attribute_real->min <= -FMI2_DBL_MAX) {
+            if (attribute_real->min <= -OMSI_DBL_MAX) {
                 printf("| %smin:\t\t\t-infinity\n", allIndent);
             }
             else {
                 printf("| %smin:\t\t\t%f\n", allIndent, attribute_real->min);
             }
-            if (attribute_real->max >= FMI2_DBL_MAX) {
+            if (attribute_real->max >= OMSI_DBL_MAX) {
                 printf("| %smax:\t\t\tininity\n", allIndent);
             }
             else {
@@ -866,13 +562,13 @@ void omsu_print_debug_helper (model_data_t* model_data, size_t start_index, size
             break;
         case OMSI_TYPE_INTEGER:
             attribute_integer = model_data->model_vars_info_t[start_index+i].modelica_attributes;
-            if (attribute_integer->min <= -FMI2_INT_MAX) {
+            if (attribute_integer->min <= -OMSI_INT_MAX) {
                 printf("| %smin:\t\t\t-infinity\n", allIndent);
             }
             else {
                 printf("| %smin:\t\t\t%i\n", allIndent, attribute_integer->min);
             }
-            if (attribute_integer->max >= FMI2_INT_MAX) {
+            if (attribute_integer->max >= OMSI_INT_MAX) {
                 printf("| %smax:\t\t\tininity\n", allIndent);
             }
             else {
@@ -914,7 +610,7 @@ void omsu_print_debug_helper (model_data_t* model_data, size_t start_index, size
  * ToDo: make prettier or delete when finished
  */
 void omsu_print_debug (osu_t* OSU) {
-    size_t lastIndex, size;
+    omsi_unsigned_int lastIndex, size;
     omsi_int n_vars_and_params;
 
     printf("\n========== omsu_print_debug start ==========\n");
@@ -963,7 +659,7 @@ void omsu_print_debug (osu_t* OSU) {
     omsu_print_debug_helper(&(OSU->osu_data->model_data), lastIndex, size, 3);
 
     printf("| | equation_info_t:\n");
-    for(size_t i=0; i<OSU->osu_data->model_data.n_equations; i++) {
+    for(omsi_unsigned_int i=0; i<OSU->osu_data->model_data.n_equations; i++) {
         // print equation_info
     }
 
@@ -1065,7 +761,7 @@ void updateRelationsPre(DATA *data) {
 
 modelica_boolean checkRelations(DATA *data) {
     //ToDo: implement for new data structure
-    return fmi2False;
+    return false;
 }
 
 void mmc_catch_dummy_fn (void) {
