@@ -77,6 +77,20 @@ typedef const omsi_char*    omsi_string;
   */
 struct RINGBUFFER;
 
+// ToDo: is this the right location for these definitions?
+typedef enum {
+    omsi_model_exchange,
+    omsi_co_simulation      // not supported yet
+}omsu_type;
+
+typedef enum {
+    omsi_ok,
+    omsi_warning,
+    omsi_discard,
+    omsi_error,
+    omsi_fatal,
+    omsi_pending
+}omsi_status;
 
 /**
  *  simulation parameter
@@ -85,7 +99,7 @@ typedef struct omsi_experiment_t {
 	omsi_real           start_time;     /* start time of experment, default=0 */
 	omsi_real           stop_time;      /* end time of experiment, defalut=start+1 */
 	omsi_real           step_size;      /* step_size for solvers, default (stop_time-start_time)/500 */
-	omsi_unsigned_int    num_outputs;    /* number of outputs of model */
+	omsi_unsigned_int   num_outputs;    /* number of outputs of model */
 	omsi_real           tolerance;      /* tolerance for solver, default=1e-5 */
 	omsi_string         solver_name;    /* name of used solver, default="dassl" */
 } omsi_experiment_t;

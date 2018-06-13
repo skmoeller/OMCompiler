@@ -44,7 +44,6 @@ extern "C" {
 #include <stdlib.h>
 #include <stdarg.h>
 #include "omsu_helper.h"
-#include "omsu_common.h"
 #include "omsu_utils.h"
 #include "omsu_me.h"
 #include "fmi2/fmi2Functions.h"
@@ -52,6 +51,7 @@ extern "C" {
 /* forward struct */
 typedef struct osu_t osu_t;
 typedef struct omsi_t omsi_t;
+typedef struct omsi_callback_functions omsi_callback_functions;
 
 /* extern functions */
 extern void omsic_model_setup_data(osu_t* OSU);
@@ -63,13 +63,13 @@ extern void omsic_model_setup_data(osu_t* OSU);
  *
  *  \param [ref] [data]
  */
-fmi2Component omsi_instantiate(fmi2String    instanceName,
-                               fmi2Type      fmuType,
-                               fmi2String    fmuGUID,
-                               fmi2String    fmuResourceLocation,
-                               const fmi2CallbackFunctions* functions,
-                               fmi2Boolean                  visible,
-                               fmi2Boolean                  loggingOn);
+osu_t* omsi_instantiate(omsi_string                    instanceName,
+                        omsu_type                      fmuType,
+                        omsi_string                    fmuGUID,
+                        omsi_string                    fmuResourceLocation,
+                        const omsi_callback_functions* functions,
+                        omsi_bool                      visible,
+                        omsi_bool                      loggingOn);
 
 
 /*! \fn omsi_enter_initialization_mode
@@ -78,7 +78,7 @@ fmi2Component omsi_instantiate(fmi2String    instanceName,
  *
  *  \param [ref] [data]
  */
-fmi2Status omsi_enter_initialization_mode(fmi2Component c);
+omsi_status omsi_enter_initialization_mode(void* c);
 
 /*! \fn omsi_exit_initialization_mode
  *
@@ -86,7 +86,7 @@ fmi2Status omsi_enter_initialization_mode(fmi2Component c);
  *
  *  \param [ref] [data]
  */
-fmi2Status omsi_exit_initialization_mode(fmi2Component c);
+omsi_status omsi_exit_initialization_mode(void* c);
 
 /*! \fn omsi_setup_experiment
  *
@@ -94,12 +94,12 @@ fmi2Status omsi_exit_initialization_mode(fmi2Component c);
  *
  *  \param [ref] [data]
  */
-fmi2Status omsi_setup_experiment(fmi2Component c,
-                                 fmi2Boolean   toleranceDefined,
-                                 fmi2Real      tolerance,
-                                 fmi2Real      startTime,
-                                 fmi2Boolean   stopTimeDefined,
-                                 fmi2Real      stopTime);
+omsi_status omsi_setup_experiment(void*      c,
+                                  omsi_bool  toleranceDefined,
+                                  omsi_real  tolerance,
+                                  omsi_real  startTime,
+                                  omsi_bool  stopTimeDefined,
+                                  omsi_real  stopTime);
 
 /*! \fn omsi_free_instance
  *
@@ -107,7 +107,7 @@ fmi2Status omsi_setup_experiment(fmi2Component c,
  *
  *  \param [ref] [data]
  */
-void omsi_free_instance(fmi2Component c);
+void omsi_free_instance(void* c);
 
 /*! \fn omsi_reset
  *
@@ -115,7 +115,7 @@ void omsi_free_instance(fmi2Component c);
  *
  *  \param [ref] [data]
  */
-fmi2Status omsi_reset(fmi2Component c);
+omsi_status omsi_reset(void* c);
 
 /*! \fn omsi_terminate
  *
@@ -123,7 +123,7 @@ fmi2Status omsi_reset(fmi2Component c);
  *
  *  \param [ref] [data]
  */
-fmi2Status omsi_terminate(fmi2Component c);
+omsi_status omsi_terminate(void* c);
 
 #ifdef __cplusplus
 }

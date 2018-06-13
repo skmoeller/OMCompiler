@@ -20,7 +20,7 @@ test_omsu: test_omsu_main
 test_omsu_main: test_omsu_main.c
 	make -C ../src/omsu libomsu
 	$(CC) -o test_omsu_main.o $(TEST_INCS) -c ./test_omsu_main.c
-	$(CC) test_omsu_main.o -Wl,-rpath=$(RUNTIMEPATH),../lib/libomsu.$(TARGET_LIB) -o $@
+	$(CC) test_omsu_main.o -Wl,-rpath=$(RUNTIMEPATH),libomsu.$(TARGET_LIB) -o $@
 
 $(TEST_OBJS): $(TEST_SRCS) $(FMI2_HDRS)
 	$(CC) $(CFLAGS) $(TEST_INCS) -c -o $@ $(@:%.o=%.c)

@@ -19,7 +19,7 @@ FMI2_HDRS=$(OMSIC_INCLUDE)/fmi2/osi_fmi2_wrapper.h $(OMSIC_INCLUDE)/fmi2/fmi2Fun
 OMSU_INCS = -I$(OMSIC_INCLUDE) -I$(OMSI_INCLUDE) -I$(C_RUNTIME) -I$(THIRD_PARTY)/gc/include
 
 libomsu: $(OMSU_OBJS)
-	$(CC) $(LDFLAGS) $(OMSU_INCS) -o ../../lib/libomsu.$(TARGET_LIB) $^ -lexpat
+	$(CC) $(LDFLAGS) $(OMSU_INCS) -o ../../testsuite/libomsu.$(TARGET_LIB) $^ -lexpat
 #$(CC) $(LDFLAGS) $(OMSU_INCS) -o libomsu.$(TARGET_LIB) $^
 
 $(OMSU_OBJS): $(OMSU_SRCS) $(OMSU_HDRS) $(FMI2_HDRS)

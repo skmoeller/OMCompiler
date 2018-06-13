@@ -40,7 +40,7 @@
 #include "omsi.h"
 
 //C Simulation kernel includes
-#include "../../../c/simulation_data.h"
+#include "simulation_data.h"
 //#include "../simulation/solver/stateset.h"
 //#include "../simulation/solver/model_help.h"
 //#if !defined(OMC_NUM_NONLINEAR_SYSTEMS) || OMC_NUM_NONLINEAR_SYSTEMS>0
@@ -75,7 +75,7 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  void (*initialNonLinearSystem)(int nNonLinearSystems, NONLINEAR_SYSTEM_DATA *data);
+  void (*initialNonLinearSystem)(omsi_int nNonLinearSystems, NONLINEAR_SYSTEM_DATA *data);
 
   /*! \fn initialLinearSystem
    *
@@ -83,7 +83,7 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  void (*initialLinearSystem)(int nLinearSystems, LINEAR_SYSTEM_DATA *data);
+  void (*initialLinearSystem)(omsi_int nLinearSystems, LINEAR_SYSTEM_DATA *data);
 
   /*! \fn initialNonLinearSystem
    *
@@ -91,7 +91,7 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  void (*initialMixedSystem)(int nMixedSystems, MIXED_SYSTEM_DATA *data);
+  void (*initialMixedSystem)(omsi_int nMixedSystems, MIXED_SYSTEM_DATA *data);
 
   /*! \fn initialNonLinearSystem
    *
@@ -99,33 +99,33 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  void (*initializeStateSets)(int nStateSets, STATE_SET_DATA* statesetData, DATA *data);
+  void (*initializeStateSets)(omsi_int nStateSets, STATE_SET_DATA* statesetData, DATA *data);
 
   /* functionODE contains those equations that are needed
    * to calculate the dynamic part of the system */
-  int (*functionODE)(DATA *data, threadData_t*);
+  omsi_int (*functionODE)(DATA *data, threadData_t*);
 
   /* functionAlgebraics contains all continuous equations that
    * are not part of the dynamic part of the system */
-  int (*functionAlgebraics)(DATA *data, threadData_t*);
+  omsi_int (*functionAlgebraics)(DATA *data, threadData_t*);
 
   /* function for calculating all equation sorting order
      uses in EventHandle  */
-  int (*functionDAE)(DATA *data, threadData_t*);
+  omsi_int (*functionDAE)(DATA *data, threadData_t*);
 
   /* function that evaluates all localKnownVars  */
-  int (*functionLocalKnownVars)(DATA *data, threadData_t*);
+  omsi_int (*functionLocalKnownVars)(DATA *data, threadData_t*);
 
   /* functions for input and output */
-  int (*input_function)(DATA*, threadData_t*);
-  int (*input_function_init)(DATA*, threadData_t*);
-  int (*input_function_updateStartValues)(DATA*, threadData_t*);
-  int (*output_function)(DATA*, threadData_t*);
+  omsi_int (*input_function)(DATA*, threadData_t*);
+  omsi_int (*input_function_init)(DATA*, threadData_t*);
+  omsi_int (*input_function_updateStartValues)(DATA*, threadData_t*);
+  omsi_int (*output_function)(DATA*, threadData_t*);
 
   /* function for storing value histories of delayed expressions
    * called from functionDAE_output()
    */
-  int (*function_storeDelayed)(DATA *data, threadData_t*);
+  omsi_int (*function_storeDelayed)(DATA *data, threadData_t*);
 
   /*! \fn updateBoundVariableAttributes
    *
@@ -133,7 +133,7 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  int (*updateBoundVariableAttributes)(DATA *data, threadData_t*);
+  omsi_int (*updateBoundVariableAttributes)(DATA *data, threadData_t*);
 
   /*! \fn functionInitialEquations
    *
@@ -141,7 +141,7 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  int (*functionInitialEquations)(DATA *data, threadData_t*);
+  omsi_int (*functionInitialEquations)(DATA *data, threadData_t*);
 
   /*! \fn functionRemovedInitialEquations
    *
@@ -151,7 +151,7 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  int (*functionRemovedInitialEquations)(DATA *data, threadData_t*);
+  omsi_int (*functionRemovedInitialEquations)(DATA *data, threadData_t*);
 
   /*! \fn updateBoundParameters
    *
@@ -161,10 +161,10 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  int (*updateBoundParameters)(DATA *data, threadData_t*);
+  omsi_int (*updateBoundParameters)(DATA *data, threadData_t*);
 
   /* function for checking for asserts and terminate */
-  int (*checkForAsserts)(DATA *data, threadData_t*);
+  omsi_int (*checkForAsserts)(DATA *data, threadData_t*);
 
   /*! \fn function_ZeroCrossingsEquations
    *
@@ -172,7 +172,7 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  int (*function_ZeroCrossingsEquations)(DATA *data, threadData_t*);
+  omsi_int (*function_ZeroCrossingsEquations)(DATA *data, threadData_t*);
 
   /*! \fn function_ZeroCrossings
    *
@@ -181,7 +181,7 @@ typedef struct omsi_functions_t{
    *  \param [ref] [data]
    *  \param [ref] [gout]
    */
-  int (*function_ZeroCrossings)(DATA *data, threadData_t *threadData, double* gout);
+  omsi_int (*function_ZeroCrossings)(DATA *data, threadData_t *threadData, double* gout);
 
   /*! \fn function_updateRelations
    *
@@ -191,7 +191,7 @@ typedef struct omsi_functions_t{
    *  \param [in]  [evalZeroCross] flag for evaluating Relation with hysteresis
    *                              function or without
    */
-  int (*function_updateRelations)(DATA *data, threadData_t*, int evalZeroCross);
+  omsi_int (*function_updateRelations)(DATA *data, threadData_t*, omsi_int evalZeroCross);
 
   /*! \fn checkForDiscreteChanges
    *
@@ -199,19 +199,19 @@ typedef struct omsi_functions_t{
    *
    *  \param [ref] [data]
    */
-  int (*checkForDiscreteChanges)(DATA *data, threadData_t*);
+  omsi_int (*checkForDiscreteChanges)(DATA *data, threadData_t*);
 
   /*! \var zeroCrossingDescription
    *
    * This variable contains a description string for zero crossing condition.
    */
-  const char *(*zeroCrossingDescription)(int i, int **out_EquationIndexes);
+  const char *(*zeroCrossingDescription)(omsi_int i, omsi_int **out_EquationIndexes);
 
   /*! \var relationDescription
    *
    * This variable contains a description string for continuous relations.
    */
-  const char *(*relationDescription)(int i);
+  const char *(*relationDescription)(omsi_int i);
 
   /*! \fn function_initSample
    *
@@ -234,18 +234,18 @@ typedef struct omsi_functions_t{
   /*
    * Sub-partition's equations
    */
-  int (*function_equationsSynchronous)(DATA *data, threadData_t *threadData, long i);
+  omsi_int (*function_equationsSynchronous)(DATA *data, threadData_t *threadData, long i);
 
   /*
    * return input names
    */
-  int (*inputNames)(DATA* modelData, char ** names);
+  omsi_int (*inputNames)(DATA* modelData, char ** names);
 
-  void (*functionFMIJacobian)(DATA *data, threadData_t*, const unsigned *unknown, int nUnk, const unsigned *ders, int nKnown, double *dvKnown, double *out);
+  void (*functionFMIJacobian)(DATA *data, threadData_t*, const unsigned *unknown, omsi_int nUnk, const unsigned *ders, omsi_int nKnown, double *dvKnown, double *out);
 
 } omsi_functions_t;
 
-//TODO: adapt the states (and probably functions) to fmi2!
+
 typedef enum {
   modelInstantiated       = 1<<0, // ME and CS
   modelInitializationMode = 1<<1, // ME and CS
@@ -256,16 +256,12 @@ typedef enum {
   modelError              = 1<<6  // ME and CS
 } ModelState;
 
-// ToDo: is this the right location for these definitions?
-typedef enum {
-	omsi_model_exchange,
-	omsi_co_simulation		// not supported yet
-}omsi_type;
 
-typedef void      (*omsi_callback_logger)        	(void*, omsi_string, fmi2Status, omsi_string, omsi_string, ...);
+// ToDo: is this the right location for these definitions?
+typedef void      (*omsi_callback_logger)        	(void*, omsi_string, omsi_status, omsi_string, omsi_string, ...);
 typedef void*     (*omsi_callback_allocate_memory)	(omsi_unsigned_int, omsi_unsigned_int);
 typedef void      (*omsi_callback_free_memory)    	(void*);
-typedef void      (*omsi_step_finished)
+typedef void      (*omsi_step_finished)             (void*, omsi_status);
 
 typedef struct omsi_callback_functions{
 	const omsi_callback_logger         	logger;
@@ -278,48 +274,48 @@ typedef struct omsi_callback_functions{
 
 typedef struct osu_t {
     // open modelica simulation interface data
-    omsi_t *                osu_data;       // ToDo: is now pointer, change every call / usage again
-    omsi_functions_t *      osu_functions;
+    omsi_t *            osu_data;           /* pointer to omsi_data struct, contains all data for simulation */
+    omsi_functions_t *  osu_functions;
 
-    // temporary data for current implementation
-    DATA*                   old_data;
-    threadData_t *          threadData;
+    // temporary data for current implementation ToDo: change and delete
+    DATA*               old_data;
+    threadData_t *      threadData;
 
-    int                     _need_update;
-    int                     _has_jacobian;
-    ModelState              state;
-    fmi2Boolean             logCategories[NUMBER_OF_CATEGORIES];
-    fmi2Boolean             loggingOn;
-    fmi2String              GUID;
-    fmi2String              instanceName;
-    fmi2EventInfo           eventInfo;
-    fmi2Boolean             toleranceDefined;   // ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info
-    fmi2Real                tolerance;
-    fmi2Real                startTime;
-    fmi2Boolean             stopTimeDefined;
-    fmi2Real                stopTime;
-    omsi_type               type;
-    fmi2ValueReference*     vrStates;
-    fmi2ValueReference*     vrStatesDerivatives;
+    omsi_int            _need_update;
+    omsi_int            _has_jacobian;
+    ModelState          state;
+    omsi_bool           logCategories[NUMBER_OF_CATEGORIES];
+    omsi_bool           loggingOn;
+    omsi_string         GUID;
+    omsi_string         instanceName;
+    fmi2EventInfo       eventInfo;
+    omsi_bool           toleranceDefined;   // ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info
+    omsi_real           tolerance;
+    omsi_real           startTime;
+    omsi_bool           stopTimeDefined;
+    omsi_real           stopTime;
+    omsu_type           type;
+    omsi_unsigned_int*  vrStates;
+    omsi_unsigned_int*  vrStatesDerivatives;
 
     omsi_callback_functions*  fmiCallbackFunctions;
 } osu_t;
 
 /* extern functions */
 extern void omsic_model_setup_data(osu_t* OSU);
-extern fmi2Status setExternalFunction(osu_t* OSU, const fmi2ValueReference vr, const void* value);
+extern omsi_status setExternalFunction(osu_t* OSU, const omsi_unsigned_int vr, const void* value);
 extern void mmc_catch_dummy_fn(void);
 
 
 /* function prototypes */
-fmi2Real getReal(osu_t* OSU, const fmi2ValueReference vr);
-fmi2Status setReal(osu_t* OSU, const fmi2ValueReference vr, const fmi2Real value);
-fmi2Integer getInteger(osu_t* OSU, const fmi2ValueReference vr);
-fmi2Status setInteger(osu_t* OSU, const fmi2ValueReference vr, const fmi2Integer value);
-fmi2Boolean getBoolean(osu_t* OSU, const fmi2ValueReference vr);
-fmi2Status setBoolean(osu_t* OSU, const fmi2ValueReference vr, const fmi2Boolean value);
-fmi2String getString(osu_t* OSU, const fmi2ValueReference vr);
-fmi2Status setString(osu_t* OSU, const fmi2ValueReference vr, fmi2String value);
+omsi_real getReal(osu_t* OSU, const omsi_unsigned_int vr);
+omsi_status setReal(osu_t* OSU, const omsi_unsigned_int vr, const omsi_real value);
+omsi_int getInteger(osu_t* OSU, const omsi_unsigned_int vr);
+omsi_status setInteger(osu_t* OSU, const omsi_unsigned_int vr, const omsi_int value);
+omsi_bool getBoolean(osu_t* OSU, const omsi_unsigned_int vr);
+omsi_status setBoolean(osu_t* OSU, const omsi_unsigned_int vr, const omsi_bool value);
+omsi_string getString(osu_t* OSU, const omsi_unsigned_int vr);
+omsi_status setString(osu_t* OSU, const omsi_unsigned_int vr, omsi_string value);
 
 #ifdef __cplusplus
 extern } /* end of extern "C" */

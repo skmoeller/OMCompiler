@@ -8,10 +8,10 @@ TARGET_LIB = so
 
 LIB_DIR = -L/d/workspace/Testlab/libs/
 #LIB_DIR = -L/home/wbraun/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/omsi
-RUNTIMEPATH = $(PATH_TO_OMSIC)/lib/
+RUNTIMEPATH = .
 
-#PATH_TO_OPENMODELICA = /d/workspace/OpenModelica
-PATH_TO_OPENMODELICA = /home/andreas/workspace/OpenModelica
+PATH_TO_OPENMODELICA = /d/workspace/OpenModelica
+#PATH_TO_OPENMODELICA = /home/andreas/workspace/OpenModelica
 
 PATH_TO_OMSIC = $(PATH_TO_OPENMODELICA)/OMCompiler/SimulationRuntime/OMSIC
 PATH_TO_OMSI = $(PATH_TO_OPENMODELICA)/OMCompiler/SimulationRuntime/OMSI
