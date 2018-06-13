@@ -41,7 +41,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "omsu_common.h"
-#include "fmi2/fmi2Functions.h"
 
 
 #ifdef __cplusplus
@@ -61,7 +60,7 @@ extern "C" {
 #define LOG_ALL                         9
 #define LOG_FMI2_CALL                   10
 
-static fmi2String logCategoriesNames[] = {"logEvents", "logSingularLinearSystems", "logNonlinearSystems", "logDynamicStateSelection",
+static omsi_string logCategoriesNames[] = {"logEvents", "logSingularLinearSystems", "logNonlinearSystems", "logDynamicStateSelection",
     "logStatusWarning", "logStatusDiscard", "logStatusError", "logStatusFatal", "logStatusPending", "logAll", "logFmi2Call"};
 
 #define FILTERED_LOG(instance, status, categoryIndex, message, ...) if (isCategoryLogged(instance, categoryIndex)) \
@@ -69,15 +68,15 @@ static fmi2String logCategoriesNames[] = {"logEvents", "logSingularLinearSystems
         logCategoriesNames[categoryIndex], message, ##__VA_ARGS__);
 
 /* function prototypes */
-fmi2Boolean isCategoryLogged(fmi2Component c, int categoryIndex);
-const char* stateToString(fmi2Component c);
-fmi2Boolean invalidState(fmi2Component c, const char *f, int meStates, int csStates);
-fmi2Boolean nullPointer(fmi2Component c, const char *f, const char *arg, const void *p);
-fmi2Boolean vrOutOfRange(fmi2Component c, const char *f, fmi2ValueReference vr, int end);
-fmi2Status unsupportedFunction(fmi2Component c, const char *fName, int statesExpected);
-fmi2Boolean invalidNumber(fmi2Component c, const char *f, const char *arg, int n, int nExpected);
+omsi_bool isCategoryLogged(void* c, omsi_int categoryIndex);
+omsi_string stateToString(void* c);
+omsi_bool invalidState(void* c, omsi_string f, omsi_int meStates, omsi_int csStates);
+omsi_bool nullPointer(void* c, omsi_string f, omsi_string arg, const void *p);
+omsi_bool vrOutOfRange(void* c, omsi_string f, omsi_unsigned_int vr, omsi_int end);
+omsi_status unsupportedFunction(void* c, omsi_string fName, omsi_int statesExpected);
+omsi_bool invalidNumber(void* c, omsi_string f, omsi_string arg, omsi_int n, omsi_int nExpected);
 
-fmi2Status omsi_set_debug_logging(fmi2Component c,fmi2Boolean  loggingOn,size_t nCategories,const fmi2String categories[]);
+omsi_status omsi_set_debug_logging(void* c, omsi_bool loggingOn, omsi_unsigned_int nCategories, omsi_string categories[]);
 
 
 #ifdef __cplusplus

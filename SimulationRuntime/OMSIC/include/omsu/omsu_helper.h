@@ -40,7 +40,6 @@
 typedef struct osu_t osu_t;
 typedef struct omsi_t omsi_t;
 
-
 // ToDo: include all headers neccesary for XML parser, delete others
 
 //C Simulation kernel includes

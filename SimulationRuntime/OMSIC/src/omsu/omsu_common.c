@@ -34,6 +34,8 @@
 
 #include "omsu/omsu_common.h"
 
+#define UNUSED(x) (void)(x)     // ToDo: delete later
+
 
 /*
  * gets real number of struct OSU with value reference vr
@@ -91,6 +93,7 @@ omsi_status setBoolean(osu_t* OSU, const omsi_unsigned_int vr, const omsi_bool v
  * ToDO: implement string in sim_data_t
  */
 omsi_string getString (osu_t* OSU, const omsi_unsigned_int vr) {
+    UNUSED(OSU); UNUSED(vr);
     return "ERROR";
 }
 
@@ -99,6 +102,7 @@ omsi_string getString (osu_t* OSU, const omsi_unsigned_int vr) {
  *  * ToDO: implement string in sim_data_t
  */
 omsi_status setString(osu_t* OSU, const omsi_unsigned_int vr, const omsi_string value) {
+    UNUSED(OSU); UNUSED(vr); UNUSED(value);
     return omsi_error;
 }
 

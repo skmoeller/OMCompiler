@@ -35,16 +35,16 @@
 
 #include "omsu/omsu_utils.h"
 
-fmi2Boolean isCategoryLogged(fmi2Component c, int categoryIndex)
+omsi_bool isCategoryLogged(void* c, omsi_int categoryIndex)
 {
   osu_t* OSU = (osu_t *)c;
   if (categoryIndex < NUMBER_OF_CATEGORIES && (OSU->logCategories[categoryIndex] || OSU->logCategories[LOG_ALL])) {
-    return fmi2True;
+    return true;
   }
-  return fmi2False;
+  return false;
 }
 
-const char* stateToString(fmi2Component c)
+omsi_string stateToString(void* c)
  {
    osu_t* OSU = (osu_t *)c;
    switch (OSU->state) {
@@ -59,68 +59,68 @@ const char* stateToString(fmi2Component c)
    return "Unknown";
  }
 
-fmi2Boolean invalidState(fmi2Component c, const char *f, int meStates, int csStates) {   //ToDo: maybe omsi_data instead of fmi2Component data type
+omsi_bool invalidState(void* c, omsi_string f, omsi_int meStates, omsi_int csStates) {   //ToDo: maybe omsi_data instead of fmi2Component data type
   osu_t* OSU = (osu_t *)c;
   if (!OSU)
-    return fmi2True;
+    return true;
 
-  int statesExpected;
-  if (fmi2ModelExchange == OSU->type)
+  omsi_int statesExpected;
+  if (omsi_model_exchange == OSU->type)
     statesExpected = meStates;
-  else /* fmi2CoSimulation */
+  else /* CoSimulation */
     statesExpected = csStates;
 
   if (!(OSU->state & statesExpected)) {
 	OSU->state=statesExpected;
-    FILTERED_LOG(OSU, fmi2Error, LOG_STATUSERROR, "%s: Illegal call sequence. %s is not allowed in %s state.", f, f, stateToString(OSU))
+    FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Illegal call sequence. %s is not allowed in %s state.", f, f, stateToString(OSU))
 	OSU->state = modelError;
-    return fmi2True;
+    return true;
   }
 
-  return fmi2False;
+  return false;
 }
 
-fmi2Boolean nullPointer(fmi2Component c, const char *f, const char *arg, const void *p)
+omsi_bool nullPointer(void* c, omsi_string f, omsi_string arg, const void *p)
 {
   osu_t* OSU = (osu_t *)c;
   if (!p) {
     OSU->state = modelError;
-    FILTERED_LOG(OSU, fmi2Error, LOG_STATUSERROR, "%s: Invalid argument %s = NULL.", f, arg)
-    return fmi2True;
+    FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Invalid argument %s = NULL.", f, arg)
+    return true;
   }
-  return fmi2False;
+  return false;
 }
 
-fmi2Boolean vrOutOfRange(fmi2Component c, const char *f, fmi2ValueReference vr, int end)
+omsi_bool vrOutOfRange(void* c, omsi_string f, omsi_unsigned_int vr, omsi_int end)
 {
   osu_t* OSU = (osu_t *)c;
-  if ((int)vr >= end) {
+  if ((omsi_int)vr >= end) {
     OSU->state = modelError;
-    FILTERED_LOG(OSU, fmi2Error, LOG_STATUSERROR, "%s: Illegal value reference %u.", f, vr)
-    return fmi2True;
+    FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Illegal value reference %u.", f, vr)
+    return true;
   }
-  return fmi2False;
+  return false;
 }
 
-fmi2Status unsupportedFunction(fmi2Component c, const char *fName, int statesExpected)
+omsi_status unsupportedFunction(void* c, omsi_string fName, omsi_int statesExpected)
 {
   osu_t* OSU = (osu_t *)c;
   //fmi2CallbackLogger log = OSU->osu_functions->logger; //TODO: makes sense?
   if (invalidState(c, fName, statesExpected, ~0))
-    return fmi2Error;
-  FILTERED_LOG(OSU, fmi2Error, LOG_STATUSERROR, "%s: Function not implemented.", fName)
-  return fmi2Error;
+    return omsi_error;
+  FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Function not implemented.", fName)
+  return omsi_error;
 }
 
-fmi2Boolean invalidNumber(fmi2Component c, const char *f, const char *arg, int n, int nExpected)
+omsi_bool invalidNumber(void* c, omsi_string f, omsi_string arg, omsi_int n, omsi_int nExpected)
 {
   osu_t* OSU = (osu_t *)c;
   if (n != nExpected) {
     OSU->state = modelError;
-    FILTERED_LOG(OSU, fmi2Error, LOG_STATUSERROR, "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected)
-    return fmi2True;
+    FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected)
+    return true;
   }
-  return fmi2False;
+  return false;
 }
 
 /*! \fn omsi_set_debug_logging
@@ -129,30 +129,30 @@ fmi2Boolean invalidNumber(fmi2Component c, const char *f, const char *arg, int n
  *
  *  \param [ref] [data]
  */
-fmi2Status omsi_set_debug_logging(fmi2Component c, fmi2Boolean loggingOn, size_t nCategories, const fmi2String categories[])
+omsi_status omsi_set_debug_logging(void* c, omsi_bool loggingOn, omsi_unsigned_int nCategories, omsi_string categories[])
 {
-  size_t i, j;
+  omsi_unsigned_int i, j;
   osu_t* OSU = (osu_t *)c;
   OSU->loggingOn = loggingOn;
 
   for (i = 0; i < NUMBER_OF_CATEGORIES; i++) {
-    OSU->logCategories[i] = fmi2False;
+    OSU->logCategories[i] = false;
   }
   for (i = 0; i < nCategories; i++) {
-    fmi2Boolean categoryFound = fmi2False;
+    omsi_bool categoryFound = false;
     for (j = 0; j < NUMBER_OF_CATEGORIES; j++) {
       if (strcmp(logCategoriesNames[j], categories[i]) == 0) {
         OSU->logCategories[j] = loggingOn;
-        categoryFound = fmi2True;
+        categoryFound = true;
         break;
       }
     }
     if (!categoryFound) {
-    	OSU->fmiCallbackFunctions->logger(OSU->fmiCallbackFunctions->componentEnvironment, OSU->instanceName, fmi2Warning, logCategoriesNames[j],
+    	OSU->fmiCallbackFunctions->logger(OSU->fmiCallbackFunctions->componentEnvironment, OSU->instanceName, omsi_warning, logCategoriesNames[j],
           "logging category '%s' is not supported by model", categories[i]);
     }
   }
 
-  FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetDebugLogging")
-  return fmi2OK;
+  FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2SetDebugLogging")
+  return omsi_ok;
 }

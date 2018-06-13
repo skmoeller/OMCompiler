@@ -1,7 +1,7 @@
 #Makefile for OpenModelicaSolverInterface shared solver library
 
 CC=gcc
-CFLAGS=-fPIC -Wall -Wextra -O2 -g
+CFLAGS=-Wall -Wextra -O2 -g
 LDFLAGS=-shared
 TARGET_LIB = so
 # =dll or =so for dynamic-link library and shared objects
@@ -20,6 +20,17 @@ THIRD_PARTY = $(PATH_TO_OPENMODELICA)/OMCompiler/3rdParty
 
 OMSIC_INCLUDE = $(PATH_TO_OMSIC)/include
 OMSI_INCLUDE = $(PATH_TO_OMSI)/include
+
+# detect OS
+TARGET_TRIPLE := $(subst -, ,$(shell $(CC) -dumpmachine))
+TARGET_ARCH   := $(word 1,$(TARGET_TRIPLE))
+TARGET_OS     := $(word 3,$(TARGET_TRIPLE))
+
+ifeq      ($(TARGET_OS),mingw32)
+else ifeq ($(TARGET_OS),cygwin)
+else
+CFLAGS += -fPIC
+endif
 
 
 all:

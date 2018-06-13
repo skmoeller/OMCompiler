@@ -257,7 +257,7 @@ typedef enum {
 
 
 // ToDo: is this the right location for these definitions?
-typedef void      (*omsi_callback_logger)        	(void*, omsi_string, omsi_status, omsi_string, omsi_string, ...);
+typedef void      (*omsi_callback_logger)        	(const void*, omsi_string, omsi_status, omsi_string, omsi_string, ...);
 typedef void*     (*omsi_callback_allocate_memory)	(omsi_unsigned_int, omsi_unsigned_int);
 typedef void      (*omsi_callback_free_memory)    	(void*);
 typedef void      (*omsi_step_finished)             (void*, omsi_status);
@@ -281,19 +281,19 @@ typedef struct {
 
 typedef struct osu_t {
     // open modelica simulation interface data
-    omsi_t *            osu_data;           /* pointer to omsi_data struct, contains all data for simulation */
-    omsi_functions_t *  osu_functions;
+    omsi_t*             osu_data;           /* pointer to omsi_data struct, contains all data for simulation */
+    omsi_functions_t*   osu_functions;
 
     // temporary data for current implementation ToDo: change and delete
     DATA*               old_data;
-    threadData_t *      threadData;
+    threadData_t*       threadData;
 
     omsi_int            _need_update;
     omsi_int            _has_jacobian;
     ModelState          state;
     omsi_bool           logCategories[NUMBER_OF_CATEGORIES];
     omsi_bool           loggingOn;
-    omsi_string         GUID;
+    omsi_char*          GUID;
     omsi_string         instanceName;
     omsi_event_info     eventInfo;
     omsi_bool           toleranceDefined;   // ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info
@@ -305,7 +305,7 @@ typedef struct osu_t {
     omsi_unsigned_int*  vrStates;
     omsi_unsigned_int*  vrStatesDerivatives;
 
-    omsi_callback_functions*  fmiCallbackFunctions;
+    const omsi_callback_functions*  fmiCallbackFunctions;
 } osu_t;
 
 /* extern functions */

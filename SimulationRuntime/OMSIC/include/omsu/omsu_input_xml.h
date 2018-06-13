@@ -38,6 +38,12 @@
 
 //#include "simulation_data.h"
 
+
+/* macros */
+#define OMSI_DBL_MAX DBL_MAX
+#define OMSI_INT_MAX INT_MAX
+
+
 /* some stuff from simulation_input_xml.c
  * ToDo: implement for new data struct
  */
@@ -101,7 +107,17 @@ typedef struct omc_ModelInput {
 extern "C" {
 #endif
 
-/* function prototypes */
+/* public function prototypes */
+omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
+                                omsi_char*                      filename,
+                                omsi_string                     fmuGUID,
+                                omsi_string                     instanceName,
+                                const omsi_callback_functions*  functions);
+
+/*private function prototypes */
+omsi_int omsu_find_alias_index(omsi_int alias_valueReference, omsi_int n_variables);
+void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var_info, omsi_data_type type, omsi_unsigned_int* variable_index, omsi_int number_of_prev_variables);
+void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi);
 void XMLCALL startElement(void *userData, omsi_string name, omsi_string *attr);
 void XMLCALL endElement(void *userData, omsi_string name);
 omsi_string omsu_findHashStringStringNull(hash_string_string *ht, omsi_string key);
