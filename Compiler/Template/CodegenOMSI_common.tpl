@@ -53,53 +53,53 @@ template generateSetupSimulationDataFunction(SimCode simCode, String modelNamePr
     // set double *real_vars
     let _ = System.tmpTickResetIndex(0,1)
     let _ = vars.stateVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"real_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
       <<>>
     )
     let _ = vars.derivativeVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"real_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
       <<>>
     )
     let _ = vars.algVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"real_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
       <<>>
     )
     let _ = vars.discreteAlgVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"real_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
       <<>>
     )
     let _ = vars.realOptimizeConstraintsVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"real_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
       <<>>
     )
     let _ = vars.realOptimizeFinalConstraintsVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"real_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
       <<>>
     )
     let _ = vars.paramVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"real_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
       <<>>
     )
 
     // set int *int_vars
     let _ = System.tmpTickResetIndex(0,1)
     let _ = vars.intAlgVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"int_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->ints") + "\n"
       <<>>
     )
     let _ = vars.intParamVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"int_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->ints") + "\n"
       <<>>
     )
 
     // set bool *bool_vars
     let _ = System.tmpTickResetIndex(0,1)
     let _ = vars.boolAlgVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"bool_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->bools") + "\n"
       <<>>
     )
     let _ = vars.boolParamVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"bool_vars") + "\n"
+      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->bools") + "\n"
       <<>>
     )
 
