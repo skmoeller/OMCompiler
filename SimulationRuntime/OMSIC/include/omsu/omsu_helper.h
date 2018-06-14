@@ -94,9 +94,7 @@ void deInitializeDataStruc(DATA *data);
 void updateRelationsPre(DATA *data);
 modelica_boolean checkRelations(DATA *data);
 
-void mmc_catch_dummy_fn (void);
-
-extern void omsic_model_setup_data (osu_t* OSU);
+extern void mmc_catch_dummy_fn (void);
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

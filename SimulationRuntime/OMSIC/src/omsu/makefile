@@ -4,7 +4,8 @@ include ../../makefile
 
 # varibales for OMSU library creation
 OMSU_SRCS = omsu_ContinuousSimulation.c omsu_EventSimulation.c omsu_GettersAndSetters.c\
- omsu_Initialization.c omsu_me.c omsu_utils.c omsu_common.c omsu_helper.c omsu_input_xml.c\
+ omsu_Initialization.c omsu_me.c omsu_utils.c omsu_common.c omsu_helper.c\
+ omsu_input_xml.c omsu_input_json.c\
   ../fmi2/osi_fmi2_wrapper.c
 
 OMSU_OBJS = $(OMSU_SRCS:%.c=%.o)
@@ -13,7 +14,7 @@ OMSU_HDRS = $(OMSIC_INCLUDE)/omsu/omsu_ContinuousSimulation.h $(OMSIC_INCLUDE)/o
  $(OMSIC_INCLUDE)/omsu/omsu_GettersAndSetters.h $(OMSIC_INCLUDE)/omsu/omsu_Initialization.h\
  $(OMSIC_INCLUDE)/omsu/omsu_me.h $(OMSIC_INCLUDE)/omsu/omsu_utils.h\
  $(OMSIC_INCLUDE)/omsu/omsu_common.h $(OMSIC_INCLUDE)/omsu/omsu_helper.h\
- $(OMSIC_INCLUDE)/omsu/omsu_input_xml.h\
+ $(OMSIC_INCLUDE)/omsu/omsu_input_xml.h $(OMSIC_INCLUDE)/omsu/omsu_input_json.h\
  $(OMSIC_INCLUDE)/fmi2/osi_fmi2_wrapper.h
 
 FMI2_HDRS=$(OMSIC_INCLUDE)/fmi2/osi_fmi2_wrapper.h $(OMSIC_INCLUDE)/fmi2/fmi2Functions.h\

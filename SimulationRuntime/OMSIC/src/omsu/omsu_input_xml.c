@@ -175,16 +175,6 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
-    //omsu_process_info_json();
-
-
-    /* allocate memory for sim_data_t */
-    if (omsu_allocate_sim_data(osu_data, functions->allocateMemory)) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-            "fmi2Instantiate: Not enough memory.");
-        return -1;
-    }
-    // ToDo: where do we get sim_data_t->inputs_real_index and so on?
 
     // ToDo: add error case
 

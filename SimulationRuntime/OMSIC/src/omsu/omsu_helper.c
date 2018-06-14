@@ -161,8 +161,8 @@ omsi_int omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_allocate_
 
 void omsu_print_debug_helper (model_data_t* model_data, omsi_unsigned_int start_index, omsi_unsigned_int size, omsi_unsigned_int indent) {
 
-    omsi_string oneIndent = "| ";
-    omsi_string allIndent = (omsi_string) global_allocateMemory(100, sizeof(omsi_char));
+    omsi_char* oneIndent = "| ";
+    omsi_char* allIndent = (omsi_char*) global_allocateMemory(100, sizeof(omsi_char));
 
 
     omsi_unsigned_int i;
@@ -171,9 +171,9 @@ void omsu_print_debug_helper (model_data_t* model_data, omsi_unsigned_int start_
     }
 
     real_var_attribute_t* attribute_real;
-    real_var_attribute_t* attribute_integer;
-    real_var_attribute_t* attribute_bool;
-    real_var_attribute_t* attribute_string;
+    int_var_attribute_t* attribute_integer;
+    bool_var_attribute_t* attribute_bool;
+    string_var_attribute_t* attribute_string;
     for (i=0; i<size; i++) {
         printf("%sid:\t\t\t%i\n", allIndent, model_data->model_vars_info_t[start_index+i].id);
         printf("%sname:\t\t\t%s\n", allIndent, model_data->model_vars_info_t[start_index+i].name);
@@ -222,12 +222,16 @@ void omsu_print_debug_helper (model_data_t* model_data, omsi_unsigned_int start_
             break;
         case OMSI_TYPE_BOOLEAN:
             attribute_bool = model_data->model_vars_info_t[start_index+i].modelica_attributes;
-            printf("| %sfixed:\t\t\t%s\n", allIndent, attribute_integer->fixed ? "true" : "false");
-            printf("| %sstart:\t\t\t%s\n", allIndent, attribute_integer->start ? "true" : "false");
+            printf("| %sfixed:\t\t\t%s\n", allIndent, attribute_bool->fixed ? "true" : "false");
+            printf("| %sstart:\t\t\t%s\n", allIndent, attribute_bool->start ? "true" : "false");
             break;
         case OMSI_TYPE_STRING:
             attribute_string = model_data->model_vars_info_t[start_index+i].modelica_attributes;
             printf("| %sstart:\t\t\t%s\n", allIndent, attribute_string->start);
+            break;
+        default:
+            // ToDo: plot warning
+            break;
         }
 
         printf("%salias:\t\t\t%s\n",  allIndent, model_data->model_vars_info_t[start_index+i].isAlias ? "true" : "false");
@@ -254,7 +258,6 @@ void omsu_print_debug_helper (model_data_t* model_data, omsi_unsigned_int start_
  */
 void omsu_print_debug (osu_t* OSU) {
     omsi_unsigned_int lastIndex, size;
-    omsi_int n_vars_and_params;
 
     printf("\n========== omsu_print_debug start ==========\n");
     /* print omsi_data */
@@ -324,103 +327,108 @@ void omsu_print_debug (osu_t* OSU) {
 
 omsi_int initializeNonlinearSystems(DATA *data, threadData_t *threadData) {
     //TODO: implement for new data structure
+    UNUSED(data); UNUSED(threadData);
     return -1;
 }
 
 omsi_int initializeLinearSystems(DATA *data, threadData_t *threadData) {
     //TODO: implement for new data structure
+    UNUSED(data); UNUSED(threadData);
     return -1;
 }
 
 omsi_int initializeMixedSystems(DATA *data, threadData_t *threadData) {
     //TODO: implement for new data structure
+    UNUSED(data); UNUSED(threadData);
     return -1;
 }
 
 void initializeStateSetJacobians(DATA *data, threadData_t *threadData) {
     //TODO: implement for new data structure
+    UNUSED(data); UNUSED(threadData);
 }
 
 void setZCtol(omsi_real relativeTol) {
     //ToDO: implement
+    UNUSED(relativeTol);
 }
 
 void copyStartValuestoInitValues(DATA *data) {
     //ToDo: implement for new data structure
+    UNUSED(data);
 }
 
 omsi_int initialization(DATA *data, threadData_t *threadData, omsi_string pInitMethod, omsi_string pInitFile, omsi_real initTime) {
     //ToDo: implement for new data structure
+    UNUSED(data); UNUSED(threadData); UNUSED(pInitMethod); UNUSED(pInitFile); UNUSED(initTime);
     return -1;
 }
 
 void initSample(DATA* data, threadData_t *threadData, omsi_real startTime, omsi_real stopTime) {
     //ToDo: implement for new data structure
+    UNUSED(data); UNUSED(threadData); UNUSED(startTime); UNUSED(stopTime);
 }
 
 void initDelay(DATA* data, omsi_real startTime) {
     //ToDo: implement for new data structure
+    UNUSED(data); UNUSED(startTime);
 }
 
 omsi_real getNextSampleTimeFMU(DATA *data) {
     //ToDo: implement for new data structure
+    UNUSED(data);
     return -1;
 }
 
 void setAllVarsToStart(DATA *data) {
     //ToDo: implement for new data structure
+    UNUSED(data);
 }
 
 void setAllParamsToStart(DATA *data) {
     //ToDo: implement for new data structure
+    UNUSED(data);
 }
 
 omsi_int freeNonlinearSystems(DATA *data, threadData_t *threadData) {
     //ToDo: implement for new data structure
+    UNUSED(data); UNUSED(threadData);
     return -1;
 }
 
 omsi_int freeMixedSystems(DATA *data, threadData_t *threadData) {
     //ToDo: implement for new data structure
+    UNUSED(data); UNUSED(threadData);
     return -1;
 }
 
 omsi_int freeLinearSystems(DATA *data, threadData_t *threadData) {
     //ToDo: implement for new data structure
+    UNUSED(data); UNUSED(threadData);
     return -1;
 }
 
 void freeStateSetData(DATA *data) {
     //ToDo: implement for new data structure
+    UNUSED(data);
 }
 
 void deInitializeDataStruc(DATA *data) {
     //ToDo: implement for new data structure
+    UNUSED(data);
 }
 
 void updateRelationsPre(DATA *data) {
     //ToDo: implement for new data structure
+    UNUSED(data);
 }
 
 modelica_boolean checkRelations(DATA *data) {
     //ToDo: implement for new data structure
+    UNUSED(data);
     return false;
 }
 
 void mmc_catch_dummy_fn (void) {
-    //ToDo: delete
-}
-
-/*
-void omsic_model_setup_data (osu_t* OSU) {
-    //ToDo: delete
-}
-*/
-
-extern void omsu_initialization(omsi_t* osu_data) {
-    //ToDo: delete
-}
-
-extern void setDefaultStartValues(osu_t* OSU) {
     //ToDo: delete
 }

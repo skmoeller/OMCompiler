@@ -74,7 +74,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
         return NULL;
     }
 
-    /* read xml file and allocate memory for osu_data  */
+    /* process XML file and read experiment_data and parts of model_data in osu_data*/
     OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
     omsi_char* initXMLFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(initXMLFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
@@ -85,14 +85,24 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     }
     functions->freeMemory(initXMLFilename);
 
+    /* process JSON file and read missing parts of model_data in osu_data */
     omsi_char* infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, instanceName);
-//    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {     // ToDo: needs some information beforehand
+//    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {     // ToDo: implement
 //        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", infoJsonFilename);
 //        omsu_free_osu_data(OSU->osu_data, functions->freeMemory);
 //        return NULL;
 //    }
     functions->freeMemory(infoJsonFilename);
+
+    /* allocate memory for sim_data */
+    /* allocate memory for sim_data_t */
+    if (omsu_allocate_sim_data(OSU->osu_data, functions->allocateMemory)) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+            "fmi2Instantiate: Not enough memory.");
+        return -1;
+    }
+    // ToDo: where do we get sim_data_t->inputs_real_index and so on?
 
     OSU->osu_functions = (omsi_functions_t *) functions->allocateMemory(1, sizeof(omsi_functions_t));
     OSU->instanceName = (omsi_char*) functions->allocateMemory(1 + strlen(instanceName), sizeof(omsi_char));
