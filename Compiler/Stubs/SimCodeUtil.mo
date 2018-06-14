@@ -39,6 +39,13 @@ algorithm
   /* Do nothing */
 end codegenExpSanityCheck;
 
+function getValueReference
+  input SimCodeVar.SimVar inSimVar;
+  input SimCode.SimCode inSimCode;
+  input Boolean inElimNegAliases;
+  output String outValueReference;
+end getValueReference;
+
 
 annotation(__OpenModelica_Interface="backend");
 end SimCodeUtil;
