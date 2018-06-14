@@ -426,7 +426,7 @@ void updateRelationsPre(DATA *data) {
 modelica_boolean checkRelations(DATA *data) {
     //ToDo: implement for new data structure
     UNUSED(data);
-    return false;
+    return omsi_false;
 }
 
 void mmc_catch_dummy_fn (void) {

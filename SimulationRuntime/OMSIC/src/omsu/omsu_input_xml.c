@@ -274,14 +274,14 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
 
     omsu_read_value_string(omsu_findHashStringStringNull(v,"alias"), &aliasTmp);
     if (0 == strcmp(aliasTmp,"noAlias")) {
-        model_var_info->isAlias = false;
+        model_var_info->isAlias = omsi_false;
         model_var_info->negate = 1;
         model_var_info->aliasID = -1;
         model_var_info->type_index.index = *variable_index;
         (*variable_index)++;
     }
     else if (0 == strcmp(aliasTmp,"negatedAlias")){
-        model_var_info->isAlias = true;
+        model_var_info->isAlias = omsi_true;
         model_var_info->negate = -1;
         // ToDo: find alias id
         omsu_read_value_int(omsu_findHashStringString(v,"aliasVariableId"), &model_var_info->aliasID, -1);
@@ -289,7 +289,7 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
         model_var_info->type_index.index = omsu_find_alias_index(model_var_info->aliasID, number_of_prev_variables);
     }
     else {
-        model_var_info->isAlias = true;
+        model_var_info->isAlias = omsi_true;
         model_var_info->negate = 1;
         // ToDo: find alias id
         omsu_read_value_int(omsu_findHashStringString(v,"aliasVariableId"), &model_var_info->aliasID, -1);

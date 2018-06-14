@@ -48,6 +48,8 @@ typedef fmi2Real            omsi_real;
 typedef fmi2Integer         omsi_int;
 typedef fmi2Integer         omsi_long;
 typedef fmi2Boolean         omsi_bool;
+#define omsi_true  fmi2True
+#define omsi_false fmi2False
 #ifndef true
 #define true fmi2True
 #endif
@@ -63,6 +65,8 @@ typedef double              omsi_real;
 typedef int                 omsi_int;
 typedef long                omsi_long;
 typedef int                 omsi_bool;
+#define omsi_true  1
+#define omsi_false 0
 #ifndef true
 #define true 1
 #endif

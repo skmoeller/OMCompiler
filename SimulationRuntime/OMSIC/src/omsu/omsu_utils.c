@@ -39,9 +39,9 @@ omsi_bool isCategoryLogged(void* c, omsi_int categoryIndex)
 {
   osu_t* OSU = (osu_t *)c;
   if (categoryIndex < NUMBER_OF_CATEGORIES && (OSU->logCategories[categoryIndex] || OSU->logCategories[LOG_ALL])) {
-    return true;
+    return omsi_true;
   }
-  return false;
+  return omsi_false;
 }
 
 omsi_string stateToString(void* c)
@@ -62,7 +62,7 @@ omsi_string stateToString(void* c)
 omsi_bool invalidState(void* c, omsi_string f, omsi_int meStates, omsi_int csStates) {   //ToDo: maybe omsi_data instead of fmi2Component data type
   osu_t* OSU = (osu_t *)c;
   if (!OSU)
-    return true;
+    return omsi_true;
 
   omsi_int statesExpected;
   if (omsi_model_exchange == OSU->type)
@@ -74,10 +74,10 @@ omsi_bool invalidState(void* c, omsi_string f, omsi_int meStates, omsi_int csSta
 	OSU->state=statesExpected;
     FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Illegal call sequence. %s is not allowed in %s state.", f, f, stateToString(OSU))
 	OSU->state = modelError;
-    return true;
+    return omsi_true;
   }
 
-  return false;
+  return omsi_false;
 }
 
 omsi_bool nullPointer(void* c, omsi_string f, omsi_string arg, const void *p)
@@ -86,9 +86,9 @@ omsi_bool nullPointer(void* c, omsi_string f, omsi_string arg, const void *p)
   if (!p) {
     OSU->state = modelError;
     FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Invalid argument %s = NULL.", f, arg)
-    return true;
+    return omsi_true;
   }
-  return false;
+  return omsi_false;
 }
 
 omsi_bool vrOutOfRange(void* c, omsi_string f, omsi_unsigned_int vr, omsi_int end)
@@ -97,9 +97,9 @@ omsi_bool vrOutOfRange(void* c, omsi_string f, omsi_unsigned_int vr, omsi_int en
   if ((omsi_int)vr >= end) {
     OSU->state = modelError;
     FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Illegal value reference %u.", f, vr)
-    return true;
+    return omsi_true;
   }
-  return false;
+  return omsi_false;
 }
 
 omsi_status unsupportedFunction(void* c, omsi_string fName, omsi_int statesExpected)
@@ -118,9 +118,9 @@ omsi_bool invalidNumber(void* c, omsi_string f, omsi_string arg, omsi_int n, oms
   if (n != nExpected) {
     OSU->state = modelError;
     FILTERED_LOG(OSU, omsi_error, LOG_STATUSERROR, "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected)
-    return true;
+    return omsi_true;
   }
-  return false;
+  return omsi_false;
 }
 
 /*! \fn omsi_set_debug_logging
@@ -136,14 +136,14 @@ omsi_status omsi_set_debug_logging(void* c, omsi_bool loggingOn, omsi_unsigned_i
   OSU->loggingOn = loggingOn;
 
   for (i = 0; i < NUMBER_OF_CATEGORIES; i++) {
-    OSU->logCategories[i] = false;
+    OSU->logCategories[i] = omsi_false;
   }
   for (i = 0; i < nCategories; i++) {
-    omsi_bool categoryFound = false;
+    omsi_bool categoryFound = omsi_false;
     for (j = 0; j < NUMBER_OF_CATEGORIES; j++) {
       if (strcmp(logCategoriesNames[j], categories[i]) == 0) {
         OSU->logCategories[j] = loggingOn;
-        categoryFound = true;
+        categoryFound = omsi_true;
         break;
       }
     }
