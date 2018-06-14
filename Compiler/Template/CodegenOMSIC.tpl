@@ -79,14 +79,11 @@ template generateOMSIC(SimCode simCode)
     // translated model <%fileNamePrefix%> to OMSIC <%\n%>
 
     /* Read input data from xml file */
-    int <%CodegenUtil.symbolName(modelNamePrefixStr,"setupInputData")%> (omsi_t *omsi_data){
-      <%generateSetupModelDataFunction(modelInfo, modelNamePrefixStr)%>
+    omsi_int <%CodegenUtil.symbolName(modelNamePrefixStr,"setupInputData")%> (omsi_t *omsi_data){
 
       <%generateSetupSimulationDataFunction(simCode, modelNamePrefixStr)%>
 
-      <%generateSetupExperimentData(simCode, modelNamePrefixStr)%>
-
-      return OMSI_SUCCESS;
+      return omsi_ok;
     }
     >>
 end generateOMSIC;
@@ -108,14 +105,12 @@ template generateOMSICHeader(SimCode simCode)
     #include "omsi.h"
     #include "<%fileNamePrefix%>_omsic.h"
 
-    #include <string.h>    // TODO: is this needed?
-
     /* Equation functions prototypes */
     #if defined(__cplusplus)
     extern "C" {
     #endif
 
-    int <%CodegenUtil.symbolName(modelNamePrefixStr,"setupInputData")%> (omsi_t *omsi_data);
+    omsi_int <%CodegenUtil.symbolName(modelNamePrefixStr,"setupInputData")%> (omsi_t *omsi_data);
 
     #if defined(__cplusplus)
     }

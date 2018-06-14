@@ -42,50 +42,8 @@ import CodegenUtil;
 import CodegenFMU;
 
 
-template generateSetupModelDataFunction(ModelInfo modelInfo, String modelNamePrefixStr)
-"Generates C function to initialize OMSI model_data with data from xml file"
-::=
-  match modelInfo
-    case MODELINFO(varInfo=VARINFO(__)) then
-    <<
-    /* initializes model data */
-    omsi_data->model_data->n_States = <%varInfo.numStateVars%>;    /* number of states */
-    omsi_data->model_data->n_derivatives = <%varInfo.numJacobians%>; // TODO: is this correct????    /* number of derivatives */
-    omsi_data->model_data->n_real_vars = <%nVariablesReal(varInfo)%>;    /* number of real variables */
-    omsi_data->model_data->n_int_vars = <%varInfo.numIntAlgVars%>;    /* number of integer varibales */
-    omsi_data->model_data->n_bool_vars = <%varInfo.numBoolAlgVars%>;    /* number of boolean variables */
-    omsi_data->model_data->n_string_vars = <%varInfo.numStringAlgVars%>;    /*number of string variables */
-    omsi_data->model_data->n_real_parameters = <%varInfo.numParams%>;    /* number of real parameters */
-    omsi_data->model_data->n_int_parameters = <%varInfo.numIntParams%>;    /* number of integer parameters */
-    omsi_data->model_data->n_bool_parameters = <%varInfo.numBoolParams%>;    /* number of boolean parameters */
-    omsi_data->model_data->n_zerocrossing = <%varInfo.numZeroCrossings%>;    /* number of zero crossings */
-
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"setupDataStruc")%>_setupModelVarsInfo(omsi_data->model_data->model_vars_info_t);
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"setupDataStruc")%>_setupEquationInfo(omsi_data->model_data->equation_info_t);
-    >>
-  end match
-end generateSetupModelDataFunction;
-
-
-template generateSetupExperimentData(SimCode simCode, String modelNamePrefixStr)
-"Description"
-::=
-  match simCode
-    case SIMCODE(modelInfo = MODELINFO(varInfo=VARINFO(__)), simulationSettingsOpt = SOME(s as SIMULATION_SETTINGS(__))) then
-    <<
-    /* initialize experiment data */
-    omsi_data->experiment->start_time = <%s.startTime%>;
-    omsi_data->experiment->stop_time = <%s.stopTime%>;
-    omsi_data->experiment->step_size = <%s.stepSize%>;
-    //omsi_data->experiment->num_outputs =  // TODO: complete
-    omsi_data->experiment->tollerance = <%s.tolerance%>;
-    omsi_data->experiment->solver_name = "<%s.method%>";
-    >>
-end generateSetupExperimentData;
-
-
 template generateSetupSimulationDataFunction(SimCode simCode, String modelNamePrefixStr)
-"Generates C function to initialize OMSI sim_data with data from xml file"
+"Generates C function to initialize OMSI sim_data"
 ::=
   let scalarVariablesInitalization = ""
 

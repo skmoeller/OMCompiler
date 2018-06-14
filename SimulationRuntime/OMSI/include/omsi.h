@@ -43,6 +43,8 @@ extern "C" {
  * type definitions of variables
  */
 #ifdef OSI_FMI2_WRAPPER_H
+#include "fmi2/fmi2Functions.h"     // ToDo: delete, is duplicate but silences warnings in my eclipse :-P
+
 typedef fmi2ValueReference  omsi_unsigned_int;
 typedef fmi2Real            omsi_real;
 typedef fmi2Integer         omsi_int;

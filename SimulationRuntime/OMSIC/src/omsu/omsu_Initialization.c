@@ -96,13 +96,15 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     functions->freeMemory(infoJsonFilename);
 
     /* allocate memory for sim_data */
-    /* allocate memory for sim_data_t */
     if (omsu_allocate_sim_data(OSU->osu_data, functions->allocateMemory)) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
-    // ToDo: where do we get sim_data_t->inputs_real_index and so on?
+    // ToDo: where do we get sim_data_t->inputs_real_index and so on? Probably from JSON file
+    /* initialize sim_data */
+//    omsi_model_setup_data(OSU);      // ToDo: implement, write stuff into sim_data
+
 
     OSU->osu_functions = (omsi_functions_t *) functions->allocateMemory(1, sizeof(omsi_functions_t));
     OSU->instanceName = (omsi_char*) functions->allocateMemory(1 + strlen(instanceName), sizeof(omsi_char));
@@ -114,8 +116,6 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
         return NULL;
     }
 
-    /* initialize OSU */
-//    omsic_model_setup_data(OSU);      // ToDo: implement, set model data
 
     // set all categories to on or off. fmi2SetDebugLogging should be called to choose specific categories.
     for (omsi_int i = 0; i < NUMBER_OF_CATEGORIES; i++) {
