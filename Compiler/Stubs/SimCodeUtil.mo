@@ -44,6 +44,8 @@ function getValueReference
   input SimCode.SimCode inSimCode;
   input Boolean inElimNegAliases;
   output String outValueReference;
+algorithm
+  /* Do nothing */
 end getValueReference;
 
 
