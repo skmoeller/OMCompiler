@@ -88,11 +88,11 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     /* process JSON file and read missing parts of model_data in osu_data */
     omsi_char* infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, instanceName);
-//    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {     // ToDo: implement
-//        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", infoJsonFilename);
-//        omsu_free_osu_data(OSU->osu_data, functions->freeMemory);
-//        return NULL;
-//    }
+    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {     // ToDo: implement
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", infoJsonFilename);
+        omsu_free_osu_data(OSU->osu_data, functions->freeMemory);
+        return NULL;
+    }
     functions->freeMemory(infoJsonFilename);
 
     /* allocate memory for sim_data */

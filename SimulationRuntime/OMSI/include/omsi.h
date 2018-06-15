@@ -128,11 +128,12 @@ typedef struct file_info {
  *   additional equation information for debugging
  */
 typedef struct equation_info_t{
-  omsi_int  id;                 /* unique equation reference from  info.json */
-  omsi_int  profileBlockIndex;
-  omsi_int  parent;
-  omsi_int  numVar;             /* number of unknown variables */
-  omsi_int* variables;          /* unknown variables */
+    omsi_int        id;                 /* unique equation reference from  info.json */
+    omsi_int        profileBlockIndex;
+    omsi_int        parent;
+    omsi_int        numVar;             /* number of defining variables */
+    omsi_string*    variables;          /* array of unknown variables */
+    file_info       info;               /* file informations for  equation */
 } equation_info_t;
 
 
@@ -207,7 +208,7 @@ typedef struct model_variable_info_t {
 	omsi_bool       isAlias;                /* true if alias, else false */
 	omsi_int        negate;					/* if negated -1 else 1 */
     omsi_int        aliasID;				/* pointer to alias if >= 0 */
-    file_info       info;                   /* pointer to file informations */
+    file_info       info;                   /* file informations for variable|parameter|alias */
 } model_variable_info_t;
 
 
@@ -296,7 +297,9 @@ typedef struct model_data_t {
 	omsi_unsigned_int	n_string_parameters;	// number of string parameters
 	omsi_unsigned_int   n_string_aliases;       // number of string alias variables
 	omsi_unsigned_int   n_zerocrossings;        // number of zero crossings
-    omsi_unsigned_int   n_equations;            // ToDo: or is this information already somewhere else?
+    omsi_unsigned_int   n_equations;            // number of all equations
+    omsi_unsigned_int	n_regular_equations;	// number of regular equations
+    omsi_unsigned_int	n_init_equations;		// number of initial equations ToDo: fill with value somewhere
 
 	model_variable_info_t*  model_vars_info_t;		// N = n_states + n_derivatives n_$all_vars + n_$all_parameters  $all={real,int,bool}
 	equation_info_t*        equation_info_t;

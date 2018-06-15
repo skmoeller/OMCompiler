@@ -34,6 +34,38 @@
 #include "omsi.h"
 #include "omsu_common.h"
 
+#include "util/omc_mmap.h"
+
+/* typedef structs */
+typedef struct {
+  omsi_unsigned_int size;
+  omsi_string data;
+} omsi_mmap;
+
+
+
+/* function prototypes */
+omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi_string fmuGUID, omsi_string instanceName, omsi_callback_functions* functions);
+omsi_mmap omsi_mmap_open_read_unix(omsi_string fileName);
+static inline omsi_string skipSpace(omsi_string str);
+static inline omsi_string assertStringValue(omsi_string str, omsi_string value);
+static inline omsi_string assertChar (omsi_string str, omsi_char c);
+omsi_bool omsu_assertCharOrEnd (const char *str, char c);
+static inline omsi_string assertNumber(omsi_string str, omsi_real expected);
+static inline omsi_string skipObjectRest(omsi_string str, omsi_int first);
+static omsi_string skipValue(omsi_string str);
+static inline omsi_string skipFieldIfExist(omsi_string str,omsi_string name);
+omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_unsigned_int expected_id);
+omsi_string readEquations(omsi_string str, model_data_t* model_data);
+static void readInfoJson(omsi_string str, model_data_t* model_data);
+
+
+
+
+
+
+
+
 
 
 #endif

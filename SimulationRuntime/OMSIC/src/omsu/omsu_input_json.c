@@ -30,17 +30,388 @@
 
 #include "omsu/omsu_input_json.h"
 
+/* global functions */          // ToDo: is this the best way to go around giving every function a handle to those functions?
+omsi_callback_allocate_memory   global_allocateMemory;
+omsi_callback_free_memory       global_freeMemory;
 
 
 
 
 
+/* Entry point.
+ * Processes all informations from input.json file.
+ * Reads values, allocates memory and writes everything in model_data->equation_info.
+ */
+omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi_string fmuGUID, omsi_string instanceName, omsi_callback_functions* functions) {
+
+    /* set global functions */
+    global_allocateMemory = functions->allocateMemory;
+    global_freeMemory = functions->freeMemory;
+
+	omsi_mmap mmap_reader = {0};
 
 
-omsi_status omsu_process_input_json(osu_t* osu_data, omsi_string infoJsonFilename, omsi_string fmuGUID, omsi_string instanceName, omsi_callback_functions* functions) {
+	/* read JSON file */
+	mmap_reader = omsi_mmap_open_read_unix (fileName);		// ToDo: is memory allocated here and later freed again?
+	readInfoJson(mmap_reader.data, &osu_data->model_data);
 
-
+	// ToDo: free memory
 
 
     return omsi_ok;
+}
+
+omsi_mmap omsi_mmap_open_read_unix(omsi_string fileName)
+{
+  struct stat s;
+  omsi_mmap res = {0};
+  int fd = open(fileName, O_RDONLY);
+  if (fd < 0) {
+//    throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));
+  }
+  if (fstat(fd, &s) < 0) {
+    close(fd);
+//    throwStreamPrint(NULL, "fstat %s failed: %s\n", fileName, strerror(errno));
+  }
+  res.size = s.st_size;
+  res.data = (omsi_string) mmap(0, res.size, PROT_READ, MAP_SHARED, fd, 0);
+  close(fd);
+  if (res.data == MAP_FAILED) {
+//    throwStreamPrint(NULL, "mmap(file=\"%s\",fd=%d,size=%ld kB) failed: %s\n", fileName, fd, (long) s.st_size, strerror(errno));
+  }
+  return res;
+}
+
+
+static inline omsi_string skipSpace(omsi_string str) {
+    do {
+        switch (*str) {
+            case '\0': return str;
+            case ' ':
+            case '\n':
+            case '\r':
+                str++;
+                break;
+            default: return str;
+        }
+    } while (1);
+}
+
+
+/* Does not work for escaped strings. Returns the rest of the string to parse. */
+static inline omsi_string assertStringValue(omsi_string str, omsi_string value) {
+  int len = strlen(value);
+  str = skipSpace(str);
+  if ('\"' != *str || strncmp(str+1,value,len) || str[len+1] != '\"') {
+    fprintf(stderr, "JSON string value %s expected, got: %.20s\n", value, str);
+    abort();
+  }
+  return str + len + 2;
+}
+
+
+static inline omsi_string assertChar (omsi_string str, omsi_char c) {
+    str = skipSpace(str);
+    if (c != *str) {
+        fprintf(stderr, "Expected '%c', got: %.20s\n", c, str);
+        abort();
+    }
+    return str + 1;
+}
+
+/*
+ * Asserts if pointer *str points to char that is equal to input char c or end
+ * of array ']' is reached.
+ * Otherwise aborts.
+ */
+omsi_bool omsu_assertCharOrEnd (omsi_string str, omsi_char expected_char) {
+    str = skipSpace(str);
+
+    if ((expected_char != *str) && (']' != *str)) {
+        fprintf(stderr, "Expected '%c', got: %.20s\n", expected_char, str);
+        abort();
+    }
+    else if ('c' != ']' && ']' == *str) {		// found end of array but c wasn't supposed to be end
+        str = str + 1;
+        return omsi_false;
+    }
+
+    str = str+2;
+    return omsi_true;
+}
+
+
+static inline omsi_string assertNumber(omsi_string str, omsi_real expected) {
+    omsi_char* endptr = NULL;
+    omsi_real d;
+    str = skipSpace(str);
+    d = strtod(str, &endptr);
+    if (str == endptr) {
+        fprintf(stderr, "Expected number, got: %.20s\n", str);
+        abort();
+    }
+    if (d != expected) {
+        fprintf(stderr, "Got number %f, expected: %f\n", d, expected);
+        abort();
+    }
+    return endptr;
+}
+
+
+static inline omsi_string skipObjectRest(omsi_string str, omsi_int first) {
+    str=skipSpace(str);
+    while (*str != '}') {
+        if (!first) {
+            if (*str != ',') {
+            fprintf(stderr, "JSON object expected ',' or '}', got: %.20s\n", str);
+            abort();
+            }
+            str++;
+        } else {
+            first = 0;
+        }
+        str = skipValue(str);
+        str = skipSpace(str);
+        if (*str++ != ':') {
+            fprintf(stderr, "JSON object expected ':', got: %.20s\n", str);
+            abort();
+        }
+        str = skipValue(str);
+        str = skipSpace(str);
+    }
+    return str+1;
+}
+
+
+static omsi_string skipValue(omsi_string str) {
+    str = skipSpace(str);
+    omsi_int first;
+    omsi_char *endptr;
+    switch (*str) {
+        case '{':
+            str = skipObjectRest(str+1,1);
+            return str;
+        case '[':
+            first = 1;
+            str = skipSpace(str+1);
+            while (*str != ']') {
+              if (!first && *str++ != ',') {
+                fprintf(stderr, "JSON array expected ',' or ']', got: %.20s\n", str);
+                abort();
+              }
+              first = 0;
+              str = skipValue(str);
+              str = skipSpace(str);
+            }
+            return str+1;
+        case '"':
+            str++;
+            do {
+                switch (*str) {
+                    case '\0': fprintf(stderr, "Found end of file, expected end of string"); abort();
+                    case '\\':
+                        if (str+1 == '\0') {
+                        fprintf(stderr, "Found end of file, expected end of string"); abort();
+                        }
+                        str+=2;
+                        break;
+                    case '"':
+                        return str+1;
+                        default:
+                        str++;
+                }
+            } while (1);
+            abort();
+        case '-':
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            endptr = NULL;
+            strtod(str,&endptr);
+            if (str == endptr) {
+              fprintf(stderr, "Not a number, got %.20s\n", str);
+               abort();
+            }
+            return endptr;
+        default:
+            fprintf(stderr, "JSON value expected, got: %.20s\n", str);
+            abort();
+    }
+    return str;     // function should never reach this point
+}
+
+
+static inline omsi_string skipFieldIfExist(omsi_string str,omsi_string name) {
+    omsi_string s = str;
+    omsi_int len = strlen(name);
+    if (*s != ',') {
+        return str;
+    }
+    s++;
+    if (*s != '\"' || strncmp(s+1,name,len)) {
+        return str;
+    }
+    s += len + 1;
+    if (strncmp("\":", s, 2)) {
+        return str;
+    }
+    s += 2;
+    s = skipSpace(s);
+    s = skipValue(s);
+    s = skipSpace(s);
+    s = skipSpace(s);
+    return s;
+}
+
+
+omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_unsigned_int expected_id) {
+
+    omsi_int n = 0, j;
+    omsi_string str2;
+    str=assertChar(str,'{');
+    str=assertStringValue(str,"eqIndex");
+    str=assertChar(str,':');
+    str=assertNumber(str,expected_id);		// check if expected id matches found value
+    str=skipSpace(str);
+    equation_info->id = expected_id;
+    str = skipFieldIfExist(str, "parent");
+    str = skipFieldIfExist(str, "section");
+    // ToDo: don't skip, instead save section somewhere in equation_info
+
+    if (0==strncmp(",\"tag\":\"system\"", str, 15)) {
+        equation_info->profileBlockIndex = -1;
+        str += 15;
+    } else if (0==strncmp(",\"tag\":\"tornsystem\"", str, 19)) {
+        equation_info->profileBlockIndex = -1;
+        str += 19;
+    } else {
+        equation_info->profileBlockIndex = 0;
+    }
+    str = skipFieldIfExist(str, "tag");
+    str = skipFieldIfExist(str, "display");
+    str = skipFieldIfExist(str, "unknowns");
+    /* read defines */
+    if (strncmp(",\"defines\":[", str, 12)) {       // case no ",\"defines\":[" was found
+        equation_info->numVar = 0;
+        equation_info->variables = NULL;
+        str = skipObjectRest(str,0);
+        return str;
+    }
+    str += 12;
+    str = skipSpace(str);
+    if (*str == ']') {      // case there is nothing in defines
+        equation_info->numVar = 0;
+        equation_info->variables = NULL;
+        return skipObjectRest(str-1,0);
+    }
+
+    /* count number of defining variables */
+    str2 = skipSpace(str);
+    while (1) {
+        str=skipValue(str);
+        n++;
+        str=skipSpace(str);
+        if (*str != ',') {
+            break;
+        }
+        str++;
+    };          // ToDo: why ";"?
+    assertChar(str, ']');
+    equation_info->numVar = n;
+    equation_info->variables = (omsi_string*) global_allocateMemory(n, sizeof(omsi_string));
+
+    /* save defining variables */
+    str = str2;
+    for (j=0; j<n; j++) {
+        omsi_string str3 = skipSpace(str);
+        omsi_char* tmp;
+        omsi_unsigned_int len=0;
+        str = assertChar(str, '\"');
+        while (*str != '\"' && *str) {
+            len++;
+            str++;
+        }
+        str = assertChar(str, '\"');
+        tmp = (omsi_char*) global_allocateMemory(len+1, sizeof(omsi_char));
+        strncpy(tmp, str3+1, len);
+        tmp[len] = '\0';
+        equation_info->variables[j] = tmp;
+        if (j != n-1) {
+            str = assertChar(str, ',');
+        }
+    }
+    str = assertChar(skipSpace(str), ']');
+    return skipObjectRest(str,0);
+}
+
+/* Reads equations part from string created from JSON file.
+ * For every equation a sub function is called to save detailed informations in equation_info_t.
+ */
+omsi_string readEquations(omsi_string str, model_data_t* model_data) {
+
+    model_data->n_equations = 52;        // ToDo: Read this info
+
+    // ToDo: allocate memory for equation_info_t
+    model_data->equation_info_t = (equation_info_t*) global_allocateMemory(model_data->n_equations, sizeof(equation_info_t));
+
+	omsi_unsigned_int i = 0;
+	str=assertChar(str,'[');
+	str = readEquation(str, &model_data->equation_info_t[i],i);	//read first equation
+	// ToDo: first equation is just a dummy equation. Consider skipping!!!
+
+	for (i=1; i<=model_data->n_equations; i++) {
+	    str = assertChar(str,',');
+	    str = skipSpace(str);
+        str = readEquation(str, &(model_data->equation_info_t[i]), i);
+	}
+
+	model_data->n_equations = i+1;
+
+	str=assertChar(str,']');
+	return str;
+}
+
+
+/* Reads all Informations from JSON file
+ * Actually skips everything except for equations, but checks if format of JSON is correct.
+ */
+static void readInfoJson(omsi_string str, model_data_t* model_data) {
+	/* check and skip content until begin of equations */
+	str=assertChar(str,'{');
+	str=assertStringValue(str,"format");
+	str=assertChar(str,':');
+	str=assertStringValue(str,"Transformational debugger info");
+	str=assertChar(str,',');
+	str=assertStringValue(str,"version");
+	str=assertChar(str,':');
+	str=assertChar(str,'1');
+	str=assertChar(str,',');
+	str=assertStringValue(str,"info");
+	str=assertChar(str,':');
+	str=skipValue(str);
+	str=assertChar(str,',');
+	str=assertStringValue(str,"variables");
+	str=assertChar(str,':');
+	str=skipValue(str);
+	str=assertChar(str,',');
+
+	/* read equations */
+	str=assertStringValue(str,"equations");
+	str=assertChar(str,':');
+	str=readEquations(str, model_data);
+	str=assertChar(str,',');
+
+	/* check and skip remaining content */
+	str=assertStringValue(str,"functions");
+	str=assertChar(str,':');
+//	str=readFunctions(str,xml);
+	str=skipValue(str);
+	assertChar(str,'}');
 }
