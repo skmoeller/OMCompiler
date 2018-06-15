@@ -364,6 +364,39 @@ algorithm
   end matchcontinue;
 end createSimCode;
 
+protected
+partial function PartialRunTpl
+  output tuple<Boolean,list<String>> res;
+end PartialRunTpl;
+
+partial function FuncText
+  input Tpl.Text txt;
+  output Tpl.Text out_txt;
+end FuncText;
+
+function runTplWriteFile
+  extends PartialRunTpl;
+  input FuncText func;
+  input String file;
+protected
+  Integer nErr;
+algorithm
+  res := (false,{});
+  try
+    SimCodeUtil.resetFunctionIndex();
+    SimCodeFunctionUtil.codegenResetTryThrowIndex();
+    if Config.acceptMetaModelicaGrammar() or Flags.isSet(Flags.GEN_DEBUG_SYMBOLS) then
+      Tpl.textFileConvertLines(Tpl.tplCallWithFailErrorNoArg(func), file);
+    else
+      nErr := Error.getNumErrorMessages();
+      Tpl.closeFile(Tpl.tplCallWithFailErrorNoArg(func,Tpl.redirectToFile(Tpl.emptyTxt, file)));
+      Tpl.failIfTrue(Error.getNumErrorMessages() > nErr);
+    end if;
+    res := (true,SimCodeUtil.getFunctionIndex());
+  else
+  end try;
+end runTplWriteFile;
+
 // TODO: use another switch ... later make it first class option like -target or so
 protected function callTargetTemplates "
   Generate target code by passing the SimCode data structure to templates."
@@ -467,9 +500,7 @@ protected
     res := (func(),{});
   end runToBoolean;
 
-  partial function PartialRunTpl
-    output tuple<Boolean,list<String>> res;
-  end PartialRunTpl;
+
   AvlSetString.Tree generatedObjects=AvlSetString.EMPTY();
 algorithm
   setGlobalRoot(Global.optionSimCode, SOME(simCode));
@@ -682,6 +713,8 @@ algorithm
       String str, newdir, newpath, resourcesDir;
       String fmutmp;
       Boolean b;
+      String fileprefix;
+      list<PartialRunTpl> codegenFuncs;
     case (SimCode.SIMCODE(),"C")
       algorithm
         fmutmp := simCode.fileNamePrefix + ".fmutmp";
@@ -719,7 +752,27 @@ algorithm
       then ();
     case (_,"omsic")
       equation
+        guid = System.getUUIDStr();
+        fileprefix = simCode.fileprefix;
+
+        SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
+        codegenFuncs = {function runTplWriteFile(func= function CodegenFMU2.fmiModelDescription(simCode=simCode, guid=guid, FMUType=FMUType), file=fileprefix + "_FMU.makefile")};
+        for f in codegenFuncs loop
+          f();
+        end for;
+        /*
+        runTplWriteFile(CodegenOMSIC.createMakefile(), fileprefix + "_FMU.makefile");
+
+        CodegenFMU2.fmiModelDescription();
+
         Tpl.tplNoret3(CodegenOMSIC.translateModel, simCode, FMUVersion, FMUType);
+    let () = textFile( createMakefile(), '<%fileNamePrefix%>_FMU.makefile')
+    let () = textFile( CodegenFMU2.fmiModelDescription(simCode, guid, FMUType), 'modelDescription.xml')
+    let () = textFile( generateOMSICHeader(simCode), '<%fileNamePrefix%>_omsic.h')
+    let () = textFile( generateOMSIC(simCode), '<%fileNamePrefix%>_omsic.c')
+    let () = textFile( CodegenEquations.generateEquationFiles(allEquations, fileNamePrefix), '<%fileNamePrefix%>_eqns.c')
+    let () = textFile( CodegenEquations.generateEquationFilesHeader(allEquations, fileNamePrefix), '<%fileNamePrefix%>_eqns.h')
+    */
       then ();
     case (_,"Cpp")
       equation
