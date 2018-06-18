@@ -124,13 +124,13 @@ omsi_int omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_allocate_
 
     omsi_int n_model_vars_and_params;
 
-    omsi_data->sim_data.initialization = (equation_system_t*) allocateMemory(1, sizeof(equation_system_t));
+    omsi_data->sim_data.initialization = (omsi_function_t*) allocateMemory(1, sizeof(omsi_function_t));
     if (!omsi_data->sim_data.initialization) {
         return -1;      // Error: Out of memory
     }
     // ToDo: add stuff, e.g. allocate memory for all parts of struct initialization
 
-    omsi_data->sim_data.simulation = (equation_system_t*) allocateMemory(1, sizeof(equation_system_t));
+    omsi_data->sim_data.simulation = (omsi_function_t*) allocateMemory(1, sizeof(omsi_function_t));
     if (!omsi_data->sim_data.initialization) {
         return -1;      // Error: Out of memory
     }

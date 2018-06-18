@@ -31,9 +31,6 @@
 #ifndef _OMSI_H
 #define _OMSI_H
 
-
-#include "omsi_eqns_system.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -78,10 +75,21 @@ typedef int                 omsi_bool;
 typedef char                omsi_char;
 typedef const omsi_char*    omsi_string;
 #endif
- /**
-  *   for delay handling
-  */
-struct RINGBUFFER;
+
+
+#include "omsi_eqns_system.h"
+
+
+/**
+ *   variable attributes
+ */
+typedef enum {
+  OMSI_TYPE_UNKNOWN,
+  OMSI_TYPE_REAL,
+  OMSI_TYPE_INTEGER,
+  OMSI_TYPE_BOOLEAN,
+  OMSI_TYPE_STRING
+}omsi_data_type;
 
 // ToDo: is this the right location for these definitions?
 typedef enum {
@@ -89,6 +97,9 @@ typedef enum {
     omsi_co_simulation      // not supported yet
 }omsu_type;
 
+/*
+ * Status of actual OpenModelica Simulation Unit
+ */
 typedef enum {
     omsi_ok,
     omsi_warning,
@@ -98,17 +109,23 @@ typedef enum {
     omsi_pending
 }omsi_status;
 
-/**
- *  simulation parameter
+
+typedef struct omsi_index_type {
+  omsi_data_type type;    /* data type*/
+  omsi_int       index;   /* index in sim_data->model_vars_and_params->[datatype]
+                           * where [datatype]=reals|ints|bools depending on type */
+} omsi_index_type;
+
+
+/*
+ * Triple of arrays containing actual values for Variables, Parameters, Aliases and so on.
  */
-typedef struct omsi_experiment_t {
-	omsi_real           start_time;     /* start time of experment, default=0 */
-	omsi_real           stop_time;      /* end time of experiment, defalut=start+1 */
-	omsi_real           step_size;      /* step_size for solvers, default (stop_time-start_time)/500 */
-	omsi_unsigned_int   num_outputs;    /* number of outputs of model */
-	omsi_real           tolerance;      /* tolerance for solver, default=1e-5 */
-	omsi_string         solver_name;    /* name of used solver, default="dassl" */
-} omsi_experiment_t;
+typedef struct omsi_values {
+    omsi_real* reals;       /* array of omsi_real */
+    omsi_int*  ints;        /* array of omsi_int */
+    omsi_bool* bools;       /* array of omsi_bool */
+} omsi_values;
+
 
 
 /**
@@ -122,7 +139,6 @@ typedef struct file_info {
 	omsi_int    colEnd;         /* number of columns where definition of variable ends */
 	omsi_bool   fileWritable;   /* =true if file writable, else =false */
 } file_info;
-
 
 /**
  *   additional equation information for debugging
@@ -138,25 +154,7 @@ typedef struct equation_info_t{
 
 
 /**
- *   variable attributes
- */
-typedef enum {
-  OMSI_TYPE_UNKNOWN,
-  OMSI_TYPE_REAL,
-  OMSI_TYPE_INTEGER,
-  OMSI_TYPE_BOOLEAN,
-  OMSI_TYPE_STRING
-}omsi_data_type;
-
-
-typedef struct omsi_index_type {
-  omsi_data_type type;    /* data type*/
-  omsi_int       index;   /* index in sim_data->model_vars_and_params->[datatype]
-                           * where [datatype]=reals|ints|bools depending on type */
-} omsi_index_type;
-
-/**
- * real variable attributes
+ *  Modelica attributes for real variables
  */
 typedef struct real_var_attribute_t {
 	omsi_string unit;          /* default = "" */
@@ -170,7 +168,7 @@ typedef struct real_var_attribute_t {
 
 
 /**
- * integer variable attributes
+ *  Modelica attributes for integer variables
  */
 typedef struct int_var_attribute_t {
 	omsi_int  min;      /* = -Inf */
@@ -181,7 +179,7 @@ typedef struct int_var_attribute_t {
 
 
 /**
- * boolean variable attributes
+ *  Modelica attributes for boolean variables
  */
 typedef struct bool_var_attribute_t {
 	omsi_bool fixed;    /* depends on the type */
@@ -190,7 +188,7 @@ typedef struct bool_var_attribute_t {
 
 
 /**
- * string variable attributes
+ * Modelica attributes for string variables
  */
 typedef struct string_var_attribute_t {
 	omsi_char * start;  /* = "" */
@@ -212,73 +210,28 @@ typedef struct model_variable_info_t {
 } model_variable_info_t;
 
 
-typedef struct omsi_values {
-	omsi_real* reals;       /* array of omsi_real */
-	omsi_int*  ints;        /* array of omsi_int */
-	omsi_bool* bools;       /* array of omsi_bool */
-} omsi_values;
 
-
-typedef struct equation_system_t {
+typedef struct omsi_function_t {
     omsi_unsigned_int n_output_vars;
     omsi_unsigned_int n_input_vars;
     omsi_unsigned_int n_inner_vars;
 
-    omsi_unsigned_int            n_algebraic_system;     // number of algebraic systems
-    omsi_algebraic_system_t* algebraic_system_t;
+    omsi_unsigned_int           n_algebraic_system;     // number of algebraic systems
+    omsi_algebraic_system_t*    algebraic_system_t;
 
-    omsi_values* equation_vars;
+    omsi_values* function_vars;
 
     /* index to sim_data_t->[real|int|bool]_vars */
     omsi_index_type* output_vars_indices;
     omsi_index_type* input_vars_indices;
     omsi_index_type* inner_vars_indices;
 
-    omsi_int (*evaluate) (equation_system_t* equation_system, omsi_values* model_vars_and_params);
-
-} equation_system_t;
+    omsi_int (*evaluate) (omsi_function_t* this_function, omsi_values* model_vars_and_params);
+} omsi_function_t;
 
 
 /**
- *
- */
-typedef struct sim_data_t{
-
-	equation_system_t* initialization;
-
-	equation_system_t* simulation;
-
-	omsi_values* model_vars_and_params;
-
-	//start index of input real variables in real vars array
-	omsi_unsigned_int inputs_real_index;
-	//start index of input integer variables in real vars array
-	omsi_unsigned_int inputs_int_index;
-	//start index of input boolean variables in real vars array
-	omsi_unsigned_int inputs_bool_index;
-	//start index of output real variables in real vars array
-	omsi_unsigned_int outputs_real_index;
-	//start index of output integer variables in imodel_variable_info_tnteger vars array
-	omsi_unsigned_int outputs_int_index;
-	//start index of output boolean variables in boolean vars array
-	omsi_unsigned_int outputs_bool_index;
-	//start index of discrete real variables in real vars array
-	omsi_unsigned_int discrete_reals_index;
-
-
-	omsi_real time_value; // current system time
-//	double* pre_real_vars;
-//	int* pre_int_vars;
-//	bool* pre_bool_vars;
-	//conditions of zerocrossing functions
-	omsi_bool* zerocrossings_vars;
-	//pre conditions of zerocrossing functions
-	omsi_bool* pre_zerocrossings_vars;
-
-} sim_data_t;
-
-/**
- *
+ * Structure containing all static simulation informations.
  */
 typedef struct model_data_t {
     omsi_string         modelGUID;
@@ -305,8 +258,46 @@ typedef struct model_data_t {
 	equation_info_t*        equation_info_t;
 } model_data_t;
 
+
 /**
- *
+ * Structure containing all dynamic simulation data.
+ */
+typedef struct sim_data_t{
+    omsi_function_t* initialization;        // array of all functions structures necessary for initialization
+    omsi_function_t* simulation;            // array of all functions structures necessary for simulation
+
+    omsi_values* model_vars_and_params;     // pointer to struct of arrays containing values for all variables, parameters and so on
+
+    omsi_unsigned_int inputs_real_index;    //start index of input real variables in real vars array
+    omsi_unsigned_int inputs_int_index;     //start index of input integer variables in real vars array
+    omsi_unsigned_int inputs_bool_index;    //start index of input boolean variables in real vars array
+    omsi_unsigned_int outputs_real_index;   //start index of output real variables in real vars array
+    omsi_unsigned_int outputs_int_index;    //start index of output integer variables in imodel_variable_info_tnteger vars array
+    omsi_unsigned_int outputs_bool_index;   //start index of output boolean variables in boolean vars array
+    omsi_unsigned_int discrete_reals_index; //start index of discrete real variables in real vars array
+
+    omsi_real time_value;                   // current system time
+
+    omsi_bool* zerocrossings_vars;          //conditions of zerocrossing functions
+    omsi_bool* pre_zerocrossings_vars;      //pre conditions of zerocrossing functions
+} sim_data_t;
+
+
+/**
+ *  Experiment parameters
+ */
+typedef struct omsi_experiment_t {
+    omsi_real           start_time;     /* start time of experment, default=0 */
+    omsi_real           stop_time;      /* end time of experiment, defalut=start+1 */
+    omsi_real           step_size;      /* step_size for solvers, default (stop_time-start_time)/500 */
+    omsi_unsigned_int   num_outputs;    /* number of outputs of model */
+    omsi_real           tolerance;      /* tolerance for solver, default=1e-5 */
+    omsi_string         solver_name;    /* name of used solver, default="dassl" */
+} omsi_experiment_t;
+
+
+/**
+ * Central structure containing all informations
  */
 typedef struct omsi_t {
 	model_data_t        model_data;
