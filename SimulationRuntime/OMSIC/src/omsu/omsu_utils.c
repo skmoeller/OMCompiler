@@ -129,7 +129,7 @@ omsi_bool invalidNumber(void* c, omsi_string f, omsi_string arg, omsi_int n, oms
  *
  *  \param [ref] [data]
  */
-omsi_status omsi_set_debug_logging(void* c, omsi_bool loggingOn, omsi_unsigned_int nCategories, omsi_string categories[])
+omsi_status omsi_set_debug_logging(void* c, omsi_bool loggingOn, omsi_unsigned_int nCategories, const omsi_string categories[])
 {
   omsi_unsigned_int i, j;
   osu_t* OSU = (osu_t *)c;

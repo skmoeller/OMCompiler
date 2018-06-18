@@ -35,51 +35,39 @@ omsi_callback_allocate_memory   global_allocateMemory;
 omsi_callback_free_memory       global_freeMemory;
 
 
-
+/* prototypes for static functions */
+static inline omsi_string skipSpace(omsi_string str);
+static inline omsi_string assertStringValue(omsi_string str, omsi_string value);
+static inline omsi_string assertChar (omsi_string str, omsi_char c);
+static inline omsi_bool omsu_assertCharOrEnd (const char *str, char c);
+static inline omsi_string assertNumber(omsi_string str, omsi_real expected);
+static inline omsi_string skipObjectRest(omsi_string str, omsi_int first);
+static omsi_string skipValue(omsi_string str);
+static inline omsi_string skipFieldIfExist(omsi_string str,omsi_string name);
+static void readInfoJson(omsi_string str, model_data_t* model_data);
 
 
 /* Entry point.
  * Processes all informations from input.json file.
  * Reads values, allocates memory and writes everything in model_data->equation_info.
  */
-omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi_string fmuGUID, omsi_string instanceName, omsi_callback_functions* functions) {
+omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi_string fmuGUID, omsi_string instanceName, const omsi_callback_functions* functions) {
 
     /* set global functions */
     global_allocateMemory = functions->allocateMemory;
     global_freeMemory = functions->freeMemory;
 
-	omsi_mmap mmap_reader = {0};
+    omc_mmap_read mmap_reader = {0};
 
 
 	/* read JSON file */
-	mmap_reader = omsi_mmap_open_read_unix (fileName);		// ToDo: is memory allocated here and later freed again?
+	mmap_reader = omc_mmap_open_read (fileName);		// ToDo: is memory allocated here and later freed again?
 	readInfoJson(mmap_reader.data, &osu_data->model_data);
 
 	// ToDo: free memory
 
 
     return omsi_ok;
-}
-
-omsi_mmap omsi_mmap_open_read_unix(omsi_string fileName)
-{
-  struct stat s;
-  omsi_mmap res = {0};
-  int fd = open(fileName, O_RDONLY);
-  if (fd < 0) {
-//    throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));
-  }
-  if (fstat(fd, &s) < 0) {
-    close(fd);
-//    throwStreamPrint(NULL, "fstat %s failed: %s\n", fileName, strerror(errno));
-  }
-  res.size = s.st_size;
-  res.data = (omsi_string) mmap(0, res.size, PROT_READ, MAP_SHARED, fd, 0);
-  close(fd);
-  if (res.data == MAP_FAILED) {
-//    throwStreamPrint(NULL, "mmap(file=\"%s\",fd=%d,size=%ld kB) failed: %s\n", fileName, fd, (long) s.st_size, strerror(errno));
-  }
-  return res;
 }
 
 
@@ -124,7 +112,7 @@ static inline omsi_string assertChar (omsi_string str, omsi_char c) {
  * of array ']' is reached.
  * Otherwise aborts.
  */
-omsi_bool omsu_assertCharOrEnd (omsi_string str, omsi_char expected_char) {
+static inline omsi_bool omsu_assertCharOrEnd (omsi_string str, omsi_char expected_char) {
     str = skipSpace(str);
 
     if ((expected_char != *str) && (']' != *str)) {
@@ -343,11 +331,15 @@ omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_u
         strncpy(tmp, str3+1, len);
         tmp[len] = '\0';
         equation_info->variables[j] = tmp;
+        printf("tmp: %s\n", tmp);
         if (j != n-1) {
             str = assertChar(str, ',');
         }
     }
     str = assertChar(skipSpace(str), ']');
+
+    // ToDo: read file info
+
     return skipObjectRest(str,0);
 }
 
@@ -361,18 +353,24 @@ omsi_string readEquations(omsi_string str, model_data_t* model_data) {
     // ToDo: allocate memory for equation_info_t
     model_data->equation_info_t = (equation_info_t*) global_allocateMemory(model_data->n_equations, sizeof(equation_info_t));
 
-	omsi_unsigned_int i = 0;
+	// skip first dummy equation
 	str=assertChar(str,'[');
-	str = readEquation(str, &model_data->equation_info_t[i],i);	//read first equation
-	// ToDo: first equation is just a dummy equation. Consider skipping!!!
+	str=assertChar(str,'{');
+	str=assertStringValue(str,"eqIndex");
+	str=assertChar(str,':');
+	str=assertChar(str,'0');
+	str=assertChar(str,',');
+	str=assertStringValue(str,"tag");
+	str=assertChar(str,':');
+	str=assertStringValue(str,"dummy");
+	str=assertChar(str,'}');
+	str = skipSpace(str);
 
-	for (i=1; i<=model_data->n_equations; i++) {
+	for (omsi_unsigned_int i=0; i<model_data->n_equations; i++) {
 	    str = assertChar(str,',');
 	    str = skipSpace(str);
-        str = readEquation(str, &(model_data->equation_info_t[i]), i);
+        str = readEquation(str, &(model_data->equation_info_t[i]), i+1);
 	}
-
-	model_data->n_equations = i+1;
 
 	str=assertChar(str,']');
 	return str;

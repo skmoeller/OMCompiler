@@ -34,6 +34,7 @@
 omsi_callback_allocate_memory   global_allocateMemory = NULL;
 omsi_callback_free_memory       global_freeMemory = NULL;
 
+#define UNUSED(x) (void)(x)     // ToDo: delete later
 
 /*
  * Reads input values from a xml file and allocates memory for osu_data struct.
@@ -126,10 +127,10 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_real(omsu_findHashStringString(mi.de,"stepSize"), &(osu_data->experiment->step_size), (osu_data->experiment->stop_time - osu_data->experiment->start_time) / 500);
     omsu_read_value_uint(omsu_findHashStringString(mi.de,"numberOfOutputVariables"), &(osu_data->experiment->num_outputs));
     omsu_read_value_real(omsu_findHashStringString(mi.de,"tolerance"), &(osu_data->experiment->tolerance), 1e-5);
-    omsu_read_value_string(omsu_findHashStringString(mi.de,"solver"), &(osu_data->experiment->solver_name));
+    omsu_read_value_string(omsu_findHashStringString(mi.de,"solver"), (omsi_char**) &(osu_data->experiment->solver_name));
 
     /* process all model data */
-    omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), &(osu_data->model_data.modelGUID));
+    omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), (omsi_char**) &(osu_data->model_data.modelGUID));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data.n_states));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data.n_derivatives));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealAlgebraicVariables"), &(osu_data->model_data.n_real_vars));
@@ -221,8 +222,8 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
 
     omsu_read_value_int(omsu_findHashStringString(v,"valueReference"), &model_var_info->id, 0);
     model_var_info->id -= 1000;
-    omsu_read_value_string(omsu_findHashStringString(v,"name"), &model_var_info->name);
-    omsu_read_value_string(omsu_findHashStringStringEmpty(v,"description"), &model_var_info->comment);
+    omsu_read_value_string(omsu_findHashStringString(v,"name"), (omsi_char**) &model_var_info->name);
+    omsu_read_value_string(omsu_findHashStringStringEmpty(v,"description"), (omsi_char**) &model_var_info->comment);
 
     model_var_info->type_index.type = type;
 
@@ -240,8 +241,8 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
 
         case OMSI_TYPE_REAL:
             attribute_real = (real_var_attribute_t *) global_allocateMemory(1, sizeof(real_var_attribute_t));
-            omsu_read_value_string(omsu_findHashStringStringEmpty(v,"unit"), &attribute_real->unit);
-            omsu_read_value_string(omsu_findHashStringStringEmpty(v,"displayUnit"), &attribute_real->displayUnit);
+            omsu_read_value_string(omsu_findHashStringStringEmpty(v,"unit"), (omsi_char**) &attribute_real->unit);
+            omsu_read_value_string(omsu_findHashStringStringEmpty(v,"displayUnit"), (omsi_char**) &attribute_real->displayUnit);
             omsu_read_value_real(omsu_findHashStringString(v,"min"), &attribute_real->min, -OMSI_DBL_MAX);
             omsu_read_value_real(omsu_findHashStringString(v,"max"), &attribute_real->max, OMSI_DBL_MAX);
             omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_real->fixed);
@@ -267,12 +268,12 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
         break;
         case OMSI_TYPE_STRING:
             attribute_string = (string_var_attribute_t *) global_allocateMemory(1, sizeof(string_var_attribute_t));
-            omsu_read_value_string(omsu_findHashStringStringEmpty(v,"start"), &attribute_int->start);
+            omsu_read_value_string(omsu_findHashStringStringEmpty(v,"start"), &attribute_string->start);
             model_var_info->modelica_attributes = attribute_string;
         break;
     }
 
-    omsu_read_value_string(omsu_findHashStringStringNull(v,"alias"), &aliasTmp);
+    omsu_read_value_string(omsu_findHashStringStringNull(v,"alias"), (omsi_char**) &aliasTmp);
     if (0 == strcmp(aliasTmp,"noAlias")) {
         model_var_info->isAlias = omsi_false;
         model_var_info->negate = 1;
@@ -297,7 +298,7 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
         model_var_info->type_index.index = omsu_find_alias_index(model_var_info->aliasID, number_of_prev_variables);
     }
 
-    omsu_read_value_string(omsu_findHashStringStringEmpty(v,"fileName"), &model_var_info->info.filename);
+    omsu_read_value_string(omsu_findHashStringStringEmpty(v,"fileName"), (omsi_char**) &model_var_info->info.filename);
     omsu_read_value_int(omsu_findHashStringString(v,"startLine"), &model_var_info->info.lineStart, 0);
     omsu_read_value_int(omsu_findHashStringString(v,"startColumn"), &model_var_info->info.colStart, 0);
     omsu_read_value_int(omsu_findHashStringString(v,"endLine"), &model_var_info->info.lineEnd, 0);
@@ -312,7 +313,7 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
 void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi) {
 
     omsi_unsigned_int i, j=0;
-    omsi_int variable_index = 0;
+    omsi_unsigned_int variable_index = 0;
     omsi_int prev_variables;
 
     /* model vars info for states and derivatives */
@@ -511,7 +512,7 @@ void omsu_read_value_bool_default (omsi_string s, omsi_bool* res, omsi_bool defa
  *  Reads modelica_string value from a string.
  *  Allocates memory for string and copies string s into str.
  */
-void omsu_read_value_string(omsi_string s, omsi_string *str) {
+void omsu_read_value_string(omsi_string s, omsi_char** str) {
     if(str == NULL) {
         //warningStreamPrint(LOG_SIMULATION, 0, "error read_value, no data allocated for storing string");    // ToDo: Use same log everywhere
         return;
@@ -639,6 +640,7 @@ void XMLCALL startElement(void *userData, omsi_string name, omsi_string *attr) {
 
 void XMLCALL endElement(void *userData, omsi_string name) {
   /* do nothing! */
+    UNUSED(userData); UNUSED(name);
 }
 
 /* deallocates memory for oms_ModelInput struct */

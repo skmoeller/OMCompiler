@@ -99,7 +99,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     if (omsu_allocate_sim_data(OSU->osu_data, functions->allocateMemory)) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
-        return -1;
+        return NULL;
     }
     // ToDo: where do we get sim_data_t->inputs_real_index and so on? Probably from JSON file
     /* initialize sim_data */

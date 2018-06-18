@@ -131,7 +131,7 @@ omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht, omsi_long key);
 void omsu_read_value_real(omsi_string s, omsi_real* res, omsi_real default_value);
 void omsu_read_value_bool(omsi_string s, omsi_bool* res);
 void omsu_read_value_bool_default (omsi_string s, omsi_bool* res, omsi_bool default_bool);
-void omsu_read_value_string(omsi_string s, omsi_string *str);
+void omsu_read_value_string(omsi_string s, omsi_char** str);
 void omsu_free_ModelInput(omc_ModelInput mi, omsi_t* omsi_data, const omsi_callback_free_memory freeMemory);
 
 

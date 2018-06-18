@@ -45,6 +45,7 @@
 #include "omsu/omsu_common.h"
 #include "omsu/omsu_utils.h"
 #include "omsu/omsu_Initialization.h"
+#include "omsu/omsu_me.h"
 #include "omsi.h"
 
 

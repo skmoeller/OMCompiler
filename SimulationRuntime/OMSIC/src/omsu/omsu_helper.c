@@ -60,39 +60,38 @@ void overwriteOldSimulationData(DATA *data) {
 void omsu_free_osu_data(omsi_t* omsi_data, const omsi_callback_free_memory freeMemory) {
 
     omsi_unsigned_int i, j=0;
-    omsi_unsigned_int n_model_vars_and_params;
+    omsi_unsigned_int size;
 
     /* free memory for model data */
     freeMemory((omsi_string)omsi_data->model_data.modelGUID);
 
-    for (i=0; i<omsi_data->model_data.n_real_vars+omsi_data->model_data.n_real_parameters; i++, j++) {
+    size = omsi_data->model_data.n_states + omsi_data->model_data.n_derivatives
+         + omsi_data->model_data.n_real_vars+omsi_data->model_data.n_real_parameters
+         + omsi_data->model_data.n_real_aliases;
+    for (i=0; i<size; i++, j++) {
         freeMemory (omsi_data->model_data.model_vars_info_t[j].name);
         freeMemory (omsi_data->model_data.model_vars_info_t[j].comment);
         real_var_attribute_t* attribute = omsi_data->model_data.model_vars_info_t[j].modelica_attributes;
         freeMemory (attribute->unit);
         freeMemory (attribute->displayUnit);
         freeMemory (omsi_data->model_data.model_vars_info_t[j].modelica_attributes);
-        freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);
+        //freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here
     }
-    n_model_vars_and_params = omsi_data->model_data.n_states + omsi_data->model_data.n_derivatives
-                             + omsi_data->model_data.n_real_vars + omsi_data->model_data.n_int_vars
-                             + omsi_data->model_data.n_bool_vars + omsi_data->model_data.n_string_vars
-                             + omsi_data->model_data.n_real_parameters + omsi_data->model_data.n_int_parameters
-                             + omsi_data->model_data.n_bool_parameters + omsi_data->model_data.n_string_parameters
-                             + omsi_data->model_data.n_real_aliases + omsi_data->model_data.n_int_aliases
-                             + omsi_data->model_data.n_bool_aliases + omsi_data->model_data.n_string_aliases;
-    for (i=j; i<n_model_vars_and_params; i++, j++) {
+    size += omsi_data->model_data.n_int_vars + omsi_data->model_data.n_int_parameters + omsi_data->model_data.n_int_aliases
+            + omsi_data->model_data.n_bool_vars + omsi_data->model_data.n_bool_parameters + omsi_data->model_data.n_bool_aliases
+            + omsi_data->model_data.n_string_vars + omsi_data->model_data.n_string_parameters + omsi_data->model_data.n_string_aliases;
+    for (i=j; i<size; i++, j++) {
         freeMemory (omsi_data->model_data.model_vars_info_t[j].name);
         freeMemory (omsi_data->model_data.model_vars_info_t[j].comment);
         freeMemory (omsi_data->model_data.model_vars_info_t[j].modelica_attributes);
-        freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);
+        //freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here
     }
     freeMemory (omsi_data->model_data.model_vars_info_t);
 
 //    for (i=0; i<omsi_data->model_data.n_equations; i++) {
 //        freeMemory (omsi_data->model_data.equation_info_t[i].variables);
 //    }
-    freeMemory (omsi_data->model_data.equation_info_t);
+    //freeMemory (omsi_data->model_data.equation_info_t);     // ToDo: something's wrong here
 
     /* free memory for simulation data */
     // ToDo: free inner stuff of initialization
@@ -306,7 +305,23 @@ void omsu_print_debug (osu_t* OSU) {
 
     printf("| | equation_info_t:\n");
     for(omsi_unsigned_int i=0; i<OSU->osu_data->model_data.n_equations; i++) {
-        // print equation_info
+        printf("| | | id:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].id);
+        printf("| | | ProfileBlockIndex:\t%i\n", OSU->osu_data->model_data.equation_info_t[i].profileBlockIndex);
+        printf("| | | parent: \t\t\t%i\n",OSU->osu_data->model_data.equation_info_t[i].parent);
+        printf("| | | numVar:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].numVar);
+        printf("| | | variables:\t\t");
+        for (omsi_unsigned_int j=0; j<OSU->osu_data->model_data.equation_info_t[i].numVar; j++) {
+            printf("%s ", OSU->osu_data->model_data.equation_info_t[i].variables[j]);
+        }
+        printf("\n");
+        printf("| | | file info:\n");
+        printf("| | | | filename:\t\t%s\n", OSU->osu_data->model_data.equation_info_t[i].info.filename);
+        printf("| | | | lineStart:\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].info.lineStart);
+        printf("| | | | colStart:\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].info.colStart);
+        printf("| | | | lineEnd:\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].info.lineEnd);
+        printf("| | | | colEnd:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].info.colEnd);
+        printf("| | | | fileWritable:\t\t%s\n", OSU->osu_data->model_data.equation_info_t[i].info.fileWritable ? "true" : "false");
+        printf("| |\n");
     }
 
     // print sim_data

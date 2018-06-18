@@ -66,6 +66,7 @@ typedef struct omsi_t omsi_t;
 extern "C" {
 #endif
 
+/* function prototypes */
 void omsu_print_debug (osu_t* OSU);     // ToDo: delete later
 omsi_int omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_allocate_memory allocateMemory);
 void omsu_free_osu_data(omsi_t* omsi_data,const omsi_callback_free_memory freeMemory);

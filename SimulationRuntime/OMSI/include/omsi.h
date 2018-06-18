@@ -111,8 +111,8 @@ typedef enum {
 
 
 typedef struct omsi_index_type {
-  omsi_data_type type;    /* data type*/
-  omsi_int       index;   /* index in sim_data->model_vars_and_params->[datatype]
+  omsi_data_type    type;    /* data type*/
+  omsi_unsigned_int     index;   /* index in sim_data->model_vars_and_params->[datatype]
                            * where [datatype]=reals|ints|bools depending on type */
 } omsi_index_type;
 

@@ -76,7 +76,7 @@ omsi_bool vrOutOfRange(void* c, omsi_string f, omsi_unsigned_int vr, omsi_int en
 omsi_status unsupportedFunction(void* c, omsi_string fName, omsi_int statesExpected);
 omsi_bool invalidNumber(void* c, omsi_string f, omsi_string arg, omsi_int n, omsi_int nExpected);
 
-omsi_status omsi_set_debug_logging(void* c, omsi_bool loggingOn, omsi_unsigned_int nCategories, omsi_string categories[]);
+omsi_status omsi_set_debug_logging(void* c, omsi_bool loggingOn, omsi_unsigned_int nCategories, const omsi_string categories[]);
 
 
 #ifdef __cplusplus
