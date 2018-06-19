@@ -715,7 +715,6 @@ algorithm
       String guid;
       Boolean b;
       String fileprefix;
-      list<PartialRunTpl> codegenFuncs;
     case (SimCode.SIMCODE(),"C")
       algorithm
         fmutmp := simCode.fileNamePrefix + ".fmutmp";
@@ -757,24 +756,9 @@ algorithm
         fileprefix := simCode.fileNamePrefix;
 
         SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
-        //codegenFuncs := {function runTplWriteFile(func= function CodegenFMU2.fmiModelDescription(simCode=simCode, guid=guid, FMUType=FMUType), file=fileprefix + "_FMU.makefile")};
-
-        for f in codegenFuncs loop
-          f();
-        end for;
-        /*
-        runTplWriteFile(CodegenOMSIC.createMakefile(), fileprefix + "_FMU.makefile");
-
-        CodegenFMU2.fmiModelDescription();
-
-        Tpl.tplNoret3(CodegenOMSIC.translateModel, simCode, FMUVersion, FMUType);
-    let () = textFile( createMakefile(), '<%fileNamePrefix%>_FMU.makefile')
-    let () = textFile( CodegenFMU2.fmiModelDescription(simCode, guid, FMUType), 'modelDescription.xml')
-    let () = textFile( generateOMSICHeader(simCode), '<%fileNamePrefix%>_omsic.h')
-    let () = textFile( generateOMSIC(simCode), '<%fileNamePrefix%>_omsic.c')
-    let () = textFile( CodegenEquations.generateEquationFiles(allEquations, fileNamePrefix), '<%fileNamePrefix%>_eqns.c')
-    let () = textFile( CodegenEquations.generateEquationFilesHeader(allEquations, fileNamePrefix), '<%fileNamePrefix%>_eqns.h')
-    */
+        // ToDo: add JSON file generation
+        runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file="modelDescription.xml");
+        runTplWriteFile(func = function CodegenOMSIC.createMakefile(), file=fileprefix+"_FMU.makefile");
       then ();
     case (_,"Cpp")
       equation

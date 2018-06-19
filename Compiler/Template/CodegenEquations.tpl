@@ -50,7 +50,7 @@ template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   <<
-  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*Data_Struct_something data, *Data_Struct_something threadData);<%\n%>
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(Data_Struct_something* data, Data_Struct_something* threadData);<%\n%>
   >>
 end equationFunctionPrototypes;
 
@@ -69,7 +69,7 @@ template equationFunction(SimEqSystem eq, Context context, String modelNamePrefi
   /*
   <%equationInfos%>
   */
-  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(*sim_data_t sim_data, double* writeData){
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(sim_data_t* sim_data, double* writeData){
     const int equationIndexes[2] = {1,<%ix%>};
     <%varDecls%>
     <%auxFunction%>
