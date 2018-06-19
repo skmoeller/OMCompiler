@@ -358,7 +358,7 @@ algorithm
   end if;
 
   File.write(file, "    alias = ");
-  getAliasVar(file, simVar.aliasvar);
+  getAliasVar(file, simVar);
   File.write(file, "\n");
 
   File.write(file, "    classIndex = \"");
@@ -552,13 +552,24 @@ end getVariablity;
 
 function getAliasVar "Returns the alias Attribute of ScalarVariable."
   input File.File file;
-  input AliasVariable aliasvar;
+  input SimCodeVar.SimVar simVar;
 algorithm
-  _ := match aliasvar
-  case AliasVariable.ALIAS()
-    algorithm File.write(file, "\"alias\" aliasVariable=\""); CR.writeCref(file, aliasvar.varName, XML); File.write(file, "\""); then ();
-  case AliasVariable.NEGATEDALIAS()
-    algorithm File.write(file, "\"negatedAlias\" aliasVariable=\""); CR.writeCref(file, aliasvar.varName, XML); File.write(file, "\""); then ();
+  _ := match simVar
+  local SimCodeVar.AliasVariable aliasvar;
+  case SimCodeVar.SIMVAR(aliasvar = aliasvar as AliasVariable.ALIAS())
+    algorithm
+      File.write(file, "\"alias\" aliasVariable=\"");
+      CR.writeCref(file, aliasvar.varName, XML);
+      File.write(file, "\" aliasVariableId=\"");
+      File.write(file, SimCodeUtil.getValueReference(simVar, SimCodeUtil.getSimCode(), true)+"\"");
+    then ();
+  case SimCodeVar.SIMVAR(aliasvar = aliasvar as AliasVariable.NEGATEDALIAS())
+    algorithm
+      File.write(file, "\"negatedAlias\" aliasVariable=\"");
+      CR.writeCref(file, aliasvar.varName, XML);
+      File.write(file, "\" aliasVariableId=\"");
+      File.write(file, SimCodeUtil.getValueReference(simVar, SimCodeUtil.getSimCode(), true)+"\"");
+      then ();
   else
     algorithm File.write(file, "\"noAlias\""); then ();
   end match;

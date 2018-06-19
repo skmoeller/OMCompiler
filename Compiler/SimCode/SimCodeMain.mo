@@ -712,6 +712,7 @@ algorithm
     local
       String str, newdir, newpath, resourcesDir;
       String fmutmp;
+      String guid;
       Boolean b;
       String fileprefix;
       list<PartialRunTpl> codegenFuncs;
@@ -751,12 +752,13 @@ algorithm
         Tpl.closeFile(Tpl.tplCallWithFailError4(CodegenFMU.fmuMakefile,Config.simulationCodeTarget(),simCode,FMUVersion,SimCodeUtil.getFunctionIndex(),txt=Tpl.redirectToFile(Tpl.emptyTxt, simCode.fileNamePrefix+".fmutmp/sources/Makefile.in")));
       then ();
     case (_,"omsic")
-      equation
-        guid = System.getUUIDStr();
-        fileprefix = simCode.fileprefix;
+      algorithm
+        guid := System.getUUIDStr();
+        fileprefix := simCode.fileNamePrefix;
 
         SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
-        codegenFuncs = {function runTplWriteFile(func= function CodegenFMU2.fmiModelDescription(simCode=simCode, guid=guid, FMUType=FMUType), file=fileprefix + "_FMU.makefile")};
+        //codegenFuncs := {function runTplWriteFile(func= function CodegenFMU2.fmiModelDescription(simCode=simCode, guid=guid, FMUType=FMUType), file=fileprefix + "_FMU.makefile")};
+
         for f in codegenFuncs loop
           f();
         end for;
