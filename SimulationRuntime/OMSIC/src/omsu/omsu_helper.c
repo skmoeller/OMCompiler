@@ -307,12 +307,14 @@ void omsu_print_debug (osu_t* OSU) {
     for(omsi_unsigned_int i=0; i<OSU->osu_data->model_data.n_equations; i++) {
         printf("| | | id:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].id);
         printf("| | | ProfileBlockIndex:\t%i\n", OSU->osu_data->model_data.equation_info_t[i].profileBlockIndex);
-        printf("| | | parent: \t\t\t%i\n",OSU->osu_data->model_data.equation_info_t[i].parent);
+        //printf("| | | parent: \t\t\t%i\n",OSU->osu_data->model_data.equation_info_t[i].parent);
         printf("| | | numVar:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].numVar);
         printf("| | | variables:\t\t");
+        fflush(stdout);
         for (omsi_unsigned_int j=0; j<OSU->osu_data->model_data.equation_info_t[i].numVar; j++) {
             printf("%s ", OSU->osu_data->model_data.equation_info_t[i].variables[j]);
         }
+        fflush(stdout);
         printf("\n");
         printf("| | | file info:\n");
         printf("| | | | filename:\t\t%s\n", OSU->osu_data->model_data.equation_info_t[i].info.filename);
@@ -322,6 +324,7 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | | colEnd:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].info.colEnd);
         printf("| | | | fileWritable:\t\t%s\n", OSU->osu_data->model_data.equation_info_t[i].info.fileWritable ? "true" : "false");
         printf("| |\n");
+
     }
 
     // print sim_data

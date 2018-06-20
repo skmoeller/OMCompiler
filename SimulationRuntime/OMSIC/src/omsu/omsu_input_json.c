@@ -39,7 +39,7 @@ omsi_callback_free_memory       global_freeMemory;
 static inline omsi_string skipSpace(omsi_string str);
 static inline omsi_string assertStringValue(omsi_string str, omsi_string value);
 static inline omsi_string assertChar (omsi_string str, omsi_char c);
-static inline omsi_bool omsu_assertCharOrEnd (const char *str, char c);
+static inline omsi_string omsu_assertCharOrEnd (omsi_string str, omsi_char expected_char, omsi_bool* endNotFound);
 static inline omsi_string assertNumber(omsi_string str, omsi_real expected);
 static inline omsi_string skipObjectRest(omsi_string str, omsi_int first);
 static omsi_string skipValue(omsi_string str);
@@ -98,34 +98,33 @@ static inline omsi_string assertStringValue(omsi_string str, omsi_string value) 
 }
 
 
-static inline omsi_string assertChar (omsi_string str, omsi_char c) {
+static inline omsi_string assertChar (omsi_string str, omsi_char expected_char) {
     str = skipSpace(str);
-    if (c != *str) {
-        fprintf(stderr, "Expected '%c', got: %.20s\n", c, str);
+    if (expected_char != *str) {
+        fprintf(stderr, "Expected '%c', got: %.20s\n", expected_char, str);
         abort();
     }
     return str + 1;
 }
 
 /*
- * Asserts if pointer *str points to char that is equal to input char c or end
+ * Asserts if pointer *str points to char that is equal to expected_char or end
  * of array ']' is reached.
  * Otherwise aborts.
  */
-static inline omsi_bool omsu_assertCharOrEnd (omsi_string str, omsi_char expected_char) {
+static inline omsi_string omsu_assertCharOrEnd (omsi_string str, omsi_char expected_char, omsi_bool* endNotFound) {
     str = skipSpace(str);
 
-    if ((expected_char != *str) && (']' != *str)) {
+    if (*str == ']') {
+        *endNotFound = omsi_false;
+        return str;
+    }
+
+    if (*str != expected_char) {
         fprintf(stderr, "Expected '%c', got: %.20s\n", expected_char, str);
         abort();
     }
-    else if ('c' != ']' && ']' == *str) {		// found end of array but c wasn't supposed to be end
-        str = str + 1;
-        return omsi_false;
-    }
-
-    str = str+2;
-    return omsi_true;
+    return str + 1;
 }
 
 
@@ -310,7 +309,7 @@ omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_u
             break;
         }
         str++;
-    };          // ToDo: why ";"?
+    };
     assertChar(str, ']');
     equation_info->numVar = n;
     equation_info->variables = (omsi_string*) global_allocateMemory(n, sizeof(omsi_string));
@@ -331,7 +330,6 @@ omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_u
         strncpy(tmp, str3+1, len);
         tmp[len] = '\0';
         equation_info->variables[j] = tmp;
-        printf("tmp: %s\n", tmp);
         if (j != n-1) {
             str = assertChar(str, ',');
         }
@@ -348,29 +346,53 @@ omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_u
  */
 omsi_string readEquations(omsi_string str, model_data_t* model_data) {
 
-    model_data->n_equations = 52;        // ToDo: Read this info
+    omsi_int i = 0;
+    omsi_bool endNotFound = omsi_true;
+    omsi_string str_start;
 
-    // ToDo: allocate memory for equation_info_t
+    // skip first dummy equation
+    str = assertChar(str,'[');
+    str = assertChar(str,'{');
+    str = assertStringValue(str,"eqIndex");
+    str = assertChar(str,':');
+    str = assertChar(str,'0');
+    str = assertChar(str,',');
+    str = assertStringValue(str,"tag");
+    str = assertChar(str,':');
+    str = assertStringValue(str,"dummy");
+    str = assertChar(str,'}');
+    str = skipSpace(str);
+
+    str_start = str;     //save current location on string
+
+    // count number of equations
+    do {
+        str = omsu_assertCharOrEnd (str, ',', &endNotFound);
+        if (!endNotFound) {
+            break;
+        }
+        i++;
+        str = skipSpace(str);
+        str = skipValue(str);
+    }while (omsi_true);
+
+    model_data->n_equations = i;
     model_data->equation_info_t = (equation_info_t*) global_allocateMemory(model_data->n_equations, sizeof(equation_info_t));
 
-	// skip first dummy equation
-	str=assertChar(str,'[');
-	str=assertChar(str,'{');
-	str=assertStringValue(str,"eqIndex");
-	str=assertChar(str,':');
-	str=assertChar(str,'0');
-	str=assertChar(str,',');
-	str=assertStringValue(str,"tag");
-	str=assertChar(str,':');
-	str=assertStringValue(str,"dummy");
-	str=assertChar(str,'}');
-	str = skipSpace(str);
-
-	for (omsi_unsigned_int i=0; i<model_data->n_equations; i++) {
-	    str = assertChar(str,',');
+    str = str_start;    // reset str to start of equations
+	endNotFound = omsi_true;
+	i=0;
+	do {
+	    str = omsu_assertCharOrEnd (str, ',', &endNotFound);
+	    if (!endNotFound) {
+	        break;
+	    }
+	    i++;
 	    str = skipSpace(str);
-        str = readEquation(str, &(model_data->equation_info_t[i]), i+1);
-	}
+        str = readEquation(str, &(model_data->equation_info_t[i-1]), i);
+	}while (omsi_true);
+
+
 
 	str=assertChar(str,']');
 	return str;
