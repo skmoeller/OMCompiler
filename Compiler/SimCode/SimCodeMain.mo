@@ -689,17 +689,18 @@ algorithm
     Tpl.tplNoret(CodegenCpp.translateModel, iSimCode);
   end if;
 end callTargetTemplatesCPP;
+
 protected function callTargetTemplatesOMSICpp
   input SimCode.SimCode iSimCode;
   protected
   String fmuVersion;
   String fmuType;
 algorithm
-
-	 fmuVersion:="2.0";
-	 fmuType:="me";
-     Tpl.tplNoret3(CodegenOMSICpp.translateModel, iSimCode, fmuVersion, fmuType);
+	fmuVersion:="2.0";
+	fmuType:="me";
+  Tpl.tplNoret3(CodegenOMSICpp.translateModel, iSimCode, fmuVersion, fmuType);
 end callTargetTemplatesOMSICpp;
+
 protected function callTargetTemplatesFMU
 "Generate target code by passing the SimCode data structure to templates."
   input SimCode.SimCode simCode;
@@ -756,7 +757,7 @@ algorithm
         fileprefix := simCode.fileNamePrefix;
 
         SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
-        // ToDo: add JSON file generation
+        SerializeModelInfo.serialize(simCode, Flags.isSet(Flags.INFO_XML_OPERATIONS));
         runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file="modelDescription.xml");
         runTplWriteFile(func = function CodegenOMSIC.createMakefile(), file=fileprefix+"_FMU.makefile");
       then ();

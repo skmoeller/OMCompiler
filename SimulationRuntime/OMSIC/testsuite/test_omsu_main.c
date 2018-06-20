@@ -109,32 +109,59 @@ void my_fmuLogger(void *componentEnvironment, fmi2String instanceName, fmi2Statu
 }
 
 
-void test_1 () {
+void test_1 (const char* instanceName, const char* guid) {
+
+    #include <stdio.h>
+#ifdef WINDOWS
+    #include <direct.h>
+    #define GetCurrentDir _getcwd
+#else
+    #include <unistd.h>
+    #define GetCurrentDir getcwd
+#endif
+
+    char fmuResourceLocation[FILENAME_MAX];
+
+    if(!GetCurrentDir(fmuResourceLocation, sizeof(fmuResourceLocation))) {
+        return;
+    }
+    else {
+        printf("The current working directory is %s\n", fmuResourceLocation);
+        fmuResourceLocation[sizeof(fmuResourceLocation) - 1] = '\0';
+    }
 
     fmi2Component c;
 
     fmi2CallbackFunctions callbacks = {my_fmuLogger, calloc, free, NULL, &fmu};
-    const char *instanceName = "SimpleModelLinear_1";
-    const char* guid = "{e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}";
-    //char *fmuResourceLocation = "d:\\workspace\\OpenModelica\\OMCompiler\\SimulationRuntime\\OMSIC\\testsuite";
-    //char *fmuResourceLocation = "/home/wbraun/workspace/OpenModelica/OMCompiler/SimulationRuntime/OMSIC/testsuite";
-    char *fmuResourceLocation = "/home/andreas/workspace/OpenModelica/OMCompiler/SimulationRuntime/OMSIC/testsuite";
     fmi2Boolean visible = fmi2False;
     fmi2Boolean loggingOn = fmi2True;
 
     // import xml
+    printf("Enter FMI2 instantiate\n");
+    fflush(stdout);
     c = fmi2Instantiate(instanceName, fmi2ModelExchange, guid, fmuResourceLocation, &callbacks, visible, loggingOn);
+    if(!c) {
+        printf("FMI instantiation failed\n");
+        fflush(stdout);
+    }
 
     // free data
+    printf("Free FMI2 instance\n");
+    fflush(stdout);
     fmi2FreeInstance(c);
 
     printf("\nFinished test run!\n");
 }
 
 
+/*
+ * Input: instanceName
+ * Input: GUID
+ *
+ */
 int main(int argc, char* argv[]) {
 
-    test_1();
+    test_1(argv[1], argv[2]);
 
 
 
