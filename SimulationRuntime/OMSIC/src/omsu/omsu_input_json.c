@@ -61,11 +61,11 @@ omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi
 
 
 	/* read JSON file */
-	mmap_reader = omc_mmap_open_read (fileName);		// ToDo: is memory allocated here and later freed again?
+	mmap_reader = omc_mmap_open_read (fileName);
 	readInfoJson(mmap_reader.data, &osu_data->model_data);
 
-	// ToDo: free memory
-
+	/* free memory */
+	omc_mmap_close_read(mmap_reader);
 
     return omsi_ok;
 }

@@ -62,35 +62,35 @@ extern "C" {
 #endif
 
 typedef struct {
-  size_t size;
-  const char *data;
+  omsi_unsigned_int size;
+  omsi_string data;
 } omc_mmap_read_unix;
 
 typedef struct {
-  size_t size;
-  char *data;
+  omsi_unsigned_int size;
+  omsi_char *data;
 } omc_mmap_write_unix;
 
 typedef struct {
-  size_t size;
-  const char *data;
+  omsi_unsigned_int size;
+  omsi_string data;
 } omc_mmap_read_inmemory;
 
 typedef struct {
-  size_t size;
+  omsi_unsigned_int size;
   FILE *file;
-  char *data;
+  omsi_char *data;
 } omc_mmap_write_inmemory;
 
-omc_mmap_read_inmemory omc_mmap_open_read_inmemory(const char *filename);
-omc_mmap_write_inmemory omc_mmap_open_write_inmemory(const char *filename, size_t size);
+omc_mmap_read_inmemory omc_mmap_open_read_inmemory(omsi_string filename);
+omc_mmap_write_inmemory omc_mmap_open_write_inmemory(omsi_string filename, omsi_unsigned_int size);
 void omc_mmap_close_read_inmemory(omc_mmap_read_inmemory map);
 void omc_mmap_close_write_inmemory(omc_mmap_write_inmemory map);
 
 #if HAVE_MMAP
 
-omc_mmap_read_unix omc_mmap_open_read_unix(const char *filename);
-omc_mmap_write_unix omc_mmap_open_write_unix(const char *filename, size_t size);
+omc_mmap_read_unix omc_mmap_open_read_unix(omsi_string filename);
+omc_mmap_write_unix omc_mmap_open_write_unix(omsi_string filename, omsi_unsigned_int size);
 void omc_mmap_close_read_unix(omc_mmap_read_unix map);
 void omc_mmap_close_write_unix(omc_mmap_write_unix map);
 

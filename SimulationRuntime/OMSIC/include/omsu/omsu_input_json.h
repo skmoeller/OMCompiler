@@ -34,7 +34,7 @@
 #include "omsi.h"
 #include "omsu_common.h"
 
-#include "util/omc_mmap.h"
+#include "omsu_mmap.h"
 #include "util/omc_error.h"
 
 /* function prototypes */

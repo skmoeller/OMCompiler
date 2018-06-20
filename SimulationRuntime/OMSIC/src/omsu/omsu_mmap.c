@@ -42,11 +42,11 @@ omsi_callback_free_memory       global_freeMemory;
 
 #if HAVE_MMAP
 
-omc_mmap_read_unix omc_mmap_open_read_unix(const char *fileName)
+omc_mmap_read_unix omc_mmap_open_read_unix(omsi_string fileName)
 {
   struct stat s;
   omc_mmap_read_unix res = {0};
-  int fd = open(fileName, O_RDONLY);
+  omsi_int fd = open(fileName, O_RDONLY);
   if (fd < 0) {
     //throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));
   }
@@ -55,7 +55,7 @@ omc_mmap_read_unix omc_mmap_open_read_unix(const char *fileName)
     //throwStreamPrint(NULL, "fstat %s failed: %s\n", fileName, strerror(errno));
   }
   res.size = s.st_size;
-  res.data = (const char*) mmap(0, res.size, PROT_READ, MAP_SHARED, fd, 0);
+  res.data = (omsi_string) mmap(0, res.size, PROT_READ, MAP_SHARED, fd, 0);
   close(fd);
   if (res.data == MAP_FAILED) {
     //throwStreamPrint(NULL, "mmap(file=\"%s\",fd=%d,size=%ld kB) failed: %s\n", fileName, fd, (long) s.st_size, strerror(errno));
@@ -63,10 +63,10 @@ omc_mmap_read_unix omc_mmap_open_read_unix(const char *fileName)
   return res;
 }
 
-omc_mmap_write_unix omc_mmap_open_write_unix(const char *fileName, size_t size)
+omc_mmap_write_unix omc_mmap_open_write_unix(omsi_strin gfileName, omsi_unsigned_int size)
 {
   omc_mmap_write_unix res = {0};
-  int fd = open(fileName, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  omsi_int fd = open(fileName, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     //throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));
   }
@@ -81,7 +81,7 @@ omc_mmap_write_unix omc_mmap_open_write_unix(const char *fileName, size_t size)
     res.size = size;
     lseek(fd, size, SEEK_SET);
   }
-  res.data = res.size == 0 ? NULL : (char*) mmap(0, res.size, PROT_WRITE, MAP_SHARED, fd, 0);
+  res.data = res.size == 0 ? NULL : (omsi_char*) mmap(0, res.size, PROT_WRITE, MAP_SHARED, fd, 0);
   close(fd);
   if (res.data == MAP_FAILED) {
     //throwStreamPrint(NULL, "mmap(file=\"%s\",fd=%d,size=%ld kB) failed: %s\n", fileName, fd, (long) res.size, strerror(errno));
@@ -101,10 +101,10 @@ void omc_mmap_close_write_unix(omc_mmap_write_unix map)
 
 #endif /* HAVE_MMAP */
 
-static FILE* omc_mmap_common(const char *fileName, const char *mode, size_t *size, char **data)
+static FILE* omc_mmap_common(omsi_string fileName, omsi_string mode, omsi_unsigned_int *size, omsi_char **data)
 {
   FILE *file = fopen(fileName, mode);
-  size_t fileSize;
+  omsi_unsigned_int fileSize;
   if (!file) {
     //throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));
   }
@@ -115,12 +115,12 @@ static FILE* omc_mmap_common(const char *fileName, const char *mode, size_t *siz
     *size = fileSize;
   }
 
-  *data = (char*) global_allocateMemory(*size, 1);
+  *data = (omsi_char*) global_allocateMemory(*size, 1);
 
 //  if (*size > fileSize) {
-//    *data = (char*) calloc(*size,1);
+//    *data = (omsi_char*) calloc(*size,1);
 //  } else {
-//    *data = (char*) malloc(*size);
+//    *data = (omsi_char*) malloc(*size);
 //  }
   if (1 != fread(*data, (*size > fileSize ? fileSize : *size), 1, file)) {
     //throwStreamPrint(NULL, "Failed to read file data: %s\n", fileName);
@@ -128,15 +128,15 @@ static FILE* omc_mmap_common(const char *fileName, const char *mode, size_t *siz
   return file;
 }
 
-omc_mmap_read_inmemory omc_mmap_open_read_inmemory(const char *fileName)
+omc_mmap_read_inmemory omc_mmap_open_read_inmemory(omsi_string fileName)
 {
   omc_mmap_read_inmemory res = {0};
   res.size = 0;
-  fclose(omc_mmap_common(fileName, "rb", &res.size, (char**)&res.data));
+  fclose(omc_mmap_common(fileName, "rb", &res.size, (omsi_char**)&res.data));
   return res;
 }
 
-omc_mmap_write_inmemory omc_mmap_open_write_inmemory(const char *fileName, size_t size)
+omc_mmap_write_inmemory omc_mmap_open_write_inmemory(omsi_string fileName, omsi_unsigned_int size)
 {
   omc_mmap_write_inmemory res = {0};
   res.size = size;
