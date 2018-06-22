@@ -63,7 +63,7 @@ omc_mmap_read_unix omc_mmap_open_read_unix(omsi_string fileName)
   return res;
 }
 
-omc_mmap_write_unix omc_mmap_open_write_unix(omsi_strin gfileName, omsi_unsigned_int size)
+omc_mmap_write_unix omc_mmap_open_write_unix(omsi_string fileName, omsi_unsigned_int size)
 {
   omc_mmap_write_unix res = {0};
   omsi_int fd = open(fileName, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);

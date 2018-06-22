@@ -125,10 +125,7 @@ void test_1 (const char* instanceName, const char* guid) {
     if(!GetCurrentDir(fmuResourceLocation, sizeof(fmuResourceLocation))) {
         return;
     }
-    else {
-        printf("The current working directory is %s\n", fmuResourceLocation);
-        fmuResourceLocation[sizeof(fmuResourceLocation) - 1] = '\0';
-    }
+    fmuResourceLocation[sizeof(fmuResourceLocation) - 1] = '\0';
 
     fmi2Component c;
 

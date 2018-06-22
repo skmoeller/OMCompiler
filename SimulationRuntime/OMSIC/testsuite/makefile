@@ -14,8 +14,13 @@ TEST_INCS = -I$(OMSIC_INCLUDE)
 test: test_omsu
 
 test_omsu: test_omsu_main
-#	./$@.exe
-	./$^
+ifeq ($(TARGET_OS),mingw32)
+	./$@.exe SimpleModelLinear_1 {e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}
+else ifeq ($(TARGET_OS),mingw64)
+	./$@.exe SimpleModelLinear_1 {e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}
+else
+	./$^ SimpleModelLinear_1 {e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}
+endif
 
 test_omsu_main: test_omsu_main.c
 	make -C ../src/omsu libomsu
