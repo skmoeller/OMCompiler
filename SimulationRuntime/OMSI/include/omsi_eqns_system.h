@@ -34,12 +34,8 @@ typedef omsi_int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* 
 typedef struct omsi_analytical_jacobian{
     omsi_unsigned_int n_columns;
     omsi_unsigned_int n_rows;
-    omsi_real* tmp_vars;
-    omsi_real* seed_vars;
-    omsi_real* result_vars;
 
     omsi_function_t* functions;
-    omsi_int (*directionalDerivative) (omsi_function_t *real_vars, omsi_analytical_jacobian *jacobian);
     //sparsity_pattern_t* sparsity_pattern;
 }omsi_analytical_jacobian;
 

@@ -65,6 +65,7 @@ import ClockIndexes;
 import CevalScriptBackend;
 import CodegenC;
 import CodegenEmbeddedC;
+import CodegenEquations;
 import CodegenFMU;
 import CodegenFMUCpp;
 import CodegenOMSICpp;
@@ -760,6 +761,16 @@ algorithm
         SerializeModelInfo.serialize(simCode, Flags.isSet(Flags.INFO_XML_OPERATIONS));
         runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file="modelDescription.xml");
         runTplWriteFile(func = function CodegenOMSIC.createMakefile(), file=fileprefix+"_FMU.makefile");
+
+        runTplWriteFile(func = function CodegenOMSIC.generateOMSICHeader(a_simCode=simCode), file=fileprefix+"_omsic.h");
+        runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(in_a_simCode=simCode), file=fileprefix+"_omsic.c");
+        
+        runTplWriteFile(func = function CodegenEquations.generateEquationFiles(a_equations=simCode.allEquations, a_fileNamePrefix=fileprefix, a_name="allEqns"), file=fileprefix+"_eqns.c");
+        /*
+        
+        runTplWriteFile(func = function CodegenOMSIC.generateEquationFilesHeader(simCode=simCode), file=fileprefix+"_eqns.h");
+        */
+        
       then ();
     case (_,"Cpp")
       equation

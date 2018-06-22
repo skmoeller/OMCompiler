@@ -10,8 +10,8 @@ LIB_DIR = -L/d/workspace/Testlab/libs/
 #LIB_DIR = -L/home/wbraun/workspace/OpenModelica/OMCompiler/SimulationRuntime/c/omsi
 RUNTIMEPATH = .
 
-PATH_TO_OPENMODELICA = /d/workspace/OpenModelica
-#PATH_TO_OPENMODELICA = /home/andreas/workspace/OpenModelica
+#PATH_TO_OPENMODELICA = /d/workspace/OpenModelica
+PATH_TO_OPENMODELICA = /home/wbraun/workspace/OpenModelica
 
 PATH_TO_OMSIC = $(PATH_TO_OPENMODELICA)/OMCompiler/SimulationRuntime/OMSIC
 PATH_TO_OMSI = $(PATH_TO_OPENMODELICA)/OMCompiler/SimulationRuntime/OMSI
@@ -32,20 +32,18 @@ else
 CFLAGS += -fPIC
 endif
 
+.PHONY: clean clean_o_files
 
 all:
 	make -C src/omsu libomsu
 #	make -C src/solver libomsisolver
 	make -C testsuite test
 
-
-.PHONY: clean
 clean:
 	make -C src/omsu clean_omsu_all
 #	make -C src/solver clean_solver_all
 	make -C testsuite clean_test_all
 
-.PHONY: clean_o_files
 clean_o_files:
 	make -C src/omsu clean_omsu_o
 #	make -C src/solver clean_solver_o

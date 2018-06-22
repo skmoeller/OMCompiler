@@ -124,6 +124,7 @@ typedef struct omsi_values {
     omsi_real* reals;       /* array of omsi_real */
     omsi_int*  ints;        /* array of omsi_int */
     omsi_bool* bools;       /* array of omsi_bool */
+    omsi_real time_value;   /* current system time */
 } omsi_values;
 
 
@@ -210,24 +211,26 @@ typedef struct model_variable_info_t {
 } model_variable_info_t;
 
 
-
 typedef struct omsi_function_t {
+
+    omsi_values* function_vars;
+
+    omsi_int (*evaluate) (omsi_function_t* this_function, omsi_values* model_vars_and_params);
+
+    omsi_unsigned_int           n_algebraic_system; // number of algebraic systems
+    omsi_algebraic_system_t*    algebraic_system_t;
+
     omsi_unsigned_int n_output_vars;
     omsi_unsigned_int n_input_vars;
     omsi_unsigned_int n_inner_vars;
-
-    omsi_unsigned_int           n_algebraic_system;     // number of algebraic systems
-    omsi_algebraic_system_t*    algebraic_system_t;
-
-    omsi_values* function_vars;
 
     /* index to sim_data_t->[real|int|bool]_vars */
     omsi_index_type* output_vars_indices;
     omsi_index_type* input_vars_indices;
     omsi_index_type* inner_vars_indices;
 
-    omsi_int (*evaluate) (omsi_function_t* this_function, omsi_values* model_vars_and_params);
 } omsi_function_t;
+
 
 
 /**
@@ -235,7 +238,7 @@ typedef struct omsi_function_t {
  */
 typedef struct model_data_t {
     omsi_string         modelGUID;
-	omsi_unsigned_int   n_states;				// number of continuous states
+	omsi_unsigned_int   n_states;				/* number of continuous states */
 	omsi_unsigned_int   n_derivatives;          // number of derivatives
 	omsi_unsigned_int   n_real_vars;			// number of real algebraic variables
 	omsi_unsigned_int   n_real_parameters;		// number of real parameters
@@ -275,8 +278,6 @@ typedef struct sim_data_t{
     omsi_unsigned_int outputs_int_index;    //start index of output integer variables in imodel_variable_info_tnteger vars array
     omsi_unsigned_int outputs_bool_index;   //start index of output boolean variables in boolean vars array
     omsi_unsigned_int discrete_reals_index; //start index of discrete real variables in real vars array
-
-    omsi_real time_value;                   // current system time
 
     omsi_bool* zerocrossings_vars;          //conditions of zerocrossing functions
     omsi_bool* pre_zerocrossings_vars;      //pre conditions of zerocrossing functions

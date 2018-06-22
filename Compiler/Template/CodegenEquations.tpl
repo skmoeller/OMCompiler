@@ -69,8 +69,8 @@ template equationFunction(SimEqSystem eq, Context context, String modelNamePrefi
   /*
   <%equationInfos%>
   */
-  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(sim_data_t* sim_data, double* writeData){
-    const int equationIndexes[2] = {1,<%ix%>};
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(omsi_function_t* this_function){
+    const omsi_int equationIndexes[2] = {1,<%ix%>};
     <%varDecls%>
     <%auxFunction%>
     <%equationCode%>
@@ -123,73 +123,45 @@ end equationCStr;
 template equationCall(SimEqSystem eq, String modelNamePrefixStr)
  "Generates call function for evaluating functions"
 ::=
-  let ix = ""
+  let ix = CodegenUtilSimulation.equationIndex(eq)
   <<
-  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(data);
+  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(this_function);
   >>
 end equationCall;
 
 
-template generateEquationFiles(list<SimEqSystem> allEquations, String fileNamePrefix)
+template generateEquationFiles(list<SimEqSystem> equations, String fileNamePrefix, String name)
 "Generates content of fileNamePrefix_eqns.c"
 ::=
   let eqFuncs = ""
-  let _ = allEquations |> eqn => (
+  let _ = equations |> eqn => (
     let &eqFuncs += equationFunction(eqn, contextOMSI, fileNamePrefix) + "\n\n"
     <<>>
   )
   let eqCalls = ""
-  let _ =  allEquations |> eqn => (
+  let _ =  equations |> eqn => (
     let &eqCalls += equationCall(eqn, fileNamePrefix) + "\n"
     <<>>
   )
 
   <<
   #include "omsi.h"
-  #include "<%fileNamePrefix%>_eqns.h"
   
   /* Equation functions */
   <%eqFuncs%>
 
   /* Equations evaluation */
-  int evalEquations(sim_data_t sim_data){
+  int <%fileNamePrefix%>_<%name%>(omsi_function_t *this_function){
 
     <%eqCalls%>
 
     return 0;
   }
+  
   >>
 end generateEquationFiles;
 
 
-template generateEquationFilesHeader(list<SimEqSystem> allEquations, String fileNamePrefix)
-"Generates content of header file fileNamePrefix_eqns.h"
-::=
-  let eqFuncsPrototypes = ""
-            let _ = allEquations |> eqn => (
-            let &eqFuncsPrototypes += equationFunctionPrototypes(eqn, fileNamePrefix)
-            <<>>
-            )
-
-  <<
-  #ifndef <%fileNamePrefix%>_eqns
-  #define <%fileNamePrefix%>_eqns
-
-  /* Equation functions prototypes */
-  #if defined(__cplusplus)
-  extern "C" {
-  #endif
-
-  int evalEquations(Blablabla);
-  <%eqFuncsPrototypes%>
-
-  #if defined(__cplusplus)
-  }
-  #endif
-
-  #endif
-  >>
-end generateEquationFilesHeader;
 
 
 annotation(__OpenModelica_Interface="backend");

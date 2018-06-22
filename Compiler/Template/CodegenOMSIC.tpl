@@ -47,21 +47,6 @@ import CodegenOMSI_common.*;
 import CodegenFMU;
 import CodegenFMU2;
 
-template translateModel(SimCode simCode, String FMUVersion, String FMUType, String guid)
-" main entry point for OMSIC code generator"
-::=
-  match simCode
-    case SIMCODE(__) then
-    let () = textFile( createMakefile(), '<%fileNamePrefix%>_FMU.makefile')
-    let () = textFile( CodegenFMU2.fmiModelDescription(simCode, guid, FMUType), 'modelDescription.xml')
-    let () = textFile( generateOMSICHeader(simCode), '<%fileNamePrefix%>_omsic.h')
-    let () = textFile( generateOMSIC(simCode), '<%fileNamePrefix%>_omsic.c')
-    let () = textFile( CodegenEquations.generateEquationFiles(allEquations, fileNamePrefix), '<%fileNamePrefix%>_eqns.c')
-    let () = textFile( CodegenEquations.generateEquationFilesHeader(allEquations, fileNamePrefix), '<%fileNamePrefix%>_eqns.h')
-    <<>>
-end translateModel;
-
-
 template generateOMSIC(SimCode simCode)
 "Generates main entry point for omsi wrapper functions for FMI"
 ::=

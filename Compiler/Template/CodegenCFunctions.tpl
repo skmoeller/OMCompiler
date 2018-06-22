@@ -3523,7 +3523,21 @@ case VARIABLE(__) then 'modelica_metatype'
 case FUNCTION_PTR(__) then 'modelica_fnptr'
 end varTypeBoxed;
 
-
+template crefTypeNameOMSIC(DAE.Type type)
+ "Generate type helper."
+::=
+  match type
+  case T_INTEGER(__)       then "ints"
+  case T_REAL(__)          then "reals"
+  case T_STRING(__)        then "strings"
+  case T_BOOL(__)          then "bools"
+  case T_ENUMERATION(__)   then "integers"
+  case T_SUBTYPE_BASIC(__) then crefTypeNameOMSIC(complexType)
+  case T_ARRAY(__)         then crefTypeNameOMSIC(ty)
+  case T_COMPLEX(complexClassType=EXTERNAL_OBJ(__)) then "complex"
+  case T_COMPLEX(__)       then '<%underscorePath(ClassInf.getStateName(complexClassType))%>'
+  else error(sourceInfo(),'crefTypeNameOMSIC: <%unparseType(type)%>')
+end crefTypeNameOMSIC;
 
 template expTypeRW(DAE.Type type)
  "Helper to writeOutVarRecordMembers."
@@ -4159,13 +4173,13 @@ template crefOMSI(ComponentRef cref, Context context)
 "lhs componentReference generation"
 ::=
   match cref
-  case CREF_IDENT(ident = "time") then "sim_data->time_variable"
+  case CREF_IDENT(ident = "time") then "this_function->function_vars->time_value"
   else
   match cref2simvar(cref, getSimCode())
     case v as SIMVAR(__) then
       let index = getValueReference(v, getSimCode(), false)
       let c_comment = '/* <%escapeCComments(crefStrNoUnderscore(v.name))%> <%variabilityString(varKind)%> */'
-      'sim_data-><%crefShortType(name)%>_vars[<%index%>] <%c_comment%>'
+      <<this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>>>
     else "CREF_NOT_FOUND"
   end match
 end crefOMSI;
@@ -6974,6 +6988,17 @@ template crefShortType(ComponentRef cr) "template crefType
   else "crefType:ERROR"
   end match
 end crefShortType;
+
+template crefTypeOMSIC(ComponentRef cr) "template crefType
+  Like cref but with cast if type is integer."
+::=
+  match cr
+  case CREF_IDENT(__) then crefTypeNameOMSIC(identType)
+  case CREF_QUAL(__)  then crefTypeOMSIC(componentRef)
+  else "crefType:ERROR"
+  end match
+end crefTypeOMSIC;
+
 
 template varArrayNameValues(SimVar var, Integer ix, Boolean isPre, Boolean isStart)
 ::=
