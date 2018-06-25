@@ -28,18 +28,22 @@
  *
  */
 
-/*! \file linearSolverLapack.h
+/*! \file nonlinearSolverNewton.h
  */
 
-#ifndef _LINEARSOLVERLAPACK_H_
-#define _LINEARSOLVERLAPACK_H_
+#ifndef _NEWTONITERATION_H_
+#define _NEWTONITERATION_H_
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h> /* memcpy */
 
+#include "../solver/Newton.h"
+//#include "external_input.h"
+
 #include "math/omsi_matrix.h"
 #include "math/omsi_vector.h"
+
 #include "math/omsi_math.h"
 #include "omsi.h"
 #include "omsi_eqns_system.h"
@@ -49,33 +53,50 @@
 extern "C" {
 #endif
 
-typedef struct DATA_LAPACK
+typedef struct DATA_NEWTON
 {
-  int *ipiv;  /* vector pivot values */
-  int n;	  /* number of linear equations and unknowns */
-  int nrhs;   /* number of righthand sides*/
-  int info;   /* output */
-  omsi_vector_t* work;
+  int initialized; /* 1 = initialized, else = 0*/
+  omsi_vector_t* resScaling;
+  omsi_vector_t* fvecScaled;
 
+  int newtonStrategy;
+
+  int n;
   omsi_vector_t* x;
-  omsi_vector_t* b;
-  omsi_matrix_t* A;
-  rtclock_t timeClock;
+  omsi_vector_t* fvec;
+  double xtol;
+  double ftol;
+  int nfev;
+  int maxfev;
+  int info;
+  double epsfcn;
+  omsi_vector_t* fjac;
+  omsi_vector_t* rwork;
+  int* iwork;
+  int calculate_jacobian;
+  int factorization;
+  int numberOfIterations; /* over the whole simulation time */
+  int numberOfFunctionEvaluations; /* over the whole simulation time */
 
-} DATA_LAPACK;
+  /* damped newton */
+  omsi_vector_t* x_new;
+  omsi_vector_t* x_increment;
+  omsi_vector_t* f_old;
+  omsi_vector_t* fvec_minimum;
+  omsi_vector_t* delta_f;
+  omsi_vector_t* delta_x_vec;
 
-/* function prototypes */
-extern int dgesv_(int *n, int *nrhs, double *a, int *lda, int *ipiv,
-                  double *b, int *ldb, int *info);
-int allocateLapackData(int size, DATA_LAPACK **data);
-int freeLapackData(DATA_LAPACK *data);
-int setLapackData(DATA_LAPACK *lapackData, sim_data_t *sim_data, int n);
-int getLapackData(DATA_LAPACK *lapackData, sim_data_t *sim_data);
-int solveLapack(DATA_LAPACK* lapackData, omsi_t *omsiData,
-                omsi_linear_system_t *linearSystem);
-int solveLapack_new(omsi_t *omsiData, omsi_vector_t *result_x);
+   rtclock_t timeClock;
+
+} DATA_NEWTON;
+
+
+int allocateNewtonData(int size, void** data);
+int freeNewtonData(void** data);
+int _omc_newton(int(*f)(int*, double*, double*, void*, int), DATA_NEWTON* solverData, void* userdata);
 
 #ifdef __cplusplus
-}   /* end of extern "C" { */
+}
 #endif
+
 #endif

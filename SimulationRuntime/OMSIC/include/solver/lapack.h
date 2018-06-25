@@ -28,52 +28,53 @@
  *
  */
 
-/*! \file nonlinearSolverNewton.h
+/*! \file linearSolverLapack.h
  */
 
-#ifndef _NONLINEARSOLVERNEWTON_H_
-#define _NONLINEARSOLVERNEWTON_H_
+#ifndef _LINEARSOLVERLAPACK_H_
+#define _LINEARSOLVERLAPACK_H_
 
 #include <math.h>
 #include <stdlib.h>
-#include <string.h> /* memcpy */
+//#include <string.h> /* memcpy */
 
-#include "newtonIteration.h"
 #include "math/omsi_matrix.h"
 #include "math/omsi_vector.h"
-
 #include "math/omsi_math.h"
 #include "omsi.h"
 #include "omsi_eqns_system.h"
 #include "util/rtclock.h"
 
-/*
-#include "simulation/simulation_info_json.h"
-#include "util/omc_error.h"
-#include "util/varinfo.h"
-#include "model_help.h"
-
-#include "nonlinearSystem.h"
-
-
-
-#include "external_input.h"
-*/
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//typedef struct
-//{
-//  void* data;
-//  threadData_t *threadData;
-//  int sysNumber;
-//} DATA_USER;
+/*
+ * Struct to store all informations for LAPACK dgesv
+ */
+typedef struct DATA_LAPACK {
+    omsi_int        n;      /* number of linear equations*/
+    omsi_int        nrhs;   /* number of right hand sides, default =1 */
+    omsi_real*      A;      /* array of dimension (lda,n) */
+    omsi_int        lda;    /* leading dimension of array A */
+    omsi_int*       ipiv    /* array of dimension n, stores pivot indices for permutation matrix P */
+    omsi_real*      B;      /* array of dimension (ldb, nrhs), right hand side of equation system on entry. On exit if info=0 solution (n x nrhs) Matrix X */
+    omsi_int        ldb;    /* leading dimension of array B */
+    omsi_int        info;   /* =0 if succesfull, <0 if Info=-i the i-th */
+} DATA_LAPACK;
 
-int solveNewton(DATA_NEWTON* newtonData, omsi_t *omsiData, omsi_nonlinear_system_t* nonlinearSystem);
+/* function prototypes */
+extern int dgesv_(int *n, int *nrhs, double *a, int *lda, int *ipiv,
+                  double *b, int *ldb, int *info);
+int allocateLapackData(int size, DATA_LAPACK **data);
+int freeLapackData(DATA_LAPACK *data);
+int setLapackData(DATA_LAPACK *lapackData, sim_data_t *sim_data, int n);
+int getLapackData(DATA_LAPACK *lapackData, sim_data_t *sim_data);
+int solveLapack(DATA_LAPACK* lapackData, omsi_t *omsiData,
+                omsi_linear_system_t *linearSystem);
+int solveLapack_new(omsi_t *omsiData, omsi_vector_t *result_x);
 
 #ifdef __cplusplus
-}
+}   /* end of extern "C" { */
 #endif
-
 #endif

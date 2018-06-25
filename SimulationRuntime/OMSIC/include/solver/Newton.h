@@ -28,20 +28,17 @@
  *
  */
 
-/*! \file linearSolverLapack.h
+/*! \file nonlinearSolverNewton.h
  */
 
-#ifndef _LINEARSOLVERTOTALPIVOT_INTERFACE_H_
-#define _LINEARSOLVERTOTALPIVOT_INTERFACE_H_
-
-//#include "simulation/simulation_info_json.h"
-//#include "util/omc_error.h"
-//#include "util/varinfo.h"
+#ifndef _NONLINEARSOLVERNEWTON_H_
+#define _NONLINEARSOLVERNEWTON_H_
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h> /* memcpy */
 
+#include "../solver/newtonIteration.h"
 #include "math/omsi_matrix.h"
 #include "math/omsi_vector.h"
 
@@ -49,28 +46,34 @@
 #include "omsi.h"
 #include "omsi_eqns_system.h"
 #include "util/rtclock.h"
-#include "TotalPivot.h"
+
+/*
+#include "simulation/simulation_info_json.h"
+#include "util/omc_error.h"
+#include "util/varinfo.h"
+#include "model_help.h"
+
+#include "nonlinearSystem.h"
 
 
-typedef struct DATA_TOTALPIVOT
-{
-  /* memory for linear system */
-  omsi_vector_t* x;
-  omsi_vector_t* x_tmp;
-  omsi_vector_t* b;
-  omsi_matrix_t* Ab;
 
+#include "external_input.h"
+*/
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-  /* used for pivot strategy */
-  int* indRow;
-  int* indCol;
+//typedef struct
+//{
+//  void* data;
+//  threadData_t *threadData;
+//  int sysNumber;
+//} DATA_USER;
 
-  rtclock_t timeClock;             /* time clock */
+int solveNewton(DATA_NEWTON* newtonData, omsi_t *omsiData, omsi_nonlinear_system_t* nonlinearSystem);
 
-} DATA_TOTALPIVOT;
-
-int allocateTotalPivotData(int size, void** data);
-int freeTotalPivotData(void** data);
-int solveTotalPivot(DATA_TOTALPIVOT* pivotData, omsi_t *omsiData, omsi_linear_system_t *linearSystem);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

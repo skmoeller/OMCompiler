@@ -111,9 +111,9 @@ typedef enum {
 
 
 typedef struct omsi_index_type {
-  omsi_data_type    type;    /* data type*/
-  omsi_unsigned_int     index;   /* index in sim_data->model_vars_and_params->[datatype]
-                           * where [datatype]=reals|ints|bools depending on type */
+    omsi_data_type        type;    /* data type*/
+    omsi_unsigned_int     index;   /* index in sim_data->model_vars_and_params->[datatype]
+                                    * where [datatype]=reals|ints|bools depending on type */
 } omsi_index_type;
 
 
@@ -133,12 +133,12 @@ typedef struct omsi_values {
  *   additional file information for debugging
  */
 typedef struct file_info {
-	omsi_string filename;       /* filename where variable is defined */
-	omsi_int    lineStart;      /* number of line where definition of variable starts */
-	omsi_int    colStart;       /* number of columns where definition of variable starts */
-	omsi_int    lineEnd;        /* number of line where definition of variable ends */
-	omsi_int    colEnd;         /* number of columns where definition of variable ends */
-	omsi_bool   fileWritable;   /* =true if file writable, else =false */
+    omsi_string filename;       /* filename where variable is defined */
+    omsi_int    lineStart;      /* number of line where definition of variable starts */
+    omsi_int    colStart;       /* number of columns where definition of variable starts */
+    omsi_int    lineEnd;        /* number of line where definition of variable ends */
+    omsi_int    colEnd;         /* number of columns where definition of variable ends */
+    omsi_bool   fileWritable;   /* =true if file writable, else =false */
 } file_info;
 
 /**
@@ -158,13 +158,13 @@ typedef struct equation_info_t{
  *  Modelica attributes for real variables
  */
 typedef struct real_var_attribute_t {
-	omsi_string unit;          /* default = "" */
-	omsi_string displayUnit;   /* default = "" */
-	omsi_real   min;           /* default = -Inf */
-	omsi_real   max;           /* default = +Inf */
-	omsi_bool   fixed;         /* depends on the type */
-	omsi_real   nominal;       /* default = 1.0 */
-	omsi_real   start;         /* default  = 0.0 */
+    omsi_string unit;          /* default = "" */
+    omsi_string displayUnit;   /* default = "" */
+    omsi_real   min;           /* default = -Inf */
+    omsi_real   max;           /* default = +Inf */
+    omsi_bool   fixed;         /* depends on the type */
+    omsi_real   nominal;       /* default = 1.0 */
+    omsi_real   start;         /* default  = 0.0 */
 } real_var_attribute_t;
 
 
@@ -172,10 +172,10 @@ typedef struct real_var_attribute_t {
  *  Modelica attributes for integer variables
  */
 typedef struct int_var_attribute_t {
-	omsi_int  min;      /* = -Inf */
-	omsi_int  max;      /* = +Inf */
-	omsi_bool fixed;    /* depends on the type */
-	omsi_int  start;    /* = 0 */
+    omsi_int  min;      /* = -Inf */
+    omsi_int  max;      /* = +Inf */
+    omsi_bool fixed;    /* depends on the type */
+    omsi_int  start;    /* = 0 */
 } int_var_attribute_t;
 
 
@@ -183,8 +183,8 @@ typedef struct int_var_attribute_t {
  *  Modelica attributes for boolean variables
  */
 typedef struct bool_var_attribute_t {
-	omsi_bool fixed;    /* depends on the type */
-	omsi_bool start;    /* = false */
+    omsi_bool fixed;    /* depends on the type */
+    omsi_bool start;    /* = false */
 } bool_var_attribute_t;
 
 
@@ -192,21 +192,21 @@ typedef struct bool_var_attribute_t {
  * Modelica attributes for string variables
  */
 typedef struct string_var_attribute_t {
-	omsi_char * start;  /* = "" */
+    omsi_char * start;  /* = "" */
 } string_var_attribute_t;
 
 /**
  *
  */
 typedef struct model_variable_info_t {
-	omsi_int        id;						/* unique value reference from *_init.xml */
-	omsi_string     name;                   /* name of variable|parameter|alias */
-	omsi_string     comment;		        /* variable description  or modelica comment*/
-	omsi_index_type type_index;	            /* tuple of data_type and index in sim_data->model_vars_and_params->..., if isAlias=true then index from alias variable */
-	void*           modelica_attributes;    /* pointer to modelica attributes  ( real_var_attribute | int_var_attribute | bool_var_attribute | string_var_attribute ) */
-	omsi_bool       isAlias;                /* true if alias, else false */
-	omsi_int        negate;					/* if negated -1 else 1 */
-    omsi_int        aliasID;				/* pointer to alias if >= 0 */
+    omsi_int        id;                     /* unique value reference from *_init.xml */
+    omsi_string     name;                   /* name of variable|parameter|alias */
+    omsi_string     comment;                /* variable description  or modelica comment*/
+    omsi_index_type type_index;	            /* tuple of data_type and index in sim_data->model_vars_and_params->..., if isAlias=true then index from alias variable */
+    void*           modelica_attributes;    /* pointer to modelica attributes  ( real_var_attribute | int_var_attribute | bool_var_attribute | string_var_attribute ) */
+    omsi_bool       isAlias;                /* true if alias, else false */
+    omsi_int        negate;                 /* if negated -1 else 1 */
+    omsi_int        aliasID;                /* pointer to alias if >= 0 */
     file_info       info;                   /* file informations for variable|parameter|alias */
 } model_variable_info_t;
 
@@ -238,27 +238,27 @@ typedef struct omsi_function_t {
  */
 typedef struct model_data_t {
     omsi_string         modelGUID;
-	omsi_unsigned_int   n_states;				/* number of continuous states */
-	omsi_unsigned_int   n_derivatives;          // number of derivatives
-	omsi_unsigned_int   n_real_vars;			// number of real algebraic variables
-	omsi_unsigned_int   n_real_parameters;		// number of real parameters
-	omsi_unsigned_int   n_real_aliases;         // number of real alias variables
-	omsi_unsigned_int   n_int_vars;				// number of integer algebraic variables
-	omsi_unsigned_int   n_int_parameters;		// number of integer parameters
-	omsi_unsigned_int   n_int_aliases;          // number of integer alias variables
-	omsi_unsigned_int   n_bool_vars;			// number of boolean algebraic variables
-	omsi_unsigned_int   n_bool_parameters;		// number of boolean parameters
-	omsi_unsigned_int   n_bool_aliases;         // number of boolean alias variables
-	omsi_unsigned_int   n_string_vars;			// number of string algebraic variables
-	omsi_unsigned_int	n_string_parameters;	// number of string parameters
-	omsi_unsigned_int   n_string_aliases;       // number of string alias variables
-	omsi_unsigned_int   n_zerocrossings;        // number of zero crossings
+    omsi_unsigned_int   n_states;               /* number of continuous states */
+    omsi_unsigned_int   n_derivatives;          // number of derivatives
+    omsi_unsigned_int   n_real_vars;            // number of real algebraic variables
+    omsi_unsigned_int   n_real_parameters;      // number of real parameters
+    omsi_unsigned_int   n_real_aliases;         // number of real alias variables
+    omsi_unsigned_int   n_int_vars;             // number of integer algebraic variables
+    omsi_unsigned_int   n_int_parameters;       // number of integer parameters
+    omsi_unsigned_int   n_int_aliases;          // number of integer alias variables
+    omsi_unsigned_int   n_bool_vars;            // number of boolean algebraic variables
+    omsi_unsigned_int   n_bool_parameters;      // number of boolean parameters
+    omsi_unsigned_int   n_bool_aliases;         // number of boolean alias variables
+    omsi_unsigned_int   n_string_vars;          // number of string algebraic variables
+    omsi_unsigned_int   n_string_parameters;    // number of string parameters
+    omsi_unsigned_int   n_string_aliases;       // number of string alias variables
+    omsi_unsigned_int   n_zerocrossings;        // number of zero crossings
     omsi_unsigned_int   n_equations;            // number of all equations
-    omsi_unsigned_int	n_regular_equations;	// number of regular equations
-    omsi_unsigned_int	n_init_equations;		// number of initial equations ToDo: fill with value somewhere
+    omsi_unsigned_int   n_regular_equations;    // number of regular equations
+    omsi_unsigned_int   n_init_equations;       // number of initial equations ToDo: fill with value somewhere
 
-	model_variable_info_t*  model_vars_info_t;		// N = n_states + n_derivatives n_$all_vars + n_$all_parameters  $all={real,int,bool}
-	equation_info_t*        equation_info_t;
+    model_variable_info_t*  model_vars_info_t;  // N = n_states + n_derivatives n_$all_vars + n_$all_parameters  $all={real,int,bool}
+    equation_info_t*        equation_info_t;
 } model_data_t;
 
 

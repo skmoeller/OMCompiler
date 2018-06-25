@@ -31,9 +31,10 @@
 /*! \file kinsolSolver.c
  */
 
+#include "../../../include/solver/Kinsol.h"
+
 #include "omc_config.h"
 #include "nonlinearSystem.h"
-#include "../../../include/Solver/Kinsol.h"
 #include "simulation/simulation_info_json.h"
 #include "util/omc_error.h"
 #include "omc_math.h"

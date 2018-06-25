@@ -28,7 +28,7 @@
  *
  */
 
-#include "../../../include/Solver/TotalPivot_Interface.h"
+#include "../../../include/solver/TotalPivot_Interface.h"
 
 
 void debugMatrixDoubleLS(int logName, char* matrixName, double* matrix, int n, int m)

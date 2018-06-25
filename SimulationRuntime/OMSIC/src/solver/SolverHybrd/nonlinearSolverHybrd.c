@@ -47,7 +47,7 @@ extern "C" {
 #include "meta/meta_modelica.h"
 
 #include "nonlinearSystem.h"
-#include "../../../include/Solver/nonlinearSolverHybrd.h"
+#include "../../../include/solver/nonlinearSolverHybrd.h"
 extern double enorm_(integer *n, double *x);
 
 struct dataAndSys {

@@ -52,8 +52,8 @@
 #endif
 
 #include "nonlinearSystem.h"
-#include "../../../include/Solver/Homotopy.h"
-#include "nonlinearSolverHybrd.h"
+#include "../../../include/solver/Homotopy.h"
+#include "../../../include/solver/nonlinearSolverHybrd.h"
 
 #ifdef __cplusplus
 extern "C" {

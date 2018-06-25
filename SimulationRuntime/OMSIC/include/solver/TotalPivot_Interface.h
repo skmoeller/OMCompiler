@@ -28,20 +28,21 @@
  *
  */
 
-/*! \file nonlinearSolverNewton.h
+/*! \file linearSolverLapack.h
  */
 
-#ifndef _NEWTONITERATION_H_
-#define _NEWTONITERATION_H_
+#ifndef _LINEARSOLVERTOTALPIVOT_INTERFACE_H_
+#define _LINEARSOLVERTOTALPIVOT_INTERFACE_H_
 
-#include "Newton.h"
+//#include "simulation/simulation_info_json.h"
+//#include "util/omc_error.h"
+//#include "util/varinfo.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h> /* memcpy */
 
-//#include "external_input.h"
-
+#include "../solver/TotalPivot.h"
 #include "math/omsi_matrix.h"
 #include "math/omsi_vector.h"
 
@@ -50,54 +51,26 @@
 #include "omsi_eqns_system.h"
 #include "util/rtclock.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-typedef struct DATA_NEWTON
+typedef struct DATA_TOTALPIVOT
 {
-  int initialized; /* 1 = initialized, else = 0*/
-  omsi_vector_t* resScaling;
-  omsi_vector_t* fvecScaled;
-
-  int newtonStrategy;
-
-  int n;
+  /* memory for linear system */
   omsi_vector_t* x;
-  omsi_vector_t* fvec;
-  double xtol;
-  double ftol;
-  int nfev;
-  int maxfev;
-  int info;
-  double epsfcn;
-  omsi_vector_t* fjac;
-  omsi_vector_t* rwork;
-  int* iwork;
-  int calculate_jacobian;
-  int factorization;
-  int numberOfIterations; /* over the whole simulation time */
-  int numberOfFunctionEvaluations; /* over the whole simulation time */
-
-  /* damped newton */
-  omsi_vector_t* x_new;
-  omsi_vector_t* x_increment;
-  omsi_vector_t* f_old;
-  omsi_vector_t* fvec_minimum;
-  omsi_vector_t* delta_f;
-  omsi_vector_t* delta_x_vec;
-
-   rtclock_t timeClock;
-
-} DATA_NEWTON;
+  omsi_vector_t* x_tmp;
+  omsi_vector_t* b;
+  omsi_matrix_t* Ab;
 
 
-int allocateNewtonData(int size, void** data);
-int freeNewtonData(void** data);
-int _omc_newton(int(*f)(int*, double*, double*, void*, int), DATA_NEWTON* solverData, void* userdata);
+  /* used for pivot strategy */
+  int* indRow;
+  int* indCol;
 
-#ifdef __cplusplus
-}
-#endif
+  rtclock_t timeClock;             /* time clock */
+
+} DATA_TOTALPIVOT;
+
+int allocateTotalPivotData(int size, void** data);
+int freeTotalPivotData(void** data);
+int solveTotalPivot(DATA_TOTALPIVOT* pivotData, omsi_t *omsiData, omsi_linear_system_t *linearSystem);
 
 #endif

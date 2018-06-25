@@ -53,7 +53,7 @@ extern int dgesv_(int *n, int *nrhs, double *a, int *lda, int *ipiv, double *b, 
 #endif
 
 
-#include "../../../include/Solver/Newton.h"
+#include "../../../include/solver/Newton.h"
 /*! \fn wrapper_fvec_newton for the residual Function
  *   tensolve calls for the subroutine fcn(n, x, fvec, iflag, data)
  *
