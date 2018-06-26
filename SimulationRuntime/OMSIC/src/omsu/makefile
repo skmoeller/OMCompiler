@@ -18,7 +18,8 @@ OMSU_HDRS = $(OMSIC_INCLUDE)/omsu/omsu_ContinuousSimulation.h $(OMSIC_INCLUDE)/o
  $(OMSIC_INCLUDE)/omsu/omsu_common.h $(OMSIC_INCLUDE)/omsu/omsu_helper.h\
  $(OMSIC_INCLUDE)/omsu/omsu_input_xml.h $(OMSIC_INCLUDE)/omsu/omsu_input_json.h\
  $(OMSIC_INCLUDE)/fmi2/osi_fmi2_wrapper.h\
- $(OMSIC_INCLUDE)/omsu/omsu_mmap.h
+ $(OMSIC_INCLUDE)/omsu/omsu_mmap.h\
+ $(OMSI_INCLUDE)/omsi.h
 
 FMI2_HDRS=$(OMSIC_INCLUDE)/fmi2/osi_fmi2_wrapper.h $(OMSIC_INCLUDE)/fmi2/fmi2Functions.h\
  $(OMSIC_INCLUDE)/fmi2/fmi2FunctionTypes.h  $(OMSIC_INCLUDE)/fmi2/fmi2TypesPlatform.h
@@ -35,7 +36,7 @@ $(OMSU_OBJS): $(OMSU_SRCS) $(OMSU_HDRS) $(FMI2_HDRS)
 
 .PHONY: clean_omsu_all
 clean_omsu_all: clean_omsu_o
-	rm -rf ../../lib/libomsu.$(TARGET_LIB)
+	rm -rf ../../lib/libomsu.*
 
 .PHONY: clean_omsu_o
 clean_omsu_o:
