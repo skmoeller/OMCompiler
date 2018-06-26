@@ -29,9 +29,9 @@
  *
  */
 
-package CodegenEquations
-" file:        CodegenEquations.tpl
-  package:     CodegenEquations
+package CodegenOMSIC_Equations
+" file:        CodegenOMSIC_Equations.tpl
+  package:     CodegenOMSIC_Equations
   description: Code generation using Susan templates for 
                OpenModelica Simulation Inferface (OMSI) equation related templates
 "
@@ -165,4 +165,4 @@ end generateEquationFiles;
 
 
 annotation(__OpenModelica_Interface="backend");
-end CodegenEquations;
+end CodegenOMSIC_Equations;

@@ -42,7 +42,7 @@ import interface SimCodeTV;
 import interface SimCodeBackendTV;
 import CodegenUtil;
 import CodegenUtilSimulation;
-import CodegenEquations;
+import CodegenOMSIC_Equations;
 import CodegenOMSI_common.*;
 import CodegenFMU;
 import CodegenFMU2;
