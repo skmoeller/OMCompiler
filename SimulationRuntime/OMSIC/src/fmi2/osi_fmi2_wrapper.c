@@ -141,22 +141,26 @@ FMI2_Export fmi2Status fmi2SetFMUstate(fmi2Component c, fmi2FMUstate FMUstate)
 
 FMI2_Export fmi2Status fmi2FreeFMUstate(fmi2Component c, fmi2FMUstate* FMUstate)
 {
-  return omsi_free_fmu_state(c, FMUstate);
+  //return omsi_free_fmu_state(c, FMUstate);
+    return fmi2Error;
 }
 
 FMI2_Export fmi2Status fmi2SerializedFMUstateSize(fmi2Component c, fmi2FMUstate FMUstate,size_t* size)
 {
-  return omsi_serialized_fmu_state_size(c, FMUstate, size);
+    //return omsi_serialized_fmu_state_size(c, FMUstate, size);
+    return fmi2Error;
 }
 
 FMI2_Export fmi2Status fmi2SerializeFMUstate(fmi2Component c, fmi2FMUstate FMUstate,fmi2Byte serializedState[], size_t size)
 {
-  return omsi_serialize_fmu_state(c, FMUstate, serializedState, size);
+    //return omsi_serialize_fmu_state(c, FMUstate, serializedState, size);
+    return fmi2Error;
 }
 
 FMI2_Export fmi2Status fmi2DeSerializeFMUstate(fmi2Component c, const fmi2Byte serializedState[],size_t size, fmi2FMUstate* FMUstate)
 {
-  return omsi_de_serialize_fmu_state(c, serializedState, size, FMUstate);
+    //return omsi_de_serialize_fmu_state(c, serializedState, size, FMUstate);
+    return fmi2Error;
 }
 
 FMI2_Export fmi2Status fmi2GetDirectionalDerivative(fmi2Component c,const fmi2ValueReference vUnknown_ref[], size_t nUnknown,const fmi2ValueReference vKnown_ref[],   size_t nKnown, const fmi2Real dvKnown[], fmi2Real dvUnknown[])

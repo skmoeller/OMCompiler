@@ -268,8 +268,9 @@ typedef struct model_data_t {
     omsi_unsigned_int   n_string_aliases;       /* number of string alias variables*/
     omsi_unsigned_int   n_zerocrossings;        /* number of zero crossings*/
     omsi_unsigned_int   n_equations;            /* number of all equations*/
-    omsi_unsigned_int   n_regular_equations;    /* number of regular equations*/
     omsi_unsigned_int   n_init_equations;       /* number of initial equations */
+    omsi_unsigned_int   n_regular_equations;    /* number of regular equations*/
+    omsi_unsigned_int   n_alias_equations;      /* number of alias equations*/
 
     model_variable_info_t*  model_vars_info_t;  /* array of variable informations for all N variables
                                                  * N = n_states + n_derivatives n_$all_vars + n_$all_parameters  $all={real,int,bool}*/

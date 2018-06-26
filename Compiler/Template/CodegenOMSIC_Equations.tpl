@@ -94,28 +94,19 @@ case SES_LINEAR(lSystem=ls as LINEARSYSTEM(__)) then    //only for rectangular c
   let dimLinearSystem = ls.nUnknowns
   let crefStr = ""
   <<
-  ERROR: LINEAR SYSTEM NOT IMPLEMENTED YET!
+  /* Linear equation system */
+  // ToDo: Log something
 
-  int sucess;
+  omsi_status status;
 
-  /* allocate memory for LAPACK */
-  void *lapackData;
-  allocateLapackData(<%dimLinearSystem%>, &lapackData);
-
-  /* set lapackData  */
-  setLapackData(lapackData, omsiData);
-
-  /* solve linear equation using LAPACK dgesv */
-  sucess = solveLapack(lapackData, omsiData, linearSystem);
-  if !sucess {
-    ERROR: ...
+  /* solve equation system */
+  status = solveLapack(this_function, global_callback_functions);
+  if (status != omsi_ok) {
+    /* ToDo: error case */
+    printf("Solving linear system %i failed at time=%.15g.\n", equationIndexes[1], this_function->function_vars->time_value);
   }
 
-  /* copy solution in sim_data */
-  memcpy(<%crefStr%>, lapackData->A, sizeof(double)*<%dimLinearSystem%>);
 
-  /* free memory */
-  freeLapackData(&lapackData);
   >>
 end equationCStr;
 
@@ -125,7 +116,7 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr)
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   <<
-  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(this_function);
+  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(simulation[<%ix%>]);
   >>
 end equationCall;
 
@@ -151,11 +142,11 @@ template generateEquationFiles(list<SimEqSystem> equations, String fileNamePrefi
   <%eqFuncs%>
 
   /* Equations evaluation */
-  int <%fileNamePrefix%>_<%name%>(omsi_function_t *this_function){
+  omsi_status <%fileNamePrefix%>_<%name%>(omsi_function_t** simulation){
 
     <%eqCalls%>
 
-    return 0;
+    return omsi_ok;
   }
   
   >>

@@ -279,6 +279,9 @@ void omsu_print_debug (osu_t* OSU) {
     printf("| | n_bool_aliases:\t\t%d\n", OSU->osu_data->model_data.n_bool_aliases);
     printf("| | n_string_aliases:\t\t%d\n", OSU->osu_data->model_data.n_string_aliases);
     printf("| | n_zerocrossings:\t\t%d\n", OSU->osu_data->model_data.n_zerocrossings);
+    printf("| | n_regular_equations:\t%d\n", OSU->osu_data->model_data.n_regular_equations);
+    printf("| | n_init_equations:\t\t%d\n", OSU->osu_data->model_data.n_init_equations);
+    printf("| | n_alias_equations:\t\t%d\n", OSU->osu_data->model_data.n_alias_equations);
     printf("| | n_equations:\t\t%d\n", OSU->osu_data->model_data.n_equations);
 
     printf("| | model_vars_info_t:\n");
@@ -307,7 +310,7 @@ void omsu_print_debug (osu_t* OSU) {
     for(omsi_unsigned_int i=0; i<OSU->osu_data->model_data.n_equations; i++) {
         printf("| | | id:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].id);
         printf("| | | ProfileBlockIndex:\t%i\n", OSU->osu_data->model_data.equation_info_t[i].profileBlockIndex);
-        //printf("| | | parent: \t\t\t%i\n",OSU->osu_data->model_data.equation_info_t[i].parent);
+        printf("| | | parent: \t\t\t%i\n",OSU->osu_data->model_data.equation_info_t[i].parent);
         printf("| | | numVar:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].numVar);
         printf("| | | variables:\t\t");
         fflush(stdout);
