@@ -766,6 +766,8 @@ algorithm
         runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(in_a_simCode=simCode), file=fileprefix+"_omsic.c");
         
         runTplWriteFile(func = function CodegenOMSIC_Equations.generateEquationFiles(a_equations=simCode.allEquations, a_fileNamePrefix=fileprefix, a_name="allEqns"), file=fileprefix+"_eqns.c");
+
+        runTplWriteFile(func = function CodegenOMSI_common.simulationFile_lsyOMSI(in_a_simCode=simCode), file=fileprefix+"_lsy.c");
         /*
         
         runTplWriteFile(func = function CodegenOMSIC.generateEquationFilesHeader(simCode=simCode), file=fileprefix+"_eqns.h");

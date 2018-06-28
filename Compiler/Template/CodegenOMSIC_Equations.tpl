@@ -82,32 +82,41 @@ end equationFunction;
 template equationCStr(SimEqSystem eq, Context context, Text &varDecls, Text &auxFunction)
  "Generates an equation that is just a simple assignment."
 ::=
-match eq
-case SES_SIMPLE_ASSIGN(__) then
-  let &preExp = buffer ""
-  let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
-  let crefStr = CodegenCFunctions.contextCref(cref, context, &auxFunction)
-  <<
-  <%crefStr%> = <%expPart%>;
-  >>
-case SES_LINEAR(lSystem=ls as LINEARSYSTEM(__)) then    //only for rectangular case
-  let dimLinearSystem = ls.nUnknowns
-  let crefStr = ""
-  <<
-  /* Linear equation system */
-  // ToDo: Log something
+  match eq
+  case SES_SIMPLE_ASSIGN(__) then
+    let &preExp = buffer ""
+    let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
+    let crefStr = CodegenCFunctions.contextCref(cref, context, &auxFunction)
+    <<
+    <%crefStr%> = <%expPart%>;
+    >>
+  case SES_LINEAR(lSystem=ls as LINEARSYSTEM(__)) then    //only for rectangular case
+    let dimLinearSystem = ls.nUnknowns
+    let crefStr = ""
+    <<
+    /* Linear equation system */
+    // ToDo: Log something
 
-  omsi_status status;
+    omsi_status status;
 
-  /* solve equation system */
-  status = solveLapack(this_function, global_callback_functions);
-  if (status != omsi_ok) {
-    /* ToDo: error case */
-    printf("Solving linear system %i failed at time=%.15g.\n", equationIndexes[1], this_function->function_vars->time_value);
-  }
+    /* solve equation system */
+    status = solveLapack(this_function, global_callback_functions);
+    if (status != omsi_ok) {
+      /* ToDo: error case */
+      printf("Solving linear system %i failed at time=%.15g.\n", equationIndexes[1], this_function->function_vars->time_value);
+    }
 
 
-  >>
+    >>
+  case SES_RESIDUAL(__) then
+    <<
+    SES_RESIDUAL NOT IMPLEMENTED YET
+    >>
+  else
+    <<
+    NOT IMPLEMENTED YET
+    >>
+
 end equationCStr;
 
 
@@ -116,7 +125,7 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr)
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   <<
-  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(simulation[<%ix%>]);
+  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(simulation);
   >>
 end equationCall;
 
@@ -135,6 +144,7 @@ template generateEquationFiles(list<SimEqSystem> equations, String fileNamePrefi
     <<>>
   )
 
+  let instantiateCall = instantiateOmsiFunction(equations, fileNamePrefix, name)
   <<
   #include "omsi.h"
   
@@ -142,15 +152,54 @@ template generateEquationFiles(list<SimEqSystem> equations, String fileNamePrefi
   <%eqFuncs%>
 
   /* Equations evaluation */
-  omsi_status <%fileNamePrefix%>_<%name%>(omsi_function_t** simulation){
+  omsi_status <%fileNamePrefix%>_<%name%>(omsi_function_t* simulation, omsi_values* model_vars_and_params){
 
     <%eqCalls%>
 
     return omsi_ok;
   }
   
+  <%instantiateCall%>
   >>
 end generateEquationFiles;
+
+
+
+template instantiateOmsiFunction(list<SimEqSystem> equations, String fileNamePrefix, String name)
+"Bla"
+::=
+
+  let counter = ""
+  let algInitCall = ""
+  let _ =  equations |> eqn => (match eqn
+    case eq as SES_LINEAR(__)
+    case eq as SES_NONLINEAR(__) then
+      algInitCall += generateAlgSystemFile(eq, fileNamePrefix, name) // Jeweils eigenes File erzeugen, Aufruf zrückgeben
+      <<>>
+    else
+    <<>>
+  )
+
+  <<
+  omsi_status <%fileNamePrefix%>_instantiate_omsi_function_<%name%>(omsi_function_t* function_instance) {
+
+    function_instance->evaluate = <%fileNamePrefix%>_<%name%>;
+
+    omsi_algebraic_system_t * algebraic_system;
+    // alloc
+
+  }
+
+  >>
+end instantiateOmsiFunction;
+
+
+template generateAlgSystemFile(list<SimEqSystem> equations, String fileNamePrefix, String name)
+"Description"
+::=
+
+  <<>>
+end generateAlgSystemFile;
 
 
 
