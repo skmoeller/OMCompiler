@@ -299,6 +299,8 @@ typedef struct sim_data_t{
 
     omsi_bool* zerocrossings_vars;          /*conditions of zerocrossing functions */
     omsi_bool* pre_zerocrossings_vars;      /*pre conditions of zerocrossing functions */
+
+    omsi_values* pre_vars;                  /* pointer to all pre vars */
 } sim_data_t;
 
 
