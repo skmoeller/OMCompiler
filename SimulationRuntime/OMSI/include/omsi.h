@@ -324,6 +324,15 @@ typedef struct omsi_t {
     omsi_experiment_t*  experiment;
 } omsi_t;
 
+typedef enum {
+	omsi_instantiated_mode,
+	omsi_initialization_mode,
+	omsi_continuousTime_mode,
+	omsi_event_mode,
+	omsi_none_mode
+} omsi_solving_mode_t;
+
+
 omsi_int omsi_initiatiate_osu(omsi_t** omsi);
 omsi_int omsi_initialize_model(omsi_t** omsi);
 omsi_int omsi_initialize_solver(omsi_t** omsi);
