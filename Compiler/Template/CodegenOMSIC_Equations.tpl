@@ -144,7 +144,7 @@ template generateEquationFiles(list<SimEqSystem> equations, String fileNamePrefi
     <<>>
   )
 
-  let instantiateCall = instantiateOmsiFunction(equations, fileNamePrefix, name)
+  let instantiateCall = ""//instantiateOmsiFunction(equations, fileNamePrefix, name)
   <<
   #include "omsi.h"
   
@@ -164,18 +164,18 @@ template generateEquationFiles(list<SimEqSystem> equations, String fileNamePrefi
 end generateEquationFiles;
 
 
-
-template instantiateOmsiFunction(list<SimEqSystem> equations, String fileNamePrefix, String name)
+/*
+template instantiateOmsiFunction(list<OMSIFunction> omsiFunction, String fileNamePrefix, String name)
 "Bla"
 ::=
 
   let counter = ""
   let algInitCall = ""
-  let _ =  equations |> eqn => (match eqn
+  let instAlgSystemCalls =  omsiFunction |> eqn => (match eqn
     case eq as SES_LINEAR(__)
     case eq as SES_NONLINEAR(__) then
-      algInitCall += generateAlgSystemFile(eq, fileNamePrefix, name) // Jeweils eigenes File erzeugen, Aufruf zrückgeben
-      <<>>
+      let algInitCall = generateAlgSystemFile(eq, fileNamePrefix, name) // Jeweils eigenes File erzeugen, Aufruf zrückgeben
+      <<algebraic_system[i++] =  <%algInitCall%>>>
     else
     <<>>
   )
@@ -185,20 +185,23 @@ template instantiateOmsiFunction(list<SimEqSystem> equations, String fileNamePre
 
     function_instance->evaluate = <%fileNamePrefix%>_<%name%>;
 
-    omsi_algebraic_system_t * algebraic_system;
-    // alloc
+    omsi_algebraic_system_t * algebraic_system = malloc(<%omsiFunction.nAlgebraicSystems%>, sizeof(omsi_algebraic_system_t)) ;
+    int i = 0;
+    // alloc all algebraic systems
 
   }
 
   >>
 end instantiateOmsiFunction;
-
+*/
 
 template generateAlgSystemFile(list<SimEqSystem> equations, String fileNamePrefix, String name)
 "Description"
 ::=
 
-  <<>>
+  << <%fileNamePrefix%>_instantiate_omsi_algSystem_<%name%>( 
+  
+  >>
 end generateAlgSystemFile;
 
 

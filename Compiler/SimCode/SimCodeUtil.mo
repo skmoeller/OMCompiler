@@ -341,11 +341,17 @@ algorithm
       Flags.setConfigEnum(Flags.SYM_SOLVER, 0);
     end if;
 
-    (uniqueEqIndex, odeEquations, algebraicEquations, localKnownVars, allEquations, equationsForZeroCrossings, tempvars,
-      equationSccMapping, eqBackendSimCodeMapping, backendMapping, sccOffset) :=
-          createEquationsForSystems(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars, 1, backendMapping, true);
-    if debug then execStat("simCode: createEquationsForSystems"); end if;
-
+    if not (Config.simCodeTarget() == "omsic" or
+            Config.simCodeTarget() == "omsicpp")
+    then 
+      (uniqueEqIndex, odeEquations, algebraicEquations, localKnownVars, allEquations, equationsForZeroCrossings, tempvars,
+        equationSccMapping, eqBackendSimCodeMapping, backendMapping, sccOffset) :=
+           createEquationsForSystems(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars, 1, backendMapping, true);
+      if debug then execStat("simCode: createEquationsForSystems"); end if;
+    else
+       //(allEquations, uniqueEqIndex, tempvars) :=
+       //    createAllEquationOMSI(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars);
+    end if;
 
 
     if (SymEuler_help > 0) then
@@ -632,7 +638,8 @@ algorithm
                               modelStructure,
                               SimCode.emptyPartitionData,
                               NONE(),
-                              inlineEquations
+                              inlineEquations,
+                              NONE()
                               );
 
     (simCode, (_, _, lits)) := traverseExpsSimCode(simCode, SimCodeFunctionUtil.findLiteralsHelper, literals);

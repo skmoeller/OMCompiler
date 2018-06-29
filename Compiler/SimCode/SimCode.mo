@@ -151,6 +151,7 @@ uniontype SimCode
     PartitionData partitionData;
     Option<DaeModeData> daeModeData;
     list<SimEqSystem> inlineEquations;
+    Option<OMSIData> omsiData;
   end SIMCODE;
 end SimCode;
 
@@ -290,6 +291,23 @@ uniontype DaeModeData
   end DAEMODEDATA;
 end DaeModeData;
 
+uniontype OMSIData
+  record OMSI_DATA
+    OMSIFunction simulation;
+  end OMSI_DATA;
+end OMSIData;
+
+uniontype OMSIFunction
+  record OMSI_FUNCTION
+    list<SimEqSystem> equations;
+    list<SimCodeVar.SimVar> inputVars;
+    list<SimCodeVar.SimVar> outputVars;
+    list<SimCodeVar.SimVar> innerVars;
+    Integer nAlgebraicSystems;
+  end OMSI_FUNCTION;
+end OMSIFunction; 
+  
+
 uniontype SimEqSystem
   "Represents a single equation or a system of equations that must be solved together."
   record SES_RESIDUAL
@@ -393,6 +411,28 @@ uniontype SimEqSystem
     Integer index;
     Integer aliasOf;
   end SES_ALIAS;
+  
+  record SES_ALGEBRAIC_SYSTEM
+    Integer index;
+    
+    Boolean partOfMixed;
+    Boolean tornSystem;
+    Boolean linearSystem;
+    
+    // residual.inputVars = dependentVars
+    // residual.innerVars = otherTearingVars
+    // residual.outputVars = iterationsVars
+    OMSIFunction residual; // linear: A*x-b = res 
+                           // non-linear: f(x) = res
+    
+    Option<JacobianMatrix> matrix; // linear => A
+                                   // non-linear => f'(x)
+
+    list<Integer> zeroCrossingConditions;
+
+    list<DAE.ElementSource> sources;
+    BackendDAE.EquationAttributes eqAttr;
+  end SES_ALGEBRAIC_SYSTEM;
 
 end SimEqSystem;
 
