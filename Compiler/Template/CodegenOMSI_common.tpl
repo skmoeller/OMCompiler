@@ -39,7 +39,11 @@
 import interface SimCodeTV;
 import interface SimCodeBackendTV;
 import CodegenUtil;
+import CodegenUtilSimulation;
 import CodegenFMU;
+import CodegenOMSIC_Equations;
+import CodegenCFunctions;
+import CodegenAdevs;
 
 
 template generateSetupSimulationDataFunction(SimCode simCode, String modelNamePrefixStr)
@@ -123,6 +127,142 @@ template ScalarVariableOMSIC(SimVar simVar, String classType)
     >>
   end match
 end ScalarVariableOMSIC;
+
+
+template simulationFile_lsyOMSI(SimCode simCode)
+"Linear Systems"
+::=
+  match simCode
+    case simCode as SIMCODE(modelInfo=MODELINFO(varInfo=varInfo as VARINFO(__),linearSystems=linearSystems)) then
+
+    let functionSetupLinearSysems = functionSetupLinearSystemsOMSI(linearSystems, CodegenUtilSimulation.modelNamePrefix(simCode))
+
+
+    <<
+    /* Linear Systems */
+    #include "<%simCode.fileNamePrefix%>_blablabla.h"
+
+    #if defined(__cplusplus)
+    extern "C" {
+    #endif
+
+    <%functionSetupLinearSysems%>
+
+    <% if intGt(varInfo.numLinearSystems,0) then functionInitialLinearSystemsOMSI(linearSystems, CodegenUtilSimulation.modelNamePrefix(simCode))%>
+
+    #if defined(__cplusplus)
+    }
+    #endif
+    <%\n%>
+    >>
+    /* adrpo: leave a newline at the end of file to get rid of the warning */
+  end match
+end simulationFile_lsyOMSI;
+
+
+template functionSetupLinearSystemsOMSI(list<SimEqSystem> linearSystems, String modelNamePrefix)
+  "Generates functions in simulation file."
+::=
+  let linearbody = functionSetupLinearSystemsTempOMSI(linearSystems, modelNamePrefix)
+  <<
+  /* linear systems */
+  <%linearbody%>
+  >>
+end functionSetupLinearSystemsOMSI;
+
+
+template functionSetupLinearSystemsTempOMSI(list<SimEqSystem> linearSystems, String modelNamePrefix)
+  "Generates functions in simulation file."
+::=
+  (linearSystems |> eqn => (match eqn
+     case eq as SES_MIXED(__) then functionSetupLinearSystemsTempOMSI(fill(eq.cont,1), modelNamePrefix)
+     // no dynamic tearing
+     case eq as SES_LINEAR(lSystem=ls as LINEARSYSTEM(__), alternativeTearing=NONE()) then
+     match ls.jacobianMatrix
+       case SOME(__) then
+         let eqFuncs = ""
+         let _ = ls.residual |> eq => (
+           let &eqFuncs += CodegenOMSIC_Equations.equationFunction(eq, contextOMSI, modelNamePrefix) + "\n\n"
+           <<>>
+         )
+
+         <<
+         <%eqFuncs%>
+         >>
+       else
+         <<>>
+     end match
+
+     // dynamic tearing
+     case eq as SES_LINEAR(lSystem=ls as LINEARSYSTEM(__), alternativeTearing = SOME(at as LINEARSYSTEM(__))) then
+     match ls.jacobianMatrix
+       case SOME(__) then
+         <<>>
+       else
+         <<>>
+     end match
+   )
+   ;separator="\n\n")
+end functionSetupLinearSystemsTempOMSI;
+
+
+template functionInitialLinearSystemsOMSI(list<SimEqSystem> linearSystems, String modelNamePrefix)
+  "Generates function to initialize omsi_algebraic_system_t for linear systems"
+::=
+  let &tempeqns = buffer ""
+  let &tempeqns += (linearSystems |> eq => match eq case eq as SES_LINEAR(alternativeTearing = SOME(__)) then 'int <%CodegenUtil.symbolName(modelNamePrefix,"eqFunction")%>_<%CodegenUtilSimulation.equationIndex(eq)%>(DATA*);' ; separator = "\n")
+  let &globalConstraintsFunctions = buffer ""
+  let linearbody = functionInitialLinearSystemsTempOMSI(linearSystems, modelNamePrefix, &globalConstraintsFunctions)
+
+  <<
+  /* ToDo: Some description */
+  void <%CodegenUtil.symbolName(modelNamePrefix,"initialLinearSystem")%> (omsi_function_t* initialization) {
+    /* linear systems */
+    <%linearbody%>
+  }
+  >>
+end functionInitialLinearSystemsOMSI;
+
+
+template functionInitialLinearSystemsTempOMSI(list<SimEqSystem> linearSystems, String modelNamePrefix, Text &globalConstraintsFunctions)
+  "Helper function for functionInitialLinearSystemOMSI"
+::=
+  (linearSystems |> eqn => (match eqn
+    case eq as SES_MIXED(__) then functionInitialLinearSystemsTempOMSI(fill(eq.cont,1), modelNamePrefix, "")
+    // no dynamic tearing
+    case eq as SES_LINEAR(lSystem=ls as LINEARSYSTEM(__), alternativeTearing=NONE()) then
+      match ls.jacobianMatrix
+        case NONE() then
+          <<
+          NOT IMPLEMENTED YET
+          >>
+        case SOME(__) then
+          <<
+          START IMPLEMENTATION
+          >>
+        else
+          ///CodegenAdevs.error(sourceInfo(), ' No jacobian create for linear system <%ls.index%>.')
+          <<>>
+      end match
+    // dynamic tearing
+    case eq as SES_LINEAR(lSystem=ls as LINEARSYSTEM(__), alternativeTearing = SOME(at as LINEARSYSTEM(__))) then
+      match ls.jacobianMatrix
+        case NONE() then
+          <<
+          NOT IMPLEMENTED YET
+          >>
+        case SOME(__) then
+          <<
+          NOT IMPLEMENTED YET
+          >>
+        else
+          ///CodegenAdevs.error(sourceInfo(), ' No jacobian create for linear system <%ls.index%> or <%at.index%>.')
+          <<>>
+      end match
+    )
+    ;separator="\n\n")
+end functionInitialLinearSystemsTempOMSI;
+
 
 
 template insertCopyrightOpenModelica()
