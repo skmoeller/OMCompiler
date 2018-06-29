@@ -51,8 +51,12 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
 
     /* check all input arguments */
     /* ignoring arguments: fmuResourceLocation, visible */
-    if (!functions->logger) {
+    if (!functions->logger && loggingOn==omsi_true) {
+        // ToDo: Add error message, even if no loger is available
         return NULL;
+    }
+    else if (!functions->logger) {
+        functions->logger = FILTERED_LOG;
     }
     if (!functions->allocateMemory || !functions->freeMemory) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Missing callback function.");

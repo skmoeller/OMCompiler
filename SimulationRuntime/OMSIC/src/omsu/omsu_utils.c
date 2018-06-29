@@ -28,10 +28,6 @@
  *
  */
 
-/*
- * This file defines functions for the FMI used via the OpenModelica Simulation
- * Interface (OMSI). These are helper functions used for the other omsu functions.
- */
 
 #include "omsu/omsu_utils.h"
 

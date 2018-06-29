@@ -48,7 +48,7 @@ extern "C" {
 #endif
 
 //used for filtered_log
-//#define LOG_EVENTS                      0     //ToDo: is already defined. use enum in future
+//#define LOG_EVENTS                      0     //ToDo: is already defined
 #define LOG_SINGULARLINEARSYSTEMS       1
 #define LOG_NONLINEARSYSTEMS            2
 #define LOG_DYNAMICSTATESELECTION       3
