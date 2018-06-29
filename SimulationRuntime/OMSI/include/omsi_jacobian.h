@@ -31,9 +31,10 @@
 #ifndef _OMSI_JACOBIAN_H
 #define _OMSI_JACOBIAN_H
 
-#include "math/omsi_math.h"
+/*#include "math/omsi_math.h"
 #include "math/omsi_matrix.h"
 #include "math/omsi_vector.h"
+*/
 
 #ifdef __cplusplus
 extern "C" {

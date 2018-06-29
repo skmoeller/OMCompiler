@@ -358,6 +358,7 @@ package SimCode
       PartitionData partitionData;
       Option<DaeModeData> daeModeData;
       list<SimEqSystem> inlineEquations;
+      Option<OMSIData> omsiData;
     end SIMCODE;
   end SimCode;
 
@@ -415,6 +416,22 @@ package SimCode
       list<ExtAlias> aliases;
     end EXTOBJINFO;
   end ExtObjInfo;
+  
+  uniontype OMSIData
+  record OMSI_DATA
+    OMSIFunction simulation;
+  end OMSI_DATA;
+end OMSIData;
+
+uniontype OMSIFunction
+  record OMSI_FUNCTION
+    list<SimEqSystem> equations;
+    list<SimCodeVar.SimVar> inputVars;
+    list<SimCodeVar.SimVar> outputVars;
+    list<SimCodeVar.SimVar> innerVars;
+    Integer nAlgebraicSystems;
+  end OMSI_FUNCTION;
+end OMSIFunction; 
 
   uniontype SimEqSystem
     record SES_RESIDUAL

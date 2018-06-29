@@ -299,6 +299,8 @@ typedef struct sim_data_t{
 
     omsi_bool* zerocrossings_vars;          /*conditions of zerocrossing functions */
     omsi_bool* pre_zerocrossings_vars;      /*pre conditions of zerocrossing functions */
+
+    omsi_values* pre_vars;                  /* pointer to all pre vars */
 } sim_data_t;
 
 
@@ -323,6 +325,15 @@ typedef struct omsi_t {
     sim_data_t          sim_data;
     omsi_experiment_t*  experiment;
 } omsi_t;
+
+typedef enum {
+	omsi_instantiated_mode,
+	omsi_initialization_mode,
+	omsi_continuousTime_mode,
+	omsi_event_mode,
+	omsi_none_mode
+} omsi_solving_mode_t;
+
 
 omsi_int omsi_initiatiate_osu(omsi_t** omsi);
 omsi_int omsi_initialize_model(omsi_t** omsi);

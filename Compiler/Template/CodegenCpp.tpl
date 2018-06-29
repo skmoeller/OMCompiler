@@ -5788,7 +5788,7 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
 
       <%match  Config.simCodeTarget()
          case "Cpp"
-         case "osu"
+         case "omsicpp"
          then
          <<
           <%if (boolNot(Flags.isSet(Flags.HARDCODED_START_VALUES))) then
