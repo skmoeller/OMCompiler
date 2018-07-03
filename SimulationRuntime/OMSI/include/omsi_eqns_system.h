@@ -1,11 +1,38 @@
+/*
+ * This file is part of OpenModelica.
+ *
+ * Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
+ * c/o Linköpings universitet, Department of Computer and Information Science,
+ * SE-58183 Linköping, Sweden.
+ *
+ * All rights reserved.
+ *
+ * THIS PROGRAM IS PROVIDED UNDER THE TERMS OF THE BSD NEW LICENSE OR THE
+ * GPL VERSION 3 LICENSE OR THE OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
+ * ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+ * RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
+ * ACCORDING TO RECIPIENTS CHOICE.
+ *
+ * The OpenModelica software and the OSMC (Open Source Modelica Consortium)
+ * Public License (OSMC-PL) are obtained from OSMC, either from the above
+ * address, from the URLs: http://www.openmodelica.org or
+ * http://www.ida.liu.se/projects/OpenModelica, and in the OpenModelica
+ * distribution. GNU version 3 is obtained from:
+ * http://www.gnu.org/copyleft/gpl.html. The New BSD License is obtained from:
+ * http://www.opensource.org/licenses/BSD-3-Clause.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, EXCEPT AS
+ * EXPRESSLY SET FORTH IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE
+ * CONDITIONS OF OSMC-PL.
+ *
+ */
+
 #ifndef _OMSI_EQNS_SYSTEM_H
 #define _OMSI_EQNS_SYSTEM_H
 
 #include "omsi.h"
-#include "../../OMSIC/include/math/omsi_math.h"
-#include "../../OMSIC/include/math/omsi_matrix.h"
-#include "../../OMSIC/include/math/omsi_vector.h"
-//#include "omsi_jacobian.h"
+/* #include "omsi_jacobian.h" */
 
 
 #ifdef __cplusplus
@@ -25,7 +52,7 @@ typedef struct omsi_sparsity_pattern omsi_sparsity_pattern;
 typedef struct omsi_analytical_jacobian omsi_analytical_jacobian;
 
 /* function prototypes for omsi_linear_system_t functions */
-typedef omsi_int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* vector);
+/* typedef omsi_int (*omsi_linear_system_t_get_x)(sim_data_t* data, omsi_vector_t* vector); */
 
 
 /**
@@ -36,7 +63,7 @@ typedef struct omsi_analytical_jacobian{
     omsi_unsigned_int n_rows;
 
     omsi_function_t* functions;
-    //sparsity_pattern_t* sparsity_pattern;
+    /* sparsity_pattern_t* sparsity_pattern; */
 }omsi_analytical_jacobian;
 
 /**
@@ -47,10 +74,10 @@ typedef struct {
     omsi_index_type* iteration_vars_indices;
 
     omsi_unsigned_int n_conditions;
-    omsi_int *zerocrossing_indices;
+    omsi_int* zerocrossing_indices;
 
-    omsi_bool isLinear;      // linear system=true and non-linear system=false
-    void *loop;        // points on array of omsi_linear_loop or omsi_non-linear_loop
+    omsi_bool isLinear;         /* linear system=true and non-linear system=false */
+    void* loop;                 /* points on array of omsi_linear_loop or omsi_non-linear_loop */
 
     omsi_function_t* functions;
 
@@ -61,8 +88,8 @@ typedef struct {
  * linear system
  */
 typedef struct {
-    //model_variables_info_t *info;
-    void *solverData;
+    /*model_variables_info_t *info;*/
+    void* solverData;
     omsi_analytical_jacobian *jacobian;
 
 }omsi_linear_loop;
@@ -71,7 +98,7 @@ typedef struct {
  * non-linear system
  */
 typedef struct {
-    // ToDo: complete
+    /* ToDo: complete */
 }omsi_nonlinear_loop;
 
 

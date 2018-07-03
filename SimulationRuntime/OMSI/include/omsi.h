@@ -40,7 +40,7 @@ extern "C" {
  * type definitions of variables
  */
 #ifdef OSI_FMI2_WRAPPER_H
-#include "fmi2/fmi2Functions.h"     // ToDo: delete, is duplicate but silences warnings in my eclipse :-P
+#include "fmi2/fmi2Functions.h"     /* ToDo: delete, is duplicate but silences warnings in my eclipse :-P */
 
 typedef fmi2ValueReference  omsi_unsigned_int;
 typedef fmi2Real            omsi_real;
@@ -91,7 +91,7 @@ typedef enum {
   OMSI_TYPE_STRING
 }omsi_data_type;
 
-// ToDo: is this the right location for these definitions?
+/* ToDo: is this the right location for these definitions? */
 typedef enum {
     omsi_model_exchange,
     omsi_co_simulation      /* not supported yet */
@@ -110,7 +110,7 @@ typedef enum {
 }omsi_status;
 
 
-// ToDo: is this the right location for these definitions?
+/* ToDo: is this the right location for these definitions? */
 typedef void      (*omsi_callback_logger)           (const void*, omsi_string, omsi_status, omsi_string, omsi_string, ...);
 typedef void*     (*omsi_callback_allocate_memory)  (omsi_unsigned_int, omsi_unsigned_int);
 typedef void      (*omsi_callback_free_memory)      (void*);
