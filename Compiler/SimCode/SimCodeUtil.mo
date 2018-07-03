@@ -275,6 +275,8 @@ protected
   SimCodeVar.SimVar dtSimVar;
   BackendDAE.Var dtVar;
   HashTableSimCodeEqCache.HashTable eqCache;
+  
+  SimCode.OMSIFunction omsiAllEquations;
 
   constant Boolean debug = false;
 algorithm
@@ -349,8 +351,8 @@ algorithm
            createEquationsForSystems(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars, 1, backendMapping, true);
       if debug then execStat("simCode: createEquationsForSystems"); end if;
     else
-       //(allEquations, uniqueEqIndex, tempvars) :=
-       //    createAllEquationOMSI(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars);
+       (omsiAllEquations, uniqueEqIndex, tempvars) :=
+           createAllEquationOMSI(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars);
     end if;
 
 
@@ -2216,7 +2218,44 @@ algorithm
       algorithm
         varOutput::{} := CheckModel.checkAndGetAlgorithmOutputs(alg, source, crefExpand);
         // The output variable of the algorithm must be the variable solved
-        // for, otherwise we need to solve an inverse problem of an algorithm
+        // for, otherwise we        try
+          (exp_, asserts, solveEqns, solveCr) := ExpressionSolve.solve2(e1, e2, varexp, SOME(funcs), SOME(iuniqueEqIndex), true, BackendDAEUtil.isSimulationDAE(shared));
+        else
+          b := false;
+        end try;
+        if b then
+          solveEqns := listReverse(solveEqns);
+          solveCr := listReverse(solveCr);
+          cr := if BackendVariable.isStateVar(v) then ComponentReference.crefPrefixDer(cr) else cr;
+          source := ElementSource.addSymbolicTransformationSolve(true, source, cr, e1, e2, exp_, asserts);
+          (eqSystlst, uniqueEqIndex1) := List.mapFold(solveEqns, makeSolved_SES_SIMPLE_ASSIGN, iuniqueEqIndex);
+          if listEmpty(cons) then
+            (resEqs, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN(uniqueEqIndex1, cr, exp_, source, eqAttr)}, uniqueEqIndex1+1);
+          else
+            (resEqs, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN_CONSTRAINTS(uniqueEqIndex1, cr, exp_, source, cons, eqAttr)}, uniqueEqIndex1+1);
+          end if;
+          eqSystlst := listAppend(eqSystlst,resEqs);
+          tempvars := createTempVarsforCrefs(List.map(solveCr, Expression.crefExp),itempvars);
+        else
+          if match (e1,e2) case (DAE.RCONST(),DAE.IFEXP()) then true; else false; end match then
+            try
+              // single equation from if-equation -> 0.0 = if .. then bla else lbu and var is not in all branches
+              // change branches without variable to var - pre(var)
+              prevarexp := Expression.makePureBuiltinCall("pre", {varexp}, Expression.typeof(varexp));
+              prevarexp := Expression.expSub(varexp, prevarexp);
+              (e2, _) := Expression.traverseExpBottomUp(e2, replaceIFBrancheswithoutVar, (varexp, prevarexp));
+              eqn := BackendDAE.EQUATION(e1, e2, source, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
+              (resEqs, uniqueEqIndex, tempvars) := createNonlinearResidualEquations({eqn}, iuniqueEqIndex, itempvars);
+              cr := if BackendVariable.isStateVar(v) then ComponentReference.crefPrefixDer(cr) else cr;
+              (_, homotopySupport) := BackendEquation.traverseExpsOfEquation(eqn, BackendDAEUtil.containsHomotopyCall, false);
+              eqSystlst := {SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(uniqueEqIndex, resEqs, {cr}, 0, 1, NONE(), homotopySupport, false, false), NONE(), eqAttr)};
+              uniqueEqIndex := uniqueEqIndex + 1;
+            else
+              b := false;
+            end try;
+          else
+            b := false;
+          end if; need to solve an inverse problem of an algorithm
         // section.
         DAE.ALGORITHM_STMTS(algStatements) := BackendDAEUtil.collateAlgorithm(alg, NONE());
         if ComponentReference.crefEqualNoStringCompare(BackendVariable.varCref(v), varOutput) then
@@ -3699,6 +3738,122 @@ algorithm
         fail();
   end match;
 end createTornSystemInnerEqns1;
+
+// =============================================================================
+// section to create equations for omsi functions
+//
+// ============================================================================= 
+
+
+//       (omsiAllEquations, uniqueEqIndex, tempvars) :=
+//          createAllEquationOMSI(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars);
+//
+//    list<SimEqSystem> equations;
+//    list<SimCodeVar.SimVar> inputVars;
+//    list<SimCodeVar.SimVar> outputVars;
+//    list<SimCodeVar.SimVar> innerVars;
+//    Integer nAlgebraicSystems;
+//
+
+protected function createAllEquationOMSI
+  input BackendDAE.EqSystems contSysts;
+  input BackendDAE.Shared inShared;
+  input list<BackendDAE.ZeroCrossing> inZeroCrossings;
+  output SimCode.OMSIFunction omsiAllEquations;
+  input output Integer uniqueEqIndex;
+  input output list<SimCodeVar.SimVar> tempVars;
+protected
+  BackendDAE.StrongComponents components;
+  list<BackendDAE.Equation> eqnlst;
+  list<BackendDAE.Var> varlst;
+  BackendDAE.Equation eqn;
+  BackendDAE.Var var;
+
+  list<SimEqSystem> equations = {};
+  list<SimCodeVar.SimVar> inputVars = {};
+  list<SimCodeVar.SimVar> outputVars = {};
+  list<SimCodeVar.SimVar> innerVars = {}; 
+  Integer nAlgebraicSystems = 0;
+algorithm
+  for constSyst in constSysts loop
+    try 
+      BackendDAE.MATCHING(comps=components) := constSyst.matching;
+    else
+      Error.addInternalError("The matching information is missing in function createAllEquationOMSI!", sourceInfo());
+      fail();
+    end try;
+
+    for component in components then
+      _:= match(component)
+        case BackendDAE.SINGLEEQUATION() equatino
+          ({eqn}, {var}, _) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
+          // States are solved for der(x) not x.
+          var = BackendVariable.transformXToXd(var);
+          (equations, inputVars, outVars, innnerVars, uniqueEqIndex, tempVars) =
+            generateSingleEquation(eqn, var, shared.functionTree, uniqueEqIndex, tempVars);
+        then ();
+        else equation
+          Error.addInternalError("Not all cases are implemented in function createAllEquationOMSI", sourceInfo());
+        then ();
+        end match;
+    end for;
+  end for;
+  omsiAllEquations := OMSI_FUNCTION(equations = equations,
+                                    inputVars = inputVars,
+                                    outputVars = outputVars,
+                                    innnerVars =  innerVars,
+                                    nAlgebraicSystems = nAlgebraicSystems);
+end createAllEquationOMSI
+
+
+function generateSingleEquation
+  input BackendDAE.Equation eqn;
+  input BackendDAE.Var var;
+  input DAE.FunctionTree funcTree;
+  output list<SimEqSystem> equations = {};
+  output list<SimCodeVar.SimVar> inputVars = {};
+  output list<SimCodeVar.SimVar> outputVars = {};
+  output list<SimCodeVar.SimVar> innerVars = {};
+  input output Integer uniqueEqIndex;
+  input output list<SimCodeVar.SimVar> tempVars; 
+algorithm
+  () := match (eqn)
+    local
+      DAE.Expression e1, e2, varExp;
+      DAE.ElementSource source;
+      BackendDAE.EquationAttributes attr;
+    // single equation
+    case BackendDAE.EQUATION(exp=e1, scalar=e2, source=source, attr=eqAttr)
+      algorithm
+        varExp := Expression.crefExp(var.varName);
+        try
+          (exp_, asserts, solveEqns, solveCr) := ExpressionSolve.solve2(e1, e2, varexp, SOME(funcTree), SOME(uniqueEqIndex), true, true);
+          solveEqns := listReverse(solveEqns);
+          solveCr := listReverse(solveCr);
+          cr := if BackendVariable.isStateVar(v) then ComponentReference.crefPrefixDer(cr) else cr;
+          source := ElementSource.addSymbolicTransformationSolve(true, source, cr, e1, e2, exp_, asserts);
+          (eqSystlst, uniqueEqIndex1) := List.mapFold(solveEqns, makeSolved_SES_SIMPLE_ASSIGN, iuniqueEqIndex);
+          if listEmpty(cons) then
+            (resEqs, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN(uniqueEqIndex1, cr, exp_, source, eqAttr)}, uniqueEqIndex1+1);
+          else
+            (resEqs, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN_CONSTRAINTS(uniqueEqIndex1, cr, exp_, source, cons, eqAttr)}, uniqueEqIndex1+1);
+          end if;
+          eqSystlst := listAppend(eqSystlst,resEqs);
+          tempvars := createTempVarsforCrefs(List.map(solveCr, Expression.crefExp),itempvars);
+        else
+          Error.addInternalError("Not all cases are implemented in function createAllEquationOMSI", sourceInfo());
+          fail();
+        end try;
+    then ();
+    else equation
+      Error.addInternalError("Not all cases are implemented in function createAllEquationOMSI", sourceInfo());
+      fail();
+    then ();
+  end match;  
+end generateSingleEquation;
+
+
+
 
 // =============================================================================
 // section to create state set equations
