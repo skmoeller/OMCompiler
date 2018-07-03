@@ -3821,25 +3821,29 @@ algorithm
     local
       DAE.Expression e1, e2, varExp;
       DAE.ElementSource source;
-      BackendDAE.EquationAttributes attr;
+      BackendDAE.EquationAttributes eqAttr;
+      list<SimEqSystem> tmpSimEqLst;
+      SimCodeVar.Var newSimVar;
+
     // single equation
     case BackendDAE.EQUATION(exp=e1, scalar=e2, source=source, attr=eqAttr)
       algorithm
         varExp := Expression.crefExp(var.varName);
         try
-          (exp_, asserts, solveEqns, solveCr) := ExpressionSolve.solve2(e1, e2, varexp, SOME(funcTree), SOME(uniqueEqIndex), true, true);
-          solveEqns := listReverse(solveEqns);
-          solveCr := listReverse(solveCr);
-          cr := if BackendVariable.isStateVar(v) then ComponentReference.crefPrefixDer(cr) else cr;
-          source := ElementSource.addSymbolicTransformationSolve(true, source, cr, e1, e2, exp_, asserts);
-          (eqSystlst, uniqueEqIndex1) := List.mapFold(solveEqns, makeSolved_SES_SIMPLE_ASSIGN, iuniqueEqIndex);
-          if listEmpty(cons) then
-            (resEqs, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN(uniqueEqIndex1, cr, exp_, source, eqAttr)}, uniqueEqIndex1+1);
-          else
-            (resEqs, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN_CONSTRAINTS(uniqueEqIndex1, cr, exp_, source, cons, eqAttr)}, uniqueEqIndex1+1);
-          end if;
-          eqSystlst := listAppend(eqSystlst,resEqs);
-          tempvars := createTempVarsforCrefs(List.map(solveCr, Expression.crefExp),itempvars);
+          (varexp, asserts, solveEqns, solveCr) := ExpressionSolve.solve2(e1, e2, varexp, SOME(funcTree), SOME(uniqueEqIndex), true, true);
+
+          (equations, uniqueEqIndex) := List.mapFold(listReverse(solveEqns), makeSolved_SES_SIMPLE_ASSIGN, uniqueEqIndex);
+          tempvars := createTempVarsforCrefs(List.map(listReverse(solveCr), Expression.crefExp),itempvars);
+
+          source := ElementSource.addSymbolicTransformationSolve(true, source, var.varName, e1, e2, varexp, asserts);
+          (tmpSimEqLst, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN(uniqueEqIndex, var.varName, varexp, source, eqAttr)}, uniqueEqIndex+1);
+
+          equations := listAppend(equations, tmpSimEqLst);
+
+          //TODO: fix dlowvarToSimvar by romving Variables, they are not needed any more
+          newSimVar := dlowvarToSimvar(var, NONE(), BackendVariable.emptyVars);
+          outputVars :=  listAppend({newSimVar}, outputVars);
+
         else
           Error.addInternalError("Not all cases are implemented in function createAllEquationOMSI", sourceInfo());
           fail();
