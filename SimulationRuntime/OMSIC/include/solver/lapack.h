@@ -35,6 +35,7 @@
 #define _LINEARSOLVERLAPACK_H_
 
 #include "omsi.h"
+#include "omsi_eqns_system.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,31 +52,25 @@ typedef struct DATA_LAPACK {
     omsi_int        lda;    /* leading dimension of array A */
     omsi_int*       ipiv;   /* array of dimension n, stores pivot indices for
                              * permutation matrix P */
-    omsi_real*      B;      /* array of dimension (ldb, nrhs), containing right
+    omsi_real*      b;      /* array of dimension (ldb, nrhs), containing right
                              * hand side of equation system in row major order on entry.
                              * On exit if info=0 solution (n x nrhs) Matrix X */
     omsi_int        ldb;    /* leading dimension of array B */
     omsi_int        info;   /* =0 if succesfull, <0 if Info=-i the i-th */
-
-    omsi_real*      old_A;  /* contains copy of A for later usage */
-    omsi_real*      old_B;  /* contains copy of B for later usage */
 } DATA_LAPACK;
 
 
 /* extern function prototypes */
 extern omsi_int dgesv_(omsi_int *n, omsi_int *nrhs, omsi_real *a, omsi_int *lda,
                        omsi_int *ipiv, omsi_real *b, omsi_int *ldb, omsi_int *info);
-extern omsi_int dgemv_(omsi_char* trans, omsi_int* m, omsi_int* n, omsi_real* alpha,
-                       omsi_real* A, omsi_int* lda, omsi_real* x, omsi_int* incx,
-                       omsi_real* beta, omsi_real* y, omsi_int* incy);
 extern omsi_real ddot_(omsi_int* n, omsi_real* dx, omsi_int* incx, omsi_real* dy, omsi_int* incy);
 
 /* function prototypes */
-omsi_status solveLapack(omsi_function_t* equationSystemFunc, omsi_callback_functions* callback_functions);
-DATA_LAPACK* set_lapack_data(const omsi_function_t* equationSystemFunc);
-void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_function_t* equationSystemFunc);
-void set_lapack_b (DATA_LAPACK* lapack_data, const omsi_function_t* equationSystemFunc);
-omsi_status eval_residual(DATA_LAPACK* lapack_data);
+omsi_status solveLapack(omsi_algebraic_system_t* linearSystem, omsi_callback_functions* callback_functions);
+DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system);
+void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linear_system);
+void set_lapack_b (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linearSystem);
+omsi_status eval_residual(DATA_LAPACK* lapack_data, omsi_algebraic_system_t* linearSystem);
 void get_result(omsi_function_t* equationSystemFunc, DATA_LAPACK* lapack_data);
 void freeLapackData(DATA_LAPACK* lapack_data);
 

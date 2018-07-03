@@ -44,7 +44,7 @@ omsi_callback_free_memory       global_freeMemory;
  * equationSysteFunc is not updated.
  * If omsi_error is returned a critical error occurred.
  */
-omsi_status solveLapack(omsi_function_t* equationSystemFunc, omsi_callback_functions* callback_functions){
+omsi_status solveLapack(omsi_algebraic_system_t* linearSystem, omsi_callback_functions* callback_functions){
 
     /* variables */
     DATA_LAPACK* lapack_data;
@@ -54,8 +54,8 @@ omsi_status solveLapack(omsi_function_t* equationSystemFunc, omsi_callback_funct
     global_allocateMemory = callback_functions->allocateMemory;
     global_freeMemory = callback_functions->freeMemory;
 
-    // allocate memory and copy informations into lapack_data
-    lapack_data = set_lapack_data((const omsi_function_t*) equationSystemFunc);
+    /* allocate memory and copy informations into lapack_data */
+    lapack_data = set_lapack_data((const omsi_algebraic_system_t*) linearSystem);
     if (lapack_data == NULL) {
         return omsi_error;
     }
@@ -67,36 +67,41 @@ omsi_status solveLapack(omsi_function_t* equationSystemFunc, omsi_callback_funct
             lapack_data->A,
            &lapack_data->lda,
             lapack_data->ipiv,
-            lapack_data->B,
+            lapack_data->b,
            &lapack_data->ldb,
            &lapack_data->info);
 
     if (lapack_data->info < 0) {
-        // ToDO: Log
+        /* ToDO: Log */
         printf("ERROR solving linear system: the %d-th argument had an illegal value\n", (-1)*lapack_data->info);
         freeLapackData(lapack_data);
-        return omsi_warning;
+        return omsi_error;
     }
     else if (lapack_data->info > 0) {
-        // ToDo: Log
+        /* ToDo: Log */
         printf("ERROR solving linear system:  U(%d,%d) is exactly zero.\n", lapack_data->info, lapack_data->info);
         printf("The factorization has been completed, but the factor U is exactly"
                 "singular, so the solution could not be computed\n");
         freeLapackData(lapack_data);
-        return omsi_warning;
+        return omsi_error;
     }
 
     /* check if solution is correct */
-    status = eval_residual(lapack_data);
+    status = eval_residual(lapack_data, linearSystem);
     if (status == omsi_ok) {
         /* copy solution into equationSystemFunc */
 
+    }
+    else {
+        /* solution is not accuracte enough.
+         * ToDo: Still proceed with this solution or or reject solution?
+         */
     }
 
     /* free memory */
     freeLapackData(lapack_data);
 
-    return omsi_ok;
+    return status;
 }
 
 
@@ -106,32 +111,30 @@ omsi_status solveLapack(omsi_function_t* equationSystemFunc, omsi_callback_funct
  * Input:   equationSystemFunc
  * Output:  pointer to lapack_data, if pointer=NULL an error occurred
  */
-DATA_LAPACK* set_lapack_data(const omsi_function_t* equationSystemFunc) {
+DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system) {
 
     DATA_LAPACK* lapack_data = (DATA_LAPACK*) global_allocateMemory(1, sizeof(DATA_LAPACK));
     if (!lapack_data) {
-        // ToDo: log error out of memory
+        /* ToDo: log error out of memory */
         return NULL;
     }
 
-    lapack_data->n = equationSystemFunc->n_output_vars;
+    lapack_data->n = linear_system->functions->n_output_vars;
     lapack_data->nrhs = 1;
     lapack_data->lda = lapack_data->n;
     lapack_data->ldb = lapack_data->n;
 
     /* allocate memory */
     lapack_data->A = (omsi_real*) global_allocateMemory(lapack_data->lda*lapack_data->n, sizeof(omsi_real));
-    lapack_data->old_A = (omsi_real*) global_allocateMemory(lapack_data->lda*lapack_data->n, sizeof(omsi_real));
     lapack_data->ipiv = (omsi_int*) global_allocateMemory(lapack_data->n, sizeof(omsi_int));
-    lapack_data->B = (omsi_real*) global_allocateMemory(lapack_data->ldb*lapack_data->nrhs, sizeof(omsi_real));
-    lapack_data->old_B = (omsi_real*) global_allocateMemory(lapack_data->ldb*lapack_data->nrhs, sizeof(omsi_real));
-    if (!lapack_data->A || !lapack_data->old_A || !lapack_data->ipiv || !lapack_data->B || !lapack_data->old_B) {
-        // ToDo: log error out of memory
+    lapack_data->b = (omsi_real*) global_allocateMemory(lapack_data->ldb*lapack_data->nrhs, sizeof(omsi_real));
+    if (!lapack_data->A || !lapack_data->ipiv || !lapack_data->b) {
+        /* ToDo: log error out of memory */
         return NULL;
     }
 
-    set_lapack_a(lapack_data, equationSystemFunc);
-    set_lapack_b(lapack_data, equationSystemFunc);
+    set_lapack_a(lapack_data, linear_system);
+    set_lapack_b(lapack_data, linear_system);
 
     return lapack_data;
 }
@@ -140,16 +143,15 @@ DATA_LAPACK* set_lapack_data(const omsi_function_t* equationSystemFunc) {
  * Read data from equationSystemFunc and
  * set matrix A in row-major order.
  */
-void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_function_t* equationSystemFunc) {
+void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linear_system) {
 
     omsi_int i,j;
 
     for (i=0; i<lapack_data->lda; i++) {
         for (j=0; j<lapack_data->n; j++) {
             /* copy data from column-major to row-major style */
-            lapack_data->A[i+j*lapack_data->lda] = equationSystemFunc->function_vars->reals[i*lapack_data->n+j];
-            lapack_data->old_A[i+j*lapack_data->lda] = equationSystemFunc->function_vars->reals[i*lapack_data->n+j];
-            // ToDo: where exactly is this data stored in function_vars ????
+            lapack_data->A[i+j*lapack_data->lda] = linear_system->functions->function_vars->reals[i*lapack_data->n+j];
+            /* ToDo: where exactly is this data stored in function ???? */
         }
     }
 }
@@ -158,53 +160,59 @@ void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_function_t* equationSyst
  * Read data from equationSystemFunc and
  * set matrix B in row-major order.
  */
-void set_lapack_b (DATA_LAPACK* lapack_data, const omsi_function_t* equationSystemFunc) {
+void set_lapack_b (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linearSystem) {
 
-    omsi_int i,j;
+    omsi_int i;
+    omsi_real* zero_array;
+
+    /* allocate memory */
+    zero_array = global_allocateMemory(lapack_data->n, sizeof(omsi_real));
+    for (i=0; i<lapack_data->n; i++) {
+        zero_array = 0;
+    }
+
+    /* get -b with A*0-b=0 */
+    linearSystem->residual_function(linearSystem->functions, zero_array, lapack_data->b);
 
     for (i=0; i<lapack_data->ldb; i++) {
-        for (j=0; j<lapack_data->nrhs; j++) {
-            /* copy data from column-major to row-major style */
-            lapack_data->B[i+j*lapack_data->ldb] = equationSystemFunc->function_vars->reals[i*lapack_data->nrhs+j];
-            lapack_data->old_B[i+j*lapack_data->ldb] = equationSystemFunc->function_vars->reals[i*lapack_data->nrhs+j];
-            // ToDo: where exactly is this data stored in function_vars ????
-        }
+        /* copy data from column-major to row-major style */
+        lapack_data->b[i] = -lapack_data->b[i];
     }
+
+    /* free memory */
+    global_freeMemory(zero_array);
 }
 
 
 /*
- * Evaluate residual A*x-b and return omsi_ok if it is zero, otherwise omsi_warning.
- * Overwrites lapack_data->old_B with residual.
+ * Evaluate residual A*x-b=res and return omsi_ok if it is zero,
+ * otherwise omsi_warning.
  */
-omsi_status eval_residual(DATA_LAPACK* lapack_data) {
-    omsi_real alpha = 1;
+omsi_status eval_residual(DATA_LAPACK* lapack_data, omsi_algebraic_system_t* linearSystem) {
+    /* local variables */
     omsi_int increment = 1;
-    omsi_real beta = -1;
 
+    omsi_real* res;        /* pointer for residuum vector */
     omsi_real dotProduct;
 
-    /* compute residual old_A*x-old_B using BLAS */
-    dgemv_("N",
-            &lapack_data->n,
-            &lapack_data->lda,
-            &alpha,
-            lapack_data->old_A,
-            &lapack_data->lda,
-            lapack_data->B,
-            &increment,
-            &beta,
-            lapack_data->old_B,
-            &increment);
+    /* allocate memory */
+    res = (omsi_real*) global_allocateMemory(lapack_data->n, sizeof(omsi_real));
 
-    /* compute dot product <x,x> */
-    dotProduct = ddot_(&lapack_data->n, lapack_data->old_B, &increment, lapack_data->old_B, &increment);
+    /* compute residuum A*x-b using generated function and save result in residuum */
+    /* ToDo: function call */
+    linearSystem->residual_function(linearSystem->functions, lapack_data->b, res);
 
-    if (dotProduct < 1e-4) {  // ToDo: use some accuracy
+    /* compute dot product <residuum, residuum> */
+    dotProduct = ddot_(&lapack_data->n, res, &increment, res, &increment);
+
+    /* free memory */
+    global_freeMemory(res);
+
+    if (dotProduct < 1e-4) {  /* ToDo: use some accuracy */
         return omsi_ok;
     }
     else {
-        // ToDo: log Solution is not accurate enough
+        /* ToDo: log Solution is not accurate enough */
         return omsi_warning;
     }
 }
@@ -223,7 +231,7 @@ void get_result(omsi_function_t*    equationSystemFunc,
 
     for (i=0; i<equationSystemFunc->n_output_vars;i++) {
         index = equationSystemFunc->output_vars_indices[i].index;
-        equationSystemFunc->function_vars->reals[index] = lapack_data->B[i];
+        equationSystemFunc->function_vars->reals[index] = lapack_data->b[i];
     }
 }
 
@@ -233,10 +241,8 @@ void get_result(omsi_function_t*    equationSystemFunc,
  */
 void freeLapackData(DATA_LAPACK* lapack_data) {
     global_freeMemory(lapack_data->A);
-    global_freeMemory(lapack_data->old_A);
     global_freeMemory(lapack_data->ipiv);
-    global_freeMemory(lapack_data->B);
-    global_freeMemory(lapack_data->old_B);
+    global_freeMemory(lapack_data->b);
 
     global_freeMemory(lapack_data);
 }
