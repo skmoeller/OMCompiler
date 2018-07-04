@@ -130,8 +130,25 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr)
 end equationCall;
 
 
-template generateEquationFiles(list<SimEqSystem> equations, String fileNamePrefix, String name)
-"Generates content of fileNamePrefix_eqns.c"
+template generateEquationFiles (SimCode simCode, String fileNamePrefix, String name)
+"Generates equations for initialization and simulation"
+::=
+  match simCode
+  case SIMCODE(omsiData=SOME(OMSI_DATA( simulation = simulation as OMSI_FUNCTION(__) ))) then
+    <<
+    <%generateEquationFile(simulation.equations, fileNamePrefix, name)%>
+    >>
+    /*
+  case SIMCODE(omsiData=SOME(OMSI_DATA( initialization = initialization as OMSI_FUNCTION(__) ))) then
+    <<
+    >>
+    */
+
+end generateEquationFiles;
+
+
+template generateEquationFile(list<SimEqSystem> equations, String fileNamePrefix, String name)
+"Description"
 ::=
   let eqFuncs = ""
   let _ = equations |> eqn => (
@@ -161,7 +178,8 @@ template generateEquationFiles(list<SimEqSystem> equations, String fileNamePrefi
   
   <%instantiateCall%>
   >>
-end generateEquationFiles;
+
+end generateEquationFile;
 
 
 /*

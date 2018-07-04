@@ -3718,18 +3718,8 @@ end createTornSystemInnerEqns1;
 //
 // ============================================================================= 
 
-
-//       (omsiAllEquations, uniqueEqIndex, tempvars) :=
-//          createAllEquationOMSI(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars);
-//
-//    list<SimEqSystem> equations;
-//    list<SimCodeVar.SimVar> inputVars;
-//    list<SimCodeVar.SimVar> outputVars;
-//    list<SimCodeVar.SimVar> innerVars;
-//    Integer nAlgebraicSystems;
-//
-
-protected function createAllEquationOMSI
+protected function createAllEquationOMSI "fills SimCode.OMSIFunction with
+  equations and variables"
   input BackendDAE.EqSystems constSysts;
   input BackendDAE.Shared shared;
   input list<BackendDAE.ZeroCrossing> inZeroCrossings;
@@ -3756,7 +3746,8 @@ algorithm
 end createAllEquationOMSI;
 
 
-function generateEquationsForComponents
+function generateEquationsForComponents "generates equations and variables for
+  independent system of equations for SimCode.OMSIFunction"
   input BackendDAE.StrongComponents components;
   input BackendDAE.EqSystem constSyst;
   input BackendDAE.Shared shared;

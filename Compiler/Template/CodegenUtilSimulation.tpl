@@ -86,6 +86,8 @@ template equationIndex(SimEqSystem eq)
     then index
   case SES_ALIAS(__)
     then aliasOf
+  case SES_ALGEBRAIC_SYSTEM(__)
+    then index
   else error(sourceInfo(), "equationIndex failed")
 end equationIndex;
 

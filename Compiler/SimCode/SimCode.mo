@@ -151,7 +151,7 @@ uniontype SimCode
     PartitionData partitionData;
     Option<DaeModeData> daeModeData;
     list<SimEqSystem> inlineEquations;
-    Option<OMSIData> omsiData;
+    Option<OMSIData> omsiData "used for OMSI to generate equations code";
   end SIMCODE;
 end SimCode;
 
@@ -292,18 +292,21 @@ uniontype DaeModeData
 end DaeModeData;
 
 uniontype OMSIData
+  "contains data for code generation for OMSI"
   record OMSI_DATA
-    OMSIFunction simulation;
+    //Option<OMSIFunction> initialization "contains equations and variables for initialization problem";
+    OMSIFunction simulation "contains equations and variables for simulation problem";
   end OMSI_DATA;
 end OMSIData;
 
 uniontype OMSIFunction
+  "contains equations and variables for initialization or simulation problem"
   record OMSI_FUNCTION
-    list<SimEqSystem> equations;
-    list<SimCodeVar.SimVar> inputVars;
-    list<SimCodeVar.SimVar> outputVars;
-    list<SimCodeVar.SimVar> innerVars;
-    Integer nAlgebraicSystems;
+    list<SimEqSystem> equations "list of single equations and systems of equations";
+    list<SimCodeVar.SimVar> inputVars "list of simcode variables determining input variables for equation(s)";
+    list<SimCodeVar.SimVar> outputVars "list of simcode variables determining output variables for equation(s)";
+    list<SimCodeVar.SimVar> innerVars "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
+    Integer nAlgebraicSystems "number of linear and non-linear algebraic systems in OMSI_FUNCTION.equations";
   end OMSI_FUNCTION;
 end OMSIFunction; 
   

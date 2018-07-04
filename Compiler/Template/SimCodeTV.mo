@@ -533,6 +533,18 @@ end OMSIFunction;
     record SES_ALIAS
       Integer aliasOf;
     end SES_ALIAS;
+
+    record SES_ALGEBRAIC_SYSTEM
+      Integer index;
+      Boolean partOfMixed;
+      Boolean tornSystem;
+      Boolean linearSystem;
+      OMSIFunction residual;
+      Option<JacobianMatrix> matrix;
+      list<Integer> zeroCrossingConditions;
+      list<DAE.ElementSource> sources;
+      BackendDAE.EquationAttributes eqAttr;
+    end SES_ALGEBRAIC_SYSTEM;
   end SimEqSystem;
 
   uniontype LinearSystem
