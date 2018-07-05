@@ -195,6 +195,15 @@ template dumpEqs(list<SimEqSystem> eqs)
         <%e.discEqs |> eq => '<discrete index="<%equationIndex(eq)%>" />'%>
       </mixed>
       >>
+    case e as SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__), matrix=matrix as SOME(JAC_MATRIX(__))) then
+
+      <<
+      equation index: <%equationIndex(eq)%>
+      type: ALGEBRAIC_SYSTEM
+      is linear: <%e.linearSystem%>
+      residual function index: <%residual.equations |> eq => '<%equationIndex(eq)%>' ; separator = ", "%>
+      dimension: /* ToDo: add (in CodegenUtilSimulation.dumpEqs) */
+      >>
     case e as SES_WHEN(__) then
       let body = dumpWhenOps(whenStmtLst)
       <<

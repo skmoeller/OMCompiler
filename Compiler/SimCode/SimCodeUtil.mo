@@ -3718,8 +3718,8 @@ end createTornSystemInnerEqns1;
 //
 // ============================================================================= 
 
-protected function createAllEquationOMSI "fills SimCode.OMSIFunction with
-  equations and variables"
+protected function createAllEquationOMSI
+  "fills SimCode.OMSIFunction with equations and variables"
   input BackendDAE.EqSystems constSysts;
   input BackendDAE.Shared shared;
   input list<BackendDAE.ZeroCrossing> inZeroCrossings;
@@ -3746,8 +3746,9 @@ algorithm
 end createAllEquationOMSI;
 
 
-function generateEquationsForComponents "generates equations and variables for
-  independent system of equations for SimCode.OMSIFunction"
+function generateEquationsForComponents
+  "generates equations and variables for independent system of equations for
+  SimCode.OMSIFunction"
   input BackendDAE.StrongComponents components;
   input BackendDAE.EqSystem constSyst;
   input BackendDAE.Shared shared;
@@ -3838,6 +3839,7 @@ end generateEquationsForComponents;
 
 
 function generateSingleEquation
+  "generates single equation from BackendDAE equations"
   input BackendDAE.Equation eqn;
   input BackendDAE.Var var;
   input DAE.FunctionTree funcTree;
@@ -3859,14 +3861,21 @@ algorithm
       list<BackendDAE.Equation> solveEqns;
       list<DAE.Statement> asserts;
       list<DAE.ComponentRef> solveCr;
+      DAE.ComponentRef cr;
 
       String str;
 
     // single equation
     case BackendDAE.EQUATION(exp=e1, scalar=e2, source=source, attr=eqAttr)
       algorithm
-        varExp := Expression.crefExp(var.varName);
-        varExp := if BackendVariable.isStateVar(var) then Expression.expDer(varExp) else varExp;
+        cr := var.varName;
+        varExp := Expression.crefExp(cr);
+
+        if BackendVariable.isStateVar(var) then
+          // exp -> der(exp)
+          varExp := Expression.expDer(varExp);
+          cr := ComponentReference.crefPrefixDer(cr);
+        end if;
         try
 
           (resolvedExp, asserts, solveEqns, solveCr) := ExpressionSolve.solve2(e1, e2, varExp, SOME(funcTree), SOME(uniqueEqIndex), true, true);
@@ -3874,18 +3883,17 @@ algorithm
           (equations, uniqueEqIndex) := List.mapFold(listReverse(solveEqns), makeSolved_SES_SIMPLE_ASSIGN, uniqueEqIndex);
           tempVars := createTempVarsforCrefs(List.map(listReverse(solveCr), Expression.crefExp), tempVars);
 
-          source := ElementSource.addSymbolicTransformationSolve(true, source, var.varName, e1, e2, resolvedExp, asserts);
-          (tmpSimEqLst, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN(uniqueEqIndex, var.varName, resolvedExp, source, eqAttr)}, uniqueEqIndex+1);
+          source := ElementSource.addSymbolicTransformationSolve(true, source, cr, e1, e2, resolvedExp, asserts);
+          (tmpSimEqLst, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN(uniqueEqIndex, cr, resolvedExp, source, eqAttr)}, uniqueEqIndex+1);
 
           equations := listAppend(equations, tmpSimEqLst);
 
           //TODO: fix dlowvarToSimvar by romving Variables, they are not needed any more
           newSimVar := dlowvarToSimvar(var, NONE(), BackendVariable.emptyVars(0));
           outputVars :=  listAppend({newSimVar}, outputVars);
-
         else
           Error.addInternalError("- " + BackendDump.equationString(eqn)+ " could not resolved for "
-            +  ComponentReference.printComponentRefStr(var.varName) + " in SimCodeUtil.generateSingleEquation", sourceInfo());
+            +  ComponentReference.printComponentRefStr(cr) + " in SimCodeUtil.generateSingleEquation", sourceInfo());
           fail();
         end try;
     then ();

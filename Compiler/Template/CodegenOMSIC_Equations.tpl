@@ -43,7 +43,7 @@ import interface SimCodeBackendTV;
 import CodegenUtil;
 import CodegenC;
 import CodegenCFunctions;
-import CodegenUtilSimulation.*;
+import CodegenUtilSimulation;
 
 template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
  "Generates prototype for an equation function"
@@ -59,11 +59,11 @@ template equationFunction(SimEqSystem eq, Context context, String modelNamePrefi
  "Generates C-function for an equation evaluation"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
-  let equationInfos = dumpEqs(fill(eq,1))
+  let equationInfos = CodegenUtilSimulation.dumpEqs(fill(eq,1))
 
   let &varDecls = buffer ""
   let &auxFunction = buffer ""
-  let equationCode = equationCStr(eq, context, &varDecls, &auxFunction) //sinnvollen context angeben
+  let equationCode = equationCStr(eq, context, &varDecls, &auxFunction) //ToDo: choose right context
 
   <<
   /*
