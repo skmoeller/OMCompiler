@@ -67,21 +67,19 @@ end generateEquationsCode;
 template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePrefix)
 "Generates file for all equations, containing equation evaluations for all systems"
 ::=
+  let &includes = buffer ""
   let &evaluationCode = buffer ""
   let &functionCall = buffer ""
 
-  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, &evaluationCode, &functionCall)
+  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, &includes, &evaluationCode, &functionCall)
 
   <<
   /* All Equations Code */
-  #include "<%FileNamePrefix%>_blablabla.h"
+  <%includes%>
 
   #if defined(__cplusplus)
   extern "C" {
   #endif
-
-  /* Instantiation */
-
 
   /* Evaluation functions for each equation */
   <%evaluationCode%>
@@ -104,7 +102,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
 end generateOmsiFunctionCode;
 
 
-template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix, Text &evaluationCode, Text &functionCall)
+template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix, Text &includes, Text &evaluationCode, Text &functionCall)
 ""
 ::=
   match omsiFunction
@@ -112,16 +110,17 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
 
     let __ = equations |> eqsystem => (
       match eqsystem
-      case SES_SIMPLE_ASSIGN(__)
-      case SES_RESIDUAL(__) then
-        // TODO write code
+      case SES_SIMPLE_ASSIGN(__) then
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix) +"\n"
         let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
-
+        <<>>
+      case SES_RESIDUAL(__) then
+        let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
         <<>>
       case SES_ALGEBRAIC_SYSTEM(__) then
-        // write own file for each algebraic system
+        let &includes += "#include \""+ FileNamePrefix + "_algSyst_" + index + ".h\"\n"
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix) +"\n"
+        // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
         let () = textFile(content, FileNamePrefix+"_algSyst_"+ index + "_sim.c")
         <<>>
@@ -139,18 +138,19 @@ end generateOmsiFunctionCode_inner;
 template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNamePrefix)
 ""
 ::=
+  let &includes = buffer ""
   let &evaluationCode = buffer ""
   let &functionCall = buffer ""
   let matrixString = ""
 
   match equationSystem
   case SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(JAC_MATRIX(__))) then
-    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &evaluationCode, &functionCall)
+    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &includes, &evaluationCode, &functionCall)
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
 
   <<
   /* Algebraic system code */
-  #include "<%FileNamePrefix%>_blablabla.h"
+  <%includes%>
 
   #if defined(__cplusplus)
   extern "C" {
@@ -163,10 +163,15 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   <%evaluationCode%>
 
 
-  /* Equations evaluation */
-  omsi_status <%FileNamePrefix%>_eqFunction_<%index%>_(omsi_function_t* simulation, omsi_values* model_vars_and_params){
+  /* Algebraic system evaluation */
+  omsi_status <%FileNamePrefix%>_algSystFunction_<%index%>(omsi_function_t* simulation, omsi_values* model_vars_and_params){
 
+    /* evaluate assignments */
     <%functionCall%>
+
+    /* call API function something */
+
+      /* ToDo: Add crazy stuff here */
 
     return omsi_ok;
   }

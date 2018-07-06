@@ -63,13 +63,30 @@ template equationFunction(SimEqSystem eq, Context context, String modelNamePrefi
 
   let &varDecls = buffer ""
   let &auxFunction = buffer ""
-  let equationCode = equationCStr(eq, context, &varDecls, &auxFunction) //ToDo: choose right context
+  let equationCode = equationCStr(eq, context, &varDecls, &auxFunction)
+
+  let funcName = (match eq
+    case SES_RESIDUAL(__) then
+      "resFunction"
+    case SES_ALGEBRAIC_SYSTEM(__) then
+      "algSystFunction"
+    else
+      "eqFunction"
+  )
+
+  let funcArguments = (match eq
+    case SES_RESIDUAL(__) then
+      "omsi_function_t* this_function, omsi_real* res"
+    else
+      "omsi_function_t* this_function"
+  )
+
 
   <<
   /*
   <%equationInfos%>
   */
-  void <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(omsi_function_t* this_function){
+  void <%CodegenUtil.symbolName(modelNamePrefixStr,funcName)%>_<%ix%>(<%funcArguments%>){
     const omsi_int equationIndexes[2] = {1,<%ix%>};
     <%varDecls%>
     <%auxFunction%>
@@ -82,22 +99,24 @@ end equationFunction;
 template equationCStr(SimEqSystem eq, Context context, Text &varDecls, Text &auxFunction)
  "Generates an equation that is just a simple assignment."
 ::=
+  let &preExp = buffer ""
+
   match eq
   case SES_SIMPLE_ASSIGN(__) then
-    let &preExp = buffer ""
     let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
     let crefStr = CodegenCFunctions.contextCref(cref, context, &auxFunction)
     <<
     <%crefStr%> = <%expPart%>;
     >>
   case SES_ALGEBRAIC_SYSTEM(__) then
+
     <<
     /* Add stuff here*/
-
     >>
   case SES_RESIDUAL(__) then
+    let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
     <<
-    SES_RESIDUAL NOT IMPLEMENTED YET
+    *res = <%expPart%>;
     >>
   else
     <<
@@ -111,9 +130,24 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr)
  "Generates call function for evaluating functions"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
-  <<
-  <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(simulation);
-  >>
+  match eq
+  case SES_SIMPLE_ASSIGN(__) then
+    <<
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(simulation);
+    >>
+  case SES_RESIDUAL(__) then
+    <<
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"resFunction")%>_<%ix%>(simulation);
+    >>
+  case SES_ALGEBRAIC_SYSTEM(__) then
+    <<
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%ix%>(simulation);
+    >>
+  else
+    // ToDo: generate Warning
+    <<
+    //equationCall not implemented yet
+    >>
 end equationCall;
 
 
@@ -147,51 +181,6 @@ template generateMatrixColumn(JacobianColumn column)
 
   >>
 end generateMatrixColumn;
-
-
-
-
-/*
-template instantiateOmsiFunction(list<OMSIFunction> omsiFunction, String fileNamePrefix, String name)
-"Bla"
-::=
-
-  let counter = ""
-  let algInitCall = ""
-  let instAlgSystemCalls =  omsiFunction |> eqn => (match eqn
-    case eq as SES_LINEAR(__)
-    case eq as SES_NONLINEAR(__) then
-      let algInitCall = generateAlgSystemFile(eq, fileNamePrefix, name) // Jeweils eigenes File erzeugen, Aufruf zrückgeben
-      <<algebraic_system[i++] =  <%algInitCall%>>>
-    else
-    <<>>
-  )
-
-  <<
-  omsi_status <%fileNamePrefix%>_instantiate_omsi_function_<%name%>(omsi_function_t* function_instance) {
-
-    function_instance->evaluate = <%fileNamePrefix%>_<%name%>;
-
-    omsi_algebraic_system_t * algebraic_system = malloc(<%omsiFunction.nAlgebraicSystems%>, sizeof(omsi_algebraic_system_t)) ;
-    int i = 0;
-    // alloc all algebraic systems
-
-  }
-
-  >>
-end instantiateOmsiFunction;
-*/
-
-template generateAlgSystemFile(list<SimEqSystem> equations, String fileNamePrefix, String name)
-"Description"
-::=
-
-  << <%fileNamePrefix%>_instantiate_omsi_algSystem_<%name%>( 
-  
-  >>
-end generateAlgSystemFile;
-
-
 
 
 annotation(__OpenModelica_Interface="backend");
