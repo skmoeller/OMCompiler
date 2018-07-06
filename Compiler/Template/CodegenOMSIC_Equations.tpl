@@ -118,11 +118,37 @@ end equationCall;
 
 
 template generateMatrixInitialization(Option<JacobianMatrix> matrix)
+"generates code for matrix initialization and evaluation"
+::=
+  let columnsString = ""
+
+  match matrix
+  case SOME(JAC_MATRIX(columns=columns as JAC_COLUMN(__))) then
+    let _ = columns |> col => (
+      let columnsString = generateMatrixColumn(col)
+      <<>>
+    )
+
+  <<
+
+  <%columnsString%>
+  
+  >>
+end generateMatrixInitialization;
+
+
+template generateMatrixColumn(JacobianColumn column)
 ""
 ::=
-  
-  <<>>
-end generateMatrixInitialization;
+  match column
+  case JAC_COLUMN(__) then
+
+  <<
+
+  >>
+end generateMatrixColumn;
+
+
 
 
 /*
