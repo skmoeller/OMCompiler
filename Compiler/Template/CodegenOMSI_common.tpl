@@ -33,7 +33,7 @@
 " file:        CodegenOMSIC.tpl
   package:     CodegenOMSIC
   description: Code generation using Susan templates for
-               OpenModelica Simulation Inferface (OMSI) for C
+               OpenModelica Simulation Inferface (OMSI) for C and C++
 "
 
 import interface SimCodeTV;
@@ -46,222 +46,163 @@ import CodegenCFunctions;
 import CodegenAdevs;
 
 
-template generateSetupSimulationDataFunction(SimCode simCode, String modelNamePrefixStr)
-"Generates C function to initialize OMSI sim_data"
-::=
-  let scalarVariablesInitalization = ""
-
-  match simCode
-    case SIMCODE(modelInfo = MODELINFO(varInfo=VARINFO(__), vars = vars as SIMVARS(__))) then
-
-    // set double *real_vars
-    let _ = System.tmpTickResetIndex(0,1)
-    let _ = vars.stateVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
-      <<>>
-    )
-    let _ = vars.derivativeVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
-      <<>>
-    )
-    let _ = vars.algVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
-      <<>>
-    )
-    let _ = vars.discreteAlgVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
-      <<>>
-    )
-    let _ = vars.realOptimizeConstraintsVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
-      <<>>
-    )
-    let _ = vars.realOptimizeFinalConstraintsVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
-      <<>>
-    )
-    let _ = vars.paramVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->reals") + "\n"
-      <<>>
-    )
-
-    // set int *int_vars
-    let _ = System.tmpTickResetIndex(0,1)
-    let _ = vars.intAlgVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->ints") + "\n"
-      <<>>
-    )
-    let _ = vars.intParamVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->ints") + "\n"
-      <<>>
-    )
-
-    // set bool *bool_vars
-    let _ = System.tmpTickResetIndex(0,1)
-    let _ = vars.boolAlgVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->bools") + "\n"
-      <<>>
-    )
-    let _ = vars.boolParamVars |> var => (
-      let &scalarVariablesInitalization += ScalarVariableOMSIC(var,"model_vars_and_params->bools") + "\n"
-      <<>>
-    )
-
-    <<
-    /* initialize simulation data */
-    <%scalarVariablesInitalization%>
-    >>
-  end match
-end generateSetupSimulationDataFunction;
-
-
-template ScalarVariableOMSIC(SimVar simVar, String classType)
-"Generates code for simulation data initialization"
-::=
-  let ci = System.tmpTickIndex(1)
-
-  match simVar
-    case SIMVAR(source = SOURCE(info = info)) then
-    <<
-    omsi_data->sim_data-><%classType%>[<%ci%>] = <%CodegenFMU.optInitValFMU(initialValue,"0.0")%>;    /* <%Util.escapeModelicaStringToCString(CodegenUtil.crefStrNoUnderscore(name))%> */
-    >>
-  end match
-end ScalarVariableOMSIC;
-
-
-template simulationFile_lsyOMSI(SimCode simCode)
-"Linear Systems"
+/* public */
+template generateEquationsCode (SimCode simCode, String FileNamePrefix)
+"Entrypoint to generate all Code for linear systems.
+ Code is generated directly into files"
 ::=
   match simCode
-    case simCode as SIMCODE(modelInfo=MODELINFO(varInfo=varInfo as VARINFO(__),linearSystems=linearSystems)) then
+  case SIMCODE(omsiData=omsiData as SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__)))) then
 
-    let functionSetupLinearSysems = functionSetupLinearSystemsOMSI(linearSystems, CodegenUtilSimulation.modelNamePrefix(simCode))
+    // generate file for algebraic systems in simulation problem
+    let content = generateOmsiFunctionCode(simulation, FileNamePrefix)
+    let () = textFile(content, FileNamePrefix+"_equations_sim.c")
 
-
-    <<
-    /* Linear Systems */
-    #include "<%simCode.fileNamePrefix%>_blablabla.h"
-
-    #if defined(__cplusplus)
-    extern "C" {
-    #endif
-
-    <%functionSetupLinearSysems%>
-
-    <% if intGt(varInfo.numLinearSystems,0) then functionInitialLinearSystemsOMSI(linearSystems, CodegenUtilSimulation.modelNamePrefix(simCode))%>
-
-    #if defined(__cplusplus)
-    }
-    #endif
-    <%\n%>
-    >>
-    /* adrpo: leave a newline at the end of file to get rid of the warning */
-  end match
-end simulationFile_lsyOMSI;
+    // generate file for initialization problem
+    // ToDo: add
+  <<>>
+end generateEquationsCode;
 
 
-template functionSetupLinearSystemsOMSI(list<SimEqSystem> linearSystems, String modelNamePrefix)
-  "Generates functions in simulation file."
+template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePrefix)
+"Generates file for all equations, containing equation evaluations for all systems"
 ::=
-  let linearbody = functionSetupLinearSystemsTempOMSI(linearSystems, modelNamePrefix)
-  <<
-  /* linear systems */
-  <%linearbody%>
-  >>
-end functionSetupLinearSystemsOMSI;
+  let &evaluationCode = buffer ""
+  let &functionCall = buffer ""
 
-
-template functionSetupLinearSystemsTempOMSI(list<SimEqSystem> linearSystems, String modelNamePrefix)
-  "Generates functions in simulation file."
-::=
-  (linearSystems |> eqn => (match eqn
-     case eq as SES_MIXED(__) then functionSetupLinearSystemsTempOMSI(fill(eq.cont,1), modelNamePrefix)
-     // no dynamic tearing
-     case eq as SES_LINEAR(lSystem=ls as LINEARSYSTEM(__), alternativeTearing=NONE()) then
-     match ls.jacobianMatrix
-       case SOME(__) then
-         let eqFuncs = ""
-         let _ = ls.residual |> eq => (
-           let &eqFuncs += CodegenOMSIC_Equations.equationFunction(eq, contextOMSI, modelNamePrefix) + "\n\n"
-           <<>>
-         )
-
-         <<
-         <%eqFuncs%>
-         >>
-       else
-         <<>>
-     end match
-
-     // dynamic tearing
-     case eq as SES_LINEAR(lSystem=ls as LINEARSYSTEM(__), alternativeTearing = SOME(at as LINEARSYSTEM(__))) then
-     match ls.jacobianMatrix
-       case SOME(__) then
-         <<>>
-       else
-         <<>>
-     end match
-   )
-   ;separator="\n\n")
-end functionSetupLinearSystemsTempOMSI;
-
-
-template functionInitialLinearSystemsOMSI(list<SimEqSystem> linearSystems, String modelNamePrefix)
-  "Generates function to initialize omsi_algebraic_system_t for linear systems"
-::=
-  let &tempeqns = buffer ""
-  let &tempeqns += (linearSystems |> eq => match eq case eq as SES_LINEAR(alternativeTearing = SOME(__)) then 'int <%CodegenUtil.symbolName(modelNamePrefix,"eqFunction")%>_<%CodegenUtilSimulation.equationIndex(eq)%>(DATA*);' ; separator = "\n")
-  let &globalConstraintsFunctions = buffer ""
-  let linearbody = functionInitialLinearSystemsTempOMSI(linearSystems, modelNamePrefix, &globalConstraintsFunctions)
+  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, &evaluationCode, &functionCall)
 
   <<
-  /* ToDo: Some description */
-  void <%CodegenUtil.symbolName(modelNamePrefix,"initialLinearSystem")%> (omsi_function_t* initialization) {
-    /* linear systems */
-    <%linearbody%>
+  /* All Equations Code */
+  #include "<%FileNamePrefix%>_blablabla.h"
+
+  #if defined(__cplusplus)
+  extern "C" {
+  #endif
+
+  /* Instantiation */
+
+
+  /* Evaluation functions for each equation */
+  <%evaluationCode%>
+
+
+  /* Equations evaluation */
+  omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params){
+
+    <%functionCall%>
+
+    return omsi_ok;
   }
+
+  #if defined(__cplusplus)
+  }
+  #endif
+  <%\n%>
   >>
-end functionInitialLinearSystemsOMSI;
+  /* leave a newline at the end of file to get rid of the warning */
+end generateOmsiFunctionCode;
 
 
-template functionInitialLinearSystemsTempOMSI(list<SimEqSystem> linearSystems, String modelNamePrefix, Text &globalConstraintsFunctions)
-  "Helper function for functionInitialLinearSystemOMSI"
+template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix, Text &evaluationCode, Text &functionCall)
+""
 ::=
-  (linearSystems |> eqn => (match eqn
-    case eq as SES_MIXED(__) then functionInitialLinearSystemsTempOMSI(fill(eq.cont,1), modelNamePrefix, "")
-    // no dynamic tearing
-    case eq as SES_LINEAR(lSystem=ls as LINEARSYSTEM(__), alternativeTearing=NONE()) then
-      match ls.jacobianMatrix
-        case NONE() then
-          <<
-          NOT IMPLEMENTED YET
-          >>
-        case SOME(__) then
-          <<
-          START IMPLEMENTATION
-          >>
-        else
-          ///CodegenAdevs.error(sourceInfo(), ' No jacobian create for linear system <%ls.index%>.')
-          <<>>
-      end match
-    // dynamic tearing
-    case eq as SES_LINEAR(lSystem=ls as LINEARSYSTEM(__), alternativeTearing = SOME(at as LINEARSYSTEM(__))) then
-      match ls.jacobianMatrix
-        case NONE() then
-          <<
-          NOT IMPLEMENTED YET
-          >>
-        case SOME(__) then
-          <<
-          NOT IMPLEMENTED YET
-          >>
-        else
-          ///CodegenAdevs.error(sourceInfo(), ' No jacobian create for linear system <%ls.index%> or <%at.index%>.')
-          <<>>
+  match omsiFunction
+  case OMSI_FUNCTION(__) then
+
+    let __ = equations |> eqsystem => (
+      match eqsystem
+      case SES_SIMPLE_ASSIGN(__)
+      case SES_RESIDUAL(__) then
+        // TODO write code
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix) +"\n"
+        let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
+
+        <<>>
+      case SES_ALGEBRAIC_SYSTEM(__) then
+        // write own file for each algebraic system
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix) +"\n"
+        let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
+        let () = textFile(content, FileNamePrefix+"_algSyst_"+ index + "_sim.c")
+        <<>>
+      else
+        // NOT IMPLEMENTED YET
+        // ToDo: add Error
+        <<>>
       end match
     )
-    ;separator="\n\n")
-end functionInitialLinearSystemsTempOMSI;
+
+  <<>>
+end generateOmsiFunctionCode_inner;
+
+
+template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNamePrefix)
+""
+::=
+  let &evaluationCode = buffer ""
+  let &functionCall = buffer ""
+  let matrixString = ""
+
+  match equationSystem
+  case SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(JAC_MATRIX(__))) then
+    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &evaluationCode, &functionCall)
+    let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
+
+  <<
+  /* Algebraic system code */
+  #include "<%FileNamePrefix%>_blablabla.h"
+
+  #if defined(__cplusplus)
+  extern "C" {
+  #endif
+
+  /* Instantiation */
+  <%matrixString%>
+
+  /* Evaluation functions for each equation */
+  <%evaluationCode%>
+
+
+  /* Equations evaluation */
+  omsi_status <%FileNamePrefix%>_eqFunction_<%index%>_(omsi_function_t* simulation, omsi_values* model_vars_and_params){
+
+    <%functionCall%>
+
+    return omsi_ok;
+  }
+
+  #if defined(__cplusplus)
+  }
+  #endif
+  <%\n%>
+  >>
+  /* leave a newline at the end of file to get rid of the warning */
+end generateOmsiAlgSystemCode;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//======================================================================
+
+
+
+
+
+
+
+
+
 
 
 

@@ -90,22 +90,9 @@ template equationCStr(SimEqSystem eq, Context context, Text &varDecls, Text &aux
     <<
     <%crefStr%> = <%expPart%>;
     >>
-  case SES_LINEAR(lSystem=ls as LINEARSYSTEM(__)) then    //only for rectangular case
-    let dimLinearSystem = ls.nUnknowns
-    let crefStr = ""
+  case SES_ALGEBRAIC_SYSTEM(__) then
     <<
-    /* Linear equation system */
-    // ToDo: Log something
-
-    omsi_status status;
-
-    /* solve equation system */
-    status = solveLapack(this_function, global_callback_functions);
-    if (status != omsi_ok) {
-      /* ToDo: error case */
-      printf("Solving linear system %i failed at time=%.15g.\n", equationIndexes[1], this_function->function_vars->time_value);
-    }
-
+    /* Add stuff here*/
 
     >>
   case SES_RESIDUAL(__) then
@@ -130,56 +117,12 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr)
 end equationCall;
 
 
-template generateEquationFiles (SimCode simCode, String fileNamePrefix, String name)
-"Generates equations for initialization and simulation"
+template generateMatrixInitialization(Option<JacobianMatrix> matrix)
+""
 ::=
-  match simCode
-  case SIMCODE(omsiData=SOME(OMSI_DATA( simulation = simulation as OMSI_FUNCTION(__) ))) then
-    <<
-    <%generateEquationFile(simulation.equations, fileNamePrefix, name)%>
-    >>
-    /*
-  case SIMCODE(omsiData=SOME(OMSI_DATA( initialization = initialization as OMSI_FUNCTION(__) ))) then
-    <<
-    >>
-    */
-
-end generateEquationFiles;
-
-
-template generateEquationFile(list<SimEqSystem> equations, String fileNamePrefix, String name)
-"Description"
-::=
-  let eqFuncs = ""
-  let _ = equations |> eqn => (
-    let &eqFuncs += equationFunction(eqn, contextOMSI, fileNamePrefix) + "\n\n"
-    <<>>
-  )
-  let eqCalls = ""
-  let _ =  equations |> eqn => (
-    let &eqCalls += equationCall(eqn, fileNamePrefix) + "\n"
-    <<>>
-  )
-
-  let instantiateCall = ""//instantiateOmsiFunction(equations, fileNamePrefix, name)
-  <<
-  #include "omsi.h"
   
-  /* Equation functions */
-  <%eqFuncs%>
-
-  /* Equations evaluation */
-  omsi_status <%fileNamePrefix%>_<%name%>(omsi_function_t* simulation, omsi_values* model_vars_and_params){
-
-    <%eqCalls%>
-
-    return omsi_ok;
-  }
-  
-  <%instantiateCall%>
-  >>
-
-end generateEquationFile;
+  <<>>
+end generateMatrixInitialization;
 
 
 /*

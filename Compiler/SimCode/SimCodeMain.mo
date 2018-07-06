@@ -375,6 +375,7 @@ partial function FuncText
   output Tpl.Text out_txt;
 end FuncText;
 
+// TODO: function is duplicate of later protected function
 function runTplWriteFile
   extends PartialRunTpl;
   input FuncText func;
@@ -397,6 +398,21 @@ algorithm
   else
   end try;
 end runTplWriteFile;
+
+// TODO: function is duplicate of later protected function
+function runTpl
+  extends PartialRunTpl;
+  input FuncText func;
+algorithm
+  res := (false,{});
+  try
+    SimCodeUtil.resetFunctionIndex();
+    SimCodeFunctionUtil.codegenResetTryThrowIndex();
+    Tpl.tplCallWithFailErrorNoArg(func);
+    res := (true,SimCodeUtil.getFunctionIndex());
+  else
+  end try;
+end runTpl;
 
 // TODO: use another switch ... later make it first class option like -target or so
 protected function callTargetTemplates "
@@ -765,9 +781,11 @@ algorithm
         runTplWriteFile(func = function CodegenOMSIC.generateOMSICHeader(a_simCode=simCode), file=fileprefix+"_omsic.h");
         runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(in_a_simCode=simCode), file=fileprefix+"_omsic.c");
         
-        runTplWriteFile(func = function CodegenOMSIC_Equations.generateEquationFiles(a_simCode=simCode, a_fileNamePrefix=fileprefix, a_name="allEqns"), file=fileprefix+"_eqns.c");
+        //runTplWriteFile(func = function CodegenOMSIC_Equations.generateEquationFiles(a_simCode=simCode, a_fileNamePrefix=fileprefix, a_name="allEqns"), file=fileprefix+"_eqns.c");
 
-        runTplWriteFile(func = function CodegenOMSI_common.simulationFile_lsyOMSI(in_a_simCode=simCode), file=fileprefix+"_lsy.c");
+        //runTplWriteFile(func = function CodegenOMSI_common.simulationFile_lsyOMSI(in_a_simCode=simCode), file=fileprefix+"_lsy.c");
+        runTpl(func = function CodegenOMSI_common.generateEquationsCode(in_a_simCode=simCode, in_a_FileNamePrefix=fileprefix));
+
         /*
         
         runTplWriteFile(func = function CodegenOMSIC.generateEquationFilesHeader(simCode=simCode), file=fileprefix+"_eqns.h");
