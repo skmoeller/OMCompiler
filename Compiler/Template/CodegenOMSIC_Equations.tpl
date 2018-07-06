@@ -123,8 +123,8 @@ template generateMatrixInitialization(Option<JacobianMatrix> matrix)
   let columnsString = ""
 
   match matrix
-  case SOME(JAC_MATRIX(columns=columns as JAC_COLUMN(__))) then
-    let _ = columns |> col => (
+  case SOME(m as JAC_MATRIX(__)) then
+    let _ = m.columns |> col => (
       let columnsString = generateMatrixColumn(col)
       <<>>
     )

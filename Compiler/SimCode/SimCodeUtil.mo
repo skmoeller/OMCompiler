@@ -3783,6 +3783,7 @@ algorithm
       SimCode.OMSIFunction omsiFunction;
       Boolean linear, mixedSystem;
       Option<SimCode.JacobianMatrix> jacobianMatrix;
+      Integer algEqIndex;
 
     case BackendDAE.SINGLEEQUATION() equation
       ({eqn}, {var}, _) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
@@ -3798,26 +3799,30 @@ algorithm
         Error.addMessage(Error.NO_JACONIAN_TORNLINEAR_SYSTEM, {});
         fail();
       end if;
-
+      algEqIndex = uniqueEqIndex;
+      uniqueEqIndex = uniqueEqIndex+1;
       // get tearing vars
       tvars = List.map1r(tearingVars, BackendVariable.getVarAt,  constSyst.orderedVars);
       tvars = List.map(tvars, BackendVariable.transformXToXd);
       ((tSimVars1, _)) = List.fold(tvars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
       tSimVars1 = listReverse(tSimVars1);
 
+      // generate other equations
+      (simequations, tSimVars2, uniqueEqIndex, tempVars) = generateInnerEqns(innerEquations, constSyst, shared, uniqueEqIndex, tempVars);
+
       // get residual eqns
       reqns = BackendEquation.getList(residualEqns, constSyst.orderedEqs);
       reqns = BackendEquation.replaceDerOpInEquationList(reqns);
       (resEqs, uniqueEqIndex, tempVars) = createNonlinearResidualEquations(reqns, uniqueEqIndex, tempVars);
-      // generate other equations
-      (simequations, tSimVars2, uniqueEqIndex, tempVars) = generateInnerEqns(innerEquations, constSyst, shared, uniqueEqIndex, tempVars);
-      simequations = listAppend(resEqs, simequations);
+
+      simequations = listAppend(simequations, listReverse(resEqs));
+
       // inputs empty, since we haven't check for inputs yet
       omsiFunction = SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, 0);
       tmpOutputVars = listAppend(tSimVars2, tSimVars1);
 
       (jacobianMatrix, uniqueEqIndex, tempVars) = createSymbolicSimulationJacobian(jacobian, uniqueEqIndex, tempVars);
-      algSystem = SimCode.SES_ALGEBRAIC_SYSTEM(uniqueEqIndex, mixedSystem, true, linear, omsiFunction, jacobianMatrix, {}, {}, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
+      algSystem = SimCode.SES_ALGEBRAIC_SYSTEM(algEqIndex, mixedSystem, true, linear, omsiFunction, jacobianMatrix, {}, {}, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
       nAlgebraicSystems = nAlgebraicSystems+1;
       tmpEqns = {algSystem};
     then ();
@@ -3830,7 +3835,7 @@ algorithm
     outputVars := listAppend(tmpOutputVars, outputVars);
     innerVars := listAppend(tmpInnerVars, innerVars);
   end for;
-  omsiFuncEquations := SimCode.OMSI_FUNCTION(equations = equations,  
+  omsiFuncEquations := SimCode.OMSI_FUNCTION(equations =  listReverse(equations),
                                             inputVars = inputVars,
                                             outputVars = outputVars,
                                             innerVars =  innerVars,
