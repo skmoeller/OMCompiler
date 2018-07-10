@@ -108,7 +108,7 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
   match omsiFunction
   case OMSI_FUNCTION(__) then
 
-    let _ = equations |> eqsystem hasindex i0=> (
+    let _ = (equations |> eqsystem hasindex i0 =>
       match eqsystem
       case SES_SIMPLE_ASSIGN(__) then
         let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
@@ -116,7 +116,7 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         <<>>
       case SES_RESIDUAL(__) then
         let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
-        let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, 'this_function, res[<%i0%>]') +"\n"      // ToDo: why is i0 always zero?
+        let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, 'this_function, res[i++]') +"\n"      // ToDo: why is i0 always zero?
         <<>>
       case SES_ALGEBRAIC_SYSTEM(__) then
         let &includes += "#include \""+ FileNamePrefix + "_algSyst_" + index + ".h\"\n"
@@ -167,6 +167,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   <%evaluationCode%>
 
   void <%FileNamePrefix%>_resFunction_<%index%> (omsi_function* this_function, omsi_real* res) {
+    omsi_unsigned_int i=0;
     <%residualCall%>
   }
 
@@ -251,19 +252,6 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
     >>
   ;separator="\n")
 
-
-  // ToDo: delete
-  let &test1 = buffer ""
-  let _ = ({"Element1", "Element2", "Element3"} |> elem hasindex i0 =>
-    let &test1 += i0 + "\n"
-    <<>>
-  )
-
-  let test2 = ({"Element1", "Element2", "Element3"} |> elem hasindex i0 =>
-    '<%i0%>'
-  ;separator="\n")
-  // ToDo: end delete
-
   <<
   omsi_index_type* omsi_index_pointer;
   omsi_index_pointer = omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(variables)%>, sizeof(omsi_index_type));
@@ -273,10 +261,6 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
   }
   <%stringBuffer%>
   <%StrucPrefix%> = omsi_index_pointer;
-
-  /*Test, delete */
-  <%test1%>
-  <%test2%>
   >>
 end generateOmsiIndexTypeInitialization;
 

@@ -31,6 +31,17 @@ write me at: Pavol Privitzer <ppriv@lf1.cuni.cz> to let me know about it
    and, the only semantics of the empty= option will be, what to fill in the empty "space"
 - check the interface pid with the .mo name to be ==
 
+- same behaviour for keyword "hasindex" in iterator exprassions
+    let &test1 = buffer ""
+    let _ = ({"Element1", "Element2", "Element3"} |> elem hasindex i0 =>
+      let &test1 += i0 + "\n"
+      <<>>
+    )
+  and
+    let test2 = ({"Element1", "Element2", "Element3"} |> elem hasindex i0 =>
+      '<%i0%>'
+    ;separator="\n")
+
 - smarter smart new line:
   <<
   some text
