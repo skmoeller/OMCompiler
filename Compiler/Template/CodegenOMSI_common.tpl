@@ -71,7 +71,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let &evaluationCode = buffer ""
   let &functionCall = buffer ""
 
-  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, &includes, &evaluationCode, &functionCall)
+  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, &includes, &evaluationCode, &functionCall, "")
 
   <<
   /* All Equations Code */
@@ -102,24 +102,25 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
 end generateOmsiFunctionCode;
 
 
-template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix, Text &includes, Text &evaluationCode, Text &functionCall)
+template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix, Text &includes, Text &evaluationCode, Text &functionCall, Text &residualCall)
 ""
 ::=
   match omsiFunction
   case OMSI_FUNCTION(__) then
 
-    let __ = equations |> eqsystem => (
+    let _ = equations |> eqsystem hasindex i0=> (
       match eqsystem
       case SES_SIMPLE_ASSIGN(__) then
-        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix) +"\n"
         let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation") +"\n"
         <<>>
       case SES_RESIDUAL(__) then
         let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
+        let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, 'this_function, res[<%i0%>]') +"\n"      // ToDo: why is i0 always zero?
         <<>>
       case SES_ALGEBRAIC_SYSTEM(__) then
         let &includes += "#include \""+ FileNamePrefix + "_algSyst_" + index + ".h\"\n"
-        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix) +"\n"
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation") +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
         let () = textFile(content, FileNamePrefix+"_algSyst_"+ index + "_sim.c")
@@ -141,11 +142,12 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   let &includes = buffer ""
   let &evaluationCode = buffer ""
   let &functionCall = buffer ""
-  let matrixString = ""
+  let &residualCall = buffer ""
 
   match equationSystem
   case SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(JAC_MATRIX(__))) then
-    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &includes, &evaluationCode, &functionCall)
+    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &includes, &evaluationCode, &functionCall, &residualCall)
+    let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix)
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
 
   <<
@@ -156,12 +158,17 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   extern "C" {
   #endif
 
-  /* Instantiation */
+  /* Instantiation and initalization*/
   <%matrixString%>
+
+  <%initlaizationFunction%>
 
   /* Evaluation functions for each equation */
   <%evaluationCode%>
 
+  void <%FileNamePrefix%>_resFunction_<%index%> (omsi_function* this_function, omsi_real* res) {
+    <%residualCall%>
+  }
 
   /* Algebraic system evaluation */
   omsi_status <%FileNamePrefix%>_algSystFunction_<%index%>(omsi_function_t* simulation, omsi_values* model_vars_and_params){
@@ -185,28 +192,93 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
 end generateOmsiAlgSystemCode;
 
 
+template generateInitalizationAlgSystem (SimEqSystem equationSystem, String FileNamePrefix)
+""
+::=
+  match equationSystem
+  case SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__)) then
+
+    let zeroCrossingIndices = (zeroCrossingConditions |> cond =>
+      '<%cond%>'
+    ;separator=", ")
+    <<
+    /* function initialize omsi_algebraic_system_t struct */
+    omsi_status <%FileNamePrefix%>_initializeAlgSystem_<%index%>(omsi_algebraic_system_t* algSystem) {
+      algSystem->n_iteration_vars = <%listLength(residual.outputVars)%>;
+
+      <%generateOmsiIndexTypeInitialization(residual.outputVars, "algSystem->iteration_vars_indices")%>
+
+      algSystem->n_conditions = <%listLength(zeroCrossingConditions)%>;
+      <% if listLength(zeroCrossingConditions) then 'algSystem->zerocrossing_indices[listLength(zeroCrossingConditions)] = {<%zeroCrossingIndices%>};' %>
+
+      algSystem->isLinear = <% if linearSystem then 'omsi_true' else 'omsi_false'%>;
+
+      algSystem->loop = NULL;       /* ToDo: implement in template */
+      algSystem->functions->evaluate = <%FileNamePrefix%>_resFunction_<%index%>;
+
+      return omsi_ok;
+    }
+    >>
+end generateInitalizationAlgSystem;
 
 
 
+template generateOmsiIndexTypeInitialization (list<SimVar> variables, String StrucPrefix)
+"Generates code for instantiation and initialization of struct omsi_index_type "
+::=
+  let stringBuffer = (variables |> variable hasindex i0 =>
+    let stringType = (match variable
+      case SIMVAR(type_=type_ as T_REAL(__)) then
+        "OMSI_TYPE_REAL"
+      case SIMVAR(type_=type_ as T_INTEGER(__)) then
+        "OMSI_TYPE_INTEGER"
+      case SIMVAR(type_=type_ as T_BOOL(__)) then
+        "OMSI_TYPE_BOOLEAN"
+      case SIMVAR(type_=type_ as T_STRING(__)) then
+        "OMSI_TYPE_STRING"
+      else
+        "OMSI_TYPE_UNKNOWN"
+    )
+
+    let stringIndex = (match variable
+      case SIMVAR(__) then
+        index
+    )
+
+    <<
+    omsi_index_pointer[<%i0%>]->type = <%stringType%>;
+    omsi_index_pointer[<%i0%>]->index = <%stringIndex%>;
+    >>
+  ;separator="\n")
 
 
+  // ToDo: delete
+  let &test1 = buffer ""
+  let _ = ({"Element1", "Element2", "Element3"} |> elem hasindex i0 =>
+    let &test1 += i0 + "\n"
+    <<>>
+  )
 
+  let test2 = ({"Element1", "Element2", "Element3"} |> elem hasindex i0 =>
+    '<%i0%>'
+  ;separator="\n")
+  // ToDo: end delete
 
+  <<
+  omsi_index_type* omsi_index_pointer;
+  omsi_index_pointer = omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(variables)%>, sizeof(omsi_index_type));
+  if (!omsi_index_pointer) {
+    /* ToDo: Log error */
+    return omsi_error;
+  }
+  <%stringBuffer%>
+  <%StrucPrefix%> = omsi_index_pointer;
 
-
-
-
-
-
-//======================================================================
-
-
-
-
-
-
-
-
+  /*Test, delete */
+  <%test1%>
+  <%test2%>
+  >>
+end generateOmsiIndexTypeInitialization;
 
 
 

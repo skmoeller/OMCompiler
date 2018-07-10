@@ -134,13 +134,19 @@ typedef struct omsi_index_type {
 
 
 /*
- * Triple of arrays containing actual values for Variables, Parameters, Aliases and so on.
+ * Struct of arrays containing actual values for Variables, Parameters,
+ * Aliases and so on for associating time value.
+ * Also containing number of containing reals, ints and bools.
  */
 typedef struct omsi_values {
     omsi_real*  reals;      /* array of omsi_real */
     omsi_int*   ints;       /* array of omsi_int */
     omsi_bool*  bools;      /* array of omsi_bool */
     omsi_real   time_value;  /* current system time */
+
+    omsi_unsigned_int   n_reals;    /* length of array reals */
+    omsi_unsigned_int   n_ints;     /* length of array ints */
+    omsi_unsigned_int   n_bools;    /* length of array bools */
 } omsi_values;
 
 

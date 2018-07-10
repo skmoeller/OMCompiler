@@ -158,29 +158,28 @@ void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* line
 
 /*
  * Read data from equationSystemFunc and
- * set matrix B in row-major order.
+ * set vector b.
  */
-void set_lapack_b (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linearSystem) {
+omsi_status set_lapack_b (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linearSystem) {
 
-    omsi_int i;
-    omsi_real* zero_array;
+    omsi_unsigned_int i;
+    omsi_unsigned_int j=0;
 
-    /* allocate memory */
-    zero_array = global_allocateMemory(lapack_data->n, sizeof(omsi_real));
-    for (i=0; i<lapack_data->n; i++) {
-        zero_array = 0;
+    /* set iteration vars to zero */
+    /* ToDo: Do we want to save iteration vars first? */
+    if (!omsu_set_omsi_value(linearSystem->functions->function_vars, *(linearSystem->iteration_vars_indices), linearSystem->n_iteration_vars, 0)) {
+        return omsi_error;
     }
 
-    /* get -b with A*0-b=0 */
-    linearSystem->residual_function(linearSystem->functions, zero_array, lapack_data->b);
+    /* evaluate residual function A*0-b=0 to get -b */
+    linearSystem->functions->evaluate(linearSystem->functions, lapack_data->b);
 
+    /* flip sign */
     for (i=0; i<lapack_data->ldb; i++) {
-        /* copy data from column-major to row-major style */
         lapack_data->b[i] = -lapack_data->b[i];
     }
 
-    /* free memory */
-    global_freeMemory(zero_array);
+    return omsi_ok;
 }
 
 
@@ -200,7 +199,7 @@ omsi_status eval_residual(DATA_LAPACK* lapack_data, omsi_algebraic_system_t* lin
 
     /* compute residuum A*x-b using generated function and save result in residuum */
     /* ToDo: function call */
-    linearSystem->residual_function(linearSystem->functions, lapack_data->b, res);
+    linearSystem->functions->evaluate(linearSystem->functions, res);
 
     /* compute dot product <residuum, residuum> */
     dotProduct = ddot_(&lapack_data->n, res, &increment, res, &increment);

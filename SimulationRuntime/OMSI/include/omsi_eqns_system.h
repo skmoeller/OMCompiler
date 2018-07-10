@@ -69,7 +69,7 @@ typedef struct omsi_analytical_jacobian{
 /**
  * general algebraic system
  */
-typedef struct {
+typedef struct omsi_algebraic_system_t {
     omsi_unsigned_int n_iteration_vars;
     omsi_index_type* iteration_vars_indices;
 

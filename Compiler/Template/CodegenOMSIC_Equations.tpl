@@ -126,22 +126,22 @@ template equationCStr(SimEqSystem eq, Context context, Text &varDecls, Text &aux
 end equationCStr;
 
 
-template equationCall(SimEqSystem eq, String modelNamePrefixStr)
+template equationCall(SimEqSystem eq, String modelNamePrefixStr, String input)
  "Generates call function for evaluating functions"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
   match eq
   case SES_SIMPLE_ASSIGN(__) then
     <<
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(simulation);
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(<%input%>);
     >>
   case SES_RESIDUAL(__) then
     <<
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"resFunction")%>_<%ix%>(simulation);
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"resFunction")%>_<%ix%>(<%input%>);
     >>
   case SES_ALGEBRAIC_SYSTEM(__) then
     <<
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%ix%>(simulation);
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%ix%>(<%input%>);
     >>
   else
     // ToDo: generate Warning
