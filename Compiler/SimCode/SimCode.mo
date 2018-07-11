@@ -430,6 +430,9 @@ uniontype SimEqSystem
     
     Option<JacobianMatrix> matrix; // linear => A
                                    // non-linear => f'(x)
+    Option<SparseMatrix> new_matrix;  // linear => A
+                                      // non-linear => f'(x)
+
 
     list<Integer> zeroCrossingConditions;
 
@@ -438,6 +441,33 @@ uniontype SimEqSystem
   end SES_ALGEBRAIC_SYSTEM;
 
 end SimEqSystem;
+
+
+public
+uniontype SparseMatrix
+  "represents sparse matrix with compressed columns if collored"
+  record SPARSE_MATRIX
+    list<MatrixColumn> columns;         // column(s) equations and variables
+    list<SimCodeVar.SimVar> seedVars;   // corresponds to the number of columns
+    String matrixName;                  // unique matrix name
+    SparsityPattern sparsity;
+    SparsityPattern sparsityT;
+    list<list<Integer>> coloredCols;
+    Integer maxColorCols;
+    Integer jacobianIndex;
+    Integer partitionIndex;
+  end SPARSE_MATRIX;
+end SparseMatrix;
+
+uniontype MatrixColumn
+  "represents one matrix column of SparseMatrix"
+  record MATRIX_COLUMN
+    OMSIFunction columnEqns;            // column equations equals in size to column vars
+    list<SimCodeVar.SimVar> columnVars; // all column vars, none results vars index -1, the other corresponding to rows index
+    Integer numberOfResultVars;         // corresponds to the number of rows
+  end MATRIX_COLUMN;
+end MatrixColumn;
+
 
 public
 uniontype LinearSystem

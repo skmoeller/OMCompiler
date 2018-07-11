@@ -547,6 +547,28 @@ end OMSIFunction;
     end SES_ALGEBRAIC_SYSTEM;
   end SimEqSystem;
 
+  uniontype SparseMatrix
+    record SPARSE_MATRIX
+      list<MatrixColumn> columns;
+      list<SimCodeVar.SimVar> seedVars;
+      String matrixName;
+      SparsityPattern sparsity;
+      SparsityPattern sparsityT;
+      list<list<Integer>> coloredCols;
+      Integer maxColorCols;
+      Integer jacobianIndex;
+      Integer partitionIndex;
+    end SPARSE_MATRIX;
+  end SparseMatrix;
+
+  uniontype MatrixColumn
+    record MATRIX_COLUMN
+      OMSIFunction columnEqns;
+      list<SimCodeVar.SimVar> columnVars;
+      Integer numberOfResultVars;
+    end MATRIX_COLUMN;
+  end MatrixColumn;
+
   uniontype LinearSystem
     record LINEARSYSTEM
       Integer index;
