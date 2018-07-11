@@ -195,7 +195,7 @@ template dumpEqs(list<SimEqSystem> eqs)
         <%e.discEqs |> eq => '<discrete index="<%equationIndex(eq)%>" />'%>
       </mixed>
       >>
-    case e as SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__), matrix=matrix as SOME(JAC_MATRIX(__))) then
+    case e as SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__)) then
 
       <<
       equation index: <%equationIndex(eq)%>

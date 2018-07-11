@@ -151,13 +151,13 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr, String input)
 end equationCall;
 
 
-template generateMatrixInitialization(Option<JacobianMatrix> matrix)
+template generateMatrixInitialization(Option<DerivativeMatrix> matrix)
 "generates code for matrix initialization and evaluation"
 ::=
   let columnsString = ""
 
   match matrix
-  case SOME(m as JAC_MATRIX(__)) then
+  case SOME(m as DERIVATIVE_MATRIX(__)) then
     let _ = m.columns |> col => (
       let columnsString = generateMatrixColumn(col)
       <<>>
@@ -171,11 +171,11 @@ template generateMatrixInitialization(Option<JacobianMatrix> matrix)
 end generateMatrixInitialization;
 
 
-template generateMatrixColumn(JacobianColumn column)
+template generateMatrixColumn(OMSIFunction column)
 ""
 ::=
   match column
-  case JAC_COLUMN(__) then
+  case OMSI_FUNCTION(__) then
 
   <<
 

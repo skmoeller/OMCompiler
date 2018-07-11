@@ -145,7 +145,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   let &residualCall = buffer ""
 
   match equationSystem
-  case SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(JAC_MATRIX(__))) then
+  case SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
     let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &includes, &evaluationCode, &functionCall, &residualCall)
     let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix)
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)

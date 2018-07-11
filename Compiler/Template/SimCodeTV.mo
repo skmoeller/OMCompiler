@@ -540,34 +540,28 @@ end OMSIFunction;
       Boolean tornSystem;
       Boolean linearSystem;
       OMSIFunction residual;
-      Option<JacobianMatrix> matrix;
+      Option<DerivativeMatrix> matrix;
       list<Integer> zeroCrossingConditions;
       list<DAE.ElementSource> sources;
       BackendDAE.EquationAttributes eqAttr;
     end SES_ALGEBRAIC_SYSTEM;
   end SimEqSystem;
 
-  uniontype SparseMatrix
-    record SPARSE_MATRIX
-      list<MatrixColumn> columns;
-      list<SimCodeVar.SimVar> seedVars;
-      String matrixName;
+  uniontype DerivativeMatrix
+    "represents directional derivatives with sparsity and coloring"
+    record DERIVATIVE_MATRIX
+      list<OMSIFunction> columns;         // column(s) equations and variables
+                                          // inputVars:  seedVars
+                                          // innerVars:  inner column vars
+                                          // outputVars: result vars of the column
+
+      String matrixName;                  // unique matrix name
       SparsityPattern sparsity;
       SparsityPattern sparsityT;
       list<list<Integer>> coloredCols;
       Integer maxColorCols;
-      Integer jacobianIndex;
-      Integer partitionIndex;
-    end SPARSE_MATRIX;
-  end SparseMatrix;
-
-  uniontype MatrixColumn
-    record MATRIX_COLUMN
-      OMSIFunction columnEqns;
-      list<SimCodeVar.SimVar> columnVars;
-      Integer numberOfResultVars;
-    end MATRIX_COLUMN;
-  end MatrixColumn;
+    end DERIVATIVE_MATRIX;
+  end DerivativeMatrix;
 
   uniontype LinearSystem
     record LINEARSYSTEM

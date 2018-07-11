@@ -3782,7 +3782,7 @@ algorithm
       list<SimCode.SimEqSystem> resEqs, simequations;
       SimCode.OMSIFunction omsiFunction;
       Boolean linear, mixedSystem;
-      Option<SimCode.JacobianMatrix> jacobianMatrix;
+      Option<SimCode.DerivativeMatrix> derivativeMatrix;
       Integer algEqIndex;
 
     case BackendDAE.SINGLEEQUATION() equation
@@ -3821,8 +3821,8 @@ algorithm
       omsiFunction = SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, 0);
       tmpOutputVars = listAppend(tSimVars2, tSimVars1);
 
-      (jacobianMatrix, uniqueEqIndex, tempVars) = createSymbolicSimulationJacobian(jacobian, uniqueEqIndex, tempVars);
-      algSystem = SimCode.SES_ALGEBRAIC_SYSTEM(algEqIndex, mixedSystem, true, linear, omsiFunction, jacobianMatrix, {}, {}, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
+      (derivativeMatrix, uniqueEqIndex, tempVars) = createDerivativeMatrix(jacobian, uniqueEqIndex, tempVars);
+      algSystem = SimCode.SES_ALGEBRAIC_SYSTEM(algEqIndex, mixedSystem, true, linear, omsiFunction, derivativeMatrix,  {}, {}, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
       nAlgebraicSystems = nAlgebraicSystems+1;
       tmpEqns = {algSystem};
     then ();
@@ -4586,17 +4586,17 @@ algorithm
   outTuple := ((var, (vars, v::varLst)));
 end sortBackVarWithSimVarsOrder;
 
-protected function createAllDiffedSimVars "author: wbraun"
+protected function createJacSimVarsColumn "author: wbraun"
   input list<BackendDAE.Var> inVars;
   input DAE.ComponentRef inCref;
   input BackendDAE.Variables inAllVars;
   input Integer inResIndex;
   input Integer inTmpIndex;
   input String inMatrixName;
-  input list<SimCodeVar.SimVar> iVars;
-  output list<SimCodeVar.SimVar> outVars;
+  input output list<SimCodeVar.SimVar> tmpVars;
+  input output list<SimCodeVar.SimVar> resVars;
 algorithm
-  outVars := match(inVars, inCref, inAllVars, inResIndex, inTmpIndex, inMatrixName, iVars)
+  (tmpVars, resVars) := match(inVars)
   local
     BackendDAE.Var v, v1;
     SimCodeVar.SimVar simVar;
@@ -4608,42 +4608,61 @@ algorithm
     Integer resIndex, tmpIndex;
     BackendDAE.VarKind varkind;
 
-    case({}, _, _, _, _, _, _) then listReverse(iVars);
+    case ({}) then (listReverse(tmpVars), listReverse(resVars));
 
-    case((v as BackendDAE.VAR(varName=currVar, varKind=varkind, values = dae_var_attr))::restVar, cref, _, resIndex, tmpIndex, _, _) algorithm
+    case((v as BackendDAE.VAR(varName=currVar, varKind=varkind, values = dae_var_attr))::restVar) algorithm
       try
         BackendVariable.getVarSingle(currVar, inAllVars);
         currVar := match (varkind)
           case BackendDAE.STATE() then ComponentReference.crefPrefixDer(currVar);
           else currVar;
         end match;
-        derivedCref := Differentiate.createDifferentiatedCrefName(currVar, cref, inMatrixName);
+        derivedCref := Differentiate.createDifferentiatedCrefName(currVar, inCref, inMatrixName);
         v1 := BackendVariable.copyVarNewName(derivedCref, v);
         v1 := BackendVariable.setVarKind(v1, BackendDAE.JAC_VAR());
         simVar := dlowvarToSimvar(v1, NONE(), inAllVars);
-        simVar.index := resIndex;
-        resIndex := resIndex + 1;
+        simVar.index := inResIndex;
+        resIndex := inResIndex + 1;
+        simVar.matrixName := SOME(inMatrixName);
+        resVars := simVar::resVars;
       else
         currVar := match (varkind)
           case BackendDAE.STATE() then ComponentReference.crefPrefixDer(currVar);
           else currVar;
         end match;
-        derivedCref := Differentiate.createDifferentiatedCrefName(currVar, cref, inMatrixName);
+        derivedCref := Differentiate.createDifferentiatedCrefName(currVar, inCref, inMatrixName);
         v1 := BackendVariable.copyVarNewName(derivedCref, v);
         v1 := BackendVariable.setVarKind(v1, BackendDAE.JAC_DIFF_VAR());
         simVar := dlowvarToSimvar(v1, NONE(), inAllVars);
-        simVar.index := tmpIndex;
-        tmpIndex := tmpIndex + 1;
+        simVar.index := inTmpIndex;
+        simVar.matrixName := SOME(inMatrixName);
+        tmpIndex := inTmpIndex + 1;
+        tmpVars := simVar::tmpVars;
       end try;
-      simVar.matrixName := SOME(inMatrixName);
      then
-       createAllDiffedSimVars(restVar, cref, inAllVars, resIndex, tmpIndex, inMatrixName, simVar::iVars);
+       createJacSimVarsColumn(restVar, inCref, inAllVars, resIndex, tmpIndex, inMatrixName, tmpVars, resVars);
 
     else
      equation
       Error.addInternalError("function createAllDiffedSimVars failed", sourceInfo());
     then fail();
   end match;
+end createJacSimVarsColumn;
+
+protected function createAllDiffedSimVars "author: wbraun"
+  input list<BackendDAE.Var> inVars;
+  input DAE.ComponentRef inCref;
+  input BackendDAE.Variables inAllVars;
+  input Integer inResIndex;
+  input Integer inTmpIndex;
+  input String inMatrixName;
+  input list<SimCodeVar.SimVar> iVars;
+  output list<SimCodeVar.SimVar> outVars;
+protected
+  list<SimCodeVar.SimVar> lst1;
+algorithm
+  (outVars, lst1) := createJacSimVarsColumn(inVars, inCref, inAllVars, inResIndex, inTmpIndex, inMatrixName, iVars, {});
+  outVars := listAppend(lst1, outVars);
 end createAllDiffedSimVars;
 
 public function collectAllJacobianEquations
@@ -4820,6 +4839,170 @@ algorithm
     print("Cols: " + stringDelimitList(List.map(crefs, ComponentReference.printComponentRefStr)," ") + "\n");
   end for;
 end dumpSparsePattern;
+
+
+protected function createDerivativeMatrix
+"translates BackendDAE.SymbolicJacobian to SimCode.DerivativeMatrix."
+  input BackendDAE.Jacobian inJacobian;
+  input Integer iuniqueEqIndex;
+  input list<SimCodeVar.SimVar> itempvars;
+  output Option<SimCode.DerivativeMatrix> res;
+  output Integer ouniqueEqIndex;
+  output list<SimCodeVar.SimVar> otempvars;
+algorithm
+  (res, ouniqueEqIndex, otempvars) := matchcontinue(inJacobian, iuniqueEqIndex, itempvars)
+  local
+
+    BackendDAE.Variables emptyVars, dependentVars, independentVars, globalKnownVars, allvars, residualVars, systvars;
+    BackendDAE.EquationArray emptyEqns, eqns;
+    list<BackendDAE.Var> knvarLst, seedVarLst, independentVarsLst, dependentVarsLst, residualVarsLst, allVars;
+    list<DAE.ComponentRef> independentComRefs, dependentVarsComRefs;
+
+    DAE.ComponentRef x;
+    BackendDAE.SparsePattern pattern;
+    BackendDAE.SparseColoring sparseColoring;
+    list<list<Integer>> coloring;
+    list<tuple<DAE.ComponentRef, list<DAE.ComponentRef>>> sparsepatternComRefs, sparsepatternComRefsT;
+    list<tuple<Integer, list<Integer>>> sparseInts, sparseIntsT;
+
+    BackendDAE.EqSystem syst;
+    BackendDAE.Shared shared;
+    BackendDAE.StrongComponents comps;
+
+    list<SimCodeVar.SimVar> tempvars;
+    String name, dummyVar;
+    Integer maxColor, uniqueEqIndex, nonZeroElements, nRows;
+
+    list<SimCode.SimEqSystem> columnEquations;
+    list<SimCodeVar.SimVar> columnVars, innerVars, residualSimVars;
+    list<SimCodeVar.SimVar> varsSeedIndex, seedVars, indexVars;
+
+    String errorMessage;
+
+    DAE.FunctionTree funcs;
+
+    SimCode.HashTableCrefToSimVar crefSimVarHT;
+
+    case (BackendDAE.EMPTY_JACOBIAN(), _, _) then (NONE(), iuniqueEqIndex, itempvars);
+
+    case (BackendDAE.FULL_JACOBIAN(_), _, _) then (NONE(), iuniqueEqIndex, itempvars);
+
+    // translate only sparcity pattern
+    case (BackendDAE.GENERIC_JACOBIAN(NONE(),pattern as (sparsepatternComRefs, sparsepatternComRefsT,
+                                             (independentComRefs, dependentVarsComRefs), _),
+                                             sparseColoring), _, _)
+      equation
+        if Flags.isSet(Flags.JAC_DUMP2) then
+          print("create sparse pattern for algebraic loop time: " + realString(clock()) + "\n");
+          BackendDump.dumpSparsityPattern(pattern, "---+++ SparsePattern +++---");
+        end if;
+        seedVars = list(makeTmpRealSimCodeVar(cr, BackendDAE.SEED_VAR()) for cr in independentComRefs);
+        indexVars = list(makeTmpRealSimCodeVar(cr, BackendDAE.VARIABLE()) for cr in dependentVarsComRefs);
+
+        seedVars = rewriteIndex(seedVars, 0);
+        indexVars = rewriteIndex(indexVars, 0);
+        if Flags.isSet(Flags.JAC_DUMP2) then
+          print("\n---+++ seedVars variables +++---\n");
+          print(Tpl.tplString(SimCodeDump.dumpVarsShort, seedVars));
+          print("\n---+++ indexVars variables +++---\n");
+          print(Tpl.tplString(SimCodeDump.dumpVarsShort, indexVars));
+        end if;
+        //sort sparse pattern
+        varsSeedIndex = listAppend(seedVars, indexVars);
+        //sort sparse pattern
+        sparseInts = sortSparsePattern(varsSeedIndex, sparsepatternComRefs, false);
+        sparseIntsT = sortSparsePattern(varsSeedIndex, sparsepatternComRefsT, false);
+
+        // set sparse pattern
+        coloring = sortColoring(seedVars, sparseColoring);
+        maxColor = listLength(sparseColoring);
+
+        if Flags.isSet(Flags.JAC_DUMP2) then
+          print("created sparse pattern for algebraic loop time: " + realString(clock()) + "\n");
+        end if;
+
+      then (SOME(SimCode.DERIVATIVE_MATRIX({}, "", sparseInts, sparseIntsT, coloring, maxColor)), iuniqueEqIndex, itempvars);
+
+    // translate omsi_function and sparsity pattern
+    case (BackendDAE.GENERIC_JACOBIAN(SOME((BackendDAE.DAE(eqs={syst as BackendDAE.EQSYSTEM(matching=BackendDAE.MATCHING(comps=comps))},
+                                    shared=shared), name,
+                                    independentVarsLst, residualVarsLst, dependentVarsLst)),
+                                      (sparsepatternComRefs, sparsepatternComRefsT, (_, _), _),
+                                      sparseColoring), _, _)
+      equation
+        if Flags.isSet(Flags.JAC_DUMP2) then
+          print("analytical Jacobians -> creating SimCode equations for Matrix " + name + " time: " + realString(clock()) + "\n");
+        end if;
+        // generate also discrete equations, they might be introduced by wrapFunctionCalls
+        (columnEquations, _, uniqueEqIndex, tempvars) = createEquations(false, false, true, false, syst, shared, comps, iuniqueEqIndex, itempvars);
+        if Flags.isSet(Flags.JAC_DUMP2) then
+          print("analytical Jacobians -> created all SimCode equations for Matrix " + name +  " time: " + realString(clock()) + "\n");
+        end if;
+
+        // create SimCodeVar.SimVars from jacobian vars
+        dummyVar = ("dummyVar" + name);
+        x = DAE.CREF_IDENT(dummyVar, DAE.T_REAL_DEFAULT, {});
+        emptyVars =  BackendVariable.emptyVars();
+
+        residualVars = BackendVariable.listVar1(residualVarsLst);
+        independentVars = BackendVariable.listVar1(independentVarsLst);
+
+        // get cse and other aux vars > columnVars
+        ((allVars, _)) = BackendVariable.traverseBackendDAEVars(syst.orderedVars, getFurtherVars , ({}, x));
+        systvars = BackendVariable.listVar1(allVars);
+        ((columnVars, _)) =  BackendVariable.traverseBackendDAEVars(systvars, traversingdlowvarToSimvar, ({}, emptyVars));
+        columnVars = List.map1(columnVars, setSimVarKind, BackendDAE.JAC_DIFF_VAR());
+        columnVars = List.map1(columnVars, setSimVarMatrixName, SOME(name));
+        innerVars = rewriteIndex(columnVars, 0);
+
+        (innerVars, columnVars) = createJacSimVarsColumn(dependentVarsLst, x, residualVars, 0, listLength(innerVars), name, innerVars, {});
+
+        if Flags.isSet(Flags.JAC_DUMP2) then
+          print("\n---+++ all column variables +++---\n");
+          print(Tpl.tplString(SimCodeDump.dumpVarsShort, columnVars));
+          print("analytical Jacobians -> create all SimCode vars for Matrix " + name + " time: " + realString(clock()) + "\n");
+        end if;
+
+        ((seedVars, _)) =  BackendVariable.traverseBackendDAEVars(independentVars, traversingdlowvarToSimvar, ({}, emptyVars));
+        ((indexVars, _)) =  BackendVariable.traverseBackendDAEVars(residualVars, traversingdlowvarToSimvar, ({}, emptyVars));
+        seedVars = rewriteIndex(listReverse(seedVars), 0);
+        indexVars = rewriteIndex(listReverse(indexVars), 0);
+        if Flags.isSet(Flags.JAC_DUMP2) then
+          print("\n---+++ seedVars variables +++---\n");
+          print(Tpl.tplString(SimCodeDump.dumpVarsShort, seedVars));
+          print("\n---+++ indexVars variables +++---\n");
+          print(Tpl.tplString(SimCodeDump.dumpVarsShort, indexVars));
+        end if;
+        //sort sparse pattern
+        varsSeedIndex = listAppend(seedVars, indexVars);
+        sparseInts = sortSparsePattern(varsSeedIndex, sparsepatternComRefs, false);
+        sparseIntsT = sortSparsePattern(varsSeedIndex, sparsepatternComRefsT, false);
+
+        // set sparse pattern
+        coloring = sortColoring(varsSeedIndex, sparseColoring);
+        maxColor = listLength(sparseColoring);
+
+        // create seed vars
+        seedVars = replaceSeedVarsName(seedVars, name);
+        seedVars = List.map1(seedVars, setSimVarKind, BackendDAE.SEED_VAR());
+        seedVars = List.map1(seedVars, setSimVarMatrixName, SOME(name));
+
+        if Flags.isSet(Flags.JAC_DUMP2) then
+          print("analytical Jacobians -> transformed to SimCode for Matrix " + name + " time: " + realString(clock()) + "\n");
+        end if;
+
+      then (SOME(SimCode.DERIVATIVE_MATRIX({SimCode.OMSI_FUNCTION(columnEquations, seedVars, indexVars, columnVars, 0)}, name, sparseInts, sparseIntsT, coloring, maxColor)), uniqueEqIndex, tempvars);
+
+    else
+      equation
+        if Flags.isSet(Flags.JAC_DUMP) then
+          errorMessage = "function createSymbolicSimulationJacobian failed.";
+          Error.addInternalError(errorMessage, sourceInfo());
+        end if;
+      then (NONE(), iuniqueEqIndex, itempvars);
+
+  end matchcontinue;
+end createDerivativeMatrix;
 
 
 // =============================================================================

@@ -306,6 +306,7 @@ uniontype OMSIFunction
     list<SimCodeVar.SimVar> inputVars "list of simcode variables determining input variables for equation(s)";
     list<SimCodeVar.SimVar> outputVars "list of simcode variables determining output variables for equation(s)";
     list<SimCodeVar.SimVar> innerVars "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
+    //HashTableCrefToSimVar crefToSimVarHT "hidden from typeview - used by cref2simvar() for cref -> SIMVAR lookup available in templates.";
     Integer nAlgebraicSystems "number of linear and non-linear algebraic systems in OMSI_FUNCTION.equations";
   end OMSI_FUNCTION;
 end OMSIFunction; 
@@ -427,12 +428,9 @@ uniontype SimEqSystem
     // residual.outputVars = iterationsVars
     OMSIFunction residual; // linear: A*x-b = res 
                            // non-linear: f(x) = res
-    
-    Option<JacobianMatrix> matrix; // linear => A
-                                   // non-linear => f'(x)
-    Option<SparseMatrix> new_matrix;  // linear => A
-                                      // non-linear => f'(x)
 
+    Option<DerivativeMatrix> matrix;  // linear => A
+                                      // non-linear => f'(x)
 
     list<Integer> zeroCrossingConditions;
 
@@ -444,30 +442,21 @@ end SimEqSystem;
 
 
 public
-uniontype SparseMatrix
-  "represents sparse matrix with compressed columns if collored"
-  record SPARSE_MATRIX
-    list<MatrixColumn> columns;         // column(s) equations and variables
-    list<SimCodeVar.SimVar> seedVars;   // corresponds to the number of columns
+uniontype DerivativeMatrix
+  "represents directional derivatives with sparsity and coloring"
+  record DERIVATIVE_MATRIX
+    list<OMSIFunction> columns;         // column(s) equations and variables
+                                        // inputVars:  seedVars
+                                        // innerVars:  inner column vars
+                                        // outputVars: result vars of the column
+
     String matrixName;                  // unique matrix name
     SparsityPattern sparsity;
     SparsityPattern sparsityT;
     list<list<Integer>> coloredCols;
     Integer maxColorCols;
-    Integer jacobianIndex;
-    Integer partitionIndex;
-  end SPARSE_MATRIX;
-end SparseMatrix;
-
-uniontype MatrixColumn
-  "represents one matrix column of SparseMatrix"
-  record MATRIX_COLUMN
-    OMSIFunction columnEqns;            // column equations equals in size to column vars
-    list<SimCodeVar.SimVar> columnVars; // all column vars, none results vars index -1, the other corresponding to rows index
-    Integer numberOfResultVars;         // corresponds to the number of rows
-  end MATRIX_COLUMN;
-end MatrixColumn;
-
+  end DERIVATIVE_MATRIX;
+end DerivativeMatrix;
 
 public
 uniontype LinearSystem
