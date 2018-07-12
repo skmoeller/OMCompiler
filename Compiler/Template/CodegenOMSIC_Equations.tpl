@@ -55,7 +55,7 @@ template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
 end equationFunctionPrototypes;
 
 
-template equationFunction(SimEqSystem eq, Context context, String modelNamePrefixStr)
+template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr)
  "Generates C-function for an equation evaluation"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
@@ -63,7 +63,7 @@ template equationFunction(SimEqSystem eq, Context context, String modelNamePrefi
 
   let &varDecls = buffer ""
   let &auxFunction = buffer ""
-  let equationCode = equationCStr(eq, context, &varDecls, &auxFunction)
+  let equationCode = equationCStr(eq, &varDecls, &auxFunction)
 
   let funcName = (match eq
     case SES_RESIDUAL(__) then
@@ -91,20 +91,19 @@ template equationFunction(SimEqSystem eq, Context context, String modelNamePrefi
     <%varDecls%>
     <%auxFunction%>
     <%equationCode%>
-  }
+  }<%"\n"%>
   >>
-end equationFunction;
+end generateEquationFunction;
 
-
-template equationCStr(SimEqSystem eq, Context context, Text &varDecls, Text &auxFunction)
+template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction)
  "Generates an equation that is just a simple assignment."
 ::=
   let &preExp = buffer ""
 
   match eq
   case SES_SIMPLE_ASSIGN(__) then
-    let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
-    let crefStr = CodegenCFunctions.contextCref(cref, context, &auxFunction)
+    let expPart = CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)
+    let crefStr = CodegenCFunctions.contextCref(cref, contextOMSI, &auxFunction)
     <<
     <%crefStr%> = <%expPart%>;
     >>
@@ -114,7 +113,7 @@ template equationCStr(SimEqSystem eq, Context context, Text &varDecls, Text &aux
     /* Add stuff here*/
     >>
   case SES_RESIDUAL(__) then
-    let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
+    let expPart = CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)
     <<
     *res = <%expPart%>;
     >>
@@ -159,7 +158,7 @@ template generateMatrixInitialization(Option<DerivativeMatrix> matrix)
   match matrix
   case SOME(m as DERIVATIVE_MATRIX(__)) then
     let _ = m.columns |> col => (
-      let columnsString = generateMatrixColumn(col)
+      let columnsString = generateMatrixColumnInitialization(col)
       <<>>
     )
 
@@ -171,16 +170,79 @@ template generateMatrixInitialization(Option<DerivativeMatrix> matrix)
 end generateMatrixInitialization;
 
 
-template generateMatrixColumn(OMSIFunction column)
+template generateMatrixColumnInitialization(OMSIFunction column)
 ""
 ::=
+
+  let &varDecls = buffer ""
+  let &auxFunction = buffer ""
+  let &body = buffer ""
+
   match column
   case OMSI_FUNCTION(__) then
+    let _ = (equations |> eq =>
+      let &body += equationCStr(eq, &varDecls, &auxFunction)
+      <<>>
+    )
+
+
 
   <<
-
+  <%body%>
   >>
-end generateMatrixColumn;
+end generateMatrixColumnInitialization;
+
+
+template generateDerivativeMatrix(Option<DerivativeMatrix> matrix, String modelName, String index)
+"generates equations for derivative matrix"
+::=
+  let &columnsString = buffer ""
+  match matrix
+  case SOME(m as DERIVATIVE_MATRIX(__)) then
+    let _ = m.columns |> col => (
+      let &columnsString += generateDereivativeMatrixColumn(col, modelName, index)
+      <<>>
+    )
+
+  <<
+  <%columnsString%>
+  >>
+end generateDerivativeMatrix;
+
+
+template generateDereivativeMatrixColumn(OMSIFunction column, String modelName, String index)
+"generates equations code for columns of derivative matrix"
+::=
+  let bodyBuffer = ""
+  let &preExp = buffer ""
+  let &varDecls = buffer ""
+  let &auxFunction = buffer ""
+
+  match column
+  case OMSI_FUNCTION() then
+    let bodyBuffer = ( equations |> eq hasindex i0=>
+      <<
+      <%match eq
+      case SES_SIMPLE_ASSIGN(__) then
+        'dirDerivative[<%i0%>] = <%CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)%>;'
+      else
+        ""
+      end match
+      %>
+      >>
+    ;separator="\n")
+
+  <<
+  /*
+  Description something
+  */
+  void <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative){
+
+  <%bodyBuffer%>
+  }
+  >>
+end generateDereivativeMatrixColumn;
+
 
 
 annotation(__OpenModelica_Interface="backend");

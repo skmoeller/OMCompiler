@@ -111,11 +111,11 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
     let _ = (equations |> eqsystem hasindex i0 =>
       match eqsystem
       case SES_SIMPLE_ASSIGN(__) then
-        let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
+        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix) +"\n"
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation") +"\n"
         <<>>
       case SES_RESIDUAL(__) then
-        let &evaluationCode += CodegenOMSIC_Equations.equationFunction(eqsystem, contextOMSI, FileNamePrefix) +"\n"
+        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix) +"\n"
         let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, 'this_function, res[i++]') +"\n"      // ToDo: why is i0 always zero?
         <<>>
       case SES_ALGEBRAIC_SYSTEM(__) then
@@ -143,12 +143,15 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   let &evaluationCode = buffer ""
   let &functionCall = buffer ""
   let &residualCall = buffer ""
+  let &derivativeMatrix = buffer ""
 
   match equationSystem
-  case SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
+  case algSystem as SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
     let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &includes, &evaluationCode, &functionCall, &residualCall)
     let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix)
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
+    let derivativeMatrix = CodegenOMSIC_Equations.generateDerivativeMatrix(matrix, FileNamePrefix, algSystem.index)
+    let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
 
   <<
   /* Algebraic system code */
@@ -159,11 +162,11 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   #endif
 
   /* Instantiation and initalization*/
-  <%matrixString%>
-
   <%initlaizationFunction%>
 
-  /* Evaluation functions for each equation */
+  <%matrixString%>
+
+  /* Evaluation functions for <%FileNamePrefix%>_resFunction_<%index%> */
   <%evaluationCode%>
 
   void <%FileNamePrefix%>_resFunction_<%index%> (omsi_function* this_function, omsi_real* res) {
@@ -171,7 +174,13 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     <%residualCall%>
   }
 
+  /* functions for derivative matrix */
+  <%derivativeMatrix%>
+
   /* Algebraic system evaluation */
+  /*
+  <%equationInfos%>
+  */
   omsi_status <%FileNamePrefix%>_algSystFunction_<%index%>(omsi_function_t* simulation, omsi_values* model_vars_and_params){
 
     /* evaluate assignments */
@@ -214,8 +223,10 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
 
       algSystem->isLinear = <% if linearSystem then 'omsi_true' else 'omsi_false'%>;
 
-      algSystem->loop = NULL;       /* ToDo: implement in template */
       algSystem->functions->evaluate = <%FileNamePrefix%>_resFunction_<%index%>;
+      algSystem->jacobian->evaluate = <%FileNamePrefix%>_derivativeMatFunc_<%index%>;
+
+      algSystem->solverData = NULL;
 
       return omsi_ok;
     }

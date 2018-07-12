@@ -108,7 +108,6 @@ template dumpEqs(list<SimEqSystem> eqs)
       <<
       equation index: <%equationIndex(eq)%>
       type: RESIDUAL
-
       <%escapeCComments(dumpExp(e.exp,"\""))%>
       >>
     case e as SES_SIMPLE_ASSIGN(__) then
@@ -196,13 +195,14 @@ template dumpEqs(list<SimEqSystem> eqs)
       </mixed>
       >>
     case e as SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__)) then
-
+      let detailedDescription = dumpAlgSystemOps(matrix)
       <<
       equation index: <%equationIndex(eq)%>
       type: ALGEBRAIC_SYSTEM
       is linear: <%e.linearSystem%>
-      residual function index: <%residual.equations |> eq => '<%equationIndex(eq)%>' ; separator = ", "%>
-      dimension: /* ToDo: add (in CodegenUtilSimulation.dumpEqs) */
+      depending functions indices: <%residual.equations |> eq => '<%equationIndex(eq)%>' ; separator = ", "%>
+      dimension: <%listLength(residual.equations)%>
+      <%detailedDescription%>
       >>
     case e as SES_WHEN(__) then
       let body = dumpWhenOps(whenStmtLst)
@@ -241,6 +241,48 @@ template dumpEqs(list<SimEqSystem> eqs)
       unknown equation
       >>
 end dumpEqs;
+
+
+template dumpAlgSystemOps (Option<DerivativeMatrix> derivativeMatrix)
+"dumps description of eqations of algebraic system.
+ Helper function for dumpEqs."
+::=
+  let &varsBuffer = buffer ""
+  let &columnBuffer = buffer ""
+
+  match derivativeMatrix
+  case SOME(matrix as DERIVATIVE_MATRIX(__)) then
+    let _ = (matrix.columns |> column =>
+      dumpAlgSystemColumn(column, &columnBuffer, &varsBuffer)
+    )
+
+  <<
+  iteraton vars: <%varsBuffer%>
+
+  <%columnBuffer%>
+  >>
+end dumpAlgSystemOps;
+
+template dumpAlgSystemColumn (OMSIFunction column ,Text &columnBuffer, Text &varsBuffer)
+"dumps equation description for one OMSIFunction"
+::=
+
+  match column
+  case OMSI_FUNCTION(__) then
+    let &varsBuffer += (inputVars |> var as SIMVAR(__) =>
+        <<
+        <%crefStr(name)%>
+        >>
+        ; separator=", "
+    )
+
+    let _ = (equations |> equation as SES_SIMPLE_ASSIGN(__) =>
+        let &columnBuffer += crefStr(equation.cref) + " = " + escapeCComments(dumpExp(equation.exp,"\"")) + "\n"        // "
+        <<>>
+    )
+    <<>>
+end dumpAlgSystemColumn;
+
 
 template dumpWhenOps(list<BackendDAE.WhenOperator> whenOps)
 ::=
