@@ -76,8 +76,8 @@ typedef char                omsi_char;
 typedef const omsi_char*    omsi_string;
 #endif
 
-
-#include "omsi_eqns_system.h"
+/* forward some structs */
+typedef struct omsi_function_t omsi_function_t;
 
 
 /**
@@ -232,7 +232,24 @@ typedef struct model_variable_info_t {
     file_info       info;                   /* file informations for variable|parameter|alias */
 } model_variable_info_t;
 
+/**
+ * general algebraic system
+ */
+typedef struct omsi_algebraic_system_t {
+    omsi_unsigned_int n_iteration_vars;
+    omsi_index_type* iteration_vars_indices;
 
+    omsi_unsigned_int n_conditions;
+    omsi_int* zerocrossing_indices;
+
+    omsi_bool isLinear;         /* linear system=true and non-linear system=false */
+    omsi_function_t* jacobian;  /* pointer to omsi_function for jacobian matrix
+                                 * linear case: A
+                                 * non-linear case: f' */
+
+    omsi_function_t* functions; /* pointer to omsi_function for residual function */
+    void* solverData;           /* pointer to solver specific local data*/
+}omsi_algebraic_system_t;
 
 typedef struct omsi_function_t {
     omsi_unsigned_int n_output_vars;
