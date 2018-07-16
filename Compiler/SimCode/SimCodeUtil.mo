@@ -557,7 +557,7 @@ algorithm
       dtSimVar := dlowvarToSimvar(dtVar, NONE(), emptyVars);
       dtSimVar.index := listLength(inlineSimKnVars);
       inlineSimKnVars := dtSimVar::inlineSimKnVars;
-      crefToSimVarHT := List.fold(inlineSimKnVars,addSimVarToHashTable,crefToSimVarHT);
+      crefToSimVarHT := List.fold(inlineSimKnVars,HashTableCrefSimVar.addSimVarToHashTable,crefToSimVarHT);
     end if;
 
     if Flags.getConfigBool(Flags.CALCULATE_SENSITIVITIES) then
@@ -8452,75 +8452,44 @@ algorithm
     outHT := HashTableCrefSimVar.emptyHashTableSized(size);
     arraySimVars := HashTableCrILst.emptyHashTableSized(size);
 
-    outHT := List.fold(vars.stateVars, addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.stateVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     //true := intLt(size, -1);
-    outHT := List.fold(vars.derivativeVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.algVars, addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.derivativeVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.algVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     arraySimVars := List.fold(vars.algVars, getArraySimVars, arraySimVars);
-    outHT := List.fold(vars.discreteAlgVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.intAlgVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.boolAlgVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.paramVars, addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.discreteAlgVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.intAlgVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.boolAlgVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.paramVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     arraySimVars := List.fold(vars.paramVars, getArraySimVars, arraySimVars);
-    outHT := List.fold(vars.intParamVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.boolParamVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.aliasVars, addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.intParamVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.boolParamVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.aliasVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     arraySimVars := List.fold(vars.aliasVars, getArraySimVars, arraySimVars);
-    outHT := List.fold(vars.intAliasVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.boolAliasVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.stringAlgVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.stringParamVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.stringAliasVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.extObjVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.constVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.intConstVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.boolConstVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.stringConstVars, addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.intAliasVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.boolAliasVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.stringAlgVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.stringParamVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.stringAliasVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.extObjVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.constVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.intConstVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.boolConstVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.stringConstVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     if (Config.simCodeTarget()=="Cpp" or Config.simCodeTarget()=="omsicpp") then
       // Not needed in the hashtable (actually breaks code generation
       // due to bad indexes, no information that they are seed variables
       // and so on...
-      outHT := List.fold(vars.sensitivityVars, addSimVarToHashTable, outHT);
-      outHT := List.fold(vars.jacobianVars, addSimVarToHashTable, outHT);
-      outHT := List.fold(vars.seedVars, addSimVarToHashTable, outHT);
+      outHT := List.fold(vars.sensitivityVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+      outHT := List.fold(vars.jacobianVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+      outHT := List.fold(vars.seedVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     end if;
-    outHT := List.fold(vars.realOptimizeConstraintsVars, addSimVarToHashTable, outHT);
-    outHT := List.fold(vars.realOptimizeFinalConstraintsVars, addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.realOptimizeConstraintsVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.realOptimizeFinalConstraintsVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
   else
     Error.addInternalError("function createCrefToSimVarHT failed", sourceInfo());
   end try;
 end createCrefToSimVarHT;
-
-public function addSimVarToHashTable
-  input SimCodeVar.SimVar simvarIn;
-  input  SimCode.HashTableCrefToSimVar inHT;
-  output SimCode.HashTableCrefToSimVar outHT;
-algorithm
-  outHT :=
-  matchcontinue (simvarIn, inHT)
-    local
-      DAE.ComponentRef cr, acr;
-      SimCodeVar.SimVar sv;
-
-    case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = NONE()), _)
-      equation
-        //print("addSimVarToHashTable: handling variable '" + ComponentReference.printComponentRefStr(cr) + "'\n");
-        outHT = BaseHashTable.add((cr, sv), inHT);
-      then outHT;
-        // add the whole array crefs to the hashtable, too
-    case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = SOME(acr)), _)
-      equation
-        //print("addSimVarToHashTable: handling array variable '" + ComponentReference.printComponentRefStr(cr) + "'\n");
-        outHT = BaseHashTable.add((acr, sv), inHT);
-        outHT = BaseHashTable.add((cr, sv), outHT);
-      then outHT;
-    else
-      equation
-        Error.addInternalError("function addSimVarToHashTable failed", sourceInfo());
-      then
-        fail();
-  end matchcontinue;
-end addSimVarToHashTable;
 
 protected function getArraySimVars "author: marcusw
   store the array-cref of the variable in the hash table and add the variable-index as value. The variable is handled as array-variable,
@@ -11754,7 +11723,7 @@ algorithm
 
         // get states and create hash table
         SimCode.MODELINFO(varInfo=varInfo,vars=allVars) = modelInfo;
-        htStates = List.fold(allVars.stateVars, addSimVarToHashTable, HashTableCrefSimVar.emptyHashTableSized(1+integer(1.4*size)));
+        htStates = List.fold(allVars.stateVars, HashTableCrefSimVar.addSimVarToHashTable, HashTableCrefSimVar.emptyHashTableSized(1+integer(1.4*size)));
 
         // produce mapping
         simVarIdcs = List.map2(simVars,getSimVarIndex,varInfo,htStates);

@@ -44,6 +44,7 @@ keyEqual   - A comparison function between two keys, returns true if equal.
 import BaseHashTable;
 import DAE;
 import SimCodeVar;
+import Error.addInternalError;
 
 type Key = DAE.ComponentRef;
 type Value = SimCodeVar.SimVar;
@@ -112,5 +113,84 @@ algorithm
   str := "#SimVar(index="+String(var.index)+",name="+ComponentReference.printComponentRefStr(var.name)+")#";
 end opaqueStr;
 
+
+public function addSimVarToHashTable
+"adds SimVar to hash table inHT and returns extended hash table"
+  input SimCodeVar.SimVar simvarIn;
+  input  HashTable inHT;
+  output HashTable outHT;
+algorithm
+  outHT :=
+  matchcontinue (simvarIn, inHT)
+    local
+      DAE.ComponentRef cr, acr;
+      SimCodeVar.SimVar sv;
+
+    case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = NONE()), _)
+      equation
+        //print("addSimVarToHashTable: handling variable '" + ComponentReference.printComponentRefStr(cr) + "'\n");
+        outHT = BaseHashTable.add((cr, sv), inHT);
+      then outHT;
+        // add the whole array crefs to the hashtable, too
+    case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = SOME(acr)), _)
+      equation
+        //print("addSimVarToHashTable: handling array variable '" + ComponentReference.printComponentRefStr(cr) + "'\n");
+        outHT = BaseHashTable.add((acr, sv), inHT);
+        outHT = BaseHashTable.add((cr, sv), outHT);
+      then outHT;
+    else
+      equation
+        Error.addInternalError("function addSimVarToHashTable failed", sourceInfo());
+      then
+        fail();
+  end matchcontinue;
+end addSimVarToHashTable;
+
 annotation(__OpenModelica_Interface="backend");
 end HashTableCrefSimVar;
+
+
+encapsulated package HashTableCrefSimVarDep
+extends HashTableCrefSimVar;
+
+/* Below is the instance specific code. For each hashtable the user must define:
+
+Key        - The key used to uniquely define elements in a hashtable
+Value      - Tuple of SimCodeVar.SimVar and dependecy information for SimVar
+hashFunc   - A function that maps a key to a positive integer.
+keyEqual   - A comparison function between two keys, returns true if equal.
+*/
+
+/* HashTable instance specific code */
+type Value = tuple<SimCodeVar.SimVar, tuple<Boolean, Boolean, Boolean>>;
+
+function opaqueStr
+  input Value value;
+  output String str;
+algorithm
+  _ := match (value)
+    local
+      SimCodeVar.SimVar var;
+      tuple<Boolean, Boolean, Boolean> dependency;
+    case ((var, dependency))
+      algorithm
+        str := "#SimVar(index="+String(var.index)+",name="+ComponentReference.printComponentRefStr(var.name)+")#";
+        _ := match (dependency)
+          local
+            Boolean bool1;
+            Boolean bool2;
+            Boolean bool3;
+          case (bool1, bool2, bool3)
+            algorithm
+              str := str + "#dependency (inputVar="+String(bool1)+" ,innerVar="
+                    +String(bool2) + "outputVar="+String(bool3)+")#";
+            then();
+        end match;
+      then ();
+    end match;
+end opaqueStr;
+
+annotation(__OpenModelica_Interface="backend");
+end HashTableCrefSimVarDep;
+
+

@@ -90,6 +90,7 @@ import Flags;
 import FMI;
 import GC;
 import HashTable;
+import HashTableCrefSimVar;
 import HashTableCrIListArray;
 import HashTableCrILst;
 import HpcOmSimCodeMain;
@@ -1296,7 +1297,7 @@ algorithm
     ((residualVars, _)) :=  BackendVariable.traverseBackendDAEVars(resVars, SimCodeUtil.traversingdlowvarToSimvar, ({}, BackendVariable.emptyVars()));
     residualVars := SimCodeUtil.rewriteIndex(residualVars, 0);
     (residualVars, _) := SimCodeUtil.setVariableIndexHelper(residualVars, 0);
-    crefToSimVarHT:= List.fold(residualVars,SimCodeUtil.addSimVarToHashTable,crefToSimVarHT);
+    crefToSimVarHT:= List.fold(residualVars,HashTableCrefSimVar.addSimVarToHashTable,crefToSimVarHT);
 
     // create auxiliary variables, set index and push them SimCode Hash Table
     ((_, auxVars)) := BackendVariable.traverseBackendDAEVars(daeVars, BackendVariable.collectVarKindVarinVariables, (BackendVariable.isDAEmodeAuxVar, BackendVariable.emptyVars()));
@@ -1304,7 +1305,7 @@ algorithm
     auxiliaryVars := List.sort(auxiliaryVars, SimCodeUtil.simVarCompareByCrefSubsAtEndlLexical);
     auxiliaryVars := SimCodeUtil.rewriteIndex(auxiliaryVars, 0);
     (auxiliaryVars, _) := SimCodeUtil.setVariableIndexHelper(auxiliaryVars, 0);
-    crefToSimVarHT:= List.fold(auxiliaryVars,SimCodeUtil.addSimVarToHashTable,crefToSimVarHT);
+    crefToSimVarHT:= List.fold(auxiliaryVars,HashTableCrefSimVar.addSimVarToHashTable,crefToSimVarHT);
 
     // create SimCodeVars for algebraic states
     algStateVars := BackendVariable.listVar(inBackendDAE.shared.daeModeData.algStateVars);
@@ -1313,7 +1314,7 @@ algorithm
 
     algebraicStateVars := SimCodeUtil.sortSimVarsAndWriteIndex(algebraicStateVars, crefToSimVarHT);
     (algebraicStateVars, _) := SimCodeUtil.setVariableIndexHelper(algebraicStateVars, 2*nStates);
-    crefToSimVarHT:= List.fold(algebraicStateVars,SimCodeUtil.addSimVarToHashTable,crefToSimVarHT);
+    crefToSimVarHT:= List.fold(algebraicStateVars,HashTableCrefSimVar.addSimVarToHashTable,crefToSimVarHT);
 
     // create DAE mode Sparse pattern and TODO: Jacobians
     // sparsity pattern generation

@@ -306,7 +306,7 @@ uniontype OMSIFunction
     list<SimCodeVar.SimVar> inputVars "list of simcode variables determining input variables for equation(s)";
     list<SimCodeVar.SimVar> outputVars "list of simcode variables determining output variables for equation(s)";
     list<SimCodeVar.SimVar> innerVars "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
-    //HashTableCrefToSimVar crefToSimVarHT "hidden from typeview - used by cref2simvar() for cref -> SIMVAR lookup available in templates.";
+    //HashTableCrefSimVar.HashTable crefToSimVarHT "SIMVAR lookup available in templates";
     Integer nAlgebraicSystems "number of linear and non-linear algebraic systems in OMSI_FUNCTION.equations";
   end OMSI_FUNCTION;
 end OMSIFunction; 
