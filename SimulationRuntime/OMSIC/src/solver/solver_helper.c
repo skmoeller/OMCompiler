@@ -162,19 +162,59 @@ omsi_values* save_omsi_values (const omsi_values*   vars,
 }
 
 
-omsi_status omsi_get_rhs_eqSystem (void* ) {
 
+
+/*
+ * Reads derivative matrix informations from generated functions and copies them
+ * into returned matrix in row-major order or column-major order.
+ * Only for quadratic matrices.
+ *
+ * Use rowMajorOrder = true for e.g.
+ * Use rowMajorOrder = false for e.g. LAPACK solver
+ */
+omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t algebraicSystem,
+                                        omsi_bool               rowMajorOrder,
+                                        omsi_real*              matrix) {
+
+    omsi_unsigned_int dim = algebraicSystem->jacobian->n_output_vars;
+    omsi_unsigned_int dim1, dim2;
+    omsi_unsigned_int i_row, i_column;
+
+    omsi_real* tmpColumnVector = (omsi_real*) global_allocateMemory(dim, sizeof(omsi_real));
+    omsi_real* seedVector = (omsi_real*) global_allocateMemory(dim, sizeof(omsi_real));            /*seed vector, initialized with zeros */
+
+    if (!tmpColumnVector || !seedVector) {
+        // ToDo: add error case out of memory
+        return omsi_error;
+    }
+
+    if (rowMajorOrder) {
+        dim1 = dim;         /* element (i,j) of dim times dim matrix is */
+        dim2 = 0;           /* matrix[i*dim+j] */
+    }
+    else {
+        dim1 = 0;           /* element (i,j) of dim times dim matrix is */
+        dim2 = dim;         /* matrix[i+j*dim] */
+    }
+
+    for (i_column=0; i_column<dim; i_column++) {
+        seedVector[i_column] = 1;       /* set seed vector for current row */
+        /* evaluate derivative matrix column wise */
+        algebraicSystem->jacobian->evaluate(algebraicSystem->jacobian,
+                                            seedVector,
+                                            tmpColumnVector);
+        for (i_row=0; i_row<dim; i_row++) {
+            matrix[i_row*dim1+i_column*dim2] = tmpColumnVector[i_row];
+        }
+        seedVector[i_column] = 0;
+    }
+
+    /* free memory */
+    global_freeMemory(tmpColumnVector);
+    global_freeMemory(seedVector);
 
     return omsi_ok;
 }
-
-
-
-
-
-
-
-
 
 
 

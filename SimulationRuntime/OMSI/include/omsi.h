@@ -232,6 +232,7 @@ typedef struct model_variable_info_t {
     file_info       info;                   /* file informations for variable|parameter|alias */
 } model_variable_info_t;
 
+
 /**
  * general algebraic system
  */
@@ -251,13 +252,14 @@ typedef struct omsi_algebraic_system_t {
     void* solverData;           /* pointer to solver specific local data*/
 }omsi_algebraic_system_t;
 
+
 typedef struct omsi_function_t {
     omsi_unsigned_int n_output_vars;
     omsi_unsigned_int n_input_vars;
     omsi_unsigned_int n_inner_vars;
 
     omsi_unsigned_int           n_algebraic_system;     /* number of algebraic systems */
-    omsi_algebraic_system_t*    algebraic_system_t;
+    omsi_algebraic_system_t*    algebraic_system_t;     /* array of algebraic systems */
 
     omsi_values* function_vars;
 

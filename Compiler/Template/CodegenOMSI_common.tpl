@@ -56,7 +56,7 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
 
     // generate file for algebraic systems in simulation problem
     let content = generateOmsiFunctionCode(simulation, FileNamePrefix)
-    let () = textFile(content, FileNamePrefix+"_equations_sim.c")
+    let () = textFile(content, FileNamePrefix+"_sim_equations.c")
 
     // generate file for initialization problem
     // ToDo: add
@@ -123,7 +123,7 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation") +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
-        let () = textFile(content, FileNamePrefix+"_algSyst_"+ index + "_sim.c")
+        let () = textFile(content, FileNamePrefix+"_sim_algSyst_"+ index + ".c")
         <<>>
       else
         // NOT IMPLEMENTED YET
@@ -150,8 +150,10 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &includes, &evaluationCode, &functionCall, &residualCall)
     let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix)
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
-    let derivativeMatrix = CodegenOMSIC_Equations.generateDerivativeMatrix(matrix, FileNamePrefix, algSystem.index)
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
+
+    let derivativeMatrix = CodegenOMSIC_Equations.generateDerivativeFile(matrix, FileNamePrefix, algSystem.index)
+    let () = textFile(derivativeMatrix, FileNamePrefix+"_sim_derMat_"+algSystem.index+".c")
 
   <<
   /* Algebraic system code */
@@ -173,9 +175,6 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     omsi_unsigned_int i=0;
     <%residualCall%>
   }
-
-  /* functions for derivative matrix */
-  <%derivativeMatrix%>
 
   /* Algebraic system evaluation */
   /*

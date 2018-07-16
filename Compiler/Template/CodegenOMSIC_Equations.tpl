@@ -193,16 +193,47 @@ template generateMatrixColumnInitialization(OMSIFunction column)
 end generateMatrixColumnInitialization;
 
 
+template generateDerivativeFile (Option<DerivativeMatrix> matrix, String modelName, String index)
+"generates c code for derivative matrix files"
+::=
+  let includes = ""
+  let body = generateDerivativeMatrix(matrix, modelName, index)
+  <<
+  /* derivative matrix code for algebraic system <%index%>*/
+  <%includes%>
+
+  #if defined(__cplusplus)
+  extern "C" {
+  #endif
+
+  /* Instantiation and initalization */
+
+  /* derivative matrix evaluation */
+  <%body%>
+
+  #if defined(__cplusplus)
+  }
+  #endif
+  <%\n%>
+  >>
+  /* leave a newline at the end of file to get rid of the warning */
+end generateDerivativeFile;
+
+
+
 template generateDerivativeMatrix(Option<DerivativeMatrix> matrix, String modelName, String index)
 "generates equations for derivative matrix"
 ::=
   let &columnsString = buffer ""
   match matrix
   case SOME(m as DERIVATIVE_MATRIX(__)) then
-    let _ = m.columns |> col => (
-      let &columnsString += generateDereivativeMatrixColumn(col, modelName, index)
-      <<>>
-    )
+    let columnsString = (m.columns |> col =>
+      <<
+      <%generateDereivativeMatrixColumnFunction(col, modelName, index)%>
+
+      <%generateDereivativeMatrixColumnCall(col, modelName, index)%>
+      >>
+    ;separator="\n\n")
 
   <<
   <%columnsString%>
@@ -210,7 +241,7 @@ template generateDerivativeMatrix(Option<DerivativeMatrix> matrix, String modelN
 end generateDerivativeMatrix;
 
 
-template generateDereivativeMatrixColumn(OMSIFunction column, String modelName, String index)
+template generateDereivativeMatrixColumnFunction(OMSIFunction column, String modelName, String index)
 "generates equations code for columns of derivative matrix"
 ::=
   let bodyBuffer = ""
@@ -220,15 +251,9 @@ template generateDereivativeMatrixColumn(OMSIFunction column, String modelName, 
 
   match column
   case OMSI_FUNCTION() then
-    let bodyBuffer = ( equations |> eq hasindex i0=>
+    let bodyBuffer = ( equations |> eq=>
       <<
-      <%match eq
-      case SES_SIMPLE_ASSIGN(__) then
-        'dirDerivative[<%i0%>] = <%CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)%>;'
-      else
-        ""
-      end match
-      %>
+      <%generateEquationFunction(eq, modelName)%>
       >>
     ;separator="\n")
 
@@ -241,7 +266,35 @@ template generateDereivativeMatrixColumn(OMSIFunction column, String modelName, 
   <%bodyBuffer%>
   }
   >>
-end generateDereivativeMatrixColumn;
+end generateDereivativeMatrixColumnFunction;
+
+
+template generateDereivativeMatrixColumnCall(OMSIFunction column, String modelName, String index)
+"generate function call for derivative matrix evaluations"
+::=
+  let bodyBuffer = ""
+  let &preExp = buffer ""
+  let &varDecls = buffer ""
+  let &auxFunction = buffer ""
+
+  match column
+  case OMSI_FUNCTION() then
+    let bodyBuffer = ( equations |> eq =>
+      <<
+      <%equationCall(eq, modelName, "this_function")%>
+      >>
+    ;separator="\n")
+
+  <<
+  /*
+  Description something
+  */
+  void <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative){
+
+  <%bodyBuffer%>
+  }
+  >>
+end generateDereivativeMatrixColumnCall;
 
 
 
