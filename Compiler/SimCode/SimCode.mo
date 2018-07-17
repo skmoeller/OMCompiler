@@ -59,6 +59,7 @@ import HashTable;
 import HashTableCrILst;
 import HashTableCrIListArray;
 import HashTableCrefSimVar;
+import HashTableCrefSimVarDep;
 import HpcOmSimCode;
 import SimCodeFunction;
 import SimCodeVar;
@@ -302,11 +303,11 @@ end OMSIData;
 uniontype OMSIFunction
   "contains equations and variables for initialization or simulation problem"
   record OMSI_FUNCTION
-    list<SimEqSystem> equations "list of single equations and systems of equations";
-    list<SimCodeVar.SimVar> inputVars "list of simcode variables determining input variables for equation(s)";
-    list<SimCodeVar.SimVar> outputVars "list of simcode variables determining output variables for equation(s)";
-    list<SimCodeVar.SimVar> innerVars "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
-    //HashTableCrefSimVar.HashTable crefToSimVarHT "SIMVAR lookup available in templates";
+    list<SimEqSystem>       equations    "list of single equations and systems of equations";
+    list<SimCodeVar.SimVar> inputVars    "list of simcode variables determining input variables for equation(s)";
+    list<SimCodeVar.SimVar> outputVars   "list of simcode variables determining output variables for equation(s)";
+    list<SimCodeVar.SimVar> innerVars    "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
+    HashTableCrefSimVarDep.HashTable crefToSimVarDepHT "SIMVAR lookup available in templates";
     Integer nAlgebraicSystems "number of linear and non-linear algebraic systems in OMSI_FUNCTION.equations";
   end OMSI_FUNCTION;
 end OMSIFunction; 

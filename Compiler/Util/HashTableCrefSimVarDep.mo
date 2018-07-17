@@ -29,31 +29,31 @@
  *
  */
 
-encapsulated package HashTableCrefSimVar
+encapsulated package HashTableCrefSimVarDep
 
 /* Below is the instance specific code. For each hashtable the user must define:
 
-Key       - The key used to uniquely define elements in a hashtable
-Value     - The data to associate with each key
+Key        - The key used to uniquely define elements in a hashtable
+Value      - Tuple of SimCodeVar.SimVar and dependecy information for SimVar
 hashFunc   - A function that maps a key to a positive integer.
 keyEqual   - A comparison function between two keys, returns true if equal.
 */
 
 /* HashTable instance specific code */
 
+// public inport
 import BaseHashTable;
 import DAE;
 import SimCodeVar;
 import Error.addInternalError;
 
-type Key = DAE.ComponentRef;
-type Value = SimCodeVar.SimVar;
-
+// protected import
 protected
-
 import ComponentReference;
 
 public
+type Key = DAE.ComponentRef;
+type Value = tuple<SimCodeVar.SimVar, tuple<Boolean, Boolean, Boolean>>;
 
 type HashTableCrefFunctionsType = tuple<FuncHashCref,FuncCrefEqual,FuncCrefStr,FuncExpStr>;
 type HashTable = tuple<
@@ -101,41 +101,72 @@ function emptyHashTableSized
   input Integer size;
   output HashTable hashTable;
 algorithm
-  hashTable := BaseHashTable.emptyHashTableWork(size,(ComponentReference.hashComponentRefMod,ComponentReference.crefEqual,ComponentReference.printComponentRefStr,opaqueStr));
+  hashTable := BaseHashTable.emptyHashTableWork(size,
+               (ComponentReference.hashComponentRefMod,
+                ComponentReference.crefEqual,
+                ComponentReference.printComponentRefStr, opaqueStr));
 end emptyHashTableSized;
 
-protected
 function opaqueStr
-  input SimCodeVar.SimVar var;
+  input Value value;
   output String str;
 algorithm
-  str := "#SimVar(index="+String(var.index)+",name="+ComponentReference.printComponentRefStr(var.name)+")#";
+  _ := match (value)
+    local
+      SimCodeVar.SimVar var;
+      tuple<Boolean, Boolean, Boolean> dependency;
+    case ((var, dependency))
+      algorithm
+        str := "#SimVar(index="+String(var.index)+",name="+ComponentReference.printComponentRefStr(var.name)+")#";
+        _ := match (dependency)
+          local
+            Boolean bool1, bool2, bool3;
+          case (bool1, bool2, bool3)
+            algorithm
+              str := str + "#dependency (inputVar="+String(bool1)+" ,innerVar="
+                    +String(bool2) + "outputVar="+String(bool3)+")#";
+            then();
+        end match;
+      then ();
+    end match;
 end opaqueStr;
 
 
-public function addSimVarToHashTable
+public function addSimVarDepToHashTable
 "adds SimVar to hash table inHT and returns extended hash table"
-  input  SimCodeVar.SimVar simvarIn;
-  input  HashTable inHT;
-  output HashTable outHT;
+  input   Value     valueIn;
+  input   HashTable inHT;
+  output  HashTable outHT;
+protected
+  SimCodeVar.SimVar simVarIn;
+  tuple<Boolean, Boolean, Boolean> dependency;
+
 algorithm
+  (simVarIn, dependency) := match (valueIn)
+    local
+      SimCodeVar.SimVar simVar;
+      tuple<Boolean, Boolean, Boolean> dep;
+
+    case (simVar as SimCodeVar.SIMVAR(__), dep as (_,_,_) )
+      then(simVar, dep);
+  end match;
+
   outHT :=
-  matchcontinue (simvarIn, inHT)
+  matchcontinue (simVarIn, dependency, inHT)
     local
       DAE.ComponentRef cr, acr;
       SimCodeVar.SimVar sv;
+      Boolean bool1, bool2, bool3;
 
-    case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = NONE()), _)
+    case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = NONE()), _, _)
       equation
-        //print("addSimVarToHashTable: handling variable '" + ComponentReference.printComponentRefStr(cr) + "'\n");
-        outHT = BaseHashTable.add((cr, sv), inHT);
+        outHT = BaseHashTable.add((cr, (sv, dependency)), inHT);
       then outHT;
         // add the whole array crefs to the hashtable, too
-    case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = SOME(acr)), _)
+    case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = SOME(acr)), _, _)
       equation
-        //print("addSimVarToHashTable: handling array variable '" + ComponentReference.printComponentRefStr(cr) + "'\n");
-        outHT = BaseHashTable.add((acr, sv), inHT);
-        outHT = BaseHashTable.add((cr, sv), outHT);
+        outHT = BaseHashTable.add((acr, (sv, dependency)), inHT);
+        outHT = BaseHashTable.add((cr, (sv, dependency)), outHT);
       then outHT;
     else
       equation
@@ -143,7 +174,8 @@ algorithm
       then
         fail();
   end matchcontinue;
-end addSimVarToHashTable;
+end addSimVarDepToHashTable;
+
 
 annotation(__OpenModelica_Interface="backend");
-end HashTableCrefSimVar;
+end HashTableCrefSimVarDep;

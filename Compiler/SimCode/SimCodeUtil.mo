@@ -94,6 +94,8 @@ import Global;
 import Graph;
 import HashSet;
 import HashSetExp;
+import HashTableCrefSimVar;
+import HashTableCrefSimVarDep;
 import HashTableSimCodeEqCache;
 import HpcOmSimCode;
 import Inline;
@@ -3760,6 +3762,7 @@ protected
   list<SimCodeVar.SimVar> inputVars = {};
   list<SimCodeVar.SimVar> outputVars = {};
   list<SimCodeVar.SimVar> innerVars = {};
+  HashTableCrefSimVarDep.HashTable hashTable;
   list<SimCode.SimEqSystem> tmpEqns = {};
   list<SimCodeVar.SimVar> tmpInputVars = {}, tmpOutputVars = {}, tmpInnerVars = {};
   Integer nAlgebraicSystems = 0;
@@ -3818,7 +3821,8 @@ algorithm
       simequations = listAppend(simequations, listReverse(resEqs));
 
       // inputs empty, since we haven't check for inputs yet
-      omsiFunction = SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, 0);
+      hashTable = createCrefToSimVarHT_omsi({}, tSimVars2, tSimVars1);
+      omsiFunction = SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, hashTable, 0);
       tmpOutputVars = listAppend(tSimVars2, tSimVars1);
 
       (derivativeMatrix, uniqueEqIndex, tempVars) = createDerivativeMatrix(jacobian, uniqueEqIndex, tempVars);
@@ -3835,10 +3839,15 @@ algorithm
     outputVars := listAppend(tmpOutputVars, outputVars);
     innerVars := listAppend(tmpInnerVars, innerVars);
   end for;
+
+  // create hash table
+  hashTable := createCrefToSimVarHT_omsi(inputVars, innerVars, outputVars);
+
   omsiFuncEquations := SimCode.OMSI_FUNCTION(equations =  listReverse(equations),
                                             inputVars = inputVars,
                                             outputVars = outputVars,
                                             innerVars =  innerVars,
+                                            crefToSimVarDepHT = hashTable,
                                             nAlgebraicSystems = nAlgebraicSystems);
 end generateEquationsForComponents;
 
@@ -3849,7 +3858,7 @@ function generateSingleEquation
   input BackendDAE.Var var;
   input DAE.FunctionTree funcTree;
   output list<SimCode.SimEqSystem> equations = {};
-  output list<SimCodeVar.SimVar> inputVars = {};
+  output list<SimCodeVar.SimVar> inputVars = {};    // ToDo: is unused at he moment
   output list<SimCodeVar.SimVar> outputVars = {};
   output list<SimCodeVar.SimVar> innerVars = {};
   input output Integer uniqueEqIndex;
@@ -3911,6 +3920,7 @@ algorithm
 end generateSingleEquation;
 
 protected function generateInnerEqns
+"generates inner equations for equation systems in one SimCode.OMSIFunction"
   input BackendDAE.InnerEquations innerEquations;
   input BackendDAE.EqSystem syst;
   input BackendDAE.Shared shared;
@@ -3947,6 +3957,57 @@ algorithm
 
   equations := DoubleEndedList.toListAndClear(dblLstEqns);
 end generateInnerEqns;
+
+
+protected function createCrefToSimVarHT_omsi
+"Creates hash table that maps variable names (crefs) of one OMSIFunction to tuple
+ of SimVar objects and dependency information (inputVar, innerVar, outputVar)"
+  input list<SimCodeVar.SimVar> inputVars   "list of simcode variables determining input variables for equation(s)";
+  input list<SimCodeVar.SimVar> innerVars   "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
+  input list<SimCodeVar.SimVar> outputVars  "list of simcode variables determining output variables for equation(s)";
+  output HashTableCrefSimVarDep.HashTable outHT;
+protected
+  Integer size;
+  tuple<Boolean, Boolean, Boolean> dependencies;
+algorithm
+  try
+    size := listLength(inputVars)+listLength(innerVars)+listLength(outputVars);
+    size := intMax(size, 1023);
+    outHT := HashTableCrefSimVarDep.emptyHashTableSized(size);   // create empty hash table
+
+    // add input vars to hash table
+    dependencies := (true, false, false);
+    outHT := List.fold(createDependenciesForSimVars(inputVars,dependencies),
+                       HashTableCrefSimVarDep.addSimVarDepToHashTable,
+                       outHT);
+    // add inner vars to hash table
+    dependencies := (false, true, false);
+    outHT := List.fold(createDependenciesForSimVars(innerVars,dependencies),
+                       HashTableCrefSimVarDep.addSimVarDepToHashTable,
+                       outHT);
+    // add output vars to hash table
+    dependencies := (false, false, true);
+    outHT := List.fold(createDependenciesForSimVars(outputVars,dependencies),
+                       HashTableCrefSimVarDep.addSimVarDepToHashTable,
+                       outHT);
+  else
+    Error.addInternalError("function createCrefToSimVarHT_omsi failed", sourceInfo());
+  end try;
+end createCrefToSimVarHT_omsi;
+
+
+protected function createDependenciesForSimVars
+" creates list of hash table values from list of simVar and it's dependencies"
+input list<SimCodeVar.SimVar> vars;
+input tuple<Boolean, Boolean, Boolean> dependencies;
+output list<HashTableCrefSimVarDep.Value> varsWithDep={};    // empty list
+
+algorithm
+  for var in vars loop
+    varsWithDep := listAppend ({(var, dependencies)}, varsWithDep);
+  end for;
+end createDependenciesForSimVars;
+
 
 // =============================================================================
 // section to create state set equations
@@ -4882,6 +4943,7 @@ algorithm
     DAE.FunctionTree funcs;
 
     SimCode.HashTableCrefToSimVar crefSimVarHT;
+    HashTableCrefSimVarDep.HashTable hashTable;
 
     case (BackendDAE.EMPTY_JACOBIAN(), _, _) then (NONE(), iuniqueEqIndex, itempvars);
 
@@ -4991,7 +5053,8 @@ algorithm
           print("analytical Jacobians -> transformed to SimCode for Matrix " + name + " time: " + realString(clock()) + "\n");
         end if;
 
-      then (SOME(SimCode.DERIVATIVE_MATRIX({SimCode.OMSI_FUNCTION(columnEquations, seedVars, indexVars, columnVars, 0)}, name, sparseInts, sparseIntsT, coloring, maxColor)), uniqueEqIndex, tempvars);
+      hashTable = createCrefToSimVarHT_omsi(seedVars, columnVars, indexVars);
+      then (SOME(SimCode.DERIVATIVE_MATRIX({SimCode.OMSI_FUNCTION(columnEquations, seedVars, indexVars, columnVars, hashTable, 0)}, name, sparseInts, sparseIntsT, coloring, maxColor)), uniqueEqIndex, tempvars);
 
     else
       equation
