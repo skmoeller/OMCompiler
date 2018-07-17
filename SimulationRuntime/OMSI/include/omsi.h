@@ -198,8 +198,8 @@ typedef struct omsi_function_t {
     omsi_values* function_vars;                     /* pointer to variables and parameters */
     omsi_int (*evaluate) (omsi_function_t* this_function, omsi_values* model_vars_and_params);
 
-    omsi_index_type* input_vars_indices;    /* index to sim_data_t->[real|int|bool]_vars */
-    omsi_index_type* inner_vars_indices;
+    omsi_index_type* input_vars_indices;    /* index to next higher omsi_values pointer */
+    omsi_index_type* inner_vars_indices;    /* e.g to sim_data_t->model_vars_and_params */
     omsi_index_type* output_vars_indices;
 
     omsi_unsigned_int n_input_vars;         /* number of input variables */

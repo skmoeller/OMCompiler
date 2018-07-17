@@ -102,8 +102,8 @@ template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction)
 
   match eq
   case SES_SIMPLE_ASSIGN(__) then
-    let expPart = CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)
     let crefStr = CodegenCFunctions.contextCref(cref, contextOMSI, &auxFunction)
+    let expPart = CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)
     <<
     <%crefStr%> = <%expPart%>;
     >>
@@ -121,7 +121,6 @@ template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction)
     <<
     NOT IMPLEMENTED YET
     >>
-
 end equationCStr;
 
 

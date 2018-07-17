@@ -53,7 +53,7 @@ import ComponentReference;
 
 public
 type Key = DAE.ComponentRef;
-type Value = tuple<SimCodeVar.SimVar, tuple<Boolean, Boolean, Boolean>>;
+type Value = tuple<SimCodeVar.SimVar, Integer>;
 
 type HashTableCrefFunctionsType = tuple<FuncHashCref,FuncCrefEqual,FuncCrefStr,FuncExpStr>;
 type HashTable = tuple<
@@ -114,59 +114,51 @@ algorithm
   _ := match (value)
     local
       SimCodeVar.SimVar var;
-      tuple<Boolean, Boolean, Boolean> dependency;
-    case ((var, dependency))
+      Integer mappedIndex;
+    case ((var, mappedIndex))
       algorithm
-        str := "#SimVar(index="+String(var.index)+",name="+ComponentReference.printComponentRefStr(var.name)+")#";
-        _ := match (dependency)
-          local
-            Boolean bool1, bool2, bool3;
-          case (bool1, bool2, bool3)
-            algorithm
-              str := str + "#dependency (inputVar="+String(bool1)+" ,innerVar="
-                    +String(bool2) + "outputVar="+String(bool3)+")#";
-            then();
-        end match;
+        str := "#SimVar(index="+String(var.index)+",name="+ComponentReference.printComponentRefStr(var.name)+")#"
+             + "#Integer=" + String(mappedIndex)+")#";
       then ();
     end match;
 end opaqueStr;
 
 
 public function addSimVarDepToHashTable
-"adds SimVar to hash table inHT and returns extended hash table"
+"adds (SimVar,integer) to hash table inHT and returns extended hash table"
   input   Value     valueIn;
   input   HashTable inHT;
   output  HashTable outHT;
 protected
   SimCodeVar.SimVar simVarIn;
-  tuple<Boolean, Boolean, Boolean> dependency;
+  Integer integerIn;
 
 algorithm
-  (simVarIn, dependency) := match (valueIn)
+  (simVarIn, integerIn) := match (valueIn)
     local
       SimCodeVar.SimVar simVar;
-      tuple<Boolean, Boolean, Boolean> dep;
+      Integer integer;
 
-    case (simVar as SimCodeVar.SIMVAR(__), dep as (_,_,_) )
-      then(simVar, dep);
+    case (simVar as SimCodeVar.SIMVAR(__), integer as _ )
+      then(simVar, integer);
   end match;
 
   outHT :=
-  matchcontinue (simVarIn, dependency, inHT)
+  matchcontinue (simVarIn, integerIn, inHT)
     local
       DAE.ComponentRef cr, acr;
       SimCodeVar.SimVar sv;
-      Boolean bool1, bool2, bool3;
+      Integer mappedIndexOut;
 
     case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = NONE()), _, _)
       equation
-        outHT = BaseHashTable.add((cr, (sv, dependency)), inHT);
+        outHT = BaseHashTable.add((cr, (sv, integerIn)), inHT);
       then outHT;
         // add the whole array crefs to the hashtable, too
     case (sv as SimCodeVar.SIMVAR(name = cr, arrayCref = SOME(acr)), _, _)
       equation
-        outHT = BaseHashTable.add((acr, (sv, dependency)), inHT);
-        outHT = BaseHashTable.add((cr, (sv, dependency)), outHT);
+        outHT = BaseHashTable.add((acr, (sv, integerIn)), inHT);
+        outHT = BaseHashTable.add((cr, (sv, integerIn)), outHT);
       then outHT;
     else
       equation

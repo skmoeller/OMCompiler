@@ -251,14 +251,21 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
         "OMSI_TYPE_UNKNOWN"
     )
 
-    let stringIndex = (match variable
-      case SIMVAR(__) then
-        index
+    let stringIndex = ""
+    let stringName = ""
+    let targetName = ""     // ToDo: fill targetName
+
+    let _ = (match variable
+      case var as SIMVAR(__) then
+        let stringIndex = index
+        let stringName = CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(var.name))
+        <<>>
     )
+
 
     <<
     omsi_index_pointer[<%i0%>]->type = <%stringType%>;
-    omsi_index_pointer[<%i0%>]->index = <%stringIndex%>;
+    omsi_index_pointer[<%i0%>]->index = <%stringIndex%>;    /* maps <%stringName%> to <%targetName%> */
     >>
   ;separator="\n")
 
