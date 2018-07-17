@@ -81,7 +81,7 @@ typedef struct omsi_function_t omsi_function_t;
 
 
 /**
- *   variable attributes
+ * variable basic data type
  */
 typedef enum {
   OMSI_TYPE_UNKNOWN,
@@ -97,8 +97,21 @@ typedef enum {
     omsi_co_simulation      /* not supported yet */
 }omsu_type;
 
+
 /*
- * Status of actual OpenModelica Simulation Unit
+ * OpenModelic Simulation Unit (OMSU) solving mode
+ */
+typedef enum {
+    omsi_instantiated_mode,
+    omsi_initialization_mode,
+    omsi_continuousTime_mode,
+    omsi_event_mode,
+    omsi_none_mode
+} omsi_solving_mode_t;
+
+
+/*
+ * Actual status of OpenModelica Simulation Unit (OMSU)
  */
 typedef enum {
     omsi_ok,
@@ -111,6 +124,9 @@ typedef enum {
 
 
 /* ToDo: is this the right location for these definitions? */
+/*
+ * OMSI callback functions
+ */
 typedef void      (*omsi_callback_logger)           (const void*, omsi_string, omsi_status, omsi_string, omsi_string, ...);
 typedef void*     (*omsi_callback_allocate_memory)  (omsi_unsigned_int, omsi_unsigned_int);
 typedef void      (*omsi_callback_free_memory)      (void*);
@@ -126,6 +142,11 @@ typedef struct omsi_callback_functions{
 }omsi_callback_functions;
 
 
+/*
+ * ============================================================================
+ * Definitions for simulation data
+ * ============================================================================
+ */
 typedef struct omsi_index_type {
   omsi_data_type        type;    /* data type*/
   omsi_unsigned_int     index;   /* index in sim_data->model_vars_and_params->[datatype]
@@ -142,7 +163,7 @@ typedef struct omsi_values {
     omsi_real*  reals;      /* array of omsi_real */
     omsi_int*   ints;       /* array of omsi_int */
     omsi_bool*  bools;      /* array of omsi_bool */
-    omsi_real   time_value;  /* current system time */
+    omsi_real   time_value; /* current system time */
 
     omsi_unsigned_int   n_reals;    /* length of array reals */
     omsi_unsigned_int   n_ints;     /* length of array ints */
@@ -150,18 +171,81 @@ typedef struct omsi_values {
 } omsi_values;
 
 
+/**
+ * general algebraic system
+ */
+typedef struct omsi_algebraic_system_t {
+    omsi_unsigned_int n_iteration_vars;
+    omsi_index_type* iteration_vars_indices;
 
+    omsi_unsigned_int n_conditions;
+    omsi_int* zerocrossing_indices;
+
+    omsi_bool isLinear;         /* linear system=true and non-linear system=false */
+    omsi_function_t* jacobian;  /* pointer to omsi_function for jacobian matrix
+                                 * linear case: A
+                                 * non-linear case: f' */
+
+    omsi_function_t* functions; /* pointer to omsi_function for residual function */
+    void* solverData;           /* pointer to solver specific local data*/
+}omsi_algebraic_system_t;
+
+
+typedef struct omsi_function_t {
+    omsi_unsigned_int           n_algebraic_system; /* number of algebraic systems */
+    omsi_algebraic_system_t*    algebraic_system_t; /* array of algebraic systems */
+
+    omsi_values* function_vars;                     /* pointer to variables and parameters */
+    omsi_int (*evaluate) (omsi_function_t* this_function, omsi_values* model_vars_and_params);
+
+    omsi_index_type* input_vars_indices;    /* index to sim_data_t->[real|int|bool]_vars */
+    omsi_index_type* inner_vars_indices;
+    omsi_index_type* output_vars_indices;
+
+    omsi_unsigned_int n_input_vars;         /* number of input variables */
+    omsi_unsigned_int n_inner_vars;         /* number of inner variables */
+    omsi_unsigned_int n_output_vars;        /* number of output variables */
+} omsi_function_t;
+
+
+/**
+ * Structure containing all dynamic simulation data.
+ */
+typedef struct sim_data_t{
+    omsi_function_t* initialization;    /* array of all function structures
+                                         * necessary for initialization */
+    omsi_function_t* simulation;        /* array of all function structures
+                                         * necessary for simulation */
+
+    omsi_values* model_vars_and_params; /* pointer to struct of arrays containing
+                                         * values for all variables, parameters and so on */
+
+    omsi_values* pre_vars;              /* pointer to all pre vars */
+    omsi_index_type* pre_vars_mapping;  /* mapping pre_variables to corresponding
+                                         * variables in model_vars_and_params */
+
+    omsi_bool* zerocrossings_vars;      /*conditions of zerocrossing functions */
+    omsi_bool* pre_zerocrossings_vars;  /*pre conditions of zerocrossing functions */
+} sim_data_t;
+
+
+/*
+ * ============================================================================
+ * Definitions for model informations
+ * ============================================================================
+ */
 /**
  *   additional file information for debugging
  */
 typedef struct file_info {
-	omsi_string filename;       /* filename where variable is defined */
-	omsi_int    lineStart;      /* number of line where definition of variable starts */
-	omsi_int    colStart;       /* number of columns where definition of variable starts */
-	omsi_int    lineEnd;        /* number of line where definition of variable ends */
-	omsi_int    colEnd;         /* number of columns where definition of variable ends */
-	omsi_bool   fileWritable;   /* =true if file writable, else =false */
+    omsi_string filename;       /* filename where variable is defined */
+    omsi_int    lineStart;      /* number of line where definition of variable starts */
+    omsi_int    colStart;       /* number of columns where definition of variable starts */
+    omsi_int    lineEnd;        /* number of line where definition of variable ends */
+    omsi_int    colEnd;         /* number of columns where definition of variable ends */
+    omsi_bool   fileWritable;   /* =true if file writable, else =false */
 } file_info;
+
 
 /**
  *   additional equation information for debugging
@@ -217,8 +301,9 @@ typedef struct string_var_attribute_t {
     omsi_char * start;  /* = "" */
 } string_var_attribute_t;
 
+
 /**
- *
+ * Informations for single variable or parameter
  */
 typedef struct model_variable_info_t {
     omsi_int        id;                     /* unique value reference from *_init.xml */
@@ -231,45 +316,6 @@ typedef struct model_variable_info_t {
     omsi_int        aliasID;                /* pointer to alias if >= 0 */
     file_info       info;                   /* file informations for variable|parameter|alias */
 } model_variable_info_t;
-
-
-/**
- * general algebraic system
- */
-typedef struct omsi_algebraic_system_t {
-    omsi_unsigned_int n_iteration_vars;
-    omsi_index_type* iteration_vars_indices;
-
-    omsi_unsigned_int n_conditions;
-    omsi_int* zerocrossing_indices;
-
-    omsi_bool isLinear;         /* linear system=true and non-linear system=false */
-    omsi_function_t* jacobian;  /* pointer to omsi_function for jacobian matrix
-                                 * linear case: A
-                                 * non-linear case: f' */
-
-    omsi_function_t* functions; /* pointer to omsi_function for residual function */
-    void* solverData;           /* pointer to solver specific local data*/
-}omsi_algebraic_system_t;
-
-
-typedef struct omsi_function_t {
-    omsi_unsigned_int n_output_vars;
-    omsi_unsigned_int n_input_vars;
-    omsi_unsigned_int n_inner_vars;
-
-    omsi_unsigned_int           n_algebraic_system;     /* number of algebraic systems */
-    omsi_algebraic_system_t*    algebraic_system_t;     /* array of algebraic systems */
-
-    omsi_values* function_vars;
-
-    /* index to sim_data_t->[real|int|bool]_vars */
-    omsi_index_type* output_vars_indices;
-    omsi_index_type* input_vars_indices;
-    omsi_index_type* inner_vars_indices;
-
-    omsi_int (*evaluate) (omsi_function_t* this_function, omsi_values* model_vars_and_params);
-} omsi_function_t;
 
 
 /**
@@ -303,34 +349,10 @@ typedef struct model_data_t {
 } model_data_t;
 
 
-/**
- * Structure containing all dynamic simulation data.
- */
-typedef struct sim_data_t{
-    omsi_function_t* initialization;        /* array of all functions structures necessary for initialization */
-    omsi_function_t* simulation;            /* array of all functions structures necessary for simulation */
-
-    omsi_values* model_vars_and_params;     /* pointer to struct of arrays containing values for all variables, parameters and so on */
-
-    omsi_unsigned_int inputs_real_index;    /*start index of input real variables in real vars array */
-    omsi_unsigned_int inputs_int_index;     /*start index of input integer variables in real vars array */
-    omsi_unsigned_int inputs_bool_index;    /*start index of input boolean variables in real vars array */
-    omsi_unsigned_int outputs_real_index;   /*start index of output real variables in real vars array */
-    omsi_unsigned_int outputs_int_index;    /*start index of output integer variables in imodel_variable_info_tnteger vars array */
-    omsi_unsigned_int outputs_bool_index;   /*start index of output boolean variables in boolean vars array */
-    omsi_unsigned_int discrete_reals_index; /*start index of discrete real variables in real vars array */
-
-    omsi_real time_value;                   /* current system time */
-
-    omsi_bool* zerocrossings_vars;          /*conditions of zerocrossing functions */
-    omsi_bool* pre_zerocrossings_vars;      /*pre conditions of zerocrossing functions */
-
-    omsi_values* pre_vars;                  /* pointer to all pre vars */
-} sim_data_t;
-
-
-/**
- *  Experiment parameters
+/*
+ * ============================================================================
+ * Definitions for experiment informations
+ * ============================================================================
  */
 typedef struct omsi_experiment_t {
     omsi_real           start_time;     /* start time of experment, default=0 */
@@ -342,22 +364,17 @@ typedef struct omsi_experiment_t {
 } omsi_experiment_t;
 
 
-/**
+/*
+ * ============================================================================
  * Central structure containing all informations
+ * ============================================================================
  */
 typedef struct omsi_t {
-    model_data_t        model_data;
-    sim_data_t          sim_data;
-    omsi_experiment_t*  experiment;
+    sim_data_t          sim_data;   /* containing data for simulation */
+    omsi_experiment_t*  experiment; /* containing infos for experiment */
+    model_data_t        model_data; /* containing additional model infos */
 } omsi_t;
 
-typedef enum {
-	omsi_instantiated_mode,
-	omsi_initialization_mode,
-	omsi_continuousTime_mode,
-	omsi_event_mode,
-	omsi_none_mode
-} omsi_solving_mode_t;
 
 
 omsi_int omsi_initiatiate_osu(omsi_t** omsi);
