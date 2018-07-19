@@ -1071,6 +1071,18 @@ package SimCodeUtil
     output SimCodeVar.SimVar outSimVar;
   end cref2simvar;
 
+  function localCref2SimVar
+    input DAE.ComponentRef cref;
+    input SimCode.OMSIFunction inOMSIFunction;
+    output SimCodeVar.SimVar outSimVar;
+  end localCref2SimVar;
+
+  function localCref2Index
+    input DAE.ComponentRef inCref;
+    input SimCode.OMSIFunction inOMSIFunction;
+    output String outIndex;
+  end localCref2Index;
+
   function isModelTooBigForCSharpInOneFile
     input SimCode.SimCode simCode;
     output Boolean outIsTooBig;

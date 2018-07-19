@@ -545,7 +545,9 @@ algorithm
     if Flags.isSet(Flags.EXEC_HASH) then
       print("*** SimCode -> generate cref2simVar hashtable: " + realString(clock()) + "\n");
     end if;
+    // generate cref2simVar hash table
     crefToSimVarHT := createCrefToSimVarHT(modelInfo);
+
     if Flags.isSet(Flags.EXEC_HASH) then
       print("*** SimCode -> generate cref2simVar hashtable done!: " + realString(clock()) + "\n");
     end if;
@@ -3822,7 +3824,7 @@ algorithm
 
       simequations = listAppend(simequations, listReverse(resEqs));
 
-      // create hash table
+      // create hash table with local index
       hashTable = createCrefToSimVarHT_omsi({}, tSimVars2, tSimVars1);
 
       // inputs empty, since we haven't check for inputs yet
@@ -5087,8 +5089,8 @@ end createDerivativeMatrix;
 
 
 protected function fillSimVarIndices
-"Searches indices for input, inner and output variables in simEquations and
- saves information in SimVars."
+" Searches indices for input, inner and output variables in simEquations and
+  saves information in SimVars."
 input list<SimCode.SimEqSystem> simEquations;
 input output list<SimCodeVar.SimVar> inputVars;
 input output list<SimCodeVar.SimVar> innerVars;
@@ -5097,7 +5099,7 @@ input output list<SimCodeVar.SimVar> outputsVars;
 algorithm
   for var in inputVars loop
     _ := match var
-      case var as SIMVAR(__) algorithm
+      case var as SimCodeVar.SIMVAR(__) algorithm
         var.index := getVarIndexFromEquation(simEquations, var);
         then();
     end match;
@@ -5114,16 +5116,7 @@ output Integer index=-1;
 
 algorithm
   for eq in simEquations loop
-    if not (index == -1) then
-      break;
-    end if;
-    _ := matchcontinue eq
-      case eq as SES_RESIDUAL() then();
-      case eq as SES_SIMPLE_ASSIGN() algorithm
-
-        index := getVarIndexFromExpression(eq.exp, var);
-        then ();
-    end matchcontinue;
+    //getSimVarsInSimEq
   end for;
 end getVarIndexFromEquation;
 
@@ -5136,6 +5129,7 @@ output Integer index;
 algorithm
   // Check if var is in expression. If yes return it's index.
 end getVarIndexFromExpression;
+
 
 // =============================================================================
 // section with unsorted function
@@ -12979,7 +12973,9 @@ algorithm
       String valueReference;
     case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.NEGATEDALIAS(_)), false, _) then
       getDefaultValueReference(inSimVar, inSimCode.modelInfo.varInfo);
-    case (_, _, _) guard(stringEqual(Config.simCodeTarget(), "Cpp") or stringEqual(Config.simCodeTarget(), "omsicpp") or stringEqual(Config.simCodeTarget(), "omsic"))
+    case (_, _, _) guard(stringEqual(Config.simCodeTarget(), "Cpp")
+                         or stringEqual(Config.simCodeTarget(), "omsicpp")
+                         or stringEqual(Config.simCodeTarget(), "omsic"))
     algorithm
       // resolve aliases to get multi-dimensional arrays right
       // (this should possibly be done in getVarIndexByMapping?)
@@ -13001,6 +12997,7 @@ algorithm
       getDefaultValueReference(inSimVar, inSimCode.modelInfo.varInfo);
   end match;
 end getValueReference;
+
 
 protected function getDefaultValueReference
   "returns the value reference without consideration of aliases,
@@ -13030,6 +13027,40 @@ algorithm
   end if;
   outDefaultValueReference := String(reference - 1);
 end getDefaultValueReference;
+
+
+public function getLocalValueReference_omsi
+ "returns the local value reference of current OMSIFuncton of a variable for
+  direct memory access considering aliases and array storage order."
+  input SimCodeVar.SimVar inSimVar;
+  input SimCode.SimCode inSimCode;
+  input SimCode.OMSIFunction OMSIFunction;
+  input Boolean inElimNegAliases "=false to keep negative alias references";
+  output String outValueReference;
+algorithm
+  outValueReference := match (inSimVar, inElimNegAliases)
+    local
+      DAE.ComponentRef cref;
+      String valueReference;
+
+    // case negated alias variable, returns global value reference
+    case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.NEGATEDALIAS(_)), false) then
+      getDefaultValueReference(inSimVar, inSimCode.modelInfo.varInfo);
+    // case alias varible, returns global value reference
+    case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.ALIAS(varName = cref)), _) then
+      getDefaultValueReference(cref2simvar(cref, inSimCode), inSimCode.modelInfo.varInfo);
+    // default case
+    case (SimCodeVar.SIMVAR(name=cref), _)
+    algorithm
+      valueReference := localCref2Index(cref, OMSIFunction);
+      if stringEqual(valueReference, "-1") then
+        Error.addInternalError("invalid return value from localCref2Index for " + simVarString(inSimVar), sourceInfo());
+      end if;
+      then valueReference;
+  end match;
+end getLocalValueReference_omsi;
+
+
 
 protected function getHighestDerivation"computes the highest derivative among all states. this includes derivatives of derivatives as well
 author: waurich TUD 2015-05"
@@ -13408,6 +13439,56 @@ algorithm
        then SimCodeVar.SIMVAR(badcref, BackendDAE.VARIABLE(), "", "", "", -2, NONE(), NONE(), NONE(), NONE(), false, DAE.T_REAL_DEFAULT, false, NONE(), SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.INTERNAL(), NONE(), {}, false, true, false, NONE(), NONE());
   end matchcontinue;
 end cref2simvar;
+
+
+public function localCref2SimVar
+"Used by templates to find SIMVAR in current OMSIFunction for given cref
+ (to gain representaion index info mainly)."
+  input DAE.ComponentRef inCref;
+  input SimCode.OMSIFunction inOMSIFunction;
+  output SimCodeVar.SimVar outSimVar;
+algorithm
+  outSimVar := matchcontinue (inCref, inOMSIFunction)
+    local
+      DAE.ComponentRef cref, badcref;
+      SimCodeVar.SimVar sv;
+      SimCode.HashTableCrefSimVarDep.HashTable crefToSimVarDepHT;
+    case (cref, SimCode.OMSI_FUNCTION(crefToSimVarDepHT = crefToSimVarDepHT))
+      equation
+        (sv,_) = BaseHashTable.get(cref, crefToSimVarDepHT);
+        sv = match sv.aliasvar
+          case SimCodeVar.NOALIAS() then sv;
+          case SimCodeVar.ALIAS(varName=cref) then localCref2SimVar(cref, inOMSIFunction); /* Possibly not needed; can't really hurt that much though */
+          case SimCodeVar.NEGATEDALIAS() then sv;
+        end match;
+      then sv;
+    case (_,_)
+      equation
+        badcref = ComponentReference.makeCrefIdent("ERROR_localCref2SimVar_failed " + ComponentReference.printComponentRefStr(inCref), DAE.T_REAL_DEFAULT, {});
+        then SimCodeVar.SIMVAR(badcref, BackendDAE.VARIABLE(), "", "", "", -2, NONE(), NONE(), NONE(), NONE(), false, DAE.T_REAL_DEFAULT, false, NONE(), SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.INTERNAL(), NONE(), {}, false, true, false, NONE(), NONE());
+  end matchcontinue;
+end localCref2SimVar;
+
+public function localCref2Index
+"Finds local value reference for given cref and OMSIFunction"
+input DAE.ComponentRef inCref;
+input SimCode.OMSIFunction inOMSIFunction;
+output String outIndex;
+algorithm
+  outIndex:= match (inCref, inOMSIFunction)
+    local
+      DAE.ComponentRef cref;
+      HashTableCrefSimVarDep.HashTable crefToSimVarDepHT;
+      Integer index;
+    case (cref, SimCode.OMSI_FUNCTION(crefToSimVarDepHT = crefToSimVarDepHT))
+      equation
+        (_, index) = BaseHashTable.get(cref, crefToSimVarDepHT);
+      then String(index);
+    else
+      then "ERROR_Local_cref2simvar_failed";
+  end match;
+end localCref2Index;
+
 
 public function codegenExpSanityCheck "Handle some things that Susan cannot handle:
 * Expand simulation context arrays that contain variables stored in different locations...

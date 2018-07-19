@@ -32,6 +32,22 @@ algorithm
   assert(false, getInstanceName());
 end cref2simvar;
 
+function localCref2SimVar<A,B>
+  input A inCref;
+  input B inOMSIFunction;
+  output SimCodeVar.SimVar outSimVar;
+algorithm
+  assert(false, getInstanceName());
+end localCref2SimVar;
+
+function localCref2Index<A,B>
+  input A inCref;
+  input B inOMSIFunction;
+  output String outIndex;
+algorithm
+  assert(false, getInstanceName());
+end localCref2Index;
+
 function codegenExpSanityCheck
   input output DAE.Exp e;
   input SimCodeFunction.Context context;

@@ -55,7 +55,7 @@ template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
 end equationFunctionPrototypes;
 
 
-template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr)
+template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, OMSIFunction omsiFunction)
  "Generates C-function for an equation evaluation"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
@@ -63,7 +63,7 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr)
 
   let &varDecls = buffer ""
   let &auxFunction = buffer ""
-  let equationCode = equationCStr(eq, &varDecls, &auxFunction)
+  let equationCode = equationCStr(eq, &varDecls, &auxFunction, omsiFunction)
 
   let funcName = (match eq
     case SES_RESIDUAL(__) then
@@ -95,14 +95,14 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr)
   >>
 end generateEquationFunction;
 
-template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction)
+template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction, OMSIFunction omsiFunction)
  "Generates an equation that is just a simple assignment."
 ::=
   let &preExp = buffer ""
 
   match eq
   case SES_SIMPLE_ASSIGN(__) then
-    let crefStr = CodegenCFunctions.contextCref(cref, contextOMSI, &auxFunction)
+    let crefStr = crefOMSI(cref, omsiFunction)
     let expPart = CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)
     <<
     <%crefStr%> = <%expPart%>;
@@ -178,9 +178,9 @@ template generateMatrixColumnInitialization(OMSIFunction column)
   let &body = buffer ""
 
   match column
-  case OMSI_FUNCTION(__) then
+  case omsiFunction as OMSI_FUNCTION(__) then
     let _ = (equations |> eq =>
-      let &body += equationCStr(eq, &varDecls, &auxFunction)
+      let &body += equationCStr(eq, &varDecls, &auxFunction, omsiFunction)
       <<>>
     )
 
@@ -249,10 +249,10 @@ template generateDereivativeMatrixColumnFunction(OMSIFunction column, String mod
   let &auxFunction = buffer ""
 
   match column
-  case OMSI_FUNCTION() then
+  case omsiFunction as OMSI_FUNCTION() then
     let bodyBuffer = ( equations |> eq=>
       <<
-      <%generateEquationFunction(eq, modelName)%>
+      <%generateEquationFunction(eq, modelName, omsiFunction)%>
       >>
     ;separator="\n")
 
@@ -296,6 +296,47 @@ template generateDereivativeMatrixColumnCall(OMSIFunction column, String modelNa
 end generateDereivativeMatrixColumnCall;
 
 
+template crefOMSI(ComponentRef cref, OMSIFunction omsiFunction)
+"lhs componentReference generation"
+::=
+  match cref
+  case CREF_IDENT(ident = "time") then
+    "this_function->function_vars->time_value"
+  else
+    match localCref2SimVar(cref, omsiFunction)
+      case v as SIMVAR(__) then
+        let index = localCref2Index(cref, omsiFunction)
+        let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
+        <<this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>>>
+      else "CREF_NOT_FOUND"
+    end match
+end crefOMSI;
+
+template crefTypeOMSIC(ComponentRef cr) "template crefType
+  Like cref but with cast if type is integer."
+::=
+  match cr
+  case CREF_IDENT(__) then crefTypeNameOMSIC(identType)
+  case CREF_QUAL(__)  then crefTypeOMSIC(componentRef)
+  else "crefType:ERROR"
+  end match
+end crefTypeOMSIC;
+
+template crefTypeNameOMSIC(DAE.Type type)
+ "Generate type helper."
+::=
+  match type
+  case T_INTEGER(__)       then "ints"
+  case T_REAL(__)          then "reals"
+  case T_STRING(__)        then "strings"
+  case T_BOOL(__)          then "bools"
+  case T_ENUMERATION(__)   then "integers"
+  case T_SUBTYPE_BASIC(__) then crefTypeNameOMSIC(complexType)
+  case T_ARRAY(__)         then crefTypeNameOMSIC(ty)
+  case T_COMPLEX(complexClassType=EXTERNAL_OBJ(__)) then "complex"
+  case T_COMPLEX(__)       then '<%CodegenUtil.underscorePath(ClassInf.getStateName(complexClassType))%>'
+  else CodegenUtil.error(sourceInfo(),'crefTypeNameOMSIC: <%unparseType(type)%>')
+end crefTypeNameOMSIC;
 
 annotation(__OpenModelica_Interface="backend");
 end CodegenOMSIC_Equations;
