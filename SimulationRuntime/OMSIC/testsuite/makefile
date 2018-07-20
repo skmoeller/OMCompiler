@@ -11,15 +11,20 @@ TEST_LIBS = -L$(PATH_TO_OMSIC)/lib
 
 TEST_INCS = -I$(OMSIC_INCLUDE)
 
+# set FMI GUID
+# if other XML or JSON are tested you have to manualy set the GUID here to
+# matching GUID from modelDescription.xml
+TEST_GUID = {e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}
+
 test: test_omsu
 
 test_omsu: test_omsu_main
 ifeq ($(TARGET_OS),mingw32)
-	./$@.exe SimpleModelLinear_1 {e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}
+	./$^.exe SimpleModelLinear_1 $(TEST_GUID)
 else ifeq ($(TARGET_OS),mingw64)
-	./$@.exe SimpleModelLinear_1 {e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}
+	./$^.exe SimpleModelLinear_1 $(TEST_GUID)
 else
-	./$^ SimpleModelLinear_1 {e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}
+	./$^ SimpleModelLinear_1 $(TEST_GUID)
 endif
 
 test_omsu_main: test_omsu_main.c

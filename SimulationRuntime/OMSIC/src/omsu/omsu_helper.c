@@ -314,7 +314,7 @@ void omsu_print_debug (osu_t* OSU) {
         printf("| | | numVar:\t\t\t%i\n", OSU->osu_data->model_data.equation_info_t[i].numVar);
         printf("| | | variables:\t\t");
         fflush(stdout);
-        for (omsi_unsigned_int j=0; j<OSU->osu_data->model_data.equation_info_t[i].numVar; j++) {
+        for (omsi_int j=0; j<OSU->osu_data->model_data.equation_info_t[i].numVar; j++) {
             printf("%s ", OSU->osu_data->model_data.equation_info_t[i].variables[j]);
         }
         fflush(stdout);
