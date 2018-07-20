@@ -95,7 +95,6 @@ import Graph;
 import HashSet;
 import HashSetExp;
 import HashTableCrefSimVar;
-import HashTableCrefSimVarDep;
 import HashTableSimCodeEqCache;
 import HpcOmSimCode;
 import Inline;
@@ -3764,7 +3763,7 @@ protected
   list<SimCodeVar.SimVar> inputVars = {};
   list<SimCodeVar.SimVar> outputVars = {};
   list<SimCodeVar.SimVar> innerVars = {};
-  HashTableCrefSimVarDep.HashTable hashTable;
+  HashTableCrefSimVar.HashTable hashTable;
   list<SimCode.SimEqSystem> tmpEqns = {};
   list<SimCodeVar.SimVar> tmpInputVars = {}, tmpOutputVars = {}, tmpInnerVars = {};
   Integer nAlgebraicSystems = 0;
@@ -3830,7 +3829,7 @@ algorithm
       // inputs empty, since we haven't check for inputs yet
       dumpVarLst(tSimVars1, "AHEU AlgSystem outputVars");     // ToDo: delete
       dumpVarLst(tSimVars2, "AHEU AlgSystem innerVars");     // ToDo: delete
-      omsiFunction = SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, hashTable, 0);
+      omsiFunction = SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)), 0);
       tmpOutputVars = listAppend(tSimVars2, tSimVars1);
 
       // fill SES_ALGEBRAIC_SYSTEM
@@ -3856,11 +3855,13 @@ algorithm
   // create hash table
   hashTable := createCrefToSimVarHT_omsi(inputVars, innerVars, outputVars);
 
+  BaseHashTable.dumpHashTableStatistics(hashTable);
+
   omsiFuncEquations := SimCode.OMSI_FUNCTION(equations =  listReverse(equations),
                                             inputVars = inputVars,
                                             outputVars = outputVars,
                                             innerVars =  innerVars,
-                                            crefToSimVarDepHT = hashTable,
+                                            context = SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
                                             nAlgebraicSystems = nAlgebraicSystems);
 end generateEquationsForComponents;
 
@@ -3978,7 +3979,7 @@ protected function createCrefToSimVarHT_omsi
   input list<SimCodeVar.SimVar> inputVars   "list of simcode variables determining input variables for equation(s)";
   input list<SimCodeVar.SimVar> innerVars   "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
   input list<SimCodeVar.SimVar> outputVars  "list of simcode variables determining output variables for equation(s)";
-  output HashTableCrefSimVarDep.HashTable outHT;
+  output HashTableCrefSimVar.HashTable outHT;
 protected
   Integer size;
   Integer index;
@@ -3986,22 +3987,22 @@ algorithm
   try
     size := listLength(inputVars)+listLength(innerVars)+listLength(outputVars);
     size := intMax(size, 1023);
-    outHT := HashTableCrefSimVarDep.emptyHashTableSized(size);   // create empty hash table
+    outHT := HashTableCrefSimVar.emptyHashTableSized(size);   // create empty hash table
 
     // add input vars to hash table
     index := 0;
     outHT := List.fold(createIndicesForSimVars(inputVars,index),
-                       HashTableCrefSimVarDep.addSimVarDepToHashTable,
+                       HashTableCrefSimVar.addSimVarDepToHashTable,
                        outHT);
     // add inner vars to hash table
     index := index + listLength(inputVars);
     outHT := List.fold(createIndicesForSimVars(innerVars,index),
-                       HashTableCrefSimVarDep.addSimVarDepToHashTable,
+                       HashTableCrefSimVar.addSimVarDepToHashTable,
                        outHT);
     // add output vars to hash table
     index := index + listLength(innerVars);
     outHT := List.fold(createIndicesForSimVars(outputVars,index),
-                       HashTableCrefSimVarDep.addSimVarDepToHashTable,
+                       HashTableCrefSimVar.addSimVarDepToHashTable,
                        outHT);
   else
     Error.addInternalError("function createCrefToSimVarHT_omsi failed", sourceInfo());
@@ -4013,7 +4014,7 @@ protected function createIndicesForSimVars
 "Creates list of hash table values from list of simVar and sets corresponding index"
 input list<SimCodeVar.SimVar> vars;
 input Integer startIndex;
-output list<HashTableCrefSimVarDep.Value> varsWithDep={};    // empty list
+output list<HashTableCrefSimVar.Value> varsWithDep={};    // empty list
 
 protected
   Integer index;
@@ -4025,6 +4026,25 @@ algorithm
   end for;
 end createIndicesForSimVars;
 
+
+/*
+protected function someNewFunction
+input list<BackendDAE.EqSystem> eqs;
+protected
+  list<BackendDAE.Var> vars;
+  list<DAE.ComponentRef> crefs;
+  Integer size;
+  list<Integer> bVarIdcs, simVarIdcs;
+algorithm
+
+  //get Backend vars and index
+  vars := BackendVariable.equationSystemsVarsLst(eqs);
+  crefs := List.map(vars,BackendVariable.varCref);
+  size := listLength(crefs);
+  bVarIdcs := List.intRange(size);
+  simVars := List.map1(crefs,BaseHashTable.get,ht);
+end someNewFunction;
+*/
 
 // =============================================================================
 // section to create state set equations
@@ -4960,7 +4980,7 @@ algorithm
     DAE.FunctionTree funcs;
 
     SimCode.HashTableCrefToSimVar crefSimVarHT;
-    HashTableCrefSimVarDep.HashTable hashTable;
+    HashTableCrefSimVar.HashTable hashTable;
 
     case (BackendDAE.EMPTY_JACOBIAN(), _, _) then (NONE(), iuniqueEqIndex, itempvars);
 
@@ -5074,7 +5094,19 @@ algorithm
       (seedVars, columnVars, indexVars) = fillSimVarIndices(columnEquations, seedVars, columnVars, indexVars);
 
       hashTable = createCrefToSimVarHT_omsi(seedVars, columnVars, indexVars);
-      then (SOME(SimCode.DERIVATIVE_MATRIX({SimCode.OMSI_FUNCTION(columnEquations, seedVars, indexVars, columnVars, hashTable, 0)}, name, sparseInts, sparseIntsT, coloring, maxColor)), uniqueEqIndex, tempvars);
+      then (SOME(SimCode.DERIVATIVE_MATRIX(
+          { columns = SimCode.OMSI_FUNCTION(equations = columnEquations,
+                                            inputVars seedVars,
+                                            outputVars = indexVars,
+                                            innerVars = columnVars,
+                                            context = SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
+                                            nAlgebraicSystems = 0) },
+          matrixName = name,
+          sparsity = sparseInts,
+          sparsityT = sparseIntsT,
+          coloredCols = coloring,
+          maxColorCols = maxColor)),
+        uniqueEqIndex, tempvars);
 
     else
       equation
@@ -13034,32 +13066,32 @@ public function getLocalValueReference_omsi
   direct memory access considering aliases and array storage order."
   input SimCodeVar.SimVar inSimVar;
   input SimCode.SimCode inSimCode;
-  input SimCode.OMSIFunction OMSIFunction;
+  input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
   input Boolean inElimNegAliases "=false to keep negative alias references";
   output String outValueReference;
 algorithm
-  outValueReference := match (inSimVar, inElimNegAliases)
+  outValueReference := match (inSimVar, inElimNegAliases, inCrefToSimVarHT)
     local
       DAE.ComponentRef cref;
       String valueReference;
+      HashTableCrefSimVar.HashTable crefToSimVarHT;
 
     // case negated alias variable, returns global value reference
-    case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.NEGATEDALIAS(_)), false) then
+    case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.NEGATEDALIAS(_)), false, _) then
       getDefaultValueReference(inSimVar, inSimCode.modelInfo.varInfo);
     // case alias varible, returns global value reference
-    case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.ALIAS(varName = cref)), _) then
+    case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.ALIAS(varName = cref)), _, _) then
       getDefaultValueReference(cref2simvar(cref, inSimCode), inSimCode.modelInfo.varInfo);
     // default case
-    case (SimCodeVar.SIMVAR(name=cref), _)
+    case (SimCodeVar.SIMVAR(name=cref), _, crefToSimVarHT)
     algorithm
-      valueReference := localCref2Index(cref, OMSIFunction);
+      valueReference := localCref2Index(cref, crefToSimVarHT);
       if stringEqual(valueReference, "-1") then
         Error.addInternalError("invalid return value from localCref2Index for " + simVarString(inSimVar), sourceInfo());
       end if;
       then valueReference;
   end match;
 end getLocalValueReference_omsi;
-
 
 
 protected function getHighestDerivation"computes the highest derivative among all states. this includes derivatives of derivatives as well
@@ -13442,23 +13474,23 @@ end cref2simvar;
 
 
 public function localCref2SimVar
-"Used by templates to find SIMVAR in current OMSIFunction for given cref
+"Used by templates to find SIMVAR in given hashTable for given cref
  (to gain representaion index info mainly)."
   input DAE.ComponentRef inCref;
-  input SimCode.OMSIFunction inOMSIFunction;
+  input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
   output SimCodeVar.SimVar outSimVar;
 algorithm
-  outSimVar := matchcontinue (inCref, inOMSIFunction)
+  outSimVar := matchcontinue (inCref, inCrefToSimVarHT)
     local
       DAE.ComponentRef cref, badcref;
       SimCodeVar.SimVar sv;
-      SimCode.HashTableCrefSimVarDep.HashTable crefToSimVarDepHT;
-    case (cref, SimCode.OMSI_FUNCTION(crefToSimVarDepHT = crefToSimVarDepHT))
+      SimCode.HashTableCrefSimVar.HashTable crefToSimVarHT;
+    case (cref, crefToSimVarHT)
       equation
-        (sv,_) = BaseHashTable.get(cref, crefToSimVarDepHT);
+        sv = BaseHashTable.get(cref, crefToSimVarHT);
         sv = match sv.aliasvar
           case SimCodeVar.NOALIAS() then sv;
-          case SimCodeVar.ALIAS(varName=cref) then localCref2SimVar(cref, inOMSIFunction); /* Possibly not needed; can't really hurt that much though */
+          case SimCodeVar.ALIAS(varName=cref) then localCref2SimVar(cref, crefToSimVarHT); /* Possibly not needed; can't really hurt that much though */
           case SimCodeVar.NEGATEDALIAS() then sv;
         end match;
       then sv;
@@ -13469,21 +13501,22 @@ algorithm
   end matchcontinue;
 end localCref2SimVar;
 
+
 public function localCref2Index
-"Finds local value reference for given cref and OMSIFunction"
-input DAE.ComponentRef inCref;
-input SimCode.OMSIFunction inOMSIFunction;
-output String outIndex;
+"Finds local value reference for given cref and hash table"
+  input DAE.ComponentRef inCref;
+  input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
+  output String outIndex;
 algorithm
-  outIndex:= match (inCref, inOMSIFunction)
+  outIndex:= match (inCref, inCrefToSimVarHT)
     local
       DAE.ComponentRef cref;
-      HashTableCrefSimVarDep.HashTable crefToSimVarDepHT;
-      Integer index;
-    case (cref, SimCode.OMSI_FUNCTION(crefToSimVarDepHT = crefToSimVarDepHT))
+      HashTableCrefSimVar.HashTable crefToSimVarHT;
+      SimCodeVar.SimVar sv;
+    case (cref, crefToSimVarHT)
       equation
-        (_, index) = BaseHashTable.get(cref, crefToSimVarDepHT);
-      then String(index);
+        sv = BaseHashTable.get(cref, crefToSimVarHT);
+      then String(sv.index);
     else
       then "ERROR_Local_cref2simvar_failed";
   end match;

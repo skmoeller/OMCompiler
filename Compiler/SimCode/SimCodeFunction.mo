@@ -227,6 +227,7 @@ uniontype Context
   end DAE_MODE_CONTEXT;
 
   record OMSI_CONTEXT
+    Option<HashTableCrefSimVar.HashTable> hashTable;    // used to get local SimVars and corresponding value references
   end OMSI_CONTEXT;
 end Context;
 
@@ -243,7 +244,7 @@ public constant Context contextZeroCross              = ZEROCROSSINGS_CONTEXT();
 public constant Context contextOptimization           = OPTIMIZATION_CONTEXT();
 public constant Context contextFMI                    = FMI_CONTEXT();
 public constant Context contextDAEmode                = DAE_MODE_CONTEXT();
-public constant Context contextOMSI                   = OMSI_CONTEXT();
+public constant Context contextOMSI                   = OMSI_CONTEXT(NONE());
 
 constant list<DAE.Exp> listExpLength1 = {DAE.ICONST(0)} "For CodegenC.tpl";
 constant list<Variable> boxedRecordOutVars = VARIABLE(DAE.CREF_IDENT("",DAE.T_COMPLEX_DEFAULT_RECORD,{}),DAE.T_COMPLEX_DEFAULT_RECORD,NONE(),{},DAE.NON_PARALLEL(),DAE.VARIABLE())::{} "For CodegenC.tpl";

@@ -26,7 +26,7 @@ end getSimCode;
 
 function cref2simvar<A,B>
   input A inCref;
-  input B simCode;
+  input B inCrefToSimVarHT;
   output SimCodeVar.SimVar outSimVar;
 algorithm
   assert(false, getInstanceName());
@@ -34,7 +34,7 @@ end cref2simvar;
 
 function localCref2SimVar<A,B>
   input A inCref;
-  input B inOMSIFunction;
+  input B inCrefToSimVarHT;
   output SimCodeVar.SimVar outSimVar;
 algorithm
   assert(false, getInstanceName());
@@ -63,6 +63,16 @@ function getValueReference
 algorithm
   /* Do nothing */
 end getValueReference;
+
+function getLocalValueReference
+  input SimCodeVar.SimVar inSimVar;
+  input SimCode.SimCode inSimCode;
+  input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
+  input Boolean inElimNegAliases "=false to keep negative alias references";
+  output String outValueReference;
+algorithm
+  /* Do nothing */
+end getLocalValueReference;
 
 
 annotation(__OpenModelica_Interface="backend");

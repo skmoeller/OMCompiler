@@ -429,6 +429,7 @@ uniontype OMSIFunction
     list<SimCodeVar.SimVar> inputVars;
     list<SimCodeVar.SimVar> outputVars;
     list<SimCodeVar.SimVar> innerVars;
+    SimCodeFunction.Context context;
     Integer nAlgebraicSystems;
   end OMSI_FUNCTION;
 end OMSIFunction; 
@@ -992,6 +993,14 @@ package SimCodeUtil
     output String outValueReference;
   end getValueReference;
 
+  function getLocalValueReference_omsi
+    input SimCodeVar.SimVar inSimVar;
+    input SimCode.SimCode inSimCode;
+    input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
+    input Boolean inElimNegAliases;
+    output String outValueReference;
+  end getLocalValueReference_omsi;
+
   function getVarIndexListByMapping
     input HashTableCrIListArray.HashTable iVarToArrayIndexMapping;
     input DAE.ComponentRef iVarName;
@@ -1072,14 +1081,14 @@ package SimCodeUtil
   end cref2simvar;
 
   function localCref2SimVar
-    input DAE.ComponentRef cref;
-    input SimCode.OMSIFunction inOMSIFunction;
+    input DAE.ComponentRef inCref;
+    input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
     output SimCodeVar.SimVar outSimVar;
   end localCref2SimVar;
 
   function localCref2Index
     input DAE.ComponentRef inCref;
-    input SimCode.OMSIFunction inOMSIFunction;
+    input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
     output String outIndex;
   end localCref2Index;
 

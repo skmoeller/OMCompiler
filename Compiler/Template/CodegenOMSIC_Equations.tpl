@@ -55,7 +55,7 @@ template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
 end equationFunctionPrototypes;
 
 
-template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, OMSIFunction omsiFunction)
+template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, SimCodeFunction.Context context)
  "Generates C-function for an equation evaluation"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
@@ -63,7 +63,7 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, OMS
 
   let &varDecls = buffer ""
   let &auxFunction = buffer ""
-  let equationCode = equationCStr(eq, &varDecls, &auxFunction, omsiFunction)
+  let equationCode = equationCStr(eq, &varDecls, &auxFunction, context)
 
   let funcName = (match eq
     case SES_RESIDUAL(__) then
@@ -95,15 +95,15 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, OMS
   >>
 end generateEquationFunction;
 
-template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction, OMSIFunction omsiFunction)
+template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction, Context context)
  "Generates an equation that is just a simple assignment."
 ::=
   let &preExp = buffer ""
 
   match eq
   case SES_SIMPLE_ASSIGN(__) then
-    let crefStr = crefOMSI(cref, omsiFunction)
-    let expPart = CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)
+    let crefStr = crefOMSI(cref, context)
+    let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
     <<
     <%crefStr%> = <%expPart%>;
     >>
@@ -113,7 +113,7 @@ template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction, OMSIFun
     /* Add stuff here*/
     >>
   case SES_RESIDUAL(__) then
-    let expPart = CodegenCFunctions.daeExp(exp, contextOMSI, &preExp, &varDecls, &auxFunction)
+    let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
     <<
     *res = <%expPart%>;
     >>
@@ -180,7 +180,7 @@ template generateMatrixColumnInitialization(OMSIFunction column)
   match column
   case omsiFunction as OMSI_FUNCTION(__) then
     let _ = (equations |> eq =>
-      let &body += equationCStr(eq, &varDecls, &auxFunction, omsiFunction)
+      let &body += equationCStr(eq, &varDecls, &auxFunction, omsiFunction.context)
       <<>>
     )
 
@@ -249,10 +249,10 @@ template generateDereivativeMatrixColumnFunction(OMSIFunction column, String mod
   let &auxFunction = buffer ""
 
   match column
-  case omsiFunction as OMSI_FUNCTION() then
+  case omsiFunction as OMSI_FUNCTION(__) then
     let bodyBuffer = ( equations |> eq=>
       <<
-      <%generateEquationFunction(eq, modelName, omsiFunction)%>
+      <%generateEquationFunction(eq, modelName, omsiFunction.context)%>
       >>
     ;separator="\n")
 
@@ -296,19 +296,24 @@ template generateDereivativeMatrixColumnCall(OMSIFunction column, String modelNa
 end generateDereivativeMatrixColumnCall;
 
 
-template crefOMSI(ComponentRef cref, OMSIFunction omsiFunction)
+template crefOMSI(ComponentRef cref, Context context)
 "lhs componentReference generation"
 ::=
   match cref
   case CREF_IDENT(ident = "time") then
     "this_function->function_vars->time_value"
   else
-    match localCref2SimVar(cref, omsiFunction)
-      case v as SIMVAR(__) then
-        let index = localCref2Index(cref, omsiFunction)
-        let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
-        <<this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>>>
-      else "CREF_NOT_FOUND"
+    match context
+      case OMSI_CONTEXT(__) then
+//    case omsiContext as OMSI_CONTEXT(hashTable=hashTable as SOME(HashTableCrefSimVar.HashTable(__))) then
+//      match localCref2SimVar(cref, hashTable)
+//        case v as SIMVAR(__) then
+//          let index = v.index
+//          let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
+//          <<this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>>>
+//        else "CREF_NOT_FOUND"
+//      end match
+        <<>>
     end match
 end crefOMSI;
 

@@ -106,16 +106,15 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
 ""
 ::=
   match omsiFunction
-  case omsiFunction as OMSI_FUNCTION(__) then
-
+  case OMSI_FUNCTION(context=context as SimCodeFunction.OMSI_CONTEXT(__)) then
     let _ = (equations |> eqsystem hasindex i0 =>
       match eqsystem
       case SES_SIMPLE_ASSIGN(__) then
-        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, omsiFunction) +"\n"
+        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, context) +"\n"
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation") +"\n"
         <<>>
       case SES_RESIDUAL(__) then
-        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, omsiFunction) +"\n"
+        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, context) +"\n"
         let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, 'this_function, res[i++]') +"\n"      // ToDo: why is i0 always zero?
         <<>>
       case SES_ALGEBRAIC_SYSTEM(__) then
