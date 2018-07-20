@@ -226,6 +226,15 @@ typedef struct sim_data_t{
 
     omsi_bool* zerocrossings_vars;      /*conditions of zerocrossing functions */
     omsi_bool* pre_zerocrossings_vars;  /*pre conditions of zerocrossing functions */
+
+    /* start indices to model_vars_and_params */
+    omsi_unsigned_int inputs_real_index;    /*start index of input real variables */
+    omsi_unsigned_int inputs_int_index;     /*start index of input integer variables */
+    omsi_unsigned_int inputs_bool_index;    /*start index of input boolean variables */
+    omsi_unsigned_int outputs_real_index;   /*start index of output real variables */
+    omsi_unsigned_int outputs_int_index;    /*start index of output integer variables */
+    omsi_unsigned_int outputs_bool_index;   /*start index of output boolean variables */
+
 } sim_data_t;
 
 
