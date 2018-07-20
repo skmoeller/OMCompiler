@@ -304,16 +304,14 @@ template crefOMSI(ComponentRef cref, Context context)
     "this_function->function_vars->time_value"
   else
     match context
-      case OMSI_CONTEXT(__) then
-//    case omsiContext as OMSI_CONTEXT(hashTable=hashTable as SOME(HashTableCrefSimVar.HashTable(__))) then
-//      match localCref2SimVar(cref, hashTable)
-//        case v as SIMVAR(__) then
-//          let index = v.index
-//          let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
-//          <<this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>>>
-//        else "CREF_NOT_FOUND"
-//      end match
-        <<>>
+    case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable)) then
+      match localCref2SimVar(cref, hashTable)
+        case v as SIMVAR(__) then
+          let index = getLocalValueReference(v, getSimCode(), hashTable, false)
+          let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
+          <<this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>>>
+        else "CREF_NOT_FOUND"
+      end match
     end match
 end crefOMSI;
 

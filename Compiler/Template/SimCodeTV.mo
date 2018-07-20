@@ -883,6 +883,7 @@ package SimCodeFunction
     record DAE_MODE_CONTEXT
     end DAE_MODE_CONTEXT;
     record OMSI_CONTEXT
+      Option<HashTableCrefSimVar.HashTable> hashTable;
     end OMSI_CONTEXT;
   end Context;
 
@@ -993,13 +994,13 @@ package SimCodeUtil
     output String outValueReference;
   end getValueReference;
 
-  function getLocalValueReference_omsi
+  function getLocalValueReference
     input SimCodeVar.SimVar inSimVar;
     input SimCode.SimCode inSimCode;
     input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
     input Boolean inElimNegAliases;
     output String outValueReference;
-  end getLocalValueReference_omsi;
+  end getLocalValueReference;
 
   function getVarIndexListByMapping
     input HashTableCrIListArray.HashTable iVarToArrayIndexMapping;
