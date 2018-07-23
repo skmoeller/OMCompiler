@@ -1,6 +1,6 @@
 
 First set the correct OpenModelica path in OMSIC/makefile:
-  PATH_TO_OPENMODELICA = /path/to//OpenModelica
+  PATH_TO_OPENMODELICA = /path/to/OpenModelica
 
 Needed libraries:
   expat library (on Windows: sould be in path with OMDev)
