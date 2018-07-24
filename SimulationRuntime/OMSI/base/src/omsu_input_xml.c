@@ -29,10 +29,6 @@
  */
 
 #include <omsu_input_xml.h>
-/*nw*/ #include <stdio.h>
-/*nw*/ #include <float.h>
-/*nw */typedef int mmc_sint_t;
-
 
 /* global functions */          // ToDo: is this the best way to go around giving every function a handle to those functions?
 omsi_callback_allocate_memory   global_allocateMemory = NULL;
@@ -531,7 +527,7 @@ void omsu_read_value_string(omsi_string s, omsi_char** str) {
 
 void XMLCALL startElement(void *userData, omsi_string name, omsi_string *attr) {
   omc_ModelInput* mi = (omc_ModelInput*)userData;
-  mmc_sint_t i = 0;
+  omsi_long i = 0;
 
   /* handle fmiModelDescription */
   if(!strcmp(name, "fmiModelDescription")) {
