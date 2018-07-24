@@ -30,6 +30,10 @@
 
 #include <omsu_input_xml.h>
 /*nw*/ #include <stdio.h>
+/*nw*/ #include <float.h>
+/*nw */typedef int mmc_sint_t;
+
+
 /* global functions */          // ToDo: is this the best way to go around giving every function a handle to those functions?
 omsi_callback_allocate_memory   global_allocateMemory = NULL;
 omsi_callback_free_memory       global_freeMemory = NULL;
