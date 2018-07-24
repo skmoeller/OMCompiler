@@ -10,7 +10,7 @@ SOLVER_LIB_DIR = -L/d/workspace/Testlab/libs/
 SOLVER_LIBS = -llapack -lblas
 RUNTIMEPATH = .
 
-PATH_TO_OPENMODELICA = /d/workspace/OpenModelica
+PATH_TO_OPENMODELICA = /D/OpenModelica/omc/win32_omc_dev
 #PATH_TO_OPENMODELICA = /home/wbraun/workspace/OpenModelica
 
 PATH_TO_OMSIC = $(PATH_TO_OPENMODELICA)/OMCompiler/SimulationRuntime/OMSIC
@@ -36,7 +36,7 @@ endif
 
 all:
 	make -C src/omsu libomsu
-	make -C src/solver libomsisolver
+	#make -C src/solver libomsisolver
 	make -C testsuite test
 
 clean:
