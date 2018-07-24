@@ -73,6 +73,7 @@ import BaseHashTable;
 import Builtin;
 import CheckModel;
 import ClassInf;
+import CommonSubExpression.isCSECref;
 import ComponentReference;
 import Config;
 import DAEDump;
@@ -3925,11 +3926,11 @@ algorithm
           newSimVar := dlowvarToSimvar(var, NONE(), BackendVariable.emptyVars(0));
 
           //ToDo: check for some self generated variables like $cse -> inner variable
-          //if BackendVariable.selfGeneratedVar(cr) then
-          //  innerVars :=  listAppend({newSimVar}, innerVars);
-          //else
+          if CommonSubExpression.isCSECref(cr) then
+            innerVars :=  listAppend({newSimVar}, innerVars);
+          else
             outputVars :=  listAppend({newSimVar}, outputVars);
-          //end if;
+          end if;
         else
           Error.addInternalError("- " + BackendDump.equationString(eqn)+ " could not resolved for "
             +  ComponentReference.printComponentRefStr(cr) + " in SimCodeUtil.generateSingleEquation", sourceInfo());
@@ -3993,9 +3994,9 @@ protected
   Integer size;
 algorithm
   try
-    //size := Util.nextPrime(listLength(vars));
-    size := listLength(vars);
-    size := intMax(size, 1023);
+    size := Util.nextPrime(listLength(vars)*2);   // chose big enough prime for hash table
+    //size := listLength(vars);
+    //size := intMax(size, 1023);
     outHT := HashTableCrefSimVar.emptyHashTableSized(size);   // create empty hash table
 
     // add vars to hash table
