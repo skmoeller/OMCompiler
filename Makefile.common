@@ -221,7 +221,8 @@ runtimeCPPinstall: CMinpack $(MINGW_EXTRA_LIBS) copycppheader
 	test ! `uname` = Darwin || install_name_tool -id @rpath/cpp/libOMCppSystem.dylib $(OMBUILDDIR)/$(LIB_OMC)/cpp/libOMCppSystem.dylib
 	test ! `uname` = Darwin || install_name_tool -change libOMCppSolver.dylib @rpath/cpp/libOMCppSolver.dylib $(OMBUILDDIR)/$(LIB_OMC)/cpp/libOMCppCVode.dylib
 	test ! `uname` = Darwin || install_name_tool -change libOMCppSolver.dylib @rpath/cpp/libOMCppSolver.dylib $(OMBUILDDIR)/$(LIB_OMC)/cpp/libOMCppEuler.dylib
-
+runtimeOMSIBaseInstall:
+	$(MAKE) -C SimulationRuntime/OMSI/ -f $(defaultMakefileTarget) CC="$(CC)" CXX="$(CXX)" install ANALYZATION_MODE="$(ANALYZATION_MODE)" $(CMAKE_ARGS) OMBUILDDIR=$(OMBUILDDIR)
 testlibrariemsl31cpp:
 	(cd testsuite/openmodelica/cppruntime/libraries/msl31 && time $(MAKE) -f Makefile > testsuite-msl31-cpp-trace.txt 2>&1)
 	echo "log is in testsuite/openmodelica/cppruntime/libraries/msl31/testsuite-msl31-cpp-trace.txt"
