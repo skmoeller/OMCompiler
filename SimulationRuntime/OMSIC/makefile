@@ -39,11 +39,7 @@ endif
 
 all:
 	make -C src/omsu libomsu
-<<<<<<< HEAD
 #	make -C src/solver libomsisolver
-=======
-	#make -C src/solver libomsisolver
->>>>>>> 2fa165142d93ebe2d5a16dab0dabb4eb84476a17
 	make -C testsuite test
 
 clean:

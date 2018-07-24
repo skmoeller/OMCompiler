@@ -15,7 +15,6 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/include/omsi.h
   ${CMAKE_SOURCE_DIR}/include/omsi_callbacks.h
   ${CMAKE_SOURCE_DIR}/include/omsi_cs.h
-  ${CMAKE_SOURCE_DIR}/include/omsi_eqns_system.h
   ${CMAKE_SOURCE_DIR}/include/omsi_jacobian.h
   ${CMAKE_SOURCE_DIR}/include/omsi_me.h
 DESTINATION include/OMSI)
