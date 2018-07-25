@@ -4,9 +4,29 @@ MESSAGE(STATUS "CMake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CM
 
 PROJECT(OMSIBaseSimulationRuntime)
 
+if(NOT PLATFORM OR PLATFORM STREQUAL "dynamic")
+  set(BUILD_SHARED_LIBS ON)
+elseif(PLATFORM STREQUAL "static")
+  set(BUILD_SHARED_LIBS OFF)
+else()
+endif()
 
-SET(OSUBaseName ${LIBPREFIX}OSIBase${LIBSUFFIX})
+
+
+IF(BUILD_SHARED_LIBS)
+  SET(LIBSUFFIX "")
+ELSE(BUILD_SHARED_LIBS)
+  SET(LIBSUFFIX "_static")
+ENDIF(BUILD_SHARED_LIBS)
+
+
+
+SET(OSUBaseName ${LIBPREFIX}OMSIBase${LIBSUFFIX})
 SET(LIBINSTALLEXT "lib/omc/omsi" CACHE STRING "library directory")
+SET(LIBPREFIX "OMCpp")
+
+
+
 include_directories ("${CMAKE_SOURCE_DIR}/include")
 # omsi base simulation runtime
 ADD_SUBDIRECTORY(base)
