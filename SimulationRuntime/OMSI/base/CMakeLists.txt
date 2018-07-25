@@ -2,6 +2,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 #OMSI base simulation runtime
 PROJECT(OMSIBASE)
 SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+# enable warnings and use ANSI C compatible compiler
+set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -ansi -pedantic")
+
 include_directories ("${CMAKE_SOURCE_DIR}/base/include")
 add_library(${OSUBaseName} src/omsu_input_json.c src/omsu_input_xml.c src/omsu_mmap.c)
 IF(WIN32)

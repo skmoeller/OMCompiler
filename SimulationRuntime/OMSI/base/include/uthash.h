@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>   /* memcmp,strlen */
 #include <stddef.h>   /* ptrdiff_t */
 #include <stdlib.h>   /* exit() */
+#include <omsi.h>
 
 /* These macros use decltype or the earlier __typeof GNU extension.
    As decltype is only available in newer compilers (VS2010 or gcc 4.3+
@@ -46,8 +47,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef NO_DECLTYPE
 #define DECLTYPE_ASSIGN(dst,src)                                                 \
 do {                                                                             \
-  char **_da_dst = (char**)(&(dst));                                             \
-  *_da_dst = (char*)(src);                                                       \
+  omsi_char **_da_dst = (omsi_char**)(&(dst));                                   \
+  *_da_dst = (omsi_char*)(src);                                                  \
 } while(0)
 #else
 #define DECLTYPE_ASSIGN(dst,src)                                                 \
@@ -57,12 +58,8 @@ do {                                                                            
 #endif
 
 /* a number of the hash function use uint32_t which isn't defined on win32 */
-#ifdef _MSC_VER
-typedef unsigned int uint32_t;
-typedef unsigned char uint8_t;
-#else
-#include <inttypes.h>   /* uint32_t */
-#endif
+typedef omsi_unsigned_int uint32_t;
+typedef omsi_unsigned_int uint8_t;
 
 #define UTHASH_VERSION 1.9.8
 
@@ -70,10 +67,10 @@ typedef unsigned char uint8_t;
 #define uthash_fatal(msg) exit(-1)        /* fatal error (out of memory,etc) */
 #endif
 #ifndef uthash_malloc
-#define uthash_malloc(sz) malloc(sz)      /* malloc fcn                      */
+#define uthash_malloc(sz) global_allocateMemory(1,sz)   /* malloc fcn        */
 #endif
 #ifndef uthash_free
-#define uthash_free(ptr,sz) free(ptr)     /* free fcn                        */
+#define uthash_free(ptr,sz) global_freeMemory(ptr)      /* free fcn          */
 #endif
 
 #ifndef uthash_noexpand_fyi
@@ -89,11 +86,11 @@ typedef unsigned char uint8_t;
 #define HASH_BKT_CAPACITY_THRESH 10      /* expand when bucket count reaches */
 
 /* calculate the element whose hash handle address is hhe */
-#define ELMT_FROM_HH(tbl,hhp) ((void*)(((char*)(hhp)) - ((tbl)->hho)))
+#define ELMT_FROM_HH(tbl,hhp) ((void*)(((omsi_char*)(hhp)) - ((tbl)->hho)))
 
 #define HASH_FIND(hh,head,keyptr,keylen,out)                                     \
 do {                                                                             \
-  unsigned _hf_bkt,_hf_hashv;                                                    \
+  omsi_unsigned_int _hf_bkt,_hf_hashv;                                           \
   out=NULL;                                                                      \
   if (head) {                                                                    \
      HASH_FCN(keyptr,keylen, (head)->hh.tbl->num_buckets, _hf_hashv, _hf_bkt);   \
@@ -147,7 +144,7 @@ do {                                                                            
   (head)->hh.tbl->tail = &((head)->hh);                                          \
   (head)->hh.tbl->num_buckets = HASH_INITIAL_NUM_BUCKETS;                        \
   (head)->hh.tbl->log2_num_buckets = HASH_INITIAL_NUM_BUCKETS_LOG2;              \
-  (head)->hh.tbl->hho = (char*)(&(head)->hh) - (char*)(head);                    \
+  (head)->hh.tbl->hho = (omsi_char*)(&(head)->hh) - (omsi_char*)(head);          \
   (head)->hh.tbl->buckets = (UT_hash_bucket*)uthash_malloc(                      \
           HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));               \
   if (! (head)->hh.tbl->buckets) { uthash_fatal( "out of memory"); }             \
@@ -172,10 +169,10 @@ do {                                                                            
 
 #define HASH_ADD_KEYPTR(hh,head,keyptr,keylen_in,add)                            \
 do {                                                                             \
- unsigned _ha_bkt;                                                               \
+ omsi_unsigned_int _ha_bkt;                                                      \
  (add)->hh.next = NULL;                                                          \
- (add)->hh.key = (char*)keyptr;                                                  \
- (add)->hh.keylen = (unsigned)keylen_in;                                                   \
+ (add)->hh.key = (omsi_char*)keyptr;                                             \
+ (add)->hh.keylen = (unsigned)keylen_in;                                         \
  if (!(head)) {                                                                  \
     head = (add);                                                                \
     (head)->hh.prev = NULL;                                                      \
@@ -214,7 +211,7 @@ do {                                                                            
  */
 #define HASH_DELETE(hh,head,delptr)                                              \
 do {                                                                             \
-    unsigned _hd_bkt;                                                            \
+    omsi_unsigned_int _hd_bkt;                                                   \
     struct UT_hash_handle *_hd_hh_del;                                           \
     if ( ((delptr)->hh.prev == NULL) && ((delptr)->hh.next == NULL) )  {         \
         uthash_free((head)->hh.tbl->buckets,                                     \
@@ -277,9 +274,9 @@ do {                                                                            
 #define HASH_OOPS(...) do { fprintf(stderr,__VA_ARGS__); exit(-1); } while (0)
 #define HASH_FSCK(hh,head)                                                       \
 do {                                                                             \
-    unsigned _bkt_i;                                                             \
-    unsigned _count, _bkt_count;                                                 \
-    char *_prev;                                                                 \
+    omsi_unsigned_int _bkt_i;                                                    \
+    omsi_unsigned_int _count, _bkt_count;                                        \
+    omsi_char *_prev;                                                            \
     struct UT_hash_handle *_thh;                                                 \
     if (head) {                                                                  \
         _count = 0;                                                              \
@@ -288,12 +285,12 @@ do {                                                                            
             _thh = (head)->hh.tbl->buckets[_bkt_i].hh_head;                      \
             _prev = NULL;                                                        \
             while (_thh) {                                                       \
-               if (_prev != (char*)(_thh->hh_prev)) {                            \
+               if (_prev != (omsi_char*)(_thh->hh_prev)) {                       \
                    HASH_OOPS("invalid hh_prev %p, actual %p\n",                  \
                     _thh->hh_prev, _prev );                                      \
                }                                                                 \
                _bkt_count++;                                                     \
-               _prev = (char*)(_thh);                                            \
+               _prev = (omsi_char*)(_thh);                                       \
                _thh = _thh->hh_next;                                             \
             }                                                                    \
             _count += _bkt_count;                                                \
@@ -312,12 +309,12 @@ do {                                                                            
         _thh =  &(head)->hh;                                                     \
         while (_thh) {                                                           \
            _count++;                                                             \
-           if (_prev !=(char*)(_thh->prev)) {                                    \
+           if (_prev !=(omsi_char*)(_thh->prev)) {                               \
               HASH_OOPS("invalid prev %p, actual %p\n",                          \
                     _thh->prev, _prev );                                         \
            }                                                                     \
-           _prev = (char*)ELMT_FROM_HH((head)->hh.tbl, _thh);                    \
-           _thh = ( _thh->next ?  (UT_hash_handle*)((char*)(_thh->next) +        \
+           _prev = (omsi_char*)ELMT_FROM_HH((head)->hh.tbl, _thh);               \
+           _thh = ( _thh->next ?  (UT_hash_handle*)((omsi_char*)(_thh->next) +   \
                                   (head)->hh.tbl->hho) : NULL );                 \
         }                                                                        \
         if (_count != (head)->hh.tbl->num_items) {                               \
@@ -336,7 +333,7 @@ do {                                                                            
 #ifdef HASH_EMIT_KEYS
 #define HASH_EMIT_KEY(hh,head,keyptr,fieldlen)                                   \
 do {                                                                             \
-    unsigned _klen = fieldlen;                                                   \
+    omsi_unsigned_int _klen = fieldlen;                                          \
     write(HASH_EMIT_KEYS, &_klen, sizeof(_klen));                                \
     write(HASH_EMIT_KEYS, keyptr, fieldlen);                                     \
 } while (0)
@@ -354,8 +351,8 @@ do {                                                                            
 /* The Bernstein hash function, used in Perl prior to v5.6 */
 #define HASH_BER(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
-  unsigned _hb_keylen=keylen;                                                    \
-  char *_hb_key=(char*)(key);                                                    \
+  omsi_unsigned_int _hb_keylen=keylen;                                           \
+  omsi_char *_hb_key=(omsi_char*)(key);                                          \
   (hashv) = 0;                                                                   \
   while (_hb_keylen--)  { (hashv) = ((hashv) * 33) + *_hb_key++; }               \
   bkt = (hashv) & (num_bkts-1);                                                  \
@@ -366,8 +363,8 @@ do {                                                                            
  * http://eternallyconfuzzled.com/tuts/algorithms/jsw_tut_hashing.aspx */
 #define HASH_SAX(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
-  unsigned _sx_i;                                                                \
-  char *_hs_key=(char*)(key);                                                    \
+  omsi_unsigned_int _sx_i;                                                       \
+  omsi_char *_hs_key=(omsi_char*)(key);                                          \
   hashv = 0;                                                                     \
   for(_sx_i=0; _sx_i < keylen; _sx_i++)                                          \
       hashv ^= (hashv << 5) + (hashv >> 2) + _hs_key[_sx_i];                     \
@@ -376,8 +373,8 @@ do {                                                                            
 
 #define HASH_FNV(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
-  unsigned _fn_i;                                                                \
-  char *_hf_key=(char*)(key);                                                    \
+  omsi_unsigned_int _fn_i;                                                       \
+  omsi_char *_hf_key=(omsi_char*)(key);                                          \
   hashv = 2166136261UL;                                                          \
   for(_fn_i=0; _fn_i < keylen; _fn_i++)                                          \
       hashv = (hashv * 16777619) ^ _hf_key[_fn_i];                               \
@@ -386,8 +383,8 @@ do {                                                                            
 
 #define HASH_OAT(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
-  unsigned _ho_i;                                                                \
-  char *_ho_key=(char*)(key);                                                    \
+  omsi_unsigned_int _ho_i;                                                       \
+  omsi_char *_ho_key=(omsi_char*)(key);                                          \
   hashv = 0;                                                                     \
   for(_ho_i=0; _ho_i < keylen; _ho_i++) {                                        \
       hashv += _ho_key[_ho_i];                                                   \
@@ -415,8 +412,8 @@ do {                                                                            
 
 #define HASH_JEN(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
-  unsigned _hj_i,_hj_j,_hj_k;                                                    \
-  unsigned char *_hj_key=(unsigned char*)(key);                                  \
+  omsi_unsigned_int _hj_i,_hj_j,_hj_k;                                           \
+  omsi_unsigned_int *_hj_key=(omsi_unsigned_int*)(key);                          \
   hashv = 0xfeedbeef;                                                            \
   _hj_i = _hj_j = 0x9e3779b9;                                                    \
   _hj_k = (unsigned)keylen;                                                      \
@@ -467,7 +464,7 @@ do {                                                                            
 #endif
 #define HASH_SFH(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
-  unsigned char *_sfh_key=(unsigned char*)(key);                                 \
+  omsi_unsigned_int *_sfh_key=(omsi_unsigned_int*)(key);                         \
   uint32_t _sfh_tmp, _sfh_len = keylen;                                          \
                                                                                  \
   int _sfh_rem = _sfh_len & 3;                                                   \
@@ -522,11 +519,11 @@ do {                                                                            
 #if (defined(__i386__) || defined(__x86_64__)  || defined(_M_IX86))
 #define MUR_GETBLOCK(p,i) p[i]
 #else /* non intel */
-#define MUR_PLUS0_ALIGNED(p) (((unsigned long)p & 0x3) == 0)
-#define MUR_PLUS1_ALIGNED(p) (((unsigned long)p & 0x3) == 1)
-#define MUR_PLUS2_ALIGNED(p) (((unsigned long)p & 0x3) == 2)
-#define MUR_PLUS3_ALIGNED(p) (((unsigned long)p & 0x3) == 3)
-#define WP(p) ((uint32_t*)((unsigned long)(p) & ~3UL))
+#define MUR_PLUS0_ALIGNED(p) (((omsi_long)p & 0x3) == 0)
+#define MUR_PLUS1_ALIGNED(p) (((omsi_long)p & 0x3) == 1)
+#define MUR_PLUS2_ALIGNED(p) (((omsi_long)p & 0x3) == 2)
+#define MUR_PLUS3_ALIGNED(p) (((omsi_long)p & 0x3) == 3)
+#define WP(p) ((uint32_t*)((omsi_long)(p) & ~3UL))
 #if (defined(__BIG_ENDIAN__) || defined(SPARC) || defined(__ppc__) || defined(__ppc64__))
 #define MUR_THREE_ONE(p) ((((*WP(p))&0x00ffffff) << 8) | (((*(WP(p)+1))&0xff000000) >> 24))
 #define MUR_TWO_TWO(p)   ((((*WP(p))&0x0000ffff) <<16) | (((*(WP(p)+1))&0xffff0000) >> 16))
@@ -599,8 +596,8 @@ do {                                                                            
  if (head.hh_head) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,head.hh_head));          \
  else out=NULL;                                                                  \
  while (out) {                                                                   \
-    if ((out)->hh.keylen == keylen_in) {                                           \
-        if ((HASH_KEYCMP((out)->hh.key,keyptr,keylen_in)) == 0) break;             \
+    if ((out)->hh.keylen == keylen_in) {                                         \
+        if ((HASH_KEYCMP((out)->hh.key,keyptr,keylen_in)) == 0) break;           \
     }                                                                            \
     if ((out)->hh.hh_next) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,(out)->hh.hh_next)); \
     else out = NULL;                                                             \
@@ -665,8 +662,8 @@ do {                                                                            
  */
 #define HASH_EXPAND_BUCKETS(tbl)                                                 \
 do {                                                                             \
-    unsigned _he_bkt;                                                            \
-    unsigned _he_bkt_i;                                                          \
+    omsi_unsigned_int _he_bkt;                                                   \
+    omsi_unsigned_int _he_bkt_i;                                                 \
     struct UT_hash_handle *_he_thh, *_he_hh_nxt;                                 \
     UT_hash_bucket *_he_new_buckets, *_he_newbkt;                                \
     _he_new_buckets = (UT_hash_bucket*)uthash_malloc(                            \
@@ -718,8 +715,8 @@ do {                                                                            
 #define HASH_SORT(head,cmpfcn) HASH_SRT(hh,head,cmpfcn)
 #define HASH_SRT(hh,head,cmpfcn)                                                 \
 do {                                                                             \
-  unsigned _hs_i;                                                                \
-  unsigned _hs_looping,_hs_nmerges,_hs_insize,_hs_psize,_hs_qsize;               \
+  omsi_unsigned_int _hs_i;                                                       \
+  omsi_unsigned_int _hs_looping,_hs_nmerges,_hs_insize,_hs_psize,_hs_qsize;      \
   struct UT_hash_handle *_hs_p, *_hs_q, *_hs_e, *_hs_list, *_hs_tail;            \
   if (head) {                                                                    \
       _hs_insize = 1;                                                            \
@@ -737,7 +734,7 @@ do {                                                                            
               for ( _hs_i = 0; _hs_i  < _hs_insize; _hs_i++ ) {                  \
                   _hs_psize++;                                                   \
                   _hs_q = (UT_hash_handle*)((_hs_q->next) ?                      \
-                          ((void*)((char*)(_hs_q->next) +                        \
+                          ((void*)((omsi_char*)(_hs_q->next) +                   \
                           (head)->hh.tbl->hho)) : NULL);                         \
                   if (! (_hs_q) ) break;                                         \
               }                                                                  \
@@ -746,13 +743,13 @@ do {                                                                            
                   if (_hs_psize == 0) {                                          \
                       _hs_e = _hs_q;                                             \
                       _hs_q = (UT_hash_handle*)((_hs_q->next) ?                  \
-                              ((void*)((char*)(_hs_q->next) +                    \
+                              ((void*)((omsi_char*)(_hs_q->next) +               \
                               (head)->hh.tbl->hho)) : NULL);                     \
                       _hs_qsize--;                                               \
                   } else if ( (_hs_qsize == 0) || !(_hs_q) ) {                   \
                       _hs_e = _hs_p;                                             \
                       _hs_p = (UT_hash_handle*)((_hs_p->next) ?                  \
-                              ((void*)((char*)(_hs_p->next) +                    \
+                              ((void*)((omsi_char*)(_hs_p->next) +               \
                               (head)->hh.tbl->hho)) : NULL);                     \
                       _hs_psize--;                                               \
                   } else if ((                                                   \
@@ -761,13 +758,13 @@ do {                                                                            
                              ) <= 0) {                                           \
                       _hs_e = _hs_p;                                             \
                       _hs_p = (UT_hash_handle*)((_hs_p->next) ?                  \
-                              ((void*)((char*)(_hs_p->next) +                    \
+                              ((void*)((omsi_char*)(_hs_p->next) +               \
                               (head)->hh.tbl->hho)) : NULL);                     \
                       _hs_psize--;                                               \
                   } else {                                                       \
                       _hs_e = _hs_q;                                             \
                       _hs_q = (UT_hash_handle*)((_hs_q->next) ?                  \
-                              ((void*)((char*)(_hs_q->next) +                    \
+                              ((void*)((omsi_char*)(_hs_q->next) +               \
                               (head)->hh.tbl->hho)) : NULL);                     \
                       _hs_qsize--;                                               \
                   }                                                              \
@@ -802,10 +799,10 @@ do {                                                                            
  * hash handle that must be present in the structure. */
 #define HASH_SELECT(hh_dst, dst, hh_src, src, cond)                              \
 do {                                                                             \
-  unsigned _src_bkt, _dst_bkt;                                                   \
+  omsi_unsigned_int _src_bkt, _dst_bkt;                                          \
   void *_last_elt=NULL, *_elt;                                                   \
   UT_hash_handle *_src_hh, *_dst_hh, *_last_elt_hh=NULL;                         \
-  ptrdiff_t _dst_hho = ((char*)(&(dst)->hh_dst) - (char*)(dst));                 \
+  ptrdiff_t _dst_hho = ((omsi_char*)(&(dst)->hh_dst) - (omsi_char*)(dst));       \
   if (src) {                                                                     \
     for(_src_bkt=0; _src_bkt < (src)->hh_src.tbl->num_buckets; _src_bkt++) {     \
       for(_src_hh = (src)->hh_src.tbl->buckets[_src_bkt].hh_head;                \
@@ -813,7 +810,7 @@ do {                                                                            
           _src_hh = _src_hh->hh_next) {                                          \
           _elt = ELMT_FROM_HH((src)->hh_src.tbl, _src_hh);                       \
           if (cond(_elt)) {                                                      \
-            _dst_hh = (UT_hash_handle*)(((char*)_elt) + _dst_hho);               \
+            _dst_hh = (UT_hash_handle*)(((omsi_char*)_elt) + _dst_hho);          \
             _dst_hh->key = _src_hh->key;                                         \
             _dst_hh->keylen = _src_hh->keylen;                                   \
             _dst_hh->hashv = _src_hh->hashv;                                     \
@@ -857,8 +854,8 @@ do {                                                                            
 
 #ifdef NO_DECLTYPE
 #define HASH_ITER(hh,head,el,tmp)                                                \
-for((el)=(head), (*(char**)(&(tmp)))=(char*)((head)?(head)->hh.next:NULL);       \
-  el; (el)=(tmp),(*(char**)(&(tmp)))=(char*)((tmp)?(tmp)->hh.next:NULL))
+for((el)=(head), (*(omsi_char**)(&(tmp)))=(omsi_char*)((head)?(head)->hh.next:NULL);\
+  el; (el)=(tmp),(*(omsi_char**)(&(tmp)))=(omsi_char*)((tmp)?(tmp)->hh.next:NULL))
 #else
 #define HASH_ITER(hh,head,el,tmp)                                                \
 for((el)=(head),(tmp)=DECLTYPE(el)((head)?(head)->hh.next:NULL);                 \
@@ -871,7 +868,7 @@ for((el)=(head),(tmp)=DECLTYPE(el)((head)?(head)->hh.next:NULL);                
 
 typedef struct UT_hash_bucket {
    struct UT_hash_handle *hh_head;
-   unsigned count;
+   omsi_unsigned_int count;
 
    /* expand_mult is normally set to 0. In this situation, the max chain length
     * threshold is enforced at its default value, HASH_BKT_CAPACITY_THRESH. (If
@@ -885,7 +882,7 @@ typedef struct UT_hash_bucket {
     * It is better to let its chain length grow to a longer yet-still-bounded
     * value, than to do an O(n) bucket expansion too often.
     */
-   unsigned expand_mult;
+   omsi_unsigned_int expand_mult;
 
 } UT_hash_bucket;
 
@@ -895,19 +892,19 @@ typedef struct UT_hash_bucket {
 
 typedef struct UT_hash_table {
    UT_hash_bucket *buckets;
-   unsigned num_buckets, log2_num_buckets;
-   unsigned num_items;
+   omsi_unsigned_int num_buckets, log2_num_buckets;
+   omsi_unsigned_int num_items;
    struct UT_hash_handle *tail; /* tail hh in app order, for fast append    */
    ptrdiff_t hho; /* hash handle offset (byte pos of hash handle in element */
 
    /* in an ideal situation (all buckets used equally), no bucket would have
     * more than ceil(#items/#buckets) items. that's the ideal chain length. */
-   unsigned ideal_chain_maxlen;
+   omsi_unsigned_int ideal_chain_maxlen;
 
    /* nonideal_items is the number of items in the hash whose chain position
     * exceeds the ideal chain maxlen. these items pay the penalty for an uneven
     * hash distribution; reaching them in a chain traversal takes >ideal steps */
-   unsigned nonideal_items;
+   omsi_unsigned_int nonideal_items;
 
    /* ineffective expands occur when a bucket doubling was performed, but
     * afterward, more than half the items in the hash had nonideal chain
@@ -915,13 +912,13 @@ typedef struct UT_hash_table {
     * further expansion, as it's not helping; this happens when the hash
     * function isn't a good fit for the key domain. When expansion is inhibited
     * the hash will still work, albeit no longer in constant time. */
-   unsigned ineff_expands, noexpand;
+   omsi_unsigned_int ineff_expands, noexpand;
 
    uint32_t signature; /* used only to find hash tables in external analysis */
 #ifdef HASH_BLOOM
    uint32_t bloom_sig; /* used only to test bloom exists in external analysis */
    uint8_t *bloom_bv;
-   char bloom_nbits;
+   omsi_char bloom_nbits;
 #endif
 
 } UT_hash_table;
@@ -933,8 +930,8 @@ typedef struct UT_hash_handle {
    struct UT_hash_handle *hh_prev;   /* previous hh in bucket order    */
    struct UT_hash_handle *hh_next;   /* next hh in bucket order        */
    void *key;                        /* ptr to enclosing struct's key  */
-   unsigned keylen;                  /* enclosing struct's key len     */
-   unsigned hashv;                   /* result of hash-fcn(key)        */
+   omsi_unsigned_int keylen;         /* enclosing struct's key len     */
+   omsi_unsigned_int hashv;          /* result of hash-fcn(key)        */
 } UT_hash_handle;
 
 #endif /* UTHASH_H */

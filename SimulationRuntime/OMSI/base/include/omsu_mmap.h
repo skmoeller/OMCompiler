@@ -32,7 +32,6 @@
 #define OMC_MMAP_H_
 
 #include "omsi.h"
-// nw #include "omsu_common.h"
 
 #include <stdio.h>
 #include <string.h>

@@ -36,10 +36,6 @@
 extern "C" {
 #endif
 
-/* forward global functions */
-omsi_callback_allocate_memory   global_allocateMemory;
-omsi_callback_free_memory       global_freeMemory;
-
 #if HAVE_MMAP
 
 omc_mmap_read_unix omc_mmap_open_read_unix(omsi_string fileName)
@@ -48,17 +44,17 @@ omc_mmap_read_unix omc_mmap_open_read_unix(omsi_string fileName)
   omc_mmap_read_unix res = {0};
   omsi_int fd = open(fileName, O_RDONLY);
   if (fd < 0) {
-    //throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));
+    /*throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));        ToDo: add logger*/
   }
   if (fstat(fd, &s) < 0) {
     close(fd);
-    //throwStreamPrint(NULL, "fstat %s failed: %s\n", fileName, strerror(errno));
+    /*throwStreamPrint(NULL, "fstat %s failed: %s\n", fileName, strerror(errno));                           ToDo: add logger*/
   }
   res.size = s.st_size;
   res.data = (omsi_string) mmap(0, res.size, PROT_READ, MAP_SHARED, fd, 0);
   close(fd);
   if (res.data == MAP_FAILED) {
-    //throwStreamPrint(NULL, "mmap(file=\"%s\",fd=%d,size=%ld kB) failed: %s\n", fileName, fd, (long) s.st_size, strerror(errno));
+    /*throwStreamPrint(NULL, "mmap(file=\"%s\",fd=%d,size=%ld kB) failed: %s\n", fileName, fd, (long) s.st_size, strerror(errno));  ToDo: add logger*/
   }
   return res;
 }
@@ -68,13 +64,13 @@ omc_mmap_write_unix omc_mmap_open_write_unix(omsi_string fileName, omsi_unsigned
   omc_mmap_write_unix res = {0};
   omsi_int fd = open(fileName, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
-    //throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));
+    /*throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));        ToDo: add logger*/
   }
   if (size == 0) {
     struct stat s;
     if (fstat(fd, &s) < 0) {
       close(fd);
-      //throwStreamPrint(NULL, "fstat %s failed: %s\n", fileName, strerror(errno));
+      /*throwStreamPrint(NULL, "fstat %s failed: %s\n", fileName, strerror(errno));                         ToDo: add logger*/
     }
     res.size = s.st_size;
   } else {
@@ -84,7 +80,7 @@ omc_mmap_write_unix omc_mmap_open_write_unix(omsi_string fileName, omsi_unsigned
   res.data = res.size == 0 ? NULL : (omsi_char*) mmap(0, res.size, PROT_WRITE, MAP_SHARED, fd, 0);
   close(fd);
   if (res.data == MAP_FAILED) {
-    //throwStreamPrint(NULL, "mmap(file=\"%s\",fd=%d,size=%ld kB) failed: %s\n", fileName, fd, (long) res.size, strerror(errno));
+    /*throwStreamPrint(NULL, "mmap(file=\"%s\",fd=%d,size=%ld kB) failed: %s\n", fileName, fd, (long) res.size, strerror(errno));       ToDo: add logger*/
   }
   return res;
 }
@@ -106,7 +102,7 @@ static FILE* omc_mmap_common(omsi_string fileName, omsi_string mode, omsi_unsign
   FILE *file = fopen(fileName, mode);
   omsi_unsigned_int fileSize;
   if (!file) {
-    //throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno));
+    /*throwStreamPrint(NULL, "Failed to open file %s for reading: %s\n", fileName, strerror(errno)); */
   }
   fseek(file, 0, SEEK_END);
   fileSize = ftell(file);
@@ -117,13 +113,8 @@ static FILE* omc_mmap_common(omsi_string fileName, omsi_string mode, omsi_unsign
 
   *data = (omsi_char*) global_allocateMemory(*size, 1);
 
-//  if (*size > fileSize) {
-//    *data = (omsi_char*) calloc(*size,1);
-//  } else {
-//    *data = (omsi_char*) malloc(*size);
-//  }
   if (1 != fread(*data, (*size > fileSize ? fileSize : *size), 1, file)) {
-    //throwStreamPrint(NULL, "Failed to read file data: %s\n", fileName);
+    /*throwStreamPrint(NULL, "Failed to read file data: %s\n", fileName);       ToDo: add logger */
   }
   return file;
 }
@@ -154,7 +145,7 @@ void omc_mmap_close_write_inmemory(omc_mmap_write_inmemory map)
   rewind(map.file);
   if (1 != fwrite(map.data, map.size, 1, map.file)) {
       global_freeMemory(map.data);
-    //throwStreamPrint(NULL, "Failed to write back to file");
+    /*throwStreamPrint(NULL, "Failed to write back to file");               ToDo: add logger*/
   }
   global_freeMemory((void*)map.data);
 }

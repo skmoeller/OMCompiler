@@ -32,13 +32,12 @@
 #define OMSU_INPUT_XML_H
 
 #include <expat.h>          /* use expat XML parser */
-#include <uthash.h>   // ToDo: data types in uthash.h not right for us. Copy to something linek omsu_uthash.h and change
+#include <uthash.h>
 #include <omsi.h>
-//nw #include "omsu_common.h"
+
 #include <stdio.h>
 #include <float.h>
 
-//#include "simulation_data.h"
 
 
 /* macros */

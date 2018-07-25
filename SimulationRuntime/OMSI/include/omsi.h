@@ -141,6 +141,12 @@ typedef struct omsi_callback_functions{
     const void*                         componentEnvironment;
 }omsi_callback_functions;
 
+/* global functions */
+#ifndef OMSI_GLOBAL_FUNC
+#define OMSI_GLOBAL_FUNC
+omsi_callback_allocate_memory   global_allocateMemory;
+omsi_callback_free_memory       global_freeMemory;
+#endif
 
 /*
  * ============================================================================
@@ -191,6 +197,9 @@ typedef struct omsi_algebraic_system_t {
 }omsi_algebraic_system_t;
 
 
+/*
+ * Structure containing all data to evaluate equations or equ
+ */
 typedef struct omsi_function_t {
     omsi_unsigned_int           n_algebraic_system; /* number of algebraic systems */
     omsi_algebraic_system_t*    algebraic_system_t; /* array of algebraic systems */
