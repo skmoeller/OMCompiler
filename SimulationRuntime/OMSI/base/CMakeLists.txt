@@ -4,12 +4,25 @@ PROJECT(OMSIBASE)
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 # enable warnings and use ANSI C compatible compiler
-set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -ansi -pedantic")
+if(CMAKE_COMPILER_IS_GNUCXX)
+    message(STATUS "GCC detected, adding compile flags")
+	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -ansi -pedantic")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
+#set exapat lib for visual studio compiler
+IF(MSVC)
+  INCLUDE_DIRECTORIES($ENV{OMDEV}/lib/expat-win32-msvc)
+  link_directories($ENV{OMDEV}/lib/expat-win32-msvc)
+  link_directories($ENV{OMDEV}/lib/lapack-win32-msvc)
+  set(expat_lib "libexpat")
+ELSE(MSVC)
+  set(expat_lib "expat")
+ENDIF(MSVC)
 
 include_directories ("${CMAKE_SOURCE_DIR}/base/include")
 add_library(${OSUBaseName} src/omsu_input_json.c src/omsu_input_xml.c src/omsu_mmap.c)
 IF(WIN32)
-    target_link_libraries(${OSUBaseName}  ${CMAKE_DL_LIBS} wsock32 ws2_32 expat)
+    target_link_libraries(${OSUBaseName}  ${CMAKE_DL_LIBS} wsock32 ws2_32 ${expat_lib})
 ELSE(WIN32)
     target_link_libraries(${OSUBaseName} ${CMAKE_DL_LIBS} )
 ENDIF(WIN32)
