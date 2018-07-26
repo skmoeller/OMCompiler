@@ -3768,6 +3768,7 @@ protected
   list<SimCode.SimEqSystem> tmpEqns = {};
   list<SimCodeVar.SimVar> tmpInputVars = {}, tmpOutputVars = {}, tmpInnerVars = {};
   Integer nAlgebraicSystems = 0;
+  Integer index;
 algorithm
   for component in components loop
     tmpEqns := {};
@@ -3801,47 +3802,52 @@ algorithm
     case BackendDAE.TORNSYSTEM(strictTearingSet = 
            BackendDAE.TEARINGSET(tearingvars=tearingVars, residualequations=residualEqns, innerEquations=innerEquations, jac=jacobian),
            linear = linear, mixedSystem = mixedSystem)
-    equation
+    algorithm
       if not SymbolicJacobian.isJacobianGeneric(jacobian) then
         Error.addMessage(Error.NO_JACONIAN_TORNLINEAR_SYSTEM, {});
         fail();
       end if;
-      algEqIndex = uniqueEqIndex;
-      uniqueEqIndex = uniqueEqIndex+1;
+      algEqIndex := uniqueEqIndex;
+      uniqueEqIndex := uniqueEqIndex+1;
       // get tearing vars
-      tvars = List.map1r(tearingVars, BackendVariable.getVarAt,  constSyst.orderedVars);
-      tvars = List.map(tvars, BackendVariable.transformXToXd);
-      ((tSimVars1, _)) = List.fold(tvars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
-      tSimVars1 = listReverse(tSimVars1);
+      tvars := List.map1r(tearingVars, BackendVariable.getVarAt,  constSyst.orderedVars);
+      tvars := List.map(tvars, BackendVariable.transformXToXd);
+      ((tSimVars1, _)) := List.fold(tvars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
+      tSimVars1 := listReverse(tSimVars1);
 
       // generate other equations
-      (simequations, tSimVars2, uniqueEqIndex, tempVars) = generateInnerEqns(innerEquations, constSyst, shared, uniqueEqIndex, tempVars);
+      (simequations, tSimVars2, uniqueEqIndex, tempVars) := generateInnerEqns(innerEquations, constSyst, shared, uniqueEqIndex, tempVars);
 
       // get residual eqns
-      reqns = BackendEquation.getList(residualEqns, constSyst.orderedEqs);
-      reqns = BackendEquation.replaceDerOpInEquationList(reqns);
-      (resEqs, uniqueEqIndex, tempVars) = createNonlinearResidualEquations(reqns, uniqueEqIndex, tempVars);
+      reqns := BackendEquation.getList(residualEqns, constSyst.orderedEqs);
+      reqns := BackendEquation.replaceDerOpInEquationList(reqns);
+      (resEqs, uniqueEqIndex, tempVars) := createNonlinearResidualEquations(reqns, uniqueEqIndex, tempVars);
 
-      simequations = listAppend(simequations, listReverse(resEqs));
+      simequations := listAppend(simequations, listReverse(resEqs));
 
       // create hash table with local index
-      hashTable = createCrefToSimVarHT_omsi(listAppend(tSimVars2, tSimVars1));
+      hashTable := createCrefToSimVarHT_omsi(listAppend(tSimVars2, tSimVars1));
 
       // inputs empty, since we haven't check for inputs yet
       dumpVarLst(tSimVars1, "AHEU AlgSystem outputVars");     // ToDo: delete
       dumpVarLst(tSimVars2, "AHEU AlgSystem innerVars");     // ToDo: delete
-      omsiFunction = SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)), 0);
-      tmpOutputVars = listAppend(tSimVars2, tSimVars1);
+
+      //set index
+      (tSimVars1, index) := rewriteIndex(tSimVars1, 0);
+      (tSimVars2, _) := rewriteIndex(tSimVars2, index);
+
+      omsiFunction := SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)), 0);
+      tmpOutputVars := listAppend(tSimVars2, tSimVars1);
 
       // fill SES_ALGEBRAIC_SYSTEM
-      (derivativeMatrix, uniqueEqIndex, tempVars) = createDerivativeMatrix(jacobian, uniqueEqIndex, tempVars);
-      algSystem = SimCode.SES_ALGEBRAIC_SYSTEM(algEqIndex, mixedSystem, true, linear, omsiFunction, derivativeMatrix,  {}, {}, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
-      nAlgebraicSystems = nAlgebraicSystems+1;
-      tmpEqns = {algSystem};
+      (derivativeMatrix, uniqueEqIndex, tempVars) := createDerivativeMatrix(jacobian, uniqueEqIndex, tempVars);
+      algSystem := SimCode.SES_ALGEBRAIC_SYSTEM(algEqIndex, mixedSystem, true, linear, omsiFunction, derivativeMatrix,  {}, {}, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
+      nAlgebraicSystems := nAlgebraicSystems+1;
+      tmpEqns := {algSystem};
     then ();
 
     // error case
-    else equation
+    else algorithm
       Error.addInternalError(" - case for component "+ BackendDump.printComponent(component) + " not implemented in SimCodeUtil.createAllEquationOMSI", sourceInfo());
       then ();
     end match;
@@ -3852,6 +3858,11 @@ algorithm
     outputVars := listAppend(tmpOutputVars, outputVars);
     innerVars := listAppend(tmpInnerVars, innerVars);
   end for;
+
+  //set index
+  (outputVars, index) := rewriteIndex(outputVars, 0);
+  (innerVars, index) := rewriteIndex(innerVars, index);
+  (inputVars, _) := rewriteIndex(inputVars, index);
 
   // create hash table
   hashTable := createCrefToSimVarHT_omsi(listAppend(inputVars, listAppend(innerVars, outputVars)));
@@ -3924,13 +3935,21 @@ algorithm
 
           //TODO: fix dlowvarToSimvar by romving Variables, they are not needed any more
           newSimVar := dlowvarToSimvar(var, NONE(), BackendVariable.emptyVars(0));
+          dumpVarLst({newSimVar},"newSimVar");
+
+          // add der(newSimVar) to outputVars if newSimVar is state
+          if BackendVariable.isStateVar(var) then
+            outputVars :=  listAppend({derVarFromStateVar(newSimVar)}, outputVars);
+          end if;
 
           //ToDo: check for some self generated variables like $cse -> inner variable
+          // add newSimVar to innerVars or outputVars
           if CommonSubExpression.isCSECref(cr) then
             innerVars :=  listAppend({newSimVar}, innerVars);
           else
             outputVars :=  listAppend({newSimVar}, outputVars);
           end if;
+
         else
           Error.addInternalError("- " + BackendDump.equationString(eqn)+ " could not resolved for "
             +  ComponentReference.printComponentRefStr(cr) + " in SimCodeUtil.generateSingleEquation", sourceInfo());
@@ -3995,8 +4014,6 @@ protected
 algorithm
   try
     size := Util.nextPrime(listLength(vars)*2);   // chose big enough prime for hash table
-    //size := listLength(vars);
-    //size := intMax(size, 1023);
     outHT := HashTableCrefSimVar.emptyHashTableSized(size);   // create empty hash table
 
     // add vars to hash table
@@ -4009,6 +4026,7 @@ algorithm
 end createCrefToSimVarHT_omsi;
 
 
+// ToDo: delete function?
 protected function createIndicesForSimVars
 "Creates list of hash table values from list of simVar and sets corresponding
  index of each simVar."

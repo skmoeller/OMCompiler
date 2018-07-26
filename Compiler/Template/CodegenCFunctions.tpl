@@ -3523,6 +3523,29 @@ case VARIABLE(__) then 'modelica_metatype'
 case FUNCTION_PTR(__) then 'modelica_fnptr'
 end varTypeBoxed;
 
+
+template crefOMSI(ComponentRef cref, Context context)
+"lhs componentReference generation"
+::=
+  match cref
+  case CREF_IDENT(ident = "time") then
+    "this_function->function_vars->time_value"
+  else
+    match context
+    case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable)) then
+      match localCref2SimVar(cref, hashTable)
+        case v as SIMVAR(__) then
+          //let index = getLocalValueReference(v, getSimCode(), hashTable, false)
+          // ToDo: use above one and use correct hash table as input
+          let index = getValueReference(v, getSimCode(), false)
+          let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
+          <<this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>>>
+        else "CREF_NOT_FOUND"
+      end match
+    end match
+end crefOMSI;
+
+
 template expTypeRW(DAE.Type type)
  "Helper to writeOutVarRecordMembers."
 ::=
@@ -4038,6 +4061,8 @@ template contextCref(ComponentRef cr, Context context, Text &auxFunction)
       >>
     else "_" + System.unquoteIdentifier(crefStr(cr))
     )
+  case OMSI_CONTEXT(__) then
+    crefOMSI(cr, context)
   else cref(cr)
 end contextCref;
 
@@ -4152,6 +4177,33 @@ template crefToCStrDefine(ComponentRef cr)
   else "CREF_NOT_IDENT_OR_QUAL"
 end crefToCStrDefine;
 
+
+template crefTypeOMSIC(ComponentRef cr) "template crefType
+  Like cref but with cast if type is integer."
+::=
+  match cr
+  case CREF_IDENT(__) then crefTypeNameOMSIC(identType)
+  case CREF_QUAL(__)  then crefTypeOMSIC(componentRef)
+  else "crefType:ERROR"
+  end match
+end crefTypeOMSIC;
+
+
+template crefTypeNameOMSIC(DAE.Type type)
+ "Generate type helper."
+::=
+  match type
+  case T_INTEGER(__)       then "ints"
+  case T_REAL(__)          then "reals"
+  case T_STRING(__)        then "strings"
+  case T_BOOL(__)          then "bools"
+  case T_ENUMERATION(__)   then "integers"
+  case T_SUBTYPE_BASIC(__) then crefTypeNameOMSIC(complexType)
+  case T_ARRAY(__)         then crefTypeNameOMSIC(ty)
+  case T_COMPLEX(complexClassType=EXTERNAL_OBJ(__)) then "complex"
+  case T_COMPLEX(__)       then '<%CodegenUtil.underscorePath(ClassInf.getStateName(complexClassType))%>'
+  else CodegenUtil.error(sourceInfo(),'crefTypeNameOMSIC: <%unparseType(type)%>')
+end crefTypeNameOMSIC;
 
 
 template subscriptsToCStr(list<Subscript> subscripts)
