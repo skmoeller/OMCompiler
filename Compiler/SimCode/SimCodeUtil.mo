@@ -3813,7 +3813,7 @@ algorithm
       // get tearing vars
       tvars := List.map1r(tearingVars, BackendVariable.getVarAt,  constSyst.orderedVars);
       tvars := List.map(tvars, BackendVariable.transformXToXd);
-      tvars := BackendVariable.setVarsKind(tvars, BackendDAE.LOOP_SOLVED());
+      tvars := BackendVariable.setVarsKind(tvars, BackendDAE.LOOP_ITERATION());
       ((loopIterationVars, _)) := List.fold(tvars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
       loopIterationVars := listReverse(loopIterationVars);
 
@@ -5076,6 +5076,7 @@ algorithm
         ((indexVars, _)) =  BackendVariable.traverseBackendDAEVars(residualVars, traversingdlowvarToSimvar, ({}, emptyVars));
         seedVars = rewriteIndex(listReverse(seedVars), 0);
         indexVars = rewriteIndex(listReverse(indexVars), 0);
+
         if Flags.isSet(Flags.JAC_DUMP2) then
           print("\n---+++ seedVars variables +++---\n");
           print(Tpl.tplString(SimCodeDump.dumpVarsShort, seedVars));
@@ -5109,7 +5110,11 @@ algorithm
         hashTable = appendCrefToSimVarHT(columnVars, hashTable);
         hashTable = appendCrefToSimVarHT(indexVars, hashTable);
 
-        // ToDo: update columns=omsiJacFunction
+        // rewrite omsiJacFunction variables
+        omsiJacFunction.innerVars = innerVars;
+        omsiJacFunction.inputVars = seedVars;
+        omsiJacFunction.outputVars = indexVars;
+        omsiJacFunction.context = SimCodeFunction.JACOBIAN_CONTEXT(SOME(hashTable));
 
         outRes = SOME(SimCode.DERIVATIVE_MATRIX(
           columns = {omsiJacFunction},
@@ -13469,6 +13474,10 @@ algorithm
           case SimCodeVar.NEGATEDALIAS() then sv;
         end match;
       then sv;
+
+    // if cref not found in localHashTable search in global
+    case (cref, _) then cref2simvar(cref, getSimCode());
+
     case (_,_)
       equation
         badcref = ComponentReference.makeCrefIdent("ERROR_localCref2SimVar_failed " + ComponentReference.printComponentRefStr(inCref), DAE.T_REAL_DEFAULT, {});

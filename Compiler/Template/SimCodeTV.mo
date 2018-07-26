@@ -865,6 +865,7 @@ package SimCodeFunction
     record FUNCTION_CONTEXT
     end FUNCTION_CONTEXT;
     record JACOBIAN_CONTEXT
+      Option<HashTableCrefSimVar.HashTable> hashTable;
     end JACOBIAN_CONTEXT;
     record ALGLOOP_CONTEXT
       Boolean genInitialisation;
@@ -1313,6 +1314,8 @@ package BackendDAE
   record ALG_STATE_OLD  end ALG_STATE_OLD; // algebraic state old value used by inline solver
   record DAE_RESIDUAL_VAR end DAE_RESIDUAL_VAR; // variable kind used for DAEmode
   record DAE_AUX_VAR end DAE_AUX_VAR; // auxiliary variable used for DAEmode
+  record LOOP_ITERATION end LOOP_ITERATION; // used in SIMCODE, iteration variables in algebraic loops
+  record LOOP_SOLVED end LOOP_SOLVED; // used in SIMCODE, inner variables of a torn algebraic loop
   end VarKind;
 
   uniontype SubClock

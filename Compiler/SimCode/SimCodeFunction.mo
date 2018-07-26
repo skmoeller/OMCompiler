@@ -206,6 +206,7 @@ uniontype Context
   end ALGLOOP_CONTEXT;
 
    record JACOBIAN_CONTEXT
+     Option<HashTableCrefSimVar.HashTable> hashTable;    // used to get local SimVars and corresponding value references
    end JACOBIAN_CONTEXT;
 
   record OTHER_CONTEXT
@@ -227,14 +228,14 @@ uniontype Context
   end DAE_MODE_CONTEXT;
 
   record OMSI_CONTEXT
-    Option<HashTableCrefSimVar.HashTable> hashTable;    // used to get local SimVars and corresponding value references
+    Option<HashTableCrefSimVar.HashTable> hashTable;    // used to get local SimVars and corresponding value references 
   end OMSI_CONTEXT;
 end Context;
 
 public constant Context contextSimulationNonDiscrete  = SIMULATION_CONTEXT(false);
 public constant Context contextSimulationDiscrete     = SIMULATION_CONTEXT(true);
 public constant Context contextFunction               = FUNCTION_CONTEXT();
-public constant Context contextJacobian               = JACOBIAN_CONTEXT();
+public constant Context contextJacobian               = JACOBIAN_CONTEXT(NONE());
 public constant Context contextAlgloopJacobian        = ALGLOOP_CONTEXT(false,true);
 public constant Context contextAlgloopInitialisation  = ALGLOOP_CONTEXT(true,false);
 public constant Context contextAlgloop                = ALGLOOP_CONTEXT(false,false);
