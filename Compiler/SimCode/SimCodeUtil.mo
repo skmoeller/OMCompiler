@@ -3729,7 +3729,6 @@ protected function createAllEquationOMSI
   input list<BackendDAE.ZeroCrossing> inZeroCrossings;
   output SimCode.OMSIFunction omsiAllEquations;
   input output Integer uniqueEqIndex;
-  input output list<SimCodeVar.SimVar> tempVars;
 protected
   BackendDAE.StrongComponents components;
   list<BackendDAE.Equation> eqnlst;
@@ -3745,7 +3744,7 @@ algorithm
       fail();
     end try;
 
-    (omsiAllEquations, uniqueEqIndex, tempVars) := generateEquationsForComponents(components, constSyst, shared, uniqueEqIndex, tempVars);
+    (omsiAllEquations, uniqueEqIndex) := generateEquationsForComponents(components, constSyst, shared, uniqueEqIndex);
   end for;
 end createAllEquationOMSI;
 
@@ -3758,7 +3757,6 @@ function generateEquationsForComponents
   input BackendDAE.Shared shared;
   output SimCode.OMSIFunction omsiFuncEquations;
   input output Integer uniqueEqIndex;
-  input output list<SimCodeVar.SimVar> tempVars;
 protected
   list<SimCode.SimEqSystem> equations = {};
   list<SimCodeVar.SimVar> inputVars = {};
@@ -3782,7 +3780,7 @@ algorithm
       BackendDAE.InnerEquations innerEquations;
       list<Integer> tearingVars, residualEqns;
       list<BackendDAE.Var> tvars;
-      list<SimCodeVar.SimVar> tSimVars1, tSimVars2;
+      list<SimCodeVar.SimVar> loopIterationVars, loopSolvedVars;
       list<BackendDAE.Equation> reqns;
       SimCode.SimEqSystem algSystem;
       list<SimCode.SimEqSystem> resEqs, simequations;
@@ -3794,8 +3792,8 @@ algorithm
     // case for singele equations
     case BackendDAE.SINGLEEQUATION() equation
       ({eqn}, {var}, _) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
-      (tmpEqns, tmpInputVars, tmpOutputVars, tmpInnerVars, uniqueEqIndex, tempVars) =
-        generateSingleEquation(eqn, var, shared.functionTree, uniqueEqIndex, tempVars);
+      (tmpEqns, tmpInputVars, tmpOutputVars, tmpInnerVars, uniqueEqIndex) =
+        generateSingleEquation(eqn, var, shared.functionTree, uniqueEqIndex);
     then ();
 
     // case for torn systems of equations
@@ -3812,35 +3810,37 @@ algorithm
       // get tearing vars
       tvars := List.map1r(tearingVars, BackendVariable.getVarAt,  constSyst.orderedVars);
       tvars := List.map(tvars, BackendVariable.transformXToXd);
-      ((tSimVars1, _)) := List.fold(tvars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
-      tSimVars1 := listReverse(tSimVars1);
+      tvars := BackendVariable.setVarsKind(tvars, BackendDAE.LOOP_SOLVED());
+      ((loopIterationVars, _)) := List.fold(tvars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
+      loopIterationVars := listReverse(loopIterationVars);
 
       // generate other equations
-      (simequations, tSimVars2, uniqueEqIndex, tempVars) := generateInnerEqns(innerEquations, constSyst, shared, uniqueEqIndex, tempVars);
+      (simequations, innnerVars, uniqueEqIndex) := generateInnerEqns(innerEquations, constSyst, shared, uniqueEqIndex);
+      
 
       // get residual eqns
       reqns := BackendEquation.getList(residualEqns, constSyst.orderedEqs);
       reqns := BackendEquation.replaceDerOpInEquationList(reqns);
-      (resEqs, uniqueEqIndex, tempVars) := createNonlinearResidualEquations(reqns, uniqueEqIndex, tempVars);
+      (resEqs, uniqueEqIndex, tempVars) := createNonlinearResidualEquations(reqns, uniqueEqIndex, {});
 
       simequations := listAppend(simequations, listReverse(resEqs));
 
       // create hash table with local index
-      hashTable := createCrefToSimVarHT_omsi(listAppend(tSimVars2, tSimVars1));
+      hashTable := createCrefToSimVarHT_omsi(listAppend(listAppend(innnerVars, loopIterationVars), tempVars));
 
       // inputs empty, since we haven't check for inputs yet
       dumpVarLst(tSimVars1, "AHEU AlgSystem outputVars");     // ToDo: delete
       dumpVarLst(tSimVars2, "AHEU AlgSystem innerVars");     // ToDo: delete
 
       //set index
-      (tSimVars1, index) := rewriteIndex(tSimVars1, 0);
-      (tSimVars2, _) := rewriteIndex(tSimVars2, index);
+      (loopIterationVars, index) := rewriteIndex(loopIterationVars, 0);
+      (loopSolvedVars, _) := rewriteIndex(loopSolvedVars, index);
 
-      omsiFunction := SimCode.OMSI_FUNCTION(simequations, {}, tSimVars1, tSimVars2, SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)), 0);
-      tmpOutputVars := listAppend(tSimVars2, tSimVars1);
+      tmpOutputVars := listAppend(loopSolvedVars, loopIterationVars);  
+      omsiFunction := SimCode.OMSI_FUNCTION(simequations, {}, tmpOutputVars, tempVars, SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)), 0);
 
       // fill SES_ALGEBRAIC_SYSTEM
-      (derivativeMatrix, uniqueEqIndex, tempVars) := createDerivativeMatrix(jacobian, uniqueEqIndex, tempVars);
+      (derivativeMatrix, uniqueEqIndex) := createDerivativeMatrix(jacobian, uniqueEqIndex);
       algSystem := SimCode.SES_ALGEBRAIC_SYSTEM(algEqIndex, mixedSystem, true, linear, omsiFunction, derivativeMatrix,  {}, {}, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
       nAlgebraicSystems := nAlgebraicSystems+1;
       tmpEqns := {algSystem};
@@ -3892,7 +3892,6 @@ function generateSingleEquation
   output list<SimCodeVar.SimVar> outputVars = {};
   output list<SimCodeVar.SimVar> innerVars = {};
   input output Integer uniqueEqIndex;
-  input output list<SimCodeVar.SimVar> tempVars; 
 algorithm
   _ := match (eqn)
     local
@@ -3908,12 +3907,13 @@ algorithm
       DAE.ComponentRef cr;
 
       String str;
+      
+      constant Boolean debug = true;
 
     // single equation
     case BackendDAE.EQUATION(exp=lhs, scalar=rhs, source=source, attr=eqAttr)
       algorithm
         cr := var.varName;
-        //varExp := Expression.crefExp(cr);   // Expression.crefExp is deprecated
         varExp := Expression.crefToExp(cr);
 
         if BackendVariable.isStateVar(var) then
@@ -3921,12 +3921,13 @@ algorithm
           varExp := Expression.expDer(varExp);
           cr := ComponentReference.crefPrefixDer(cr);
         end if;
+
         try
           //solve equation lhs=rhs with respect to varible varExp
           (resolvedExp, asserts, solveEqns, solveCr) := ExpressionSolve.solve2(lhs, rhs, varExp, SOME(funcTree), SOME(uniqueEqIndex), true, true);
 
           (equations, uniqueEqIndex) := List.mapFold(listReverse(solveEqns), makeSolved_SES_SIMPLE_ASSIGN, uniqueEqIndex);
-          tempVars := createTempVarsforCrefs(List.map(listReverse(solveCr), Expression.crefExp), tempVars);
+          innerVars := createTempVarsforCrefs(List.map(listReverse(solveCr), Expression.crefExp), {});
 
           source := ElementSource.addSymbolicTransformationSolve(true, source, cr, lhs, rhs, resolvedExp, asserts);
           (tmpSimEqLst, uniqueEqIndex) := addAssertEqn(asserts, {SimCode.SES_SIMPLE_ASSIGN(uniqueEqIndex, cr, resolvedExp, source, eqAttr)}, uniqueEqIndex+1);
@@ -3935,17 +3936,11 @@ algorithm
 
           //TODO: fix dlowvarToSimvar by romving Variables, they are not needed any more
           newSimVar := dlowvarToSimvar(var, NONE(), BackendVariable.emptyVars(0));
-          dumpVarLst({newSimVar},"newSimVar");
+          if debug then dumpVarLst({newSimVar},"newSimVar"); end if;
 
           // add der(newSimVar) to outputVars if newSimVar is state
           if BackendVariable.isStateVar(var) then
             outputVars :=  listAppend({derVarFromStateVar(newSimVar)}, outputVars);
-          end if;
-
-          //ToDo: check for some self generated variables like $cse -> inner variable
-          // add newSimVar to innerVars or outputVars
-          if CommonSubExpression.isCSECref(cr) then
-            innerVars :=  listAppend({newSimVar}, innerVars);
           else
             outputVars :=  listAppend({newSimVar}, outputVars);
           end if;
@@ -3970,13 +3965,12 @@ protected function generateInnerEqns
   input BackendDAE.EqSystem syst;
   input BackendDAE.Shared shared;
   output list<SimCode.SimEqSystem> equations = {};
-  output list<SimCodeVar.SimVar> innerVars = {};
+  output list<SimCodeVar.SimVar> outputVars = {};
   input output Integer uniqueEqIndex;
-  input output list<SimCodeVar.SimVar> tempvars;
 protected
   Integer eqnindx;
   list<Integer> vars;
-  list<SimCodeVar.SimVar> tmpInnerVars;
+  list<SimCodeVar.SimVar> tmpOutputVars;
   list<BackendDAE.Var> tmpVars;
   BackendDAE.Equation eqn;
   BackendDAE.StrongComponent comp;
@@ -3990,13 +3984,14 @@ algorithm
     // get Eqn
     (eqnindx, vars, _) := BackendDAEUtil.getEqnAndVarsFromInnerEquation(eq);
     tmpVars := List.map1r(vars, BackendVariable.getVarAt, syst.orderedVars);
-    ((tmpInnerVars, _)) := List.fold(tmpVars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
-    innerVars := listAppend(innerVars,tmpInnerVars);
+    tmpVars := BackendVariable.setVarsKind(tmpVars, BackendDAE.LOOP_SOLVED());
+    ((tmpOutputVars, _)) := List.fold(tmpVars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
+    outputVars := listAppend(outputVars,tmpOutputVars);
     eqn := BackendEquation.get(syst.orderedEqs, eqnindx);
-    
+
     // generate comp
     comp := createTornSystemInnerEqns1(eqn, eqnindx, vars);
-    (omsiFuncEquations, uniqueEqIndex, tempvars) := generateEquationsForComponents({comp}, syst, shared, uniqueEqIndex, tempvars);
+    (omsiFuncEquations, uniqueEqIndex) := generateEquationsForComponents({comp}, syst, shared, uniqueEqIndex);
     DoubleEndedList.push_list_back(dblLstEqns, omsiFuncEquations.equations);
   end for;
 
@@ -4988,6 +4983,7 @@ algorithm
     HashTableCrefSimVar.HashTable hashTable;
 
     Option<SimCode.DerivativeMatrix> outRes;
+    SimCode.OMSIFunction omsiJacFunction;
 
     case (BackendDAE.EMPTY_JACOBIAN(), _, _) then (NONE(), iuniqueEqIndex, itempvars);
 
@@ -5040,7 +5036,9 @@ algorithm
           print("analytical Jacobians -> creating SimCode equations for Matrix " + name + " time: " + realString(clock()) + "\n");
         end if;
         // generate also discrete equations, they might be introduced by wrapFunctionCalls
-        (columnEquations, _, uniqueEqIndex, tempvars) = createEquations(false, false, true, false, syst, shared, comps, iuniqueEqIndex, itempvars);
+
+        (omsiJacFunction, uniqueEqIndex) := generateEquationsForComponents(comps, syst, shared, iuniqueEqIndex);
+        
         if Flags.isSet(Flags.JAC_DUMP2) then
           print("analytical Jacobians -> created all SimCode equations for Matrix " + name +  " time: " + realString(clock()) + "\n");
         end if;
