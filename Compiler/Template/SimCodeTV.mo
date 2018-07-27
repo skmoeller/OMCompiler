@@ -429,6 +429,7 @@ uniontype OMSIFunction
     list<SimCodeVar.SimVar> inputVars;
     list<SimCodeVar.SimVar> outputVars;
     list<SimCodeVar.SimVar> innerVars;
+    Integer nAllVars;
     SimCodeFunction.Context context;
     Integer nAlgebraicSystems;
   end OMSI_FUNCTION;

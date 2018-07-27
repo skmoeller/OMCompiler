@@ -3768,6 +3768,7 @@ protected
   list<SimCodeVar.SimVar> tempVars;
   Integer nAlgebraicSystems = 0;
   Integer index, HTsize;
+  Boolean debug=true;
 algorithm
   for component in components loop
     tmpEqns := {};
@@ -3789,8 +3790,6 @@ algorithm
       Boolean linear, mixedSystem;
       Option<SimCode.DerivativeMatrix> derivativeMatrix;
       Integer algEqIndex;
-
-      Boolean debug=true;
 
     // case for singele equations
     case BackendDAE.SINGLEEQUATION() equation
@@ -3846,7 +3845,13 @@ algorithm
       end if;
 
       tmpOutputVars := listAppend(loopSolvedVars, loopIterationVars);  
-      omsiFunction := SimCode.OMSI_FUNCTION(simequations, {}, tmpOutputVars, tempVars, SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)), 0);
+      omsiFunction := SimCode.OMSI_FUNCTION(equations = simequations,
+                                            inputVars = {},
+                                            outputVars = tmpOutputVars,
+                                            innerVars = tempVars,
+                                            nAllVars = listLength(tmpOutputVars)+listLength(tempVars),
+                                            context = SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
+                                            nAlgebraicSystems = 0);
 
       // fill SES_ALGEBRAIC_SYSTEM
       (derivativeMatrix, uniqueEqIndex) := createDerivativeMatrix(jacobian, uniqueEqIndex);
@@ -3886,12 +3891,15 @@ algorithm
                                             inputVars = inputVars,
                                             outputVars = outputVars,
                                             innerVars =  innerVars,
+                                            nAllVars = listLength(inputVars)+listLength(outputVars)+listLength(innerVars),
                                             context = SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
                                             nAlgebraicSystems = nAlgebraicSystems);
-  // ToDo: delete
-  dumpVarLst(inputVars, "AHEU Simulation inputVars");
-  dumpVarLst(innerVars, "AHEU Simulation innerVars");
-  dumpVarLst(outputVars, "AHEU Simulation outputVars");
+  if debug then
+    print("Function SimCodeUtil.generateEquationsForComponentsAlgSystem:\n");
+    dumpVarLst(inputVars, "Simulation inputVars");
+    dumpVarLst(innerVars, "Simulation innerVars");
+    dumpVarLst(outputVars, "Simulation outputVars");
+    end if;
 end generateEquationsForComponents;
 
 
@@ -3901,7 +3909,7 @@ function generateSingleEquation
   input BackendDAE.Var var;
   input DAE.FunctionTree funcTree;
   output list<SimCode.SimEqSystem> equations = {};
-  output list<SimCodeVar.SimVar> inputVars = {};    // ToDo: is unused at he moment, fix?
+  output list<SimCodeVar.SimVar> inputVars = {};
   output list<SimCodeVar.SimVar> outputVars = {};
   output list<SimCodeVar.SimVar> innerVars = {};
   input output Integer uniqueEqIndex;
@@ -3954,6 +3962,7 @@ algorithm
           // add der(newSimVar) to outputVars if newSimVar is state
           if BackendVariable.isStateVar(var) then
             outputVars :=  listAppend({derVarFromStateVar(newSimVar)}, outputVars);
+            inputVars := listAppend({newSimVar}, inputVars);
           else
             outputVars :=  listAppend({newSimVar}, outputVars);
           end if;

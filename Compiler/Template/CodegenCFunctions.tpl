@@ -3534,12 +3534,20 @@ template crefOMSI(ComponentRef cref, Context context)
     match context
     case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable)) then
       match localCref2SimVar(cref, hashTable)
+        case v as SIMVAR(varKind=varKind as PARAM(__)) then
+          let index = getValueReference(v, getSimCode(), false)
+          let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
+          <<
+          model_vars_and_params-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
+          >>
         case v as SIMVAR(__) then
           //let index = getLocalValueReference(v, getSimCode(), hashTable, false)
           // ToDo: use above one and use correct hash table as input
           let index = getValueReference(v, getSimCode(), false)
           let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
-          <<this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>>>
+          <<
+          this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
+          >>
         else "CREF_NOT_FOUND"
       end match
     end match
@@ -6267,10 +6275,26 @@ match exp
 case CAST(__) then
   let expVar = daeExp(exp, context, &preExp, &varDecls, &auxFunction)
   match ty
-  case T_INTEGER(__)   then '((modelica_integer)(<%expVar%>))'
-  case T_REAL(__)  then '((modelica_real)(<%expVar%>))'
-  case T_ENUMERATION(__)   then '((modelica_integer)(<%expVar%>))'
-  case T_BOOL(__)   then '((modelica_boolean)(<%expVar%>))'
+  case T_INTEGER(__) then
+    match context
+    case OMSI_CONTEXT(__) then '(omsi_int)<%expVar%>'
+    else '((modelica_integer)(<%expVar%>))'
+    end match
+  case T_REAL(__) then
+    match context
+    case OMSI_CONTEXT(__) then '(omsi_real)<%expVar%>'
+    else '((modelica_real)(<%expVar%>))'
+    end match
+  case T_ENUMERATION(__) then
+    match context
+    case OMSI_CONTEXT(__) then '(omsi_int)<%expVar%>'
+    else '((modelica_integer)(<%expVar%>))'
+    end match
+  case T_BOOL(__) then
+    match context
+    case OMSI_CONTEXT(__) then '(omsi_bool)<%expVar%>'
+    else '((modelica_boolean)(<%expVar%>))'
+    end match
   case T_ARRAY(__) then
     let arrayTypeStr = expTypeArray(ty)
     let tvar = tempDecl(arrayTypeStr, &varDecls)

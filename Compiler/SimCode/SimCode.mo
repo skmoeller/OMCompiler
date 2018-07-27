@@ -306,6 +306,7 @@ uniontype OMSIFunction
     list<SimCodeVar.SimVar> inputVars   "list of simcode variables determining input variables for equation(s)";
     list<SimCodeVar.SimVar> outputVars  "list of simcode variables determining output variables for equation(s)";
     list<SimCodeVar.SimVar> innerVars   "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
+    Integer nAllVars                    "number of input, inner and output vars";
     SimCodeFunction.Context context     "contains crefToSimVar hash table for lookup function in templates";
     Integer nAlgebraicSystems           "number of linear and non-linear algebraic systems in OMSI_FUNCTION.equations";
   end OMSI_FUNCTION;

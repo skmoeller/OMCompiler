@@ -72,6 +72,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let &functionCall = buffer ""
 
   let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, &includes, &evaluationCode, &functionCall, "")
+  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "simulation", FileNamePrefix)
 
   <<
   /* All Equations Code */
@@ -81,12 +82,15 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   extern "C" {
   #endif
 
+  /* Instantiation of omsi_function_t simulation */
+  <%initializationCode%>
+
   /* Evaluation functions for each equation */
   <%evaluationCode%>
 
 
   /* Equations evaluation */
-  omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params){
+  omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation){
 
     <%functionCall%>
 
@@ -111,7 +115,7 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
       match eqsystem
       case SES_SIMPLE_ASSIGN(__) then
         let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, context) +"\n"
-        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation") +"\n"
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation, model_vars_and_params") +"\n"
         <<>>
       case SES_RESIDUAL(__) then
         let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, context) +"\n"
@@ -119,7 +123,7 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         <<>>
       case SES_ALGEBRAIC_SYSTEM(__) then
         let &includes += "#include \""+ FileNamePrefix + "_algSyst_" + index + ".h\"\n"
-        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation") +"\n"
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation, model_vars_and_params") +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
         let () = textFile(content, FileNamePrefix+"_sim_algSyst_"+ index + ".c")
@@ -213,11 +217,24 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
     /* function initialize omsi_algebraic_system_t struct */
     omsi_status <%FileNamePrefix%>_initializeAlgSystem_<%index%>(omsi_algebraic_system_t* algSystem) {
       algSystem->n_iteration_vars = <%listLength(residual.outputVars)%>;
-
-      <%generateOmsiIndexTypeInitialization(residual.outputVars, "algSystem->iteration_vars_indices")%>
+      <%if listLength(residual.outputVars) then
+      <<
+      if (!algSystem->iteration_vars_indices) {
+        /* ToDo: Log error */
+        return omsi_error;
+      }
+      <%generateOmsiIndexTypeInitialization(residual.outputVars, "algSystem->iteration_vars_indices", "omsi_function_t simulation->function_vars", "algSystem->iteration_vars_indices")%>
+      >>
+      else
+      'algSystem->iteration_vars_indices = NULL;'
+      %>
 
       algSystem->n_conditions = <%listLength(zeroCrossingConditions)%>;
-      <% if listLength(zeroCrossingConditions) then 'algSystem->zerocrossing_indices[listLength(zeroCrossingConditions)] = {<%zeroCrossingIndices%>};' %>
+      <% if listLength(zeroCrossingConditions) then
+      'algSystem->zerocrossing_indices[listLength(zeroCrossingConditions)] = {<%zeroCrossingIndices%>};'
+      else
+      'algSystem->zerocrossing_indices = NULL;'
+       %>
 
       algSystem->isLinear = <% if linearSystem then 'omsi_true' else 'omsi_false'%>;
 
@@ -233,7 +250,7 @@ end generateInitalizationAlgSystem;
 
 
 
-template generateOmsiIndexTypeInitialization (list<SimVar> variables, String StrucPrefix)
+template generateOmsiIndexTypeInitialization (list<SimVar> variables, String StrucPrefix, String targetName, String omsiFuncName)
 "Generates code for instantiation and initialization of struct omsi_index_type "
 ::=
   let stringBuffer = (variables |> variable hasindex i0 =>
@@ -250,40 +267,91 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
         "OMSI_TYPE_UNKNOWN"
     )
 
-    let stringIndex = ""
-    let stringName = ""
-    let targetName = ""     // ToDo: fill targetName
+    let stringIndex = getValueReference(variable, getSimCode(), true)
 
-    let _ = (match variable
+    let stringName = (match variable
       case var as SIMVAR(__) then
-        let stringIndex = index
-        let stringName = CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(var.name))
-        <<>>
+        <<
+        <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(var.name))%>
+        >>
     )
 
 
     <<
-    omsi_index_pointer[<%i0%>]->type = <%stringType%>;
-    omsi_index_pointer[<%i0%>]->index = <%stringIndex%>;    /* maps <%stringName%> to <%targetName%> */
+    <%omsiFuncName%>[<%i0%>]->type = <%stringType%>;
+    <%omsiFuncName%>[<%i0%>]->index = <%stringIndex%>;    /* <%stringName%> */
     >>
   ;separator="\n")
 
-  <<
-  omsi_index_type* omsi_index_pointer;
-  omsi_index_pointer = omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(variables)%>, sizeof(omsi_index_type));
-  if (!omsi_index_pointer) {
-    /* ToDo: Log error */
-    return omsi_error;
-  }
-  <%stringBuffer%>
-  <%StrucPrefix%> = omsi_index_pointer;
-  >>
+  if listLength(variables) then
+    <<
+    if (!<%omsiFuncName%>) {
+      /* ToDo: Log error */
+      return omsi_error;
+    }
+    /* maps to <%targetName%> */
+    <%stringBuffer%>
+    <%StrucPrefix%> = omsi_index_pointer;
+    >>
+  else
+    <<>>
 end generateOmsiIndexTypeInitialization;
 
 
+template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String functionName, String FileNamePrefix)
+"Generates code for omsi_function_t initialization"
+::=
+  match omsiFunction
+  case func as OMSI_FUNCTION(__) then
+    <<
+    omsi_status <%FileNamePrefix%>_initialize_<%functionName%>_OMSIFunc (omsi_function_t* omsi_function) {
+      omsi_function->n_algebraic_system = <%nAlgebraicSystems%>
+
+      omsi_function->n_input_vars = <%listLength(inputVars)%>;
+      omsi_function->n_inner_vars = <%listLength(innerVars)%>;
+      omsi_function->n_output_vars = <%listLength(outputVars)%>;
+
+      /* Allocate memory */
+      omsi_function->algebraic_system_t = (omsi_algebraic_system_t*) omsi_callback_functions->omsi_callback_allocate_memory(<%nAlgebraicSystems%>, sizeOf(omsi_algebraic_system_t));
+      omsi_function->function_vars = (omsi_values*) omsi_callback_functions->omsi_callback_allocate_memory(<%nAllVars%>, sizeOf(omsi_values));
+      if (!omsi_function->algebraic_system_t || !omsi_function->function_vars) {
+        /* ToDo: Log error */
+        return omsi_error;
+      }
+
+      <%if listLength(inputVars) then
+      'omsi_function->input_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(inputVars)%>, sizeOf(omsi_index_type));'
+      else
+      'omsi_function->input_vars_indices = NULL;'
+      %>
+      <%if listLength(innerVars) then
+      'omsi_function->inner_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(innerVars)%>, sizeOf(omsi_index_type));'
+      else
+      'omsi_function->inner_vars_indices = NULL;'
+      %>
+      <%if listLength(outputVars) then
+      'omsi_function->output_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(outputVars)%>, sizeOf(omsi_index_type));'
+      %>
+
+      /* fill omsi_index_type indices */
+      <%generateOmsiIndexTypeInitialization(inputVars, "omsi_function->input_vars_indices", "sim_data->model_vars_and_params", "omsi_function->input_vars_indices")%>
+      <%if listLength(inputVars) then "\n"%>
+      <%generateOmsiIndexTypeInitialization(innerVars, "omsi_function->inner_vars_indices", "sim_data->model_vars_and_params", "omsi_function->inner_vars_indices")%>
+      <%if listLength(innerVars) then "\n"%>
+      <%generateOmsiIndexTypeInitialization(outputVars, "omsi_function->output_vars_indices", "sim_data->model_vars_and_params", "omsi_function->output_vars_indices")%>
+
+      /* set pointer for evaluation function */
+      omsi_function->evaluate = <%FileNamePrefix%>_allEqns;
+
+      return omsi_ok;
+    }
+    >>
+end generateInitalizationOMSIFunction;
 
 
 template insertCopyrightOpenModelica()
+"Insert copyright notive as c comment.
+ Should be used in every generated c or cpp file."
 ::=
   <<
   /*

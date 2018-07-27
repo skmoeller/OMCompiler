@@ -78,7 +78,7 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, Sim
     case SES_RESIDUAL(__) then
       "omsi_function_t* this_function, omsi_real* res"
     else
-      "omsi_function_t* this_function"
+      "omsi_function_t* this_function, const omsi_values* model_vars_and_params"
   )
 
 
