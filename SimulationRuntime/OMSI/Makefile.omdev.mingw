@@ -154,6 +154,41 @@ OMSIBase:
 	   cmake -G "MSYS Makefiles" -DPLATFORM=$(PLATFORM) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" MAKE_CXX_COMPILER=g++ ../; \
 	   $(MAKE));)
 
+OMSIBaseMSVC: getMSVCversion
+	test -f """${VSCOMNTOOLS}/../../VC/vcvarsall.bat"""
+	echo 'Build the cppRuntime with MSVC' buildtype: $(BUILDTYPE)
+	#rm -rf Build_MSVC
+	mkdir -p Build_MSVC
+	echo call '"${VSCOMNTOOLS}\\..\\..\\VC\\vcvarsall.bat" ${VCVARS_PARAMS}' > Build_MSVC/build.bat
+
+	echo echo Running CMake from '%OMDEV%\\bin\\cmake\\bin\\cmake' >> Build_MSVC/build.bat
+	echo '%OMDEV%\\bin\\cmake\\bin\\cmake -DCMAKE_VERBOSE_MAKEFILE:Bool=ON -DPLATFORM="dynamic" $(CMAKE_FLAGS) -DIS_MINGW32=OFF -DIS_MINGW64=OFF -DCMAKE_INSTALL_PREFIX:PATH=./tmp ../ -G "NMake Makefiles JOM" -D"CMAKE_MAKE_PROGRAM:PATH=%OMDEV%\\tools\\jom\\jom.exe"' >> Build_MSVC/build.bat
+
+	# for some reason, the environment variable 'MAKEFLAGS' was set to 'w' on my and Niklas' machine?!
+	echo set MAKEFLAGS="" >> Build_MSVC/build.bat
+	echo echo Running NMake JOM >> Build_MSVC/build.bat
+	echo %OMDEV%\\tools\\jom\\jom.exe /f Makefile install >> Build_MSVC/build.bat
+	cd ./Build_MSVC; echo "change to Build_MSVC";\
+	cmd /c build.bat
+
+	echo 'Build cppRuntime (static) with MSVC'
+	#rm -rf Build_MSVC_static
+	mkdir -p Build_MSVC_static
+	echo call '"${VSCOMNTOOLS}\\..\\..\\VC\\vcvarsall.bat" ${VCVARS_PARAMS}' > Build_MSVC_static/build.bat
+
+	echo echo Running CMake from '%OMDEV%\\bin\\cmake\\bin\\cmake' >> Build_MSVC_static/build.bat
+	echo '%OMDEV%\\bin\\cmake\\bin\\cmake -DCMAKE_VERBOSE_MAKEFILE:Bool=ON -DPLATFORM="static" $(CMAKE_FLAGS) -DIS_MINGW32=OFF -DIS_MINGW64=OFF -DCMAKE_INSTALL_PREFIX:PATH=./tmp ../ -G "NMake Makefiles JOM" -D"CMAKE_MAKE_PROGRAM:PATH=%OMDEV%\\tools\\jom\\jom.exe"' >> Build_MSVC_static/build.bat
+
+	# for some reason, the environment variable 'MAKEFLAGS' was set to 'w' on my and Niklas' machine?!
+	echo set MAKEFLAGS="" >> Build_MSVC_static/build.bat
+	echo echo Running NMake JOM >> Build_MSVC_static/build.bat
+	echo %OMDEV%\\tools\\jom\\jom.exe /f Makefile install >> Build_MSVC_static/build.bat
+	cd ./Build_MSVC_static; echo "change to Build_MSVC_static";\
+	cmd /c build.bat
+
+	# move folder to build dir
+	cp -R --verbose Build_MSVC/tmp/* $(builddir_build)
+	cp -R --verbose Build_MSVC_static/tmp/lib/* $(builddir_build)/lib
 
 install: OMSIBase
 	$(foreach PLATFORM, $(PLATFORMS), \
