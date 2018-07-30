@@ -4631,7 +4631,7 @@ template subscriptToMStr(Subscript subscript)
 ::=
   match subscript
   case SLICE(exp=ICONST(integer=i)) then i
-  case SLICE(__) then error(sourceInfo(), "Unknown slice " + ExpressionDumpTpl.dumpExp(exp,"\""))
+  case SLICE(__) then error(sourceInfo(), "Unknown slice " + ExpressionDumpTpl.dumpExp(exp,"\""))  //"
   case WHOLEDIM(__) then "WHOLEDIM"
   case WHOLE_NONEXP(__) then "WHOLE_NONEXP"
   case INDEX(__) then
@@ -4711,16 +4711,14 @@ template daeExpCrefRhsSimContext(Exp ecr, Context context, Text &preExp,
 
   case ecr as CREF(componentRef=cr, ty=ty) then
     if crefIsScalarWithAllConstSubs(cr) then
-      let cast = match ty case T_INTEGER(__) then "(modelica_integer)"
-                          case T_ENUMERATION(__) then "(modelica_integer)" //else ""
+      let cast = typeCastContext(context, ty)
         '<%cast%><%contextCref(cr,context, &auxFunction)%>'
     else if crefIsScalarWithVariableSubs(cr) then
       let nosubname = contextCref(crefStripSubs(cr),context, &auxFunction)
-      let cast = match ty case T_INTEGER(__) then "(modelica_integer)"
-                          case T_ENUMERATION(__) then "(modelica_integer)" //else ""
+      let cast = typeCastContext(context, ty)
         '<%cast%>(&<%nosubname%>)<%indexSubs(crefDims(cr), crefSubs(crefArrayGetFirstCref(cr)), context, &preExp, &varDecls, &auxFunction)%>'
     else
-      error(sourceInfo(),'daeExpCrefRhsSimContext: UNHANDLED CREF: <%ExpressionDumpTpl.dumpExp(ecr,"\"")%>')
+      error(sourceInfo(),'daeExpCrefRhsSimContext: UNHANDLED CREF: <%ExpressionDumpTpl.dumpExp(ecr,"\"")%>')  //"
 end daeExpCrefRhsSimContext;
 
 template daeExpCrefRhsFunContext(Exp ecr, Context context, Text &preExp,
@@ -4730,8 +4728,7 @@ template daeExpCrefRhsFunContext(Exp ecr, Context context, Text &preExp,
   match ecr
   case ecr as CREF(componentRef=cr, ty=ty) then
     if crefIsScalar(cr, context) then
-      let cast = match ty case T_INTEGER(__) then "(modelica_integer)"
-                        case T_ENUMERATION(__) then "(modelica_integer)" //else ""
+      let cast = typeCastContext(context, ty)
       '<%cast%><%contextCref(cr,context, &auxFunction)%>'
     else
       if crefSubIsScalar(cr) then
@@ -6275,26 +6272,11 @@ match exp
 case CAST(__) then
   let expVar = daeExp(exp, context, &preExp, &varDecls, &auxFunction)
   match ty
-  case T_INTEGER(__) then
-    match context
-    case OMSI_CONTEXT(__) then '(omsi_int)<%expVar%>'
-    else '((modelica_integer)(<%expVar%>))'
-    end match
-  case T_REAL(__) then
-    match context
-    case OMSI_CONTEXT(__) then '(omsi_real)<%expVar%>'
-    else '((modelica_real)(<%expVar%>))'
-    end match
-  case T_ENUMERATION(__) then
-    match context
-    case OMSI_CONTEXT(__) then '(omsi_int)<%expVar%>'
-    else '((modelica_integer)(<%expVar%>))'
-    end match
+  case T_INTEGER(__)
+  case T_REAL(__)
+  case T_ENUMERATION(__)
   case T_BOOL(__) then
-    match context
-    case OMSI_CONTEXT(__) then '(omsi_bool)<%expVar%>'
-    else '((modelica_boolean)(<%expVar%>))'
-    end match
+    '(<%typeCastContext(context, ty)%><%expVar%>)'
   case T_ARRAY(__) then
     let arrayTypeStr = expTypeArray(ty)
     let tvar = tempDecl(arrayTypeStr, &varDecls)
@@ -6790,7 +6772,7 @@ case exp as MATCHEXPRESSION(__) then
       let matchInputVar = getTempDeclMatchInputName(startIndexInputs, switchIndex)
       '<%matchInputVar%>'
     case MATCH(switch=SOME(_)) then
-      error(sourceInfo(), 'Unknown switch: <%ExpressionDumpTpl.dumpExp(exp,"\"")%>')
+      error(sourceInfo(), 'Unknown switch: <%ExpressionDumpTpl.dumpExp(exp,"\"")%>')  //"
     else tempDecl('volatile mmc_switch_type', &varDeclsInner)
   let done = tempDecl('int', &varDeclsInner)
   let &preExp +=
@@ -7075,6 +7057,26 @@ template crefAttributes(ComponentRef cr)
     if intLt(index,0) then error(sourceInfo(), 'varAttributes got negative index=<%index%> for <%crefStr(name)%>') else
     'data->modelData-><%varArrayName(var)%>Data[<%index%>].attribute /* <%escapeCComments(crefStrNoUnderscore(name))%> */'
 end crefAttributes;
+
+template typeCastContext(Context context, Type ty)
+"Generates code for type cast to basic data types, depending on context."
+::=
+  match context
+    case OMSI_CONTEXT(__) then
+      match ty
+        case T_INTEGER(__) then "(omsi_int)"
+        case T_ENUMERATION(__) then "(omsi_int)"
+        case T_REAL(__) then "(omsi_real)"
+        case T_BOOL(__) then "(omsi_bool)"
+      end match
+    else
+      match ty
+        case T_INTEGER(__) then "(modelica_integer)"
+        case T_ENUMERATION(__) then "(modelica_integer)"
+        case T_REAL(__) then "(modelica_real)"
+        case T_BOOL(__) then "(modelica_boolean)"
+      end match
+end typeCastContext;
 
 annotation(__OpenModelica_Interface="backend");
 end CodegenCFunctions;

@@ -219,6 +219,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       algSystem->n_iteration_vars = <%listLength(residual.outputVars)%>;
       <%if listLength(residual.outputVars) then
       <<
+      algSystem->iteration_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(residual.outputVars)%>, sizeOf(omsi_index_type));
       if (!algSystem->iteration_vars_indices) {
         /* ToDo: Log error */
         return omsi_error;
@@ -238,6 +239,18 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
 
       algSystem->isLinear = <% if linearSystem then 'omsi_true' else 'omsi_false'%>;
 
+      /* initliazie omsi_function_t jacobian*/
+      algSystem->functions = (omsi_function_t*) omsi_callback_functions->omsi_callback_allocate_memory(1, sizeOf(omsi_function_t));
+      if (!algSystem->functions) {
+        /* ToDo: Log error */
+        return omsi_error;
+      }
+      if (!problem2_initialize_resFunc<%index%>_OMSIFunc(algSystem->functions)){
+        return omsi_error;
+      }
+      /* initliazile omsi_function_t function */
+
+      /* ToDo: put into init functions */
       algSystem->functions->evaluate = <%FileNamePrefix%>_resFunction_<%index%>;
       algSystem->jacobian->evaluate = <%FileNamePrefix%>_derivativeMatFunc_<%index%>;
 
@@ -245,6 +258,8 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
 
       return omsi_ok;
     }
+
+    <%generateInitalizationOMSIFunction (residual, 'resFunc<%index%>', FileNamePrefix)%>
     >>
 end generateInitalizationAlgSystem;
 
@@ -285,10 +300,6 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
 
   if listLength(variables) then
     <<
-    if (!<%omsiFuncName%>) {
-      /* ToDo: Log error */
-      return omsi_error;
-    }
     /* maps to <%targetName%> */
     <%stringBuffer%>
     <%StrucPrefix%> = omsi_index_pointer;
@@ -320,17 +331,33 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
       }
 
       <%if listLength(inputVars) then
-      'omsi_function->input_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(inputVars)%>, sizeOf(omsi_index_type));'
+        <<
+        omsi_function->input_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(inputVars)%>, sizeOf(omsi_index_type));
+        if (!omsi_function->input_vars_indices) {
+          /* ToDo: Log error */
+          return omsi_error;
+        }
+        >>
       else
-      'omsi_function->input_vars_indices = NULL;'
+        'omsi_function->input_vars_indices = NULL;'
       %>
       <%if listLength(innerVars) then
-      'omsi_function->inner_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(innerVars)%>, sizeOf(omsi_index_type));'
+        <<omsi_function->inner_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(innerVars)%>, sizeOf(omsi_index_type));
+        if (!omsi_function->inner_vars_indices) {
+          /* ToDo: Log error */
+          return omsi_error;
+        }
+        >>
       else
-      'omsi_function->inner_vars_indices = NULL;'
+        'omsi_function->inner_vars_indices = NULL;'
       %>
       <%if listLength(outputVars) then
-      'omsi_function->output_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(outputVars)%>, sizeOf(omsi_index_type));'
+        <<omsi_function->output_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(outputVars)%>, sizeOf(omsi_index_type));
+        if (!omsi_function->output_vars_indices) {
+          /* ToDo: Log error */
+          return omsi_error;
+        }
+        >>
       %>
 
       /* fill omsi_index_type indices */
