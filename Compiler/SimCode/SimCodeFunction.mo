@@ -36,6 +36,7 @@ encapsulated package SimCodeFunction
 public
 import Absyn;
 import DAE;
+import HashTableCrefSimVar;
 import HashTableStringToPath;
 import Tpl;
 
