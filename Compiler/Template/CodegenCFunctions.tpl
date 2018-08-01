@@ -4711,11 +4711,11 @@ template daeExpCrefRhsSimContext(Exp ecr, Context context, Text &preExp,
 
   case ecr as CREF(componentRef=cr, ty=ty) then
     if crefIsScalarWithAllConstSubs(cr) then
-      let cast = typeCastContext(context, ty)
+      let cast = typeCastContextInt(context, ty)
         '<%cast%><%contextCref(cr,context, &auxFunction)%>'
     else if crefIsScalarWithVariableSubs(cr) then
       let nosubname = contextCref(crefStripSubs(cr),context, &auxFunction)
-      let cast = typeCastContext(context, ty)
+      let cast = typeCastContextInt(context, ty)
         '<%cast%>(&<%nosubname%>)<%indexSubs(crefDims(cr), crefSubs(crefArrayGetFirstCref(cr)), context, &preExp, &varDecls, &auxFunction)%>'
     else
       error(sourceInfo(),'daeExpCrefRhsSimContext: UNHANDLED CREF: <%ExpressionDumpTpl.dumpExp(ecr,"\"")%>')  //"
@@ -4728,7 +4728,7 @@ template daeExpCrefRhsFunContext(Exp ecr, Context context, Text &preExp,
   match ecr
   case ecr as CREF(componentRef=cr, ty=ty) then
     if crefIsScalar(cr, context) then
-      let cast = typeCastContext(context, ty)
+      let cast = typeCastContextInt(context, ty)
       '<%cast%><%contextCref(cr,context, &auxFunction)%>'
     else
       if crefSubIsScalar(cr) then
@@ -7064,19 +7064,36 @@ template typeCastContext(Context context, Type ty)
   match context
     case OMSI_CONTEXT(__) then
       match ty
-        case T_INTEGER(__) then "(omsi_int)"
+        case T_INTEGER(__)
         case T_ENUMERATION(__) then "(omsi_int)"
         case T_REAL(__) then "(omsi_real)"
         case T_BOOL(__) then "(omsi_bool)"
       end match
     else
       match ty
-        case T_INTEGER(__) then "(modelica_integer)"
+        case T_INTEGER(__)
         case T_ENUMERATION(__) then "(modelica_integer)"
         case T_REAL(__) then "(modelica_real)"
         case T_BOOL(__) then "(modelica_boolean)"
       end match
 end typeCastContext;
+
+
+template typeCastContextInt(Context context, Type ty)
+"Generates code for type cast to basic data types, depending on context."
+::=
+  match context
+    case OMSI_CONTEXT(__) then
+      match ty
+        case T_INTEGER(__)
+        case T_ENUMERATION(__) then "(omsi_int)"
+      end match
+    else
+      match ty
+        case T_INTEGER(__)
+        case T_ENUMERATION(__) then "(modelica_integer)"
+      end match
+end typeCastContextInt;
 
 annotation(__OpenModelica_Interface="backend");
 end CodegenCFunctions;
