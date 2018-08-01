@@ -64,10 +64,10 @@ algorithm
   /* Do nothing */
 end getValueReference;
 
-function getLocalValueReference
+function getLocalValueReference<A>
   input SimCodeVar.SimVar inSimVar;
   input SimCode.SimCode inSimCode;
-  input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
+  input A inCrefToSimVarHT;
   input Boolean inElimNegAliases "=false to keep negative alias references";
   output String outValueReference;
 algorithm
