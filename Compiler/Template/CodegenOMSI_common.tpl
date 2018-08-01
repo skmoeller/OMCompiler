@@ -38,12 +38,10 @@
 
 import interface SimCodeTV;
 import interface SimCodeBackendTV;
+
+import CodegenOMSIC_Equations;
 import CodegenUtil;
 import CodegenUtilSimulation;
-import CodegenFMU;
-import CodegenOMSIC_Equations;
-import CodegenCFunctions;
-import CodegenAdevs;
 
 
 /* public */

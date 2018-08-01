@@ -36,14 +36,14 @@ package CodegenOMSIC_Equations
                OpenModelica Simulation Inferface (OMSI) equation related templates
 "
 
-
-
 import interface SimCodeTV;
 import interface SimCodeBackendTV;
-import CodegenUtil;
+
 import CodegenC;
 import CodegenCFunctions;
+import CodegenUtil;
 import CodegenUtilSimulation;
+
 
 template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
  "Generates prototype for an equation function"
