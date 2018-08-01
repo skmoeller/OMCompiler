@@ -108,7 +108,6 @@ template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction, Context
     <%crefStr%> = <%expPart%>;
     >>
   case SES_ALGEBRAIC_SYSTEM(__) then
-
     <<
     /* Add stuff here*/
     >>
@@ -257,13 +256,7 @@ template generateDereivativeMatrixColumnFunction(OMSIFunction column, String mod
     ;separator="\n")
 
   <<
-  /*
-  Description something
-  */
-  void <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative){
-
   <%bodyBuffer%>
-  }
   >>
 end generateDereivativeMatrixColumnFunction;
 

@@ -3768,7 +3768,7 @@ protected
   list<SimCodeVar.SimVar> tempVars;
   Integer nAlgebraicSystems = 0;
   Integer index, HTsize;
-  Boolean debug=true;
+  Boolean debug=false;
 algorithm
   for component in components loop
     tmpEqns := {};
@@ -4960,6 +4960,8 @@ protected function createDerivativeMatrix
   input Integer iuniqueEqIndex;
   output Option<SimCode.DerivativeMatrix> res;
   output Integer ouniqueEqIndex;
+protected
+  Boolean debug = true;
 algorithm
   (res, ouniqueEqIndex) := matchcontinue(inJacobian, iuniqueEqIndex)
   local
@@ -5053,6 +5055,10 @@ algorithm
 
         (omsiJacFunction, uniqueEqIndex) = generateEquationsForComponents(comps, syst, shared, iuniqueEqIndex);
         
+        if debug then
+          dumpOMSIFunc(omsiJacFunction, "*****Jacobian OMSIFunction");
+        end if;
+
         if Flags.isSet(Flags.JAC_DUMP2) then
           print("analytical Jacobians -> created all SimCode equations for Matrix " + name +  " time: " + realString(clock()) + "\n");
         end if;
@@ -12728,6 +12734,28 @@ algorithm
    noOut := noIn+1;
 end dumpVarMappingTuple;
 
+
+public function dumpOMSIFunc
+"Outputs a SimCode.OMSIFunction"
+  input SimCode.OMSIFunction omsiFunc;
+  input String head;
+algorithm
+  print(head+"\n");
+  try
+    print("equations:\n");
+    print("----------------------");
+    dumpSimEqSystemLst(omsiFunc.equations,"\n");
+    dumpVarLst(omsiFunc.inputVars,"inputVars");
+    dumpVarLst(omsiFunc.innerVars,"innerVars");
+    dumpVarLst(omsiFunc.outputVars,"outputVars");
+    print("nAllVars = " + String(omsiFunc.nAllVars)+"\n");
+    print("Context\n");    // ToDo: add dump context
+    else
+      print("ERROR in dumpOMSIFunc\n");
+  end try;
+end dumpOMSIFunc;
+
+
 public function createFMIModelStructure
 " function detectes the model stucture for FMI 2.0
   by analyzing the symbolic jacobian matrixes and sparsity pattern"
@@ -13485,7 +13513,7 @@ algorithm
       then sv;
 
     // if cref not found in localHashTable search in global
-    case (cref, _) then cref2simvar(cref, getSimCode());
+    case (cref, _) then cref2simvar(cref, getSimCode());    // ToDo: delete
 
     case (_,_)
       equation

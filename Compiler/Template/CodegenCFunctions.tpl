@@ -3532,7 +3532,9 @@ template crefOMSI(ComponentRef cref, Context context)
     "this_function->function_vars->time_value"
   else
     match context
-    case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable)) then
+    // cref in default omsi context
+    case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable))
+    case jacobianContext as JACOBIAN_CONTEXT(hashTable=SOME(hashTable)) then
       match localCref2SimVar(cref, hashTable)
         case v as SIMVAR(varKind=varKind as PARAM(__)) then
           let index = getValueReference(v, getSimCode(), false)
@@ -3550,6 +3552,9 @@ template crefOMSI(ComponentRef cref, Context context)
           >>
         else "CREF_NOT_FOUND"
       end match
+
+    // error case
+    else "ERROR in crefOMSI: No valid SimCodeFunction.Context"
     end match
 end crefOMSI;
 
