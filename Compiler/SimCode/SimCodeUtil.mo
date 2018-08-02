@@ -13088,12 +13088,6 @@ algorithm
       String valueReference;
       HashTableCrefSimVar.HashTable crefToSimVarHT;
 
-    // case negated alias variable, returns global value reference
-    case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.NEGATEDALIAS(_)), false, _) then
-      getDefaultValueReference(inSimVar, inSimCode.modelInfo.varInfo);
-    // case alias varible, returns global value reference
-    case (SimCodeVar.SIMVAR(aliasvar = SimCodeVar.ALIAS(varName = cref)), _, _) then
-      getDefaultValueReference(cref2simvar(cref, inSimCode), inSimCode.modelInfo.varInfo);
     // default case
     case (SimCodeVar.SIMVAR(name=cref), _, crefToSimVarHT)
     algorithm
@@ -13511,9 +13505,6 @@ algorithm
           case SimCodeVar.NEGATEDALIAS() then sv;
         end match;
       then sv;
-
-    // if cref not found in localHashTable search in global
-    case (cref, _) then cref2simvar(cref, getSimCode());    // ToDo: delete
 
     case (_,_)
       equation

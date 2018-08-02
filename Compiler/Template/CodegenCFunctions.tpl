@@ -3533,31 +3533,37 @@ template crefOMSI(ComponentRef cref, Context context)
   else
     match context
     // cref in default omsi context
-    case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable))
+    case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable)) then
+        '<%getLocalSimVar(cref, hashTable)%>'
     case jacobianContext as JACOBIAN_CONTEXT(hashTable=SOME(hashTable)) then
-      match localCref2SimVar(cref, hashTable)
-        case v as SIMVAR(varKind=varKind as PARAM(__)) then
-          let index = getValueReference(v, getSimCode(), false)
-          let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
-          <<
-          model_vars_and_params-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
-          >>
-        case v as SIMVAR(__) then
-          //let index = getLocalValueReference(v, getSimCode(), hashTable, false)
-          // ToDo: use above one and use correct hash table as input
-          let index = getValueReference(v, getSimCode(), false)
-          let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
-          <<
-          this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
-          >>
-        else "CREF_NOT_FOUND"
-      end match
-
+        '<%getLocalSimVar(cref, hashTable)%>'
     // error case
     else "ERROR in crefOMSI: No valid SimCodeFunction.Context"
     end match
 end crefOMSI;
 
+
+template getLocalSimVar(ComponentRef cref, HashTableCrefSimVar.HashTable hashTable)
+::=
+  match localCref2SimVar(cref, hashTable)
+    case v as SIMVAR(index=-2) then
+      match cref2simvar(cref, getSimCode())
+        case v as SIMVAR(__) then
+        //case v as SIMVAR(varKind=varKind as PARAM(__)) then
+        let index = getValueReference(v, getSimCode(), false)
+        let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
+         <<
+         model_vars_and_params-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
+         >>
+      end match
+     case v as SIMVAR(__) then
+       let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(v.varKind)%> */'
+       <<
+       this_function->function_vars-><%crefTypeOMSIC(name)%>[<%v.index%>] <%c_comment%>
+       >>
+     else "CREF_NOT_FOUND"
+   end match
+end getLocalSimVar;
 
 template expTypeRW(DAE.Type type)
  "Helper to writeOutVarRecordMembers."
@@ -4636,7 +4642,7 @@ template subscriptToMStr(Subscript subscript)
 ::=
   match subscript
   case SLICE(exp=ICONST(integer=i)) then i
-  case SLICE(__) then error(sourceInfo(), "Unknown slice " + ExpressionDumpTpl.dumpExp(exp,"\""))  //"
+  case SLICE(__) then error(sourceInfo(), "Unknown slice " + ExpressionDumpTpl.dumpExp(exp,"\""))
   case WHOLEDIM(__) then "WHOLEDIM"
   case WHOLE_NONEXP(__) then "WHOLE_NONEXP"
   case INDEX(__) then
@@ -4723,7 +4729,7 @@ template daeExpCrefRhsSimContext(Exp ecr, Context context, Text &preExp,
       let cast = typeCastContextInt(context, ty)
         '<%cast%>(&<%nosubname%>)<%indexSubs(crefDims(cr), crefSubs(crefArrayGetFirstCref(cr)), context, &preExp, &varDecls, &auxFunction)%>'
     else
-      error(sourceInfo(),'daeExpCrefRhsSimContext: UNHANDLED CREF: <%ExpressionDumpTpl.dumpExp(ecr,"\"")%>')  //"
+      error(sourceInfo(),'daeExpCrefRhsSimContext: UNHANDLED CREF: <%ExpressionDumpTpl.dumpExp(ecr,"\"")%>')
 end daeExpCrefRhsSimContext;
 
 template daeExpCrefRhsFunContext(Exp ecr, Context context, Text &preExp,
@@ -6777,7 +6783,7 @@ case exp as MATCHEXPRESSION(__) then
       let matchInputVar = getTempDeclMatchInputName(startIndexInputs, switchIndex)
       '<%matchInputVar%>'
     case MATCH(switch=SOME(_)) then
-      error(sourceInfo(), 'Unknown switch: <%ExpressionDumpTpl.dumpExp(exp,"\"")%>')  //"
+      error(sourceInfo(), 'Unknown switch: <%ExpressionDumpTpl.dumpExp(exp,"\"")%>')
     else tempDecl('volatile mmc_switch_type', &varDeclsInner)
   let done = tempDecl('int', &varDeclsInner)
   let &preExp +=

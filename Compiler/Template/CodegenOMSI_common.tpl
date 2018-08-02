@@ -300,7 +300,6 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
     <<
     /* maps to <%targetName%> */
     <%stringBuffer%>
-    <%StrucPrefix%> = omsi_index_pointer;
     >>
   else
     <<>>
