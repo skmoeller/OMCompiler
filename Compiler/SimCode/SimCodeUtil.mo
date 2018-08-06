@@ -3767,7 +3767,7 @@ protected
   list<SimCodeVar.SimVar> tmpInputVars = {}, tmpOutputVars = {}, tmpInnerVars = {};
   list<SimCodeVar.SimVar> tempVars;
   Integer nAlgebraicSystems = 0;
-  Integer index, HTsize;
+  Integer index, nAllVars;
   Boolean debug=false;
 algorithm
   for component in components loop
@@ -3827,15 +3827,12 @@ algorithm
       simequations := listAppend(simequations, listReverse(resEqs));
 
       //set index
-      (loopIterationVars, index) := rewriteIndex(loopIterationVars, 0);
-      (loopSolvedVars, _) := rewriteIndex(loopSolvedVars, index);
+      (loopSolvedVars, index) := rewriteIndex(loopSolvedVars, 0);
+      (loopIterationVars, index) := rewriteIndex(loopIterationVars, index);
 
       // create hash table with local index
-      HTsize := Util.nextPrime((listLength(loopIterationVars)+listLength(loopSolvedVars)+listLength(tempVars))*2);   // chose big enough prime for hash table
-      hashTable := HashTableCrefSimVar.emptyHashTableSized(HTsize);
-      hashTable := appendCrefToSimVarHT(loopIterationVars, hashTable);
-      hashTable := appendCrefToSimVarHT(loopSolvedVars, hashTable);
-      hashTable := appendCrefToSimVarHT(tempVars, hashTable);
+      nAllVars := listLength(loopIterationVars)+listLength(loopSolvedVars)+listLength(tempVars);
+      hashTable := fillLocalHashTable({loopIterationVars, loopSolvedVars, tempVars}, nAllVars);
 
       // inputs empty, since we haven't check for inputs yet
       if debug then
@@ -3849,13 +3846,22 @@ algorithm
                                             inputVars = {},
                                             outputVars = tmpOutputVars,
                                             innerVars = tempVars,
-                                            nAllVars = listLength(tmpOutputVars)+listLength(tempVars),
+                                            nAllVars = nAllVars,
                                             context = SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
                                             nAlgebraicSystems = 0);
 
       // fill SES_ALGEBRAIC_SYSTEM
       (derivativeMatrix, uniqueEqIndex) := createDerivativeMatrix(jacobian, uniqueEqIndex);
-      algSystem := SimCode.SES_ALGEBRAIC_SYSTEM(algEqIndex, mixedSystem, true, linear, omsiFunction, derivativeMatrix,  {}, {}, BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
+      algSystem := SimCode.SES_ALGEBRAIC_SYSTEM(index = algEqIndex,
+                                                algSysIndex = nAlgebraicSystems,
+                                                partOfMixed = mixedSystem,
+                                                tornSystem = true,
+                                                linearSystem = linear,
+                                                residual = omsiFunction,
+                                                matrix = derivativeMatrix,
+                                                zeroCrossingConditions = {},
+                                                sources = {},
+                                                eqAttr = BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
       nAlgebraicSystems := nAlgebraicSystems+1;
       tmpEqns := {algSystem};
     then ();
@@ -3874,24 +3880,19 @@ algorithm
   end for;
 
   //set index
-  (outputVars, index) := rewriteIndex(outputVars, 0);
+  (inputVars, index) := rewriteIndex(inputVars, 0);
   (innerVars, index) := rewriteIndex(innerVars, index);
-  (inputVars, _) := rewriteIndex(inputVars, index);
+  (outputVars, index) := rewriteIndex(outputVars, index);
 
   // create hash table with global index
-  HTsize := Util.nextPrime((listLength(inputVars)+listLength(innerVars)+listLength(outputVars))*2);   // chose big enough prime for hash table
-  hashTable := HashTableCrefSimVar.emptyHashTableSized(HTsize);
-  hashTable := appendCrefToSimVarHT(inputVars, hashTable);
-  hashTable := appendCrefToSimVarHT(innerVars, hashTable);
-  hashTable := appendCrefToSimVarHT(outputVars, hashTable);
-
-  BaseHashTable.dumpHashTableStatistics(hashTable);
+  nAllVars := listLength(inputVars)+listLength(outputVars)+listLength(innerVars);
+  hashTable := fillLocalHashTable({inputVars, innerVars, outputVars}, nAllVars);
 
   omsiFuncEquations := SimCode.OMSI_FUNCTION(equations =  listReverse(equations),
                                             inputVars = inputVars,
                                             outputVars = outputVars,
                                             innerVars =  innerVars,
-                                            nAllVars = listLength(inputVars)+listLength(outputVars)+listLength(innerVars),
+                                            nAllVars = nAllVars,
                                             context = SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
                                             nAlgebraicSystems = nAlgebraicSystems);
   if debug then
@@ -3913,6 +3914,8 @@ function generateSingleEquation
   output list<SimCodeVar.SimVar> outputVars = {};
   output list<SimCodeVar.SimVar> innerVars = {};
   input output Integer uniqueEqIndex;
+protected
+  constant Boolean debug = false;
 algorithm
   _ := match (eqn)
     local
@@ -3928,8 +3931,6 @@ algorithm
       DAE.ComponentRef cr;
 
       String str;
-      
-      constant Boolean debug = true;
 
     // single equation
     case BackendDAE.EQUATION(exp=lhs, scalar=rhs, source=source, attr=eqAttr)
@@ -4021,6 +4022,31 @@ algorithm
 end generateInnerEqns;
 
 
+protected function fillLocalHashTable
+"Generates new hashTable filled with all SimVars from input lists."
+  input list<list<SimCodeVar.SimVar>> VarListList;
+  input Integer numberOfElements "number of all elemtens of VarListList";
+  output HashTableCrefSimVar.HashTable hashTable;
+protected
+  Integer HTsize;
+  Boolean debug = false;
+algorithm
+  // generate empty hashTable
+  HTsize := max(1013, Util.nextPrime(numberOfElements*2));   // chose big enough prime for hash table
+  hashTable := HashTableCrefSimVar.emptyHashTableSized(HTsize);
+
+  // fill hashTable
+  for simVarList in VarListList loop
+    hashTable := appendCrefToSimVarHT(simVarList, hashTable);
+  end for;
+
+  if debug then
+    print("local hash table:\n");
+    BaseHashTable.dumpHashTableStatistics(hashTable);
+  end if;
+end fillLocalHashTable;
+
+
 protected function appendCrefToSimVarHT
 "Appends list of SimVar to hash table."
   input list<SimCodeVar.SimVar> vars   "list of simcode variables ";
@@ -4034,31 +4060,6 @@ algorithm
     Error.addInternalError("function appendCrefToSimVarHT failed", sourceInfo());
   end try;
 end appendCrefToSimVarHT;
-
-
-// ToDo: delete function?
-protected function createIndicesForSimVars
-"Creates list of hash table values from list of simVar and sets corresponding
- index of each simVar."
-input list<SimCodeVar.SimVar> vars;
-input Integer startIndex;
-output list<HashTableCrefSimVar.Value> varsWithDep={};    // empty list
-
-protected
-  Integer index;
-algorithm
-  index := startIndex;
-  for var in vars loop
-    _ := match var
-      case SimCodeVar.SIMVAR(__)
-        algorithm
-        var.index := index;
-        index := index+1;
-        then();
-    end match;
-    varsWithDep := listAppend ({var}, varsWithDep);
-  end for;
-end createIndicesForSimVars;
 
 
 // =============================================================================
@@ -4961,7 +4962,7 @@ protected function createDerivativeMatrix
   output Option<SimCode.DerivativeMatrix> res;
   output Integer ouniqueEqIndex;
 protected
-  Boolean debug = true;
+  Boolean debug = false;
 algorithm
   (res, ouniqueEqIndex) := matchcontinue(inJacobian, iuniqueEqIndex)
   local
@@ -4984,7 +4985,7 @@ algorithm
 
     list<SimCodeVar.SimVar> tempvars;
     String name, dummyVar;
-    Integer maxColor, uniqueEqIndex, nonZeroElements, nRows, HTsize, index;
+    Integer maxColor, uniqueEqIndex, nonZeroElements, nRows, index, nAllVars;
 
     list<SimCode.SimEqSystem> columnEquations;
     list<SimCodeVar.SimVar> columnVars, innerVars, residualSimVars;
@@ -5056,7 +5057,7 @@ algorithm
         (omsiJacFunction, uniqueEqIndex) = generateEquationsForComponents(comps, syst, shared, iuniqueEqIndex);
         
         if debug then
-          dumpOMSIFunc(omsiJacFunction, "*****Jacobian OMSIFunction");
+          dumpOMSIFunc(omsiJacFunction, "\nJacobian OMSIFunction");
         end if;
 
         if Flags.isSet(Flags.JAC_DUMP2) then
@@ -5119,11 +5120,8 @@ algorithm
         // ToDo: rewrite index
 
         // create hash table
-        HTsize = Util.nextPrime((listLength(seedVars)+listLength(columnVars)+listLength(indexVars))*2);   // chose big enough prime for hash table
-        hashTable = HashTableCrefSimVar.emptyHashTableSized(HTsize);
-        hashTable = appendCrefToSimVarHT(seedVars, hashTable);
-        hashTable = appendCrefToSimVarHT(columnVars, hashTable);
-        hashTable = appendCrefToSimVarHT(indexVars, hashTable);
+        nAllVars = (listLength(seedVars)+listLength(columnVars)+listLength(indexVars));
+        hashTable = fillLocalHashTable({seedVars, columnVars, indexVars}, nAllVars);
 
         // rewrite omsiJacFunction variables
         omsiJacFunction.innerVars = innerVars;
@@ -13486,7 +13484,7 @@ end cref2simvar;
 
 public function localCref2SimVar
 "Used by templates to find SIMVAR in given hashTable for given cref
- (to gain representaion index info mainly)."
+ (to gain representaion index info mainly). Does not check if variable is alias."
   input DAE.ComponentRef inCref;
   input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
   output SimCodeVar.SimVar outSimVar;
@@ -13499,11 +13497,6 @@ algorithm
     case (cref, crefToSimVarHT)
       equation
         sv = BaseHashTable.get(cref, crefToSimVarHT);
-        sv = match sv.aliasvar
-          case SimCodeVar.NOALIAS() then sv;
-          case SimCodeVar.ALIAS(varName=cref) then localCref2SimVar(cref, crefToSimVarHT); /* Possibly not needed; can't really hurt that much though */
-          case SimCodeVar.NEGATEDALIAS() then sv;
-        end match;
       then sv;
 
     case (_,_)

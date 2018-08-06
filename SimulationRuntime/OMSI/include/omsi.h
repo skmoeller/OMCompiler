@@ -182,7 +182,6 @@ typedef struct omsi_values {
  */
 typedef struct omsi_algebraic_system_t {
     omsi_unsigned_int n_iteration_vars;
-    omsi_index_type* iteration_vars_indices;
 
     omsi_unsigned_int n_conditions;
     omsi_int* zerocrossing_indices;

@@ -3544,25 +3544,27 @@ end crefOMSI;
 
 
 template getLocalSimVar(ComponentRef cref, HashTableCrefSimVar.HashTable hashTable)
+"Helper function for crefOMSI to generate code for "
 ::=
   match localCref2SimVar(cref, hashTable)
     case v as SIMVAR(index=-2) then
       match cref2simvar(cref, getSimCode())
         case v as SIMVAR(__) then
-        //case v as SIMVAR(varKind=varKind as PARAM(__)) then
-        let index = getValueReference(v, getSimCode(), false)
+        //let index = getValueReference(v, getSimCode(), false)
+        let index = v.index
         let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
          <<
          model_vars_and_params-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
          >>
       end match
-     case v as SIMVAR(__) then
-       let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(v.varKind)%> */'
-       <<
-       this_function->function_vars-><%crefTypeOMSIC(name)%>[<%v.index%>] <%c_comment%>
-       >>
-     else "CREF_NOT_FOUND"
-   end match
+
+    case v as SIMVAR(__) then
+      let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(v.varKind)%> */'
+      <<
+      this_function->function_vars-><%crefTypeOMSIC(name)%>[<%v.index%>] <%c_comment%>
+      >>
+    else "CREF_NOT_FOUND"
+  end match
 end getLocalSimVar;
 
 template expTypeRW(DAE.Type type)

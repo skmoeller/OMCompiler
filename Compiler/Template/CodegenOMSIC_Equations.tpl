@@ -74,13 +74,7 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, Sim
       "eqFunction"
   )
 
-  let funcArguments = (match eq
-    case SES_RESIDUAL(__) then
-      "omsi_function_t* this_function, omsi_real* res"
-    else
-      "omsi_function_t* this_function, const omsi_values* model_vars_and_params"
-  )
-
+  let funcArguments = "omsi_function_t* this_function, const omsi_values* model_vars_and_params"
 
   <<
   /*

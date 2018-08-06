@@ -117,14 +117,14 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         <<>>
       case SES_RESIDUAL(__) then
         let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, context) +"\n"
-        let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, 'this_function, res[i++]') +"\n"      // ToDo: why is i0 always zero?
+        let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, 'this_function, res[i++]') +"\n"
         <<>>
-      case SES_ALGEBRAIC_SYSTEM(__) then
+      case algSystem as SES_ALGEBRAIC_SYSTEM(__) then
         let &includes += "#include \""+ FileNamePrefix + "_algSyst_" + index + ".h\"\n"
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation, model_vars_and_params") +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
-        let () = textFile(content, FileNamePrefix+"_sim_algSyst_"+ index + ".c")
+        let () = textFile(content, FileNamePrefix+"_sim_algSyst_"+ algSystem.algSysIndex + ".c")
         <<>>
       else
         // NOT IMPLEMENTED YET
@@ -154,7 +154,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
 
     let derivativeMatrix = CodegenOMSIC_Equations.generateDerivativeFile(matrix, FileNamePrefix, algSystem.index)
-    let () = textFile(derivativeMatrix, FileNamePrefix+"_sim_derMat_"+algSystem.index+".c")
+    let () = textFile(derivativeMatrix, FileNamePrefix+"_sim_derMat_"+algSystem.algSysIndex+".c")
 
   <<
   /* Algebraic system code */
@@ -215,18 +215,6 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
     /* function initialize omsi_algebraic_system_t struct */
     omsi_status <%FileNamePrefix%>_initializeAlgSystem_<%index%>(omsi_algebraic_system_t* algSystem) {
       algSystem->n_iteration_vars = <%listLength(residual.outputVars)%>;
-      <%if listLength(residual.outputVars) then
-      <<
-      algSystem->iteration_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(residual.outputVars)%>, sizeOf(omsi_index_type));
-      if (!algSystem->iteration_vars_indices) {
-        /* ToDo: Log error */
-        return omsi_error;
-      }
-      <%generateOmsiIndexTypeInitialization(residual.outputVars, "algSystem->iteration_vars_indices", "omsi_function_t simulation->function_vars", "algSystem->iteration_vars_indices")%>
-      >>
-      else
-      'algSystem->iteration_vars_indices = NULL;'
-      %>
 
       algSystem->n_conditions = <%listLength(zeroCrossingConditions)%>;
       <% if listLength(zeroCrossingConditions) then
@@ -280,15 +268,14 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
         "OMSI_TYPE_UNKNOWN"
     )
 
-    let stringIndex = getValueReference(variable, getSimCode(), true)
-
-    let stringName = (match variable
+    let &stringName = buffer""
+    let &stringIndex = buffer ""
+    let _ = (match variable
       case var as SIMVAR(__) then
-        <<
-        <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(var.name))%>
-        >>
+      let &stringName += '<%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(var.name))%>'
+      let &stringIndex += var.index
+      <<>>
     )
-
 
     <<
     <%omsiFuncName%>[<%i0%>]->type = <%stringType%>;

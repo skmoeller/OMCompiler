@@ -418,8 +418,9 @@ uniontype SimEqSystem
   end SES_ALIAS;
   
   record SES_ALGEBRAIC_SYSTEM
-    Integer index;
-    
+    Integer index;            // equation index
+    Integer algSysIndex;      // index of algebraic system
+
     Boolean partOfMixed;
     Boolean tornSystem;
     Boolean linearSystem;
