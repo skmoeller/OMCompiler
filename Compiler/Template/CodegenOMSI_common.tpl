@@ -153,7 +153,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
 
-    let derivativeMatrix = CodegenOMSIC_Equations.generateDerivativeFile(matrix, FileNamePrefix, algSystem.index)
+    let derivativeMatrix = generateDerivativeFile(matrix, FileNamePrefix, algSystem.index)
     let () = textFile(derivativeMatrix, FileNamePrefix+"_sim_derMat_"+algSystem.algSysIndex+".c")
 
   <<
@@ -200,6 +200,48 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   >>
   /* leave a newline at the end of file to get rid of the warning */
 end generateOmsiAlgSystemCode;
+
+
+template generateDerivativeFile (Option<DerivativeMatrix> matrix, String modelName, String index)
+"generates c code for derivative matrix files"
+::=
+  let includes = ""
+  let body = CodegenOMSIC_Equations.generateDerivativeMatrix(matrix, modelName, index)
+  let &initalizationCodeCol = buffer ""
+
+  let initalizationCode = (match matrix
+    case SOME(derMat as DERIVATIVE_MATRIX(__)) then
+    let initalizationCodeCol = (derMat.columns |> column =>
+      <<
+      <%generateInitalizationOMSIFunction(column, 'derivativeMatFunc<%index%>', modelName)%>
+      >>
+    ;separator="\n\n")
+    <<
+    <%initalizationCodeCol%>
+    >>
+  )
+
+  <<
+  /* derivative matrix code for algebraic system <%index%>*/
+  <%includes%>
+
+  #if defined(__cplusplus)
+  extern "C" {
+  #endif
+
+  /* Instantiation and initalization */
+  <%initalizationCode%>
+
+  /* derivative matrix evaluation */
+  <%body%>
+
+  #if defined(__cplusplus)
+  }
+  #endif
+  <%\n%>
+  >>
+  /* leave a newline at the end of file to get rid of the warning */
+end generateDerivativeFile;
 
 
 template generateInitalizationAlgSystem (SimEqSystem equationSystem, String FileNamePrefix)
@@ -298,6 +340,8 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
 ::=
   match omsiFunction
   case func as OMSI_FUNCTION(__) then
+    let evaluationTarget = FileNamePrefix+"_allEqns"
+
     <<
     omsi_status <%FileNamePrefix%>_initialize_<%functionName%>_OMSIFunc (omsi_function_t* omsi_function) {
       omsi_function->n_algebraic_system = <%nAlgebraicSystems%>
@@ -325,16 +369,6 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
       else
         'omsi_function->input_vars_indices = NULL;'
       %>
-      <%if listLength(innerVars) then
-        <<omsi_function->inner_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(innerVars)%>, sizeOf(omsi_index_type));
-        if (!omsi_function->inner_vars_indices) {
-          /* ToDo: Log error */
-          return omsi_error;
-        }
-        >>
-      else
-        'omsi_function->inner_vars_indices = NULL;'
-      %>
       <%if listLength(outputVars) then
         <<omsi_function->output_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(outputVars)%>, sizeOf(omsi_index_type));
         if (!omsi_function->output_vars_indices) {
@@ -347,12 +381,10 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
       /* fill omsi_index_type indices */
       <%generateOmsiIndexTypeInitialization(inputVars, "omsi_function->input_vars_indices", "sim_data->model_vars_and_params", "omsi_function->input_vars_indices")%>
       <%if listLength(inputVars) then "\n"%>
-      <%generateOmsiIndexTypeInitialization(innerVars, "omsi_function->inner_vars_indices", "sim_data->model_vars_and_params", "omsi_function->inner_vars_indices")%>
-      <%if listLength(innerVars) then "\n"%>
       <%generateOmsiIndexTypeInitialization(outputVars, "omsi_function->output_vars_indices", "sim_data->model_vars_and_params", "omsi_function->output_vars_indices")%>
 
       /* set pointer for evaluation function */
-      omsi_function->evaluate = <%FileNamePrefix%>_allEqns;
+      omsi_function->evaluate = <%evaluationTarget%>;
 
       return omsi_ok;
     }

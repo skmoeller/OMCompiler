@@ -185,34 +185,6 @@ template generateMatrixColumnInitialization(OMSIFunction column)
 end generateMatrixColumnInitialization;
 
 
-template generateDerivativeFile (Option<DerivativeMatrix> matrix, String modelName, String index)
-"generates c code for derivative matrix files"
-::=
-  let includes = ""
-  let body = generateDerivativeMatrix(matrix, modelName, index)
-  <<
-  /* derivative matrix code for algebraic system <%index%>*/
-  <%includes%>
-
-  #if defined(__cplusplus)
-  extern "C" {
-  #endif
-
-  /* Instantiation and initalization */
-
-  /* derivative matrix evaluation */
-  <%body%>
-
-  #if defined(__cplusplus)
-  }
-  #endif
-  <%\n%>
-  >>
-  /* leave a newline at the end of file to get rid of the warning */
-end generateDerivativeFile;
-
-
-
 template generateDerivativeMatrix(Option<DerivativeMatrix> matrix, String modelName, String index)
 "generates equations for derivative matrix"
 ::=
