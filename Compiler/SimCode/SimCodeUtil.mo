@@ -3958,7 +3958,11 @@ algorithm
 
           //TODO: fix dlowvarToSimvar by romving Variables, they are not needed any more
           newSimVar := dlowvarToSimvar(var, NONE(), BackendVariable.emptyVars(0));
-          if debug then dumpVarLst({newSimVar},"newSimVar"); end if;
+          if debug then
+            print("generateSingleEquation:\n");
+            dumpSimEqSystemLst(tmpSimEqLst, "\n");
+            dumpVarLst({newSimVar},"newSimVar");
+          end if;
 
           // add der(newSimVar) to outputVars if newSimVar is state
           if BackendVariable.isStateVar(var) then
@@ -4029,7 +4033,6 @@ protected function fillLocalHashTable
   output HashTableCrefSimVar.HashTable hashTable;
 protected
   Integer HTsize;
-  Boolean debug = false;
 algorithm
   // generate empty hashTable
   HTsize := max(1013, Util.nextPrime(numberOfElements*2));   // chose big enough prime for hash table
@@ -4040,10 +4043,6 @@ algorithm
     hashTable := appendCrefToSimVarHT(simVarList, hashTable);
   end for;
 
-  if debug then
-    print("local hash table:\n");
-    BaseHashTable.dumpHashTableStatistics(hashTable);
-  end if;
 end fillLocalHashTable;
 
 
@@ -5001,151 +5000,157 @@ algorithm
     Option<SimCode.DerivativeMatrix> outRes;
     SimCode.OMSIFunction omsiJacFunction;
 
-    case (BackendDAE.EMPTY_JACOBIAN(), _) then (NONE(), iuniqueEqIndex);
+  case (BackendDAE.EMPTY_JACOBIAN(), _) then (NONE(), iuniqueEqIndex);
 
-    case (BackendDAE.FULL_JACOBIAN(_), _) then (NONE(), iuniqueEqIndex);
+  case (BackendDAE.FULL_JACOBIAN(_), _) then (NONE(), iuniqueEqIndex);
 
-    // translate only sparcity pattern
-    case (BackendDAE.GENERIC_JACOBIAN(NONE(),pattern as (sparsepatternComRefs, sparsepatternComRefsT,
-                                             (independentComRefs, dependentVarsComRefs), _),
-                                             sparseColoring), _)
-      equation
-        if Flags.isSet(Flags.JAC_DUMP2) then
-          print("create sparse pattern for algebraic loop time: " + realString(clock()) + "\n");
-          BackendDump.dumpSparsityPattern(pattern, "---+++ SparsePattern +++---");
-        end if;
-        seedVars = list(makeTmpRealSimCodeVar(cr, BackendDAE.SEED_VAR()) for cr in independentComRefs);
-        indexVars = list(makeTmpRealSimCodeVar(cr, BackendDAE.VARIABLE()) for cr in dependentVarsComRefs);
+  // translate only sparcity pattern
+  case (BackendDAE.GENERIC_JACOBIAN(NONE(),pattern as (sparsepatternComRefs, sparsepatternComRefsT,
+                                           (independentComRefs, dependentVarsComRefs), _),
+                                           sparseColoring), _)
+    equation
+      if Flags.isSet(Flags.JAC_DUMP2) then
+        print("create sparse pattern for algebraic loop time: " + realString(clock()) + "\n");
+        BackendDump.dumpSparsityPattern(pattern, "---+++ SparsePattern +++---");
+      end if;
+      seedVars = list(makeTmpRealSimCodeVar(cr, BackendDAE.SEED_VAR()) for cr in independentComRefs);
+      indexVars = list(makeTmpRealSimCodeVar(cr, BackendDAE.VARIABLE()) for cr in dependentVarsComRefs);
 
-        (seedVars, index) = rewriteIndex(seedVars, 0);   // ToDo: why start twice at zero?
-        //indexVars = rewriteIndex(indexVars, 0);
-        (indexVars, index) = rewriteIndex(indexVars, index);
-        if Flags.isSet(Flags.JAC_DUMP2) then
-          print("\n---+++ seedVars variables +++---\n");
-          print(Tpl.tplString(SimCodeDump.dumpVarsShort, seedVars));
-          print("\n---+++ indexVars variables +++---\n");
-          print(Tpl.tplString(SimCodeDump.dumpVarsShort, indexVars));
-        end if;
-        //sort sparse pattern
-        varsSeedIndex = listAppend(seedVars, indexVars);
-        //sort sparse pattern
-        sparseInts = sortSparsePattern(varsSeedIndex, sparsepatternComRefs, false);
-        sparseIntsT = sortSparsePattern(varsSeedIndex, sparsepatternComRefsT, false);
+      (seedVars, index) = rewriteIndex(seedVars, 0);   // ToDo: why start twice at zero?
+      //indexVars = rewriteIndex(indexVars, 0);
+      (indexVars, index) = rewriteIndex(indexVars, index);
+      if Flags.isSet(Flags.JAC_DUMP2) then
+        print("\n---+++ seedVars variables +++---\n");
+        print(Tpl.tplString(SimCodeDump.dumpVarsShort, seedVars));
+        print("\n---+++ indexVars variables +++---\n");
+        print(Tpl.tplString(SimCodeDump.dumpVarsShort, indexVars));
+      end if;
+      //sort sparse pattern
+      varsSeedIndex = listAppend(seedVars, indexVars);
+      //sort sparse pattern
+      sparseInts = sortSparsePattern(varsSeedIndex, sparsepatternComRefs, false);
+      sparseIntsT = sortSparsePattern(varsSeedIndex, sparsepatternComRefsT, false);
 
-        // set sparse pattern
-        coloring = sortColoring(seedVars, sparseColoring);
-        maxColor = listLength(sparseColoring);
+      // set sparse pattern
+      coloring = sortColoring(seedVars, sparseColoring);
+      maxColor = listLength(sparseColoring);
 
-        if Flags.isSet(Flags.JAC_DUMP2) then
-          print("created sparse pattern for algebraic loop time: " + realString(clock()) + "\n");
-        end if;
+      if Flags.isSet(Flags.JAC_DUMP2) then
+        print("created sparse pattern for algebraic loop time: " + realString(clock()) + "\n");
+      end if;
 
-      then (SOME(SimCode.DERIVATIVE_MATRIX({}, "", sparseInts, sparseIntsT, coloring, maxColor)), iuniqueEqIndex);
+    then (SOME(SimCode.DERIVATIVE_MATRIX({}, "", sparseInts, sparseIntsT, coloring, maxColor)), iuniqueEqIndex);
 
-    // translate omsi_function and sparsity pattern
-    case (BackendDAE.GENERIC_JACOBIAN(SOME((BackendDAE.DAE(eqs={syst as BackendDAE.EQSYSTEM(matching=BackendDAE.MATCHING(comps=comps))},
-                                    shared=shared), name,
-                                    independentVarsLst, residualVarsLst, dependentVarsLst)),
-                                      (sparsepatternComRefs, sparsepatternComRefsT, (_, _), _),
-                                      sparseColoring), _)
-      equation
-        if Flags.isSet(Flags.JAC_DUMP2) then
-          print("analytical Jacobians -> creating SimCode equations for Matrix " + name + " time: " + realString(clock()) + "\n");
-        end if;
-        // generate also discrete equations, they might be introduced by wrapFunctionCalls
+  // translate omsi_function and sparsity pattern
+  case (BackendDAE.GENERIC_JACOBIAN(SOME((BackendDAE.DAE(eqs={syst as BackendDAE.EQSYSTEM(matching=BackendDAE.MATCHING(comps=comps))},
+                                  shared=shared), name,
+                                  independentVarsLst, residualVarsLst, dependentVarsLst)),
+                                    (sparsepatternComRefs, sparsepatternComRefsT, (_, _), _),
+                                    sparseColoring), _)
+    equation
+      if Flags.isSet(Flags.JAC_DUMP2) then
+        print("analytical Jacobians -> creating SimCode equations for Matrix " + name + " time: " + realString(clock()) + "\n");
+      end if;
+      // generate also discrete equations, they might be introduced by wrapFunctionCalls
 
-        (omsiJacFunction, uniqueEqIndex) = generateEquationsForComponents(comps, syst, shared, iuniqueEqIndex);
-        
-        if debug then
-          dumpOMSIFunc(omsiJacFunction, "\nJacobian OMSIFunction");
-        end if;
+      (omsiJacFunction, uniqueEqIndex) = generateEquationsForComponents(comps, syst, shared, iuniqueEqIndex);
 
-        if Flags.isSet(Flags.JAC_DUMP2) then
-          print("analytical Jacobians -> created all SimCode equations for Matrix " + name +  " time: " + realString(clock()) + "\n");
-        end if;
+      if Flags.isSet(Flags.JAC_DUMP2) then
+        print("analytical Jacobians -> created all SimCode equations for Matrix " + name +  " time: " + realString(clock()) + "\n");
+      end if;
 
-        // create SimCodeVar.SimVars from jacobian vars
-        dummyVar = ("dummyVar" + name);
-        x = DAE.CREF_IDENT(dummyVar, DAE.T_REAL_DEFAULT, {});
-        emptyVars =  BackendVariable.emptyVars();
+      // create SimCodeVar.SimVars from jacobian vars
+      dummyVar = ("dummyVar" + name);
+      x = DAE.CREF_IDENT(dummyVar, DAE.T_REAL_DEFAULT, {});
+      emptyVars =  BackendVariable.emptyVars();
 
-        residualVars = BackendVariable.listVar1(residualVarsLst);
-        independentVars = BackendVariable.listVar1(independentVarsLst);
+      residualVars = BackendVariable.listVar1(residualVarsLst);
+      independentVars = BackendVariable.listVar1(independentVarsLst);
 
-        // get cse and other aux vars > columnVars
-        ((allVars, _)) = BackendVariable.traverseBackendDAEVars(syst.orderedVars, getFurtherVars , ({}, x));
-        systvars = BackendVariable.listVar1(allVars);
-        ((columnVars, _)) =  BackendVariable.traverseBackendDAEVars(systvars, traversingdlowvarToSimvar, ({}, emptyVars));
-        columnVars = List.map1(columnVars, setSimVarKind, BackendDAE.JAC_DIFF_VAR());
-        columnVars = List.map1(columnVars, setSimVarMatrixName, SOME(name));
-        innerVars = rewriteIndex(columnVars, 0);
+      // get cse and other aux vars > columnVars
+      ((allVars, _)) = BackendVariable.traverseBackendDAEVars(syst.orderedVars, getFurtherVars , ({}, x));
+      systvars = BackendVariable.listVar1(allVars);
+      ((columnVars, _)) =  BackendVariable.traverseBackendDAEVars(systvars, traversingdlowvarToSimvar, ({}, emptyVars));
+      columnVars = List.map1(columnVars, setSimVarKind, BackendDAE.JAC_DIFF_VAR());
+      columnVars = List.map1(columnVars, setSimVarMatrixName, SOME(name));
+      innerVars = rewriteIndex(columnVars, 0);
 
-        (innerVars, columnVars) = createJacSimVarsColumn(dependentVarsLst, x, residualVars, 0, listLength(innerVars), name, innerVars, {});
+      (innerVars, columnVars) = createJacSimVarsColumn(dependentVarsLst, x, residualVars, 0, listLength(innerVars), name, innerVars, {});
 
-        if Flags.isSet(Flags.JAC_DUMP2) then
-          print("\n---+++ all column variables +++---\n");
-          print(Tpl.tplString(SimCodeDump.dumpVarsShort, columnVars));
-          print("analytical Jacobians -> create all SimCode vars for Matrix " + name + " time: " + realString(clock()) + "\n");
-        end if;
+      if Flags.isSet(Flags.JAC_DUMP2) then
+        print("\n---+++ all column variables +++---\n");
+        print(Tpl.tplString(SimCodeDump.dumpVarsShort, columnVars));
+        print("analytical Jacobians -> create all SimCode vars for Matrix " + name + " time: " + realString(clock()) + "\n");
+      end if;
 
-        ((seedVars, _)) =  BackendVariable.traverseBackendDAEVars(independentVars, traversingdlowvarToSimvar, ({}, emptyVars));
-        ((indexVars, _)) =  BackendVariable.traverseBackendDAEVars(residualVars, traversingdlowvarToSimvar, ({}, emptyVars));
-        seedVars = rewriteIndex(listReverse(seedVars), 0);
-        indexVars = rewriteIndex(listReverse(indexVars), 0);
+      ((seedVars, _)) =  BackendVariable.traverseBackendDAEVars(independentVars, traversingdlowvarToSimvar, ({}, emptyVars));
+      ((indexVars, _)) =  BackendVariable.traverseBackendDAEVars(residualVars, traversingdlowvarToSimvar, ({}, emptyVars));
+      seedVars = rewriteIndex(listReverse(seedVars), 0);
+      indexVars = rewriteIndex(listReverse(indexVars), 0);
 
-        if Flags.isSet(Flags.JAC_DUMP2) then
-          print("\n---+++ seedVars variables +++---\n");
-          print(Tpl.tplString(SimCodeDump.dumpVarsShort, seedVars));
-          print("\n---+++ indexVars variables +++---\n");
-          print(Tpl.tplString(SimCodeDump.dumpVarsShort, indexVars));
-        end if;
-        //sort sparse pattern
-        varsSeedIndex = listAppend(seedVars, indexVars);
-        sparseInts = sortSparsePattern(varsSeedIndex, sparsepatternComRefs, false);
-        sparseIntsT = sortSparsePattern(varsSeedIndex, sparsepatternComRefsT, false);
+      if Flags.isSet(Flags.JAC_DUMP2) then
+        print("\n---+++ seedVars variables +++---\n");
+        print(Tpl.tplString(SimCodeDump.dumpVarsShort, seedVars));
+        print("\n---+++ indexVars variables +++---\n");
+        print(Tpl.tplString(SimCodeDump.dumpVarsShort, indexVars));
+      end if;
+      //sort sparse pattern
+      varsSeedIndex = listAppend(seedVars, indexVars);
+      sparseInts = sortSparsePattern(varsSeedIndex, sparsepatternComRefs, false);
+      sparseIntsT = sortSparsePattern(varsSeedIndex, sparsepatternComRefsT, false);
 
-        // set sparse pattern
-        coloring = sortColoring(varsSeedIndex, sparseColoring);
-        maxColor = listLength(sparseColoring);
+      // set sparse pattern
+      coloring = sortColoring(varsSeedIndex, sparseColoring);
+      maxColor = listLength(sparseColoring);
 
-        // create seed vars
-        seedVars = replaceSeedVarsName(seedVars, name);
-        seedVars = List.map1(seedVars, setSimVarKind, BackendDAE.SEED_VAR());
-        seedVars = List.map1(seedVars, setSimVarMatrixName, SOME(name));
+      // create seed vars
+      seedVars = replaceSeedVarsName(seedVars, name);
+      seedVars = List.map1(seedVars, setSimVarKind, BackendDAE.SEED_VAR());
+      seedVars = List.map1(seedVars, setSimVarMatrixName, SOME(name));
 
-        if Flags.isSet(Flags.JAC_DUMP2) then
-          print("analytical Jacobians -> transformed to SimCode for Matrix " + name + " time: " + realString(clock()) + "\n");
-        end if;
+      if Flags.isSet(Flags.JAC_DUMP2) then
+        print("analytical Jacobians -> transformed to SimCode for Matrix " + name + " time: " + realString(clock()) + "\n");
+      end if;
 
-        // ToDo: rewrite index
+      //rewrite index
+      (innerVars, index) = rewriteIndex(innerVars, 0);
+      (indexVars, index) = rewriteIndex(indexVars, index);
+      (seedVars, index) = rewriteIndex(seedVars, index);    // count local inputVars always last
 
-        // create hash table
-        nAllVars = (listLength(seedVars)+listLength(columnVars)+listLength(indexVars));
-        hashTable = fillLocalHashTable({seedVars, columnVars, indexVars}, nAllVars);
+      // create hash table
+      nAllVars = (listLength(seedVars)+listLength(innerVars)+listLength(indexVars));
+      hashTable = fillLocalHashTable({seedVars, innerVars, indexVars}, nAllVars);
 
-        // rewrite omsiJacFunction variables
-        omsiJacFunction.innerVars = innerVars;
-        omsiJacFunction.inputVars = seedVars;
-        omsiJacFunction.outputVars = indexVars;
-        omsiJacFunction.context = SimCodeFunction.JACOBIAN_CONTEXT(SOME(hashTable));
+      // rewrite omsiJacFunction variables
+      omsiJacFunction.inputVars = seedVars;
+      omsiJacFunction.innerVars = innerVars;
+      omsiJacFunction.outputVars = indexVars;
+      omsiJacFunction.nAllVars = nAllVars;
+      omsiJacFunction.context = SimCodeFunction.JACOBIAN_CONTEXT(SOME(hashTable));
 
-        outRes = SOME(SimCode.DERIVATIVE_MATRIX(
-          columns = {omsiJacFunction},
-          matrixName = name,
-          sparsity = sparseInts,
-          sparsityT = sparseIntsT,
-          coloredCols = coloring,
-          maxColorCols = maxColor));
+      if debug then
+        dumpOMSIFunc(omsiJacFunction, "\nJacobian OMSIFunction");
+        print("\nLocal jacobian hash table:\n");
+        BaseHashTable.dumpHashTableStatistics(hashTable);
+      end if;
 
-        then (outRes, uniqueEqIndex);
+      outRes = SOME(SimCode.DERIVATIVE_MATRIX(
+        columns = {omsiJacFunction},
+        matrixName = name,
+        sparsity = sparseInts,
+        sparsityT = sparseIntsT,
+        coloredCols = coloring,
+        maxColorCols = maxColor));
 
-    else
-      equation
-        if Flags.isSet(Flags.JAC_DUMP) then
-          errorMessage = "function createSymbolicSimulationJacobian failed.";
-          Error.addInternalError(errorMessage, sourceInfo());
-        end if;
-      then (NONE(), iuniqueEqIndex);
+      then (outRes, uniqueEqIndex);
+
+  else
+    equation
+      if Flags.isSet(Flags.JAC_DUMP) then
+        errorMessage = "function createSymbolicSimulationJacobian failed.";
+        Error.addInternalError(errorMessage, sourceInfo());
+      end if;
+    then (NONE(), iuniqueEqIndex);
 
   end matchcontinue;
 end createDerivativeMatrix;
@@ -12741,7 +12746,7 @@ algorithm
   print(head+"\n");
   try
     print("equations:\n");
-    print("----------------------");
+    print("----------------------\n");
     dumpSimEqSystemLst(omsiFunc.equations,"\n");
     dumpVarLst(omsiFunc.inputVars,"inputVars");
     dumpVarLst(omsiFunc.innerVars,"innerVars");
