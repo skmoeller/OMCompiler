@@ -169,6 +169,7 @@ typedef struct omsi_values {
     omsi_real*  reals;      /* array of omsi_real */
     omsi_int*   ints;       /* array of omsi_int */
     omsi_bool*  bools;      /* array of omsi_bool */
+    void*       externs;    /* array of pointer to extern objects */
     omsi_real   time_value; /* current system time */
 
     omsi_unsigned_int   n_reals;    /* length of array reals */
