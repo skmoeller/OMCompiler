@@ -5113,18 +5113,18 @@ algorithm
       end if;
 
       //rewrite index
-      (innerVars, index) = rewriteIndex(innerVars, 0);
-      (indexVars, index) = rewriteIndex(indexVars, index);
+      (columnVars, index) = rewriteIndex(columnVars, 0);
+      (innerVars, index) = rewriteIndex(innerVars, index);
       (seedVars, index) = rewriteIndex(seedVars, index);    // count local inputVars always last
 
       // create hash table
       nAllVars = (listLength(seedVars)+listLength(innerVars)+listLength(indexVars));
-      hashTable = fillLocalHashTable({seedVars, innerVars, indexVars}, nAllVars);
+      hashTable = fillLocalHashTable({seedVars, innerVars, columnVars}, nAllVars);
 
       // rewrite omsiJacFunction variables
       omsiJacFunction.inputVars = seedVars;
       omsiJacFunction.innerVars = innerVars;
-      omsiJacFunction.outputVars = indexVars;
+      omsiJacFunction.outputVars = columnVars;
       omsiJacFunction.nAllVars = nAllVars;
       omsiJacFunction.context = SimCodeFunction.JACOBIAN_CONTEXT(SOME(hashTable));
 
