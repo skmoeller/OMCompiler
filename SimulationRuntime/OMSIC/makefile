@@ -38,9 +38,9 @@ endif
 .PHONY: clean clean_o_files
 
 all:
-	make -C src/omsu libomsu
-#	make -C src/solver libomsisolver
-	make -C testsuite test
+#	make -C src/omsu libomsu
+	make -C src/solver libomsisolver
+#	make -C testsuite test
 
 clean:
 	make -C src/omsu clean_omsu_all
