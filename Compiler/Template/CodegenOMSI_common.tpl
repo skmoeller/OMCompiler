@@ -312,22 +312,25 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
 
     let &stringName = buffer""
     let &stringIndex = buffer ""
+    let &stringVarKind = buffer ""
     let _ = (match variable
       case var as SIMVAR(varKind=JAC_VAR(__))
       case var as SIMVAR(varKind=JAC_DIFF_VAR(__))
       case var as SIMVAR(varKind=SEED_VAR(__)) then
       let &stringName += '<%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(var.name))%>'
-      let &stringIndex += "-3"
+      let &stringIndex += var.index
+      let &stringVarKind += CodegenUtil.variabilityString(var.varKind)
       <<>>
       case var as SIMVAR(__) then
       let &stringName += '<%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(var.name))%>'
       let &stringIndex += getValueReference(var, getSimCode(), false)
+      let &stringVarKind += CodegenUtil.variabilityString(var.varKind)
       <<>>
     )
 
     <<
     <%omsiFuncName%>[<%i0%>]->type = <%stringType%>;
-    <%omsiFuncName%>[<%i0%>]->index = <%stringIndex%>;    /* <%stringName%> */
+    <%omsiFuncName%>[<%i0%>]->index = <%stringIndex%>;    /* <%stringName%> <%stringVarKind%>*/
     >>
   ;separator="\n")
 
