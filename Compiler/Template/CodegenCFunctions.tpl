@@ -4082,7 +4082,8 @@ template contextCref(ComponentRef cr, Context context, Text &auxFunction)
       >>
     else "_" + System.unquoteIdentifier(crefStr(cr))
     )
-  case OMSI_CONTEXT(__) then
+  case OMSI_CONTEXT(__)
+  case JACOBIAN_CONTEXT(hashTable=SOME(hashTable))then
     crefOMSI(cr, context)
   else cref(cr)
 end contextCref;
