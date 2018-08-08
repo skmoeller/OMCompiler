@@ -39,15 +39,7 @@
 #include <float.h>
 
 
-
-/* macros */
-#define OMSI_DBL_MAX DBL_MAX
-#define OMSI_INT_MAX INT_MAX
-
-
-/* some stuff from simulation_input_xml.c
- * ToDo: implement for new data struct
- */
+/* typedefs for structures */
 typedef struct hash_string_string {
   omsi_string id;
   omsi_string val;

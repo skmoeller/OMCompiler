@@ -31,6 +31,9 @@
 #ifndef _OMSI_H
 #define _OMSI_H
 
+#include <limits.h>
+#include <float.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -75,6 +78,11 @@ typedef int                 omsi_bool;
 typedef char                omsi_char;
 typedef const omsi_char*    omsi_string;
 #endif
+
+/* macros */
+#define OMSI_DBL_MAX DBL_MAX
+#define OMSI_INT_MAX INT_MAX
+
 
 /* forward some structs */
 typedef struct omsi_function_t omsi_function_t;
@@ -326,7 +334,7 @@ typedef struct model_variable_info_t {
     omsi_int        id;                     /* unique value reference from *_init.xml */
     omsi_string     name;                   /* name of variable|parameter|alias */
     omsi_string     comment;                /* variable description  or modelica comment*/
-    omsi_index_type type_index;	            /* tuple of data_type and index in sim_data->model_vars_and_params->..., if isAlias=true then index from alias variable */
+    omsi_index_type type_index;             /* tuple of data_type and index in sim_data->model_vars_and_params->..., if isAlias=true then index from alias variable */
     void*           modelica_attributes;    /* pointer to modelica attributes  ( real_var_attribute | int_var_attribute | bool_var_attribute | string_var_attribute ) */
     omsi_bool       isAlias;                /* true if alias, else false */
     omsi_int        negate;                 /* if negated -1 else 1 */
