@@ -143,7 +143,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
 }
 
 /*
- * Informs the Openmodelica Simulation Unit to enter the initialization mode.
+ * Informs the OpenModelica Simulation Unit to enter the initialization mode.
  */
 omsi_status omsi_enter_initialization_mode(void* c) {
     osu_t* OSU = (osu_t *)c;
@@ -153,7 +153,7 @@ omsi_status omsi_enter_initialization_mode(void* c) {
         return omsi_error;
     }
 
-    // ToDo: Do we need to do some stuff here? Maybee allocate memory for OSU->osu_data->sim_data->initialization and fill it.
+    // ToDo: Do we need to do some stuff here? Maybe allocate memory for OSU->osu_data->sim_data->initialization and fill it.
 
     OSU->state = modelInitializationMode;
     FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2EnterInitializationMode: succeed", NULL)
