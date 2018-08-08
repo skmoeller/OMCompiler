@@ -69,7 +69,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let &evaluationCode = buffer ""
   let &functionCall = buffer ""
 
-  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, &includes, &evaluationCode, &functionCall, "")
+  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, "simulation", &includes, &evaluationCode, &functionCall, "")
   let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "simulation", FileNamePrefix)
 
   <<
@@ -88,7 +88,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
 
 
   /* Equations evaluation */
-  omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation){
+  omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params){
 
     <%functionCall%>
 
@@ -104,7 +104,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
 end generateOmsiFunctionCode;
 
 
-template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix, Text &includes, Text &evaluationCode, Text &functionCall, Text &residualCall)
+template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix, String funcCallArgName, Text &includes, Text &evaluationCode, Text &functionCall, Text &residualCall)
 ""
 ::=
   match omsiFunction
@@ -113,15 +113,15 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
       match eqsystem
       case SES_SIMPLE_ASSIGN(__) then
         let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, context) +"\n"
-        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation, model_vars_and_params") +"\n"
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '<%funcCallArgName%>, model_vars_and_params') +"\n"
         <<>>
       case SES_RESIDUAL(__) then
         let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, context) +"\n"
-        let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, 'this_function, res[i++]') +"\n"
+        let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '<%funcCallArgName%>, model_vars_and_params, res[i++]') +"\n"
         <<>>
       case algSystem as SES_ALGEBRAIC_SYSTEM(__) then
         let &includes += "#include \""+ FileNamePrefix + "_algSyst_" + index + ".h\"\n"
-        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, "simulation, model_vars_and_params") +"\n"
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '<%funcCallArgName%>->algebraic_system_t[<%algSysIndex%>], model_vars_and_params, simulation->function_vars') +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
         let () = textFile(content, FileNamePrefix+"_sim_algSyst_"+ algSystem.algSysIndex + ".c")
@@ -148,7 +148,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
 
   match equationSystem
   case algSystem as SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
-    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, &includes, &evaluationCode, &functionCall, &residualCall)
+    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, "this_algSyst", &includes, &evaluationCode, &functionCall, &residualCall)
     let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix)
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
@@ -174,6 +174,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
 
   void <%FileNamePrefix%>_resFunction_<%index%> (omsi_function* this_function, omsi_real* res) {
     omsi_unsigned_int i=0;
+    <%functionCall%>
     <%residualCall%>
   }
 
@@ -181,12 +182,12 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   /*
   <%equationInfos%>
   */
-  omsi_status <%FileNamePrefix%>_algSystFunction_<%index%>(omsi_function_t* simulation, omsi_values* model_vars_and_params){
-
-    /* evaluate assignments */
-    <%functionCall%>
+  omsi_status <%FileNamePrefix%>_algSystFunction_<%index%>(omsi_algebraic_system_t* this_alg_system,
+                            const omsi_values* model_vars_and_params,
+                            omsi_values* out_function_vars){
 
     /* call API function something */
+    solveLapack(this_alg_system, model_vars_and_params, omsi_callback_functions);
 
       /* ToDo: Add crazy stuff here */
 
