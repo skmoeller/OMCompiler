@@ -198,6 +198,9 @@ void omsu_print_omsi_t (omsi_t*     omsi,
 
     /* print experiment_data */
     omsu_print_experiment(omsi->experiment, nextIndent);
+
+    /* free memory */
+    global_freeMemory(nextIndent);
 }
 
 
@@ -259,20 +262,21 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
     omsi_unsigned_int i, size;
     omsi_char* nextnextIndent;
 
-    /* compute next indentation */
-    nextnextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+4, sizeof(omsi_char));
-    strcat(nextnextIndent, "| | ");
+    printf("%smodel_vars_info_t:\n", indent);
 
     if (model_data==NULL) {
+        printf("%s| No model_data\n", indent);
         return omsi_error;
     }
 
-    printf("%smodel_vars_info_t:\n", indent);
-
     if (model_data->model_vars_info_t==NULL) {
-        printf("%s| No data\n", indent);
+        printf("%s| No model_vars_info_t\n", indent);
         return omsi_warning;
     }
+
+    /* compute next indentation */
+    nextnextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+4, sizeof(omsi_char));
+    strcat(nextnextIndent, "| | ");
 
     /* print variables */
     size = model_data->n_states + model_data->n_derivatives
@@ -308,6 +312,8 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
         printf("| %s\n", indent);
     }
 
+    /* free memory */
+    global_freeMemory(nextnextIndent);
     return omsi_ok;
 }
 
@@ -354,9 +360,13 @@ omsi_status omsu_print_modelica_attributes (void*               modelica_attribu
         printf("| %sstart:\t\t\t%s\n", indent, attribute_string->start);
         break;
     default:
+        /* free memory */
+        global_freeMemory(nextIndent);
         return omsi_error;
     }
 
+    /* free memory */
+    global_freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -480,11 +490,138 @@ void omsu_print_experiment (omsi_experiment_t*  experiment,
  * Print all data in sim_data_t structure.
  * Indent is string with indentation in form of "| " strings or "".
  */
-void omsu_print_sim_data (sim_data_t* sim_data,
-                          omsi_string indent) {
+omsi_status omsu_print_sim_data (sim_data_t* sim_data,
+                                 omsi_string indent) {
+
+    omsi_char* nextIndent;
+
+    if (sim_data==NULL) {
+        printf("%sNo sim_data",indent);
+        return omsi_warning;
+    }
+
+    /* compute next indentation */
+    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    strcat(nextIndent, "| ");
+
 
     printf("%sstruct sim_data:\n", indent);
 
-    /* ToDo: print sim_data */
+    omsu_print_omsi_function_rec (sim_data->initialization, "initialization", nextIndent);
 
+    omsu_print_omsi_function_rec (sim_data->simulation, "simulation", nextIndent);
+
+    omsu_print_omsi_values(sim_data->model_vars_and_params, "model_vars_and_params", nextIndent);
+
+    omsu_print_omsi_values(sim_data->pre_vars, "pre_vars", nextIndent);
+
+
+
+    /* ToDo: print rest of sim_data */
+
+    /* free memory */
+    global_freeMemory(nextIndent);
+    return omsi_ok;
 }
+
+
+/*
+ * Print all data in omsi_function_t structure and its containing structures.
+ * Indent is string with indentation in form of "| " strings or "".
+ */
+omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
+                                          omsi_string      omsi_function_name,
+                                          omsi_string      indent) {
+
+    /* Variables */
+    omsi_unsigned_int i;
+    omsi_char* nextIndent;
+
+    if (omsi_function==NULL) {
+        printf("%sNo omsi_function_t %s",indent, omsi_function_name);
+        return omsi_warning;
+    }
+
+    /* compute next indentation */
+    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    strcat(nextIndent, "| ");
+
+    printf("%sn_algebraic_system:\t%u", indent, omsi_function->n_algebraic_system);
+    for (i=0; i<omsi_function->n_algebraic_system; i++) {
+        omsu_print_algebraic_system(&omsi_function->algebraic_system_t[i], nextIndent);
+    }
+    omsu_print_this_omsi_function (omsi_function, omsi_function_name, indent);
+
+    /* free memory */
+    global_freeMemory(nextIndent);
+    return omsi_ok;
+}
+
+
+/*
+ * Print all data in this omsi_function_t structure except algebraic systems.
+ * Indent is string with indentation in form of "| " strings or "".
+ */
+omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
+                                           omsi_string      omsi_function_name,
+                                           omsi_string      indent) {
+
+    /* Variables */
+    omsi_char* nextIndent;
+
+    if (omsi_function==NULL) {
+        printf("%sNo omsi_function_t %s",indent, omsi_function_name);
+        return omsi_warning;
+    }
+
+    /* compute next indentation */
+    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    strcat(nextIndent, "| ");
+
+    omsu_print_omsi_values(omsi_function->function_vars, "function_vars", indent);
+
+    printf("%sevaluate function pointer set:%s", indent, omsi_function->evaluate!=NULL? "true" : "false");
+
+    omsu_print_index_type(omsi_function->input_vars_indices, omsi_function->n_input_vars, nextIndent);
+    omsu_print_index_type(omsi_function->input_vars_indices, omsi_function->n_output_vars, nextIndent);
+
+    printf("%sn_input_vars:\t\t%i", indent, omsi_function->n_input_vars);
+    printf("%sn_inner_vars:\t\t%i", indent, omsi_function->n_inner_vars);
+    printf("%sn_output_vars:\t\t%i", indent, omsi_function->n_output_vars);
+
+    /* free memory */
+    global_freeMemory(nextIndent);
+    return omsi_ok;
+}
+
+
+omsi_status omsu_print_omsi_values (omsi_values*        omsi_values,
+                                    omsi_string         omsi_values_name,
+                                    omsi_string         indent) {
+
+    if (omsi_values==NULL) {
+        printf("%sNo omsi_values %s",indent, omsi_values_name);
+        return omsi_warning;
+    }
+
+    return omsi_ok;
+}
+
+
+omsi_status omsu_print_algebraic_system(omsi_algebraic_system_t*    algebraic_system_t,
+                                        omsi_string                 indent) {
+
+    return omsi_ok;
+}
+
+
+omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
+                                   omsi_unsigned_int    size,
+                                   omsi_string          indent) {
+
+    return omsi_ok;
+}
+
+
+
+
