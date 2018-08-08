@@ -32,7 +32,9 @@
 #define _SOLVERHELPER_H_
 
 #include "omsi.h"
-#include "omsi_eqns_system.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,11 +43,7 @@ extern "C" {
 omsi_status omsu_set_omsi_value (omsi_values*       vars,
                                  omsi_index_type**  targetPlaces,
                                  omsi_unsigned_int  numTargetPlaces,
-                                 void*              targetValue);
-
-omsi_status omsu_set_omsi_values (omsi_values*      vars,
-                                  omsi_index_type** targetPlaces,
-                                  omsi_values*      targetValues);
+                                 omsi_real          targetValue);
 
 omsi_values* save_omsi_values (const omsi_values*   vars,
                                omsi_index_type**    saveTarget,
@@ -53,6 +51,9 @@ omsi_values* save_omsi_values (const omsi_values*   vars,
                                omsi_unsigned_int    n_ints,
                                omsi_unsigned_int    n_bools);
 
+omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t*    algebraicSystem,
+                                        omsi_bool                   rowMajorOrder,
+                                        omsi_real*                  matrix);
 #ifdef __cplusplus
 }   /* end of extern "C" { */
 #endif

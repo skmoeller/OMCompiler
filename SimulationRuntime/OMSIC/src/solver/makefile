@@ -11,13 +11,15 @@ SOLVER_HDRS = $(OMSIC_INCLUDE)/solver/lapack.h $(OMSIC_INCLUDE)/solver/solver_he
 
 SOLVER_INCS = -I$(OMSIC_INCLUDE) -I$(OMSI_INCLUDE)
 
+
+.PHONY: clean_solver_all clean_solver_o $(SOLVER_OBJS)
+
+
 libomsisolver: $(SOLVER_OBJS)
-	$(CC) $(LDFLAGS) $(SOLVER_INCS) -o ../libomsuSolver.$(TARGET_LIB) $^ $(SOLVER_LIBS)
+	$(CC) $(LDFLAGS) $(SOLVER_INCS) -o ../libomsuSolver.$(TARGET_LIB) $^ $(SOLVER_LIB_DIR) $(SOLVER_LIBS)
 
 $(SOLVER_OBJS): $(SOLVER_SRCS) $(SOLVER_HDRS)
 	$(CC) $(CFLAGS) $(SOLVER_INCS) -c -o $@ $(@:%.o=%.c)
-
-.PHONY: clean_solver_all clean_solver_o
 
 clean_solver_all: clean_solver_o
 	rm -rf ../../lib/libomsuSolver.*

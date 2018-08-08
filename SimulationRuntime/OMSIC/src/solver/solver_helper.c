@@ -40,72 +40,43 @@ omsi_callback_free_memory       global_freeMemory;
 
 
 /*
+ * Sets first numTargetPlaces variables in vars to tragetValue.
+ *
  * Sets vars to targetValue for each place specified in targetPlaces.
  * numTargetPlaces tells length of array targetPlaces.
  */
 omsi_status omsu_set_omsi_value (omsi_values*       vars,
                                  omsi_index_type**  targetPlaces,       /* input: pointer to array of omsi_index_type */
                                  omsi_unsigned_int  numTargetPlaces,
-                                 void*              targetValue)        /* input of type omsi_int* or omsi_real* */
+                                 omsi_real          targetValue)        /* input of omsi_real*, gets typecasted for integers */
 {
     omsi_unsigned_int i;
-    omsi_unsigned_int mappedIndex;
+    omsi_unsigned_int j_real = 0, j_int = 0;
+
+    omsi_status status = omsi_ok;
 
     for(i=0; i<numTargetPlaces; i++) {
-        targetPlaces[i]->index = mappedIndex;
-
         switch (targetPlaces[i]->type) {
         case OMSI_TYPE_REAL:
-            vars->reals[mappedIndex] = targetValue;
+            vars->reals[j_real] = targetValue;
+            j_real++;
             break;
         case OMSI_TYPE_INTEGER:
-            vars->ints[mappedIndex] = targetValue;
+            vars->ints[j_int] = (omsi_int)targetValue;
+            j_int++;
+            if (abs(vars->ints[j_int]-targetValue)>1e-16) {
+                /* ToDo: Add warning: Set omsi_value of type omsi_int to non integer value. Result was typecastet. */
+                status = omsi_warning;
+            }
             break;
         default:
-            //ToDo: Add error case
+            /* ToDo: Add error case */
             return omsi_error;
         }
     }
-    return omsi_ok;
+    return status;
 }
 
-
-/*
- * Sets vars to targetValues for places specified in targetPlaces.
- * numTargetPlaces tells length of array targetPlaces respectively length of
- * array targetValues.
- */
-omsi_status omsu_set_omsi_values (omsi_values*      vars,
-                                  omsi_index_type** targetPlaces,   /* input: pointer to array of omsi_index_type */
-                                  omsi_values*      targetValues) {
-
-    omsi_unsigned_int i;
-    omsi_unsigned_int j1 = 0, j2 = 0;
-    omsi_unsigned_int mappedIndex;
-    omsi_unsigned_int numTargetPlaces;
-
-    numTargetPlaces = targetValues->n_reals + targetValues->n_ints
-                      + targetValues->n_bools;
-
-    for(i=0; i<numTargetPlaces; i++) {
-        targetPlaces[i]->index = mappedIndex;
-
-        switch (targetPlaces[i]->type) {
-        case OMSI_TYPE_REAL:
-            vars->reals[mappedIndex] = targetValues->reals[j1];
-            j1++;
-            break;
-        case OMSI_TYPE_INTEGER:
-            vars->ints[mappedIndex] = targetValues->ints[j2];
-            j2++;
-            break;
-        default:
-            //ToDo: Add error case
-            return omsi_error;
-        }
-    }
-    return omsi_ok;
-}
 
 /*
  * Copies in array saveTarget specified values from vars and saves them in
@@ -152,7 +123,7 @@ omsi_values* save_omsi_values (const omsi_values*   vars,
             j3++;
             break;
         default:
-            //ToDo: Add error case
+            /* ToDo: Add error case */
             global_freeMemory(savedVars);
             return NULL;
         }
@@ -160,8 +131,6 @@ omsi_values* save_omsi_values (const omsi_values*   vars,
 
     return savedVars;
 }
-
-
 
 
 /*
@@ -172,9 +141,9 @@ omsi_values* save_omsi_values (const omsi_values*   vars,
  * Use rowMajorOrder = true for e.g.
  * Use rowMajorOrder = false for e.g. LAPACK solver
  */
-omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t algebraicSystem,
-                                        omsi_bool               rowMajorOrder,
-                                        omsi_real*              matrix) {
+omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t*    algebraicSystem,
+                                        omsi_bool                   rowMajorOrder,
+                                        omsi_real*                  matrix) {
 
     omsi_unsigned_int dim = algebraicSystem->jacobian->n_output_vars;
     omsi_unsigned_int dim1, dim2;
@@ -184,7 +153,7 @@ omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t algebraicSystem,
     omsi_real* seedVector = (omsi_real*) global_allocateMemory(dim, sizeof(omsi_real));            /*seed vector, initialized with zeros */
 
     if (!tmpColumnVector || !seedVector) {
-        // ToDo: add error case out of memory
+        /* ToDo: add error case out of memory */
         return omsi_error;
     }
 
@@ -199,10 +168,10 @@ omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t algebraicSystem,
 
     for (i_column=0; i_column<dim; i_column++) {
         seedVector[i_column] = 1;       /* set seed vector for current row */
-        /* evaluate derivative matrix column wise */
+        /* evaluate derivative matrix column wise
         algebraicSystem->jacobian->evaluate(algebraicSystem->jacobian,
                                             seedVector,
-                                            tmpColumnVector);
+                                            tmpColumnVector);*/
         for (i_row=0; i_row<dim; i_row++) {
             matrix[i_row*dim1+i_column*dim2] = tmpColumnVector[i_row];
         }

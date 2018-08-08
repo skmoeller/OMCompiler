@@ -44,7 +44,9 @@ omsi_callback_free_memory       global_freeMemory;
  * equationSysteFunc is not updated.
  * If omsi_error is returned a critical error occurred.
  */
-omsi_status solveLapack(omsi_algebraic_system_t* linearSystem, omsi_callback_functions* callback_functions){
+omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
+                        const omsi_values*          read_only_vars_and_params,
+                        omsi_callback_functions*    callback_functions){
 
     /* variables */
     DATA_LAPACK* lapack_data;
@@ -55,7 +57,7 @@ omsi_status solveLapack(omsi_algebraic_system_t* linearSystem, omsi_callback_fun
     global_freeMemory = callback_functions->freeMemory;
 
     /* allocate memory and copy informations into lapack_data */
-    lapack_data = set_lapack_data((const omsi_algebraic_system_t*) linearSystem);
+    lapack_data = set_lapack_data((const omsi_algebraic_system_t*) linearSystem, read_only_vars_and_params);
     if (lapack_data == NULL) {
         return omsi_error;
     }
@@ -87,7 +89,7 @@ omsi_status solveLapack(omsi_algebraic_system_t* linearSystem, omsi_callback_fun
     }
 
     /* check if solution is correct */
-    status = eval_residual(lapack_data, linearSystem);
+    status = eval_residual(lapack_data, linearSystem, read_only_vars_and_params);
     if (status == omsi_ok) {
         /* copy solution into equationSystemFunc */
 
@@ -111,7 +113,8 @@ omsi_status solveLapack(omsi_algebraic_system_t* linearSystem, omsi_callback_fun
  * Input:   equationSystemFunc
  * Output:  pointer to lapack_data, if pointer=NULL an error occurred
  */
-DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system) {
+DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system,
+                             const omsi_values*             read_only_vars_and_params) {
 
     DATA_LAPACK* lapack_data = (DATA_LAPACK*) global_allocateMemory(1, sizeof(DATA_LAPACK));
     if (!lapack_data) {
@@ -134,7 +137,7 @@ DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system) {
     }
 
     set_lapack_a(lapack_data, linear_system);
-    set_lapack_b(lapack_data, linear_system);
+    set_lapack_b(lapack_data, linear_system, read_only_vars_and_params);
 
     return lapack_data;
 }
@@ -143,7 +146,8 @@ DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system) {
  * Read data from equationSystemFunc and
  * set matrix A in row-major order.
  */
-void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linear_system) {
+omsi_status set_lapack_a (DATA_LAPACK*                      lapack_data,
+                          const omsi_algebraic_system_t*    linear_system) {
 
     omsi_int i,j;
 
@@ -154,25 +158,30 @@ void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* line
             /* ToDo: where exactly is this data stored in function ???? */
         }
     }
+
+    return omsi_ok;
 }
 
 /*
- * Read data from equationSystemFunc and
- * set vector b.
+ * Sets right hand side b of equation system.
+ * Evaluates residual function with iteration variables set to 0 to get b.
  */
-omsi_status set_lapack_b (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linearSystem) {
+omsi_status set_lapack_b (DATA_LAPACK*                      lapack_data,
+                          const omsi_algebraic_system_t*    linearSystem,
+                          const omsi_values*                read_only_vars_and_params) {
 
-    omsi_unsigned_int i;
-    omsi_unsigned_int j=0;
+    omsi_int i;
 
     /* set iteration vars to zero */
-    /* ToDo: Do we want to save iteration vars first? */
-    if (!omsu_set_omsi_value(linearSystem->functions->function_vars, *(linearSystem->iteration_vars_indices), linearSystem->n_iteration_vars, 0)) {
+    if (!omsu_set_omsi_value(linearSystem->functions->function_vars,
+                             &(linearSystem->functions->output_vars_indices),
+                             linearSystem->n_iteration_vars,
+                             0)) {
         return omsi_error;
     }
 
     /* evaluate residual function A*0-b=0 to get -b */
-    linearSystem->functions->evaluate(linearSystem->functions, lapack_data->b);
+    linearSystem->functions->evaluate(linearSystem->functions, read_only_vars_and_params, lapack_data->b);
 
     /* flip sign */
     for (i=0; i<lapack_data->ldb; i++) {
@@ -187,7 +196,9 @@ omsi_status set_lapack_b (DATA_LAPACK* lapack_data, const omsi_algebraic_system_
  * Evaluate residual A*x-b=res and return omsi_ok if it is zero,
  * otherwise omsi_warning.
  */
-omsi_status eval_residual(DATA_LAPACK* lapack_data, omsi_algebraic_system_t* linearSystem) {
+omsi_status eval_residual(DATA_LAPACK*              lapack_data,
+                          omsi_algebraic_system_t*  linearSystem,
+                          const omsi_values*        read_only_vars_and_params) {
     /* local variables */
     omsi_int increment = 1;
 
@@ -199,7 +210,7 @@ omsi_status eval_residual(DATA_LAPACK* lapack_data, omsi_algebraic_system_t* lin
 
     /* compute residuum A*x-b using generated function and save result in residuum */
     /* ToDo: function call */
-    linearSystem->functions->evaluate(linearSystem->functions, res);
+    linearSystem->functions->evaluate(linearSystem->functions, read_only_vars_and_params, res);
 
     /* compute dot product <residuum, residuum> */
     dotProduct = ddot_(&lapack_data->n, res, &increment, res, &increment);

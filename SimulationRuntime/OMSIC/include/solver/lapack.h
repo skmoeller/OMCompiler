@@ -35,7 +35,9 @@
 #define _LINEARSOLVERLAPACK_H_
 
 #include "omsi.h"
-#include "omsi_eqns_system.h"
+#include "solver_helper.h"
+
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,12 +68,27 @@ extern omsi_int dgesv_(omsi_int *n, omsi_int *nrhs, omsi_real *a, omsi_int *lda,
 extern omsi_real ddot_(omsi_int* n, omsi_real* dx, omsi_int* incx, omsi_real* dy, omsi_int* incy);
 
 /* function prototypes */
-omsi_status solveLapack(omsi_algebraic_system_t* linearSystem, omsi_callback_functions* callback_functions);
-DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system);
-void set_lapack_a (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linear_system);
-void set_lapack_b (DATA_LAPACK* lapack_data, const omsi_algebraic_system_t* linearSystem);
-omsi_status eval_residual(DATA_LAPACK* lapack_data, omsi_algebraic_system_t* linearSystem);
-void get_result(omsi_function_t* equationSystemFunc, DATA_LAPACK* lapack_data);
+omsi_status solveLapack(omsi_algebraic_system_t*            linearSystem,
+                        const omsi_values*                  read_only_vars_and_params,
+                        omsi_callback_functions*            callback_functions);
+
+DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system,
+                             const omsi_values*             read_only_vars_and_params);
+
+omsi_status set_lapack_a (DATA_LAPACK*                      lapack_data,
+                          const omsi_algebraic_system_t*    linear_system);
+
+omsi_status set_lapack_b (DATA_LAPACK*                      lapack_data,
+                          const omsi_algebraic_system_t*    linearSystem,
+                          const omsi_values*                read_only_vars_and_params);
+
+omsi_status eval_residual(DATA_LAPACK*              lapack_data,
+                          omsi_algebraic_system_t*  linearSystem,
+                          const omsi_values*        read_only_vars_and_params);
+
+void get_result(omsi_function_t*                            equationSystemFunc,
+                DATA_LAPACK*                                lapack_data);
+
 void freeLapackData(DATA_LAPACK* lapack_data);
 
 #ifdef __cplusplus

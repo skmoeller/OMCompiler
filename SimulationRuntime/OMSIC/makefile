@@ -1,7 +1,7 @@
 #Makefile for OpenModelicaSolverInterface shared solver library
 
 CC=gcc
-CFLAGS=-Wall -Wextra -O2 -g
+CFLAGS=-Wall -Wextra -O2 -g -std=c89 -pedantic
 LDFLAGS=-shared
 TARGET_LIB = so
 # =dll or =so for dynamic-link library and shared objects
