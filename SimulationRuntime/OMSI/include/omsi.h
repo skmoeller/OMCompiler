@@ -183,6 +183,7 @@ typedef struct omsi_values {
     omsi_unsigned_int   n_reals;    /* length of array reals */
     omsi_unsigned_int   n_ints;     /* length of array ints */
     omsi_unsigned_int   n_bools;    /* length of array bools */
+    omsi_unsigned_int   n_externs;  /* length of array externs */
 } omsi_values;
 
 
