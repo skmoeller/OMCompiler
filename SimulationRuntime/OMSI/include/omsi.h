@@ -213,8 +213,9 @@ typedef struct omsi_function_t {
     omsi_algebraic_system_t*    algebraic_system_t; /* array of algebraic systems */
 
     omsi_values* function_vars;                     /* pointer to variables and parameters */
-    omsi_int (*evaluate) (omsi_function_t* this_function, omsi_values* model_vars_and_params);
-
+    omsi_status (*evaluate) (omsi_function_t*   this_function,              /* read/write local vars */
+                             const omsi_values* read_only_vars_and_params,  /* read only global params and vars */
+                             void*              data);                      /* optional data for e.g residual evaluations*/
     omsi_index_type* input_vars_indices;    /* index to next higher omsi_values pointer */
     omsi_index_type* output_vars_indices;   /* e.g to sim_data_t->model_vars_and_params */
 
@@ -395,9 +396,9 @@ typedef struct omsi_experiment_t {
  * ============================================================================
  */
 typedef struct omsi_t {
-    sim_data_t          sim_data;   /* containing data for simulation */
+    sim_data_t*         sim_data;   /* containing data for simulation */
     omsi_experiment_t*  experiment; /* containing infos for experiment */
-    model_data_t        model_data; /* containing additional model infos */
+    model_data_t*       model_data; /* containing additional model infos */
 } omsi_t;
 
 
