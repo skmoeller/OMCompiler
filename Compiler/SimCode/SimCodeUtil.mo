@@ -3827,8 +3827,8 @@ algorithm
       simequations := listAppend(simequations, listReverse(resEqs));
 
       //set index
-      (loopSolvedVars, index) := rewriteIndex(loopSolvedVars, 0);
-      (loopIterationVars, index) := rewriteIndex(loopIterationVars, index);
+      (loopIterationVars, index) := rewriteIndex(loopIterationVars, 0);
+      (loopSolvedVars, index) := rewriteIndex(loopSolvedVars, index);
 
       // create hash table with local index
       nAllVars := listLength(loopIterationVars)+listLength(loopSolvedVars)+listLength(tempVars);
@@ -3841,7 +3841,7 @@ algorithm
         dumpVarLst(loopSolvedVars, "AlgSystem loopSolvedVars");
       end if;
 
-      tmpOutputVars := listAppend(loopSolvedVars, loopIterationVars);  
+      tmpOutputVars := listAppend(loopIterationVars, loopSolvedVars);
       omsiFunction := SimCode.OMSI_FUNCTION(equations = simequations,
                                             inputVars = {},
                                             outputVars = tmpOutputVars,
