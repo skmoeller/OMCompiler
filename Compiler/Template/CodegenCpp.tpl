@@ -478,6 +478,8 @@ match simCode
 case SIMCODE(modelInfo = MODELINFO(__)) then
    <<
    <%algloopfilesInclude(listAppend(listAppend(allEquations, initialEquations), getClockedEquations(getSubPartitions(clockedPartitions))), simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace)%>
+   //omsi header
+   #include <omsi.h>
 
    <%lastIdentOfPath(modelInfo.name)%>Initialize::<%lastIdentOfPath(modelInfo.name)%>Initialize(shared_ptr<IGlobalSettings> globalSettings)
    : <%lastIdentOfPath(modelInfo.name)%>WriteOutput(globalSettings)
@@ -5796,10 +5798,12 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
             <%if (Flags.getConfigBool(Flags.LABELED_REDUCTION)) then
              <<
                _reader  =  shared_ptr<IPropertyReader>(new XmlPropertyReader(_global_settings,init_file_path,_dimRHS));
+
              >>
              else
              <<
               _reader  =  shared_ptr<IPropertyReader>(new XmlPropertyReader(_global_settings,init_file_path));
+             //  omsi_t* omsu = instantiate_omsi(init_file_path.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
              >>
             %>
           _reader->readInitialValues(*this, getSimVars());'

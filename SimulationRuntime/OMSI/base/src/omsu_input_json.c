@@ -27,8 +27,9 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
-
+#include <uthash.h>
 #include <omsu_input_json.h>
+#include "omsi_global.h"
 
 /* prototypes for static functions */
 static omsi_string skipSpace(omsi_string str);

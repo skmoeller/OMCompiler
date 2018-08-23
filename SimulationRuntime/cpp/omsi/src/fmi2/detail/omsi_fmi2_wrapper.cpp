@@ -40,11 +40,15 @@
 #include <Core/SimController/ISimController.h>
 #include <Core/System/FactoryExport.h>
 #include <Core/Utils/extension/logger.hpp>
+//omsi cpp inlcudes
 #include <omsi_global_settings.h>
 #include "omsi_fmi2_log.h"
 #include "omsi_fmi2_wrapper.h"
-#include <omsi_factory.h>
-
+#include "omsi_factory.h"
+#include "omsi_data.h"
+//omsi header
+#include <omsi.h>
+//3rdparty includes
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
@@ -71,9 +75,8 @@ fmi2String OSU::LogCategoryFMUName(LogCategoryFMU category) {
 
 OSU::OSU(fmi2String instanceName, fmi2String GUID,
                          const fmi2CallbackFunctions *functions,
-                         fmi2Boolean loggingOn,fmi2String fmuResourceLocations) :
-
-  _functions(*functions),
+	fmi2Boolean                  visible, fmi2Boolean loggingOn,fmi2String fmuResourceLocations)
+	:_functions(*functions),
   callbackLogger(_functions.logger),
   _conditions(NULL),
   _zero_funcs(NULL),
@@ -95,8 +98,12 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _logger = Logger::getInstance();
 
   // setup model
-
-  _model = createOSUSystem(_global_settings,_instanceName);
+ /*Todo: only load if type is omsu, not for fmi
+ fs::path p(_instanceName);
+  string omsu_name = p.stem().string();
+ omsi_t* omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
+ */
+  _model = createOSUSystem(_global_settings, _instanceName);
   _initialize_model = dynamic_pointer_cast<ISystemInitialization>(_model);
   _continuous_model  = dynamic_pointer_cast<IContinuous>(_model);
   _time_event_model =  dynamic_pointer_cast<ITime>(_model);

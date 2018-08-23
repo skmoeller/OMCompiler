@@ -28,35 +28,10 @@
  *
  */
 
-#ifndef OMSU_INPUT_JSON_H
-#define OMSU_INPUT_JSON_H
+#ifndef OMSU_GLOBAl_H
+#define OMSU_GLOBAL_H
 
-
-
-
-
-#include "omsi.h"
-#include "omsu_mmap.h"
-#include "omsi_callbacks.h"
-#include <stdio.h>
-#include <stdlib.h>
-
-
-
-
-/* function prototypes */
-omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi_string fmuGUID, omsi_string instanceName, const omsi_callback_functions* functions);
-omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_unsigned_int expected_id, omsi_unsigned_int* count_init_eq, omsi_unsigned_int* count_regular_eq, omsi_unsigned_int* count_alias_eq);
-omsi_string readEquations(omsi_string str, model_data_t* model_data);
-
-
-
-
-
-
-
-
-
-
+omsi_callback_allocate_memory   global_allocateMemory;
+omsi_callback_free_memory       global_freeMemory;
 
 #endif

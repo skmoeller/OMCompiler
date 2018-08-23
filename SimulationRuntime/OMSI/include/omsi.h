@@ -66,12 +66,14 @@ typedef long                omsi_long;
 typedef int                 omsi_bool;
 #define omsi_true  1
 #define omsi_false 0
+/* compiler error  : #error :  The C++ Standard Library forbids macroizing keywords. Enable warning C4005 to find the forbidden macro.
 #ifndef true
 #define true 1
 #endif
 #ifndef false
 #define false 0
 #endif
+*/
 typedef char                omsi_char;
 typedef const omsi_char*    omsi_string;
 #endif
@@ -123,30 +125,7 @@ typedef enum {
 }omsi_status;
 
 
-/* ToDo: is this the right location for these definitions? */
-/*
- * OMSI callback functions
- */
-typedef void      (*omsi_callback_logger)           (const void*, omsi_string, omsi_status, omsi_string, omsi_string, ...);
-typedef void*     (*omsi_callback_allocate_memory)  (omsi_unsigned_int, omsi_unsigned_int);
-typedef void      (*omsi_callback_free_memory)      (void*);
-typedef void      (*omsi_step_finished)             (void*, omsi_status);
 
-
-typedef struct omsi_callback_functions{
-    const omsi_callback_logger          logger;
-    const omsi_callback_allocate_memory allocateMemory;
-    const omsi_callback_free_memory     freeMemory;
-    const omsi_step_finished            stepFinished;
-    const void*                         componentEnvironment;
-}omsi_callback_functions;
-
-/* global functions */
-#ifndef OMSI_GLOBAL_FUNC
-#define OMSI_GLOBAL_FUNC
-omsi_callback_allocate_memory   global_allocateMemory;
-omsi_callback_free_memory       global_freeMemory;
-#endif
 
 /*
  * ============================================================================

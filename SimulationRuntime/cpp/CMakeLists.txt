@@ -389,7 +389,7 @@ IF(WIN32)
   SET(MICO_LIB_HOME $ENV{OMDEV}/lib/mico-msys-mingw/)
   SET(MICO_INCLUDE_HOME  $ENV{OMDEV}/include/mico-msys-mingw/)
 
-  SET(INSTALL_OMDEV_LIBS ON)
+  SET(INSTALL_OMDEV_LIBS OFF)
 ENDIF(WIN32)
 
 # Find OpenMP
@@ -656,9 +656,11 @@ IF(USE_OMSI)
   IF(MSVC)
     SET(FMILIB_INLCUDE_HOME  "${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/install_msvc/include/")
     SET(FMILIB_LIBRARY_RELEASE_HOME "${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/install_msvc/lib")
+	SET(OMSIBASELIB_LIBRARY_RELEASE_HOME "${CMAKE_SOURCE_DIR}/../../../build/lib/omc/omsi/msvc")
   ELSE(MSVC)
     SET(FMILIB_INLCUDE_HOME  "${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/install/include/")
     SET(FMILIB_LIBRARY_RELEASE_HOME  "${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/build")
+	SET(OMSIBASELIB_LIBRARY_RELEASE_HOME "${CMAKE_SOURCE_DIR}/../../../build/lib/omc/omsi/")
   ENDIF(MSVC)
 
   MESSAGE(STATUS "FMI lib include:")
@@ -679,13 +681,30 @@ IF(USE_OMSI)
     MESSAGE(FATAL_ERROR "Could not find fmi library!")
   ENDIF()
 
+   #omsi base library
+  FIND_LIBRARY(OMSIBASE_LIB NAMES  "OMSIBase_static" NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATHS ${OMSIBASELIB_LIBRARY_RELEASE_HOME} )
+  IF(NOT OMSIBASE_LIB)
+    MESSAGE(FATAL_ERROR "Could not find omsi base library!")
+  ENDIF()
 
 
   MESSAGE(STATUS "FMI-lib Libraries:")
   MESSAGE(STATUS "${FMILIB_LIB}")
 
+
+  MESSAGE(STATUS "OMSI Libraries:")
+  MESSAGE(STATUS "${OMSIBASE_LIB}")
+  MESSAGE(STATUS "OMSI Includes:")
+  MESSAGE(STATUS "${CMAKE_SOURCE_DIR}/../OMSI/base/include")
+  #omsi base includes
+  include_directories ("${CMAKE_SOURCE_DIR}/../OMSI/base/include")
   ADD_DEFINITIONS(-DENABLE_OMSI)
   MESSAGE(STATUS "OSI linear and nonlinear solver interface enabled")
+  #set exapat lib for visual studio compiler used by omsi xml and json  parser
+  IF(MSVC)
+    INCLUDE_DIRECTORIES($ENV{OMDEV}/lib/expat-win32-msvc)
+  ENDIF(MSVC)
+
 
   # On Windows we need to install those libraries along with the SimManager
   IF(WIN32)
