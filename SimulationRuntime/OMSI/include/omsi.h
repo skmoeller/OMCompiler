@@ -202,7 +202,7 @@ typedef struct omsi_algebraic_system_t {
                                  * non-linear case: f' */
 
     omsi_function_t* functions; /* pointer to omsi_function for residual function */
-    void* solverData;           /* pointer to solver specific local data*/
+    void* solver_data;          /* pointer to solver specific local data */
 }omsi_algebraic_system_t;
 
 
