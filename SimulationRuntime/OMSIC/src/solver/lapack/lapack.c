@@ -256,3 +256,35 @@ void freeLapackData(DATA_LAPACK* lapack_data) {
 
     global_freeMemory(lapack_data);
 }
+
+
+void printLapackData(DATA_LAPACK*   lapack_data,
+                     omsi_string    indent) {
+
+    omsi_int i;
+
+    printf("%snumber of linear equations: %i\n", indent, lapack_data->n);
+    printf("%snumber of right hand sides: %i\n", indent, lapack_data->nrhs);
+
+    printf("%sA in row major order:\n%s| ", indent, indent);
+    for (i=0; i<lapack_data->lda*lapack_data->n; i++) {
+        printf("%f\t\n", indent, lapack_data->A[i]);
+    }
+    printf("\n");
+
+    printf("%sleading dimension of A: %i\n", indent, lapack_data->lda);
+    printf("%spivot indices:", indent);
+    for (i=0; i<lapack_data->n; i++) {
+        printf(" %i", lapack_data->ipiv[i]);
+    }
+    printf("\n");
+
+    printf("%sb in row major order:\n%s| ", indent, indent);
+    for (i=0; i<lapack_data->ldb*lapack_data->nrhs; i++) {
+        printf("%f\t\n", indent, lapack_data->b[i]);
+    }
+    printf("\n");
+
+    printf("%sleading dimension of b: %i\n", indent, lapack_data->ldb);
+    printf("%sinfo:%i\n", indent, lapack_data->info);
+}

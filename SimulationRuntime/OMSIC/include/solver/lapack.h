@@ -91,6 +91,9 @@ void get_result(omsi_function_t*                            equationSystemFunc,
 
 void freeLapackData(DATA_LAPACK* lapack_data);
 
+void printLapackData(DATA_LAPACK*   lapack_data,
+                     omsi_string    indent);
+
 #ifdef __cplusplus
 }   /* end of extern "C" { */
 #endif

@@ -496,7 +496,7 @@ omsi_status omsu_print_sim_data (sim_data_t* sim_data,
     omsi_char* nextIndent;
 
     if (sim_data==NULL) {
-        printf("%sNo sim_data",indent);
+        printf("%sNo sim_data\n",indent);
         return omsi_warning;
     }
 
@@ -538,7 +538,7 @@ omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
     omsi_char* nextIndent;
 
     if (omsi_function==NULL) {
-        printf("%sNo omsi_function_t %s",indent, omsi_function_name);
+        printf("%sNo omsi_function_t %s\n",indent, omsi_function_name);
         return omsi_warning;
     }
 
@@ -546,7 +546,7 @@ omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
     nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
-    printf("%sn_algebraic_system:\t%u", indent, omsi_function->n_algebraic_system);
+    printf("%sn_algebraic_system:\t%u\n", indent, omsi_function->n_algebraic_system);
     for (i=0; i<omsi_function->n_algebraic_system; i++) {
         omsu_print_algebraic_system(&omsi_function->algebraic_system_t[i], nextIndent);
     }
@@ -570,7 +570,7 @@ omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
     omsi_char* nextIndent;
 
     if (omsi_function==NULL) {
-        printf("%sNo omsi_function_t %s",indent, omsi_function_name);
+        printf("%sNo omsi_function_t %s\n",indent, omsi_function_name);
         return omsi_warning;
     }
 
@@ -580,14 +580,14 @@ omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
 
     omsu_print_omsi_values(omsi_function->function_vars, "function_vars", indent);
 
-    printf("%sevaluate function pointer set:%s", indent, omsi_function->evaluate!=NULL? "true" : "false");
+    printf("%sevaluate function pointer set:%s\n", indent, omsi_function->evaluate!=NULL? "true" : "false");
 
     omsu_print_index_type(omsi_function->input_vars_indices, omsi_function->n_input_vars, nextIndent);
     omsu_print_index_type(omsi_function->input_vars_indices, omsi_function->n_output_vars, nextIndent);
 
-    printf("%sn_input_vars:\t\t%i", indent, omsi_function->n_input_vars);
-    printf("%sn_inner_vars:\t\t%i", indent, omsi_function->n_inner_vars);
-    printf("%sn_output_vars:\t\t%i", indent, omsi_function->n_output_vars);
+    printf("%sn_input_vars:\t\t%i\n", indent, omsi_function->n_input_vars);
+    printf("%sn_inner_vars:\t\t%i\n", indent, omsi_function->n_inner_vars);
+    printf("%sn_output_vars:\t\t%i\n", indent, omsi_function->n_output_vars);
 
     /* free memory */
     global_freeMemory(nextIndent);
@@ -595,26 +595,78 @@ omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
 }
 
 
+/*
+ * Print all values of omsi_values.
+ */
 omsi_status omsu_print_omsi_values (omsi_values*        omsi_values,
                                     omsi_string         omsi_values_name,
                                     omsi_string         indent) {
 
+    omsi_int i;
+
     if (omsi_values==NULL) {
-        printf("%sNo omsi_values %s",indent, omsi_values_name);
+        printf("%sNo omsi_values %s\n",indent, omsi_values_name);
         return omsi_warning;
     }
+
+    printf("%somsi_values %s\n",indent, omsi_values_name);
+    printf("%sreals:\n", indent);
+    for(i=0; i<omsi_values->n_reals; i++) {
+        printf("%s| %f\n", indent, omsi_values->reals[i]);
+    }
+
+    printf("%sints:\n", indent);
+    for(i=0; i<omsi_values->n_ints; i++) {
+        printf("%s| %i\n", indent, omsi_values->ints[i]);
+    }
+
+    printf("%sbools:\n", indent);
+    for(i=0; i<omsi_values->n_bools; i++) {
+        printf("%s| %s\n", indent, omsi_values->bools[i] ? "true" : "false");
+    }
+
+    /* omsu_print_externs(omsi_values->externs, omsi_values->n_externs); */
+
+    printf("%s| time_value: %f\n", indent, omsi_values->time_value);
 
     return omsi_ok;
 }
 
 
 omsi_status omsu_print_algebraic_system(omsi_algebraic_system_t*    algebraic_system_t,
-                                        omsi_string                 indent) {
+                                        omsi_string                 indent,) {
+
+    omsi_unsigned_int i;
+    omsi_char* nextIndent;
+
+    /* compute next indentation */
+    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    strcat(nextIndent, "| ");
+
+    printf("%sn_iteration_vars %u\n", indent, algebraic_system_t->n_iteration_vars);
+    printf("%sn_conditions %u\n", indent, algebraic_system_t->n_conditions);
+
+    printf("%szerocrossing indices; ", indent);
+    for (i=0; i<algebraic_system_t->n_conditions; i++) {
+        printf("%s| %i",indent, algebraic_system_t->zerocrossing_indices[i]);
+    }
+    printf("\n");
+
+    printf("%sis linear: %s", indent, algebraic_system_t->isLinear ? "true" : "false");
+
+    omsu_print_this_omsi_function(algebraic_system_t->jacobian, "jacobian", nextIndent);
+    omsu_print_this_omsi_function(algebraic_system_t->functions, "residual functions", nextIndent);
+
+    omsu_print_solver_data("lapack_solver", algebraic_system_t->solver_data, nextIndent);
+
+    /* free memory */
+    global_freeMemory(nextIndent);
 
     return omsi_ok;
 }
 
 
+/* ToDo: finish function */
 omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
                                    omsi_unsigned_int    size,
                                    omsi_string          indent) {
@@ -623,5 +675,26 @@ omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
 }
 
 
+/* ToDo: finish function */
+omsi_status omsu_print_externs(void* externs, omsi_unsigned_int n_externs) {
 
+    printf("ERROR: omsu_print_externs not implemented yet\n");
+    return omsi_error;
+}
+
+
+omsi_status omsu_print_solver_data(omsi_string  solver_name,
+                                   void*        solver_data,
+                                   omsi_string  indent) {
+
+    switch (solver_data) {
+        case "lapack_solver":
+            printLapackData(solver_data, indent);
+            break;
+        default:
+            printf("WARING in function omsu_print_solver_data: type of solver_data unknown\n");
+            return omsi_warning;
+    }
+    return omsi_ok;
+}
 
