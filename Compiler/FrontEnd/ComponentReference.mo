@@ -753,13 +753,9 @@ package CompareWithGenericSubscript "Package that can be modified to do differen
       end if;
       s2::ss := ss;
       if compareSubscript == CompareWithSubsType.WithGenericSubscript then
-        e1 := Expression.getSubscriptExp(s1);
-        e2 := Expression.getSubscriptExp(s2);
-        res := stringCompare(ExpressionDump.printExpStr(e1),ExpressionDump.printExpStr(e2));
+        res := stringCompare(ExpressionDump.printSubscriptStr(s1), ExpressionDump.printSubscriptStr(s2));
       elseif compareSubscript == CompareWithSubsType.WithGenericSubscriptNotAlphabetic then
-        e1 := Expression.getSubscriptExp(s1);
-        e2 := Expression.getSubscriptExp(s2);
-        res := Expression.compare(e1, e2);
+        res := Expression.compareSubscripts(s1, s2);
       else
         i1 := Expression.subscriptInt(s1);
         i2 := Expression.subscriptInt(s2);
@@ -3157,6 +3153,7 @@ algorithm
       DAE.ComponentRef cref;
       list<DAE.ComponentRef> crefs, crefs2;
       list<DAE.Var> varLst;
+      Integer missing_subs;
 
     // A scalar record ident cref. Expand record true
     case (DAE.CREF_IDENT(_, DAE.T_COMPLEX(varLst=varLst,complexClassType=ClassInf.RECORD(_)), {}),true)
@@ -3196,6 +3193,13 @@ algorithm
         // Flatten T_ARRAY(T_ARRAY(T_COMPLEX(), dim2,src), dim1,src) types to one level T_ARRAY(simpletype, alldims, src)
         (basety as DAE.T_COMPLEX(varLst=varLst,complexClassType=ClassInf.RECORD()), dims) = Types.flattenArrayType(ty);
         correctTy = DAE.T_ARRAY(basety,dims);
+
+        // Pad the list of subscripts with : if necessary to fill out all dimensions.
+        missing_subs = listLength(dims) - listLength(subs);
+        if missing_subs > 0 then
+          subs = listAppend(subs, List.fill(DAE.WHOLEDIM(), missing_subs));
+        end if;
+
         // Use the subscripts to generate only the wanted elements.
          crefs = expandCref2(id, correctTy, subs, dims);
       then
@@ -3207,6 +3211,12 @@ algorithm
         // Flatten T_ARRAY(T_ARRAY(T_..., dim2,src), dim1,src) types to one level T_ARRAY(simpletype, alldims, src)
         (basety, dims) = Types.flattenArrayType(ty);
         correctTy = DAE.T_ARRAY(basety,dims);
+
+        // Pad the list of subscripts with : if necessary to fill out all dimensions.
+        missing_subs = listLength(dims) - listLength(subs);
+        if missing_subs > 0 then
+          subs = listAppend(subs, List.fill(DAE.WHOLEDIM(), missing_subs));
+        end if;
         // Use the subscripts to generate only the wanted elements.
       then
         expandCref2(id, correctTy, subs, dims);

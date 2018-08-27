@@ -31,13 +31,14 @@
 
 encapsulated package NFConvertDAE
 
-import Binding = NFBinding;
+import NFBinding.Binding;
 import DAE;
 import Equation = NFEquation;
 import FlatModel = NFFlatModel;
 import NFFlatten.FunctionTree;
 import NFInstNode.InstNode;
 import Statement = NFStatement;
+import Restriction = NFRestriction;
 
 protected
 import ExecStat.execStat;
@@ -61,6 +62,7 @@ import NFPrefixes.Visibility;
 import NFPrefixes.Direction;
 import Variable = NFVariable;
 import ComponentReference;
+import Algorithm = NFAlgorithm;
 
 public
 function convert
@@ -108,7 +110,7 @@ protected
   Option<DAE.VariableAttributes> var_attr;
   Option<DAE.Exp> binding_exp;
 algorithm
-  binding_exp := convertBinding(var.binding);
+  binding_exp := Binding.toDAEExp(var.binding);
   var_attr := convertVarAttributes(var.typeAttributes, var.ty, var.attributes);
   daeVar := makeDAEVar(var.name, var.ty, binding_exp, var.attributes,
     var.visibility, var_attr, var.comment, useLocalDir, false, var.info);
@@ -133,7 +135,7 @@ protected
   Direction dir;
 algorithm
   dcref := ComponentRef.toDAE(cref);
-  dty := Type.toDAE(ty);
+  dty := Type.toDAE(if isFunctionParam then Type.arrayElementType(ty) else ty);
   source := ElementSource.createElementSource(info);
 
   var := match attr
@@ -155,7 +157,7 @@ algorithm
           Prefixes.visibilityToDAE(vis),
           dty,
           binding,
-          if isFunctionParam then {} else ComponentReference.crefDims(dcref),
+          ComponentReference.crefDims(dcref),
           Prefixes.connectorTypeToDAE(attr.connectorType),
           source,
           vattr,
@@ -187,17 +189,6 @@ algorithm
         getComponentDirection(dir, rest_cref) else Direction.NONE;
   end match;
 end getComponentDirection;
-
-function convertBinding
-  input Binding binding;
-  output Option<DAE.Exp> bindingExp;
-algorithm
-  bindingExp := match binding
-    case Binding.UNBOUND() then NONE();
-    case Binding.TYPED_BINDING() then SOME(Expression.toDAE(binding.bindingExp));
-    case Binding.FLAT_BINDING() then SOME(Expression.toDAE(binding.bindingExp));
-  end match;
-end convertBinding;
 
 function convertVarAttributes
   input list<tuple<String, Binding>> attrs;
@@ -462,19 +453,14 @@ algorithm
       list<DAE.Dimension> dims;
       list<DAE.Element> body;
 
-    case Equation.EQUALITY() guard Type.isComplex(eq.ty)
-      algorithm
-        e1 := Expression.toDAE(eq.lhs);
-        e2 := Expression.toDAE(eq.rhs);
-      then
-        DAE.Element.COMPLEX_EQUATION(e1, e2, eq.source) :: elements;
-
     case Equation.EQUALITY()
       algorithm
         e1 := Expression.toDAE(eq.lhs);
         e2 := Expression.toDAE(eq.rhs);
       then
-        DAE.Element.EQUATION(e1, e2, eq.source) :: elements;
+        (if Type.isComplex(eq.ty) then
+           DAE.Element.COMPLEX_EQUATION(e1, e2, eq.source) else
+           DAE.Element.EQUATION(e1, e2, eq.source)) :: elements;
 
     case Equation.CREF_EQUALITY()
       algorithm
@@ -530,18 +516,24 @@ algorithm
 end convertEquation;
 
 function convertIfEquation
-  input list<tuple<Expression, list<Equation>>> ifBranches;
+  input list<Equation.Branch> ifBranches;
   input DAE.ElementSource source;
   input Boolean isInitial;
   output DAE.Element ifEquation;
 protected
-  list<Expression> conds;
-  list<list<Equation>> branches;
+  list<Expression> conds = {};
+  list<list<Equation>> branches = {};
   list<DAE.Exp> dconds;
   list<list<DAE.Element>> dbranches;
   list<DAE.Element> else_branch;
 algorithm
-  (conds, branches) := List.unzipReverse(ifBranches);
+  for branch in ifBranches loop
+    (conds, branches) := match branch
+      case Equation.Branch.BRANCH()
+        then (branch.condition :: conds, branch.body :: branches);
+    end match;
+  end for;
+
   dbranches := if isInitial then
     list(convertInitialEquations(b) for b in branches) else
     list(convertEquations(b) for b in branches);
@@ -561,7 +553,7 @@ algorithm
 end convertIfEquation;
 
 function convertWhenEquation
-  input list<tuple<Expression, list<Equation>>> whenBranches;
+  input list<Equation.Branch> whenBranches;
   input DAE.ElementSource source;
   output DAE.Element whenEquation;
 protected
@@ -570,9 +562,14 @@ protected
   Option<DAE.Element> when_eq = NONE();
 algorithm
   for b in listReverse(whenBranches) loop
-    cond := Expression.toDAE(Util.tuple21(b));
-    els := convertEquations(Util.tuple22(b));
-    when_eq := SOME(DAE.Element.WHEN_EQUATION(cond, els, when_eq, source));
+    when_eq := match b
+      case Equation.Branch.BRANCH()
+        algorithm
+          cond := Expression.toDAE(b.condition);
+          els := convertEquations(b.body);
+        then
+          SOME(DAE.Element.WHEN_EQUATION(cond, els, when_eq, source));
+    end match;
   end for;
 
   SOME(whenEquation) := when_eq;
@@ -603,7 +600,9 @@ algorithm
         e1 := Expression.toDAE(eq.lhs);
         e2 := Expression.toDAE(eq.rhs);
       then
-        DAE.Element.INITIALEQUATION(e1, e2, eq.source) :: elements;
+        (if Type.isComplex(eq.ty) then
+           DAE.Element.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source) else
+           DAE.Element.INITIALEQUATION(e1, e2, eq.source)) :: elements;
 
     case Equation.ARRAY_EQUALITY()
       algorithm
@@ -642,7 +641,7 @@ algorithm
 end convertInitialEquation;
 
 function convertAlgorithms
-  input list<list<Statement>> algorithms;
+  input list<Algorithm> algorithms;
   input output list<DAE.Element> elements;
 algorithm
   for alg in listReverse(algorithms) loop
@@ -651,15 +650,16 @@ algorithm
 end convertAlgorithms;
 
 function convertAlgorithm
-  input list<Statement> statements;
+  input Algorithm alg;
   input output list<DAE.Element> elements;
 protected
   list<DAE.Statement> stmts;
-  DAE.Algorithm alg;
+  DAE.Algorithm dalg;
+  DAE.ElementSource src;
 algorithm
-  stmts := convertStatements(statements);
-  alg := DAE.ALGORITHM_STMTS(stmts);
-  elements := DAE.ALGORITHM(alg, DAE.emptyElementSource) :: elements;
+  stmts := convertStatements(alg.statements);
+  dalg := DAE.ALGORITHM_STMTS(stmts);
+  elements := DAE.ALGORITHM(dalg, alg.source) :: elements;
 end convertAlgorithm;
 
 function convertStatements
@@ -735,8 +735,7 @@ protected
   DAE.Exp dlhs, drhs;
   list<Expression> expl;
 algorithm
-  Statement.ASSIGNMENT(lhs, rhs, src) := stmt;
-  ty := Expression.typeOf(lhs);
+  Statement.ASSIGNMENT(lhs, rhs, ty, src) := stmt;
 
   if Type.isTuple(ty) then
     Expression.TUPLE(elements = expl) := lhs;
@@ -748,7 +747,6 @@ algorithm
       // (lhs) := call(...) => lhs := TSUB[call(...), 1]
       case {lhs}
         algorithm
-          ty := Expression.typeOf(lhs);
           dty := Type.toDAE(ty);
           dlhs := Expression.toDAE(lhs);
           drhs := DAE.Exp.TSUB(Expression.toDAE(rhs), 1, dty);
@@ -772,7 +770,12 @@ algorithm
     dty := Type.toDAE(ty);
     dlhs := Expression.toDAE(lhs);
     drhs := Expression.toDAE(rhs);
-    daeStmt := DAE.Statement.STMT_ASSIGN(dty, dlhs, drhs, src);
+
+    if Type.isArray(ty) then
+      daeStmt := DAE.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src);
+    else
+      daeStmt := DAE.Statement.STMT_ASSIGN(dty, dlhs, drhs, src);
+    end if;
   end if;
 end convertAssignment;
 
@@ -782,17 +785,14 @@ function convertForStatement
 protected
   InstNode iterator;
   Type ty;
-  Binding binding;
   Expression range;
   list<Statement> body;
   list<DAE.Statement> dbody;
   DAE.ElementSource source;
 algorithm
-  Statement.FOR(iterator = iterator, body = body, source = source) := forStmt;
+  Statement.FOR(iterator = iterator, range = SOME(range), body = body, source = source) := forStmt;
   dbody := convertStatements(body);
-
-  Component.ITERATOR(ty = ty, binding = binding) := InstNode.component(iterator);
-  SOME(range) := Binding.typedExp(binding);
+  Component.ITERATOR(ty = ty) := InstNode.component(iterator);
 
   forDAE := DAE.Statement.STMT_FOR(Type.toDAE(ty), Type.isArray(ty),
     InstNode.name(iterator), 0, Expression.toDAE(range), dbody, source);
@@ -803,23 +803,30 @@ function convertIfStatement
   input DAE.ElementSource source;
   output DAE.Statement ifStatement;
 protected
-  DAE.Exp cond1, cond2;
-  list<DAE.Statement> stmts1, stmts2;
-  tuple<Expression, list<Statement>> head;
-  list<tuple<Expression, list<Statement>>> rest;
-  DAE.Else elseStatement = DAE.Else.NOELSE();
+  Expression cond;
+  DAE.Exp dcond;
+  list<Statement> stmts;
+  list<DAE.Statement> dstmts;
+  Boolean first = true;
+  DAE.Else else_stmt = DAE.Else.NOELSE();
 algorithm
-  head :: rest := ifBranches;
-  cond1 := Expression.toDAE(Util.tuple21(head));
-  stmts1 := convertStatements(Util.tuple22(head));
+  for b in listReverse(ifBranches) loop
+    (cond, stmts) := b;
+    dcond := Expression.toDAE(cond);
+    dstmts := convertStatements(stmts);
 
-  for b in listReverse(rest) loop
-    cond2 := Expression.toDAE(Util.tuple21(b));
-    stmts2 := convertStatements(Util.tuple22(b));
-    elseStatement := DAE.Else.ELSEIF(cond2, stmts2, elseStatement);
+    if first and Expression.isTrue(cond) then
+      else_stmt := DAE.Else.ELSE(dstmts);
+    else
+      else_stmt := DAE.Else.ELSEIF(dcond, dstmts, else_stmt);
+    end if;
+
+    first := false;
   end for;
 
-  ifStatement := DAE.Statement.STMT_IF(cond1, stmts1,  elseStatement, source);
+  // This should always be an ELSEIF due to branch selection in earlier phases.
+  DAE.Else.ELSEIF(dcond, dstmts, else_stmt) := else_stmt;
+  ifStatement := DAE.Statement.STMT_IF(dcond, dstmts, else_stmt, source);
 end convertIfStatement;
 
 function convertWhenStatement
@@ -841,7 +848,7 @@ algorithm
 end convertWhenStatement;
 
 function convertInitialAlgorithms
-  input list<list<Statement>> algorithms;
+  input list<Algorithm> algorithms;
   input output list<DAE.Element> elements;
 algorithm
   for alg in algorithms loop
@@ -850,15 +857,15 @@ algorithm
 end convertInitialAlgorithms;
 
 function convertInitialAlgorithm
-  input list<Statement> statements;
+  input Algorithm alg;
   input output list<DAE.Element> elements;
 protected
   list<DAE.Statement> stmts;
-  DAE.Algorithm alg;
+  DAE.Algorithm dalg;
 algorithm
-  stmts := convertStatements(statements);
-  alg := DAE.ALGORITHM_STMTS(stmts);
-  elements := DAE.INITIALALGORITHM(alg, DAE.emptyElementSource) :: elements;
+  stmts := convertStatements(alg.statements);
+  dalg := DAE.ALGORITHM_STMTS(stmts);
+  elements := DAE.INITIALALGORITHM(dalg, alg.source) :: elements;
 end convertInitialAlgorithm;
 
 function convertFunctionTree
@@ -902,7 +909,7 @@ algorithm
   cls := InstNode.getClass(Function.instance(func));
 
   dfunc := match cls
-    case Class.INSTANCED_CLASS(sections = sections)
+    case Class.INSTANCED_CLASS(sections = sections, restriction = Restriction.FUNCTION())
       algorithm
         elems := convertFunctionParams(func.inputs, {});
         elems := convertFunctionParams(func.outputs, elems);
@@ -924,7 +931,12 @@ algorithm
           else DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems));
         end match;
       then
-        Function.toDAE(func, {def});
+        Function.toDAE(func, def);
+
+    case Class.INSTANCED_CLASS(restriction = Restriction.RECORD_CONSTRUCTOR())
+      then DAE.Function.RECORD_CONSTRUCTOR(Function.name(func),
+                                           Function.makeDAEType(func),
+                                           DAE.emptyElementSource);
 
     else
       algorithm
@@ -964,7 +976,7 @@ algorithm
     case Component.TYPED_COMPONENT(ty = ty, info = info)
       algorithm
         cref := ComponentRef.fromNode(node, ty);
-        binding := convertBinding(comp.binding);
+        binding := Binding.toDAEExp(comp.binding);
         cls := InstNode.getClass(comp.classInst);
         ty_attr := list((Modifier.name(m), Modifier.binding(m)) for m in Class.getTypeAttributes(cls));
         attr := comp.attributes;
@@ -1044,44 +1056,38 @@ algorithm
 end convertExternalDeclOutput;
 
 public
-function makeTypesVars
+function makeTypeVars
   input InstNode complexCls;
   output list<DAE.Var> typeVars;
 protected
   Component comp;
   DAE.Var type_var;
 algorithm
-  typeVars := {};
+  typeVars := match cls as InstNode.getClass(complexCls)
+    case Class.INSTANCED_CLASS(elements = ClassTree.FLAT_TREE())
+      then list(makeTypeVar(c) for c guard not (InstNode.isOnlyOuter(c) or InstNode.isEmpty(c))
+             in ClassTree.getComponents(cls.elements));
 
-  () := match cls as InstNode.getClass(complexCls)
-    case Class.INSTANCED_CLASS(elements = ClassTree.FLAT_TREE()) algorithm
-
-      for c in ClassTree.getComponents(cls.elements) loop
-        if InstNode.isOnlyOuter(c) or InstNode.isEmpty(c) then
-          continue;
-        end if;
-        comp := InstNode.component(InstNode.resolveOuter(c));
-
-        type_var := DAE.TYPES_VAR(InstNode.name(c)
-                      , Component.Attributes.toDAE(Component.getAttributes(comp))
-                      , Type.toDAE(Component.getType(comp))
-                      // Fix recursive bindings and update this
-                      // , Binding.toDAE(Component.getBinding(comp))
-                      , DAE.UNBOUND()
-                      , NONE()
-                     );
-        typeVars := type_var::typeVars;
-      end for;
-
-      typeVars := listReverse(typeVars);
-    then ();
-
-    else ();
-
+    else {};
   end match;
+end makeTypeVars;
 
-end makeTypesVars;
+function makeTypeVar
+  input InstNode component;
+  output DAE.Var typeVar;
+protected
+  Component comp;
+algorithm
+  comp := InstNode.component(InstNode.resolveOuter(component));
 
+  typeVar := DAE.TYPES_VAR(
+    InstNode.name(component),
+    Component.Attributes.toDAE(Component.getAttributes(comp)),
+    Type.toDAE(Component.getType(comp)),
+    Binding.toDAE(Component.getBinding(comp)),
+    NONE()
+  );
+end makeTypeVar;
 
 annotation(__OpenModelica_Interface="frontend");
 end NFConvertDAE;

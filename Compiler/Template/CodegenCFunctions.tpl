@@ -784,17 +784,16 @@ case func as EXTERNAL_FUNCTION(__) then
   let fn_name = extFunctionName(extName, language)
   let fargsStr = extFunDefArgs(extArgs, language)
   let fargsStrEscaped = '<%escapeCComments(fargsStr)%>'
-  let includesStr = includes |> i => i ;separator=", "
+  let isBuiltin = match language case "BUILTIN" then true end match
   /*
    * adrpo:
    *   only declare the external function definition IF THERE WERE NO INCLUDES!
-   *   i did not put includesStr string in the comment below as it might include
-   *   entire files
+   *   or if the function is not builtin
    */
-  if  includes then
+  if boolOr(boolNot(listEmpty(includes)), boolNot(stringEq(isBuiltin, ""))) then
     <<
     /*
-     * The function has annotation(Include=...>)
+     * The function has annotation(Include=...>) or is builtin
      * the external function definition should be present
      * in one of these files and have this prototype:
      * extern <%extReturnType(extReturn)%> <%fn_name%>(<%fargsStrEscaped%>);
@@ -823,17 +822,19 @@ end extFunDefDynamic;
 /* public */ template extFunctionName(String name, String language) "used in Compiler/Template/CodegenFMU.tpl"
 ::=
   match language
+  case "BUILTIN"
   case "C" then '<%name%>'
   case "FORTRAN 77" then '<%name%>_'
-  else error(sourceInfo(), 'Unsupport external language: <%language%>')
+  else error(sourceInfo(), 'Unsupported external language: <%language%>')
 end extFunctionName;
 
 template extFunDefArgs(list<SimExtArg> args, String language)
 ::=
   match language
+  case "BUILTIN"
   case "C" then (args |> arg => extFunDefArg(arg) ;separator=", ")
   case "FORTRAN 77" then (args |> arg => extFunDefArgF77(arg) ;separator=", ")
-  else error(sourceInfo(), 'Unsupport external language: <%language%>')
+  else error(sourceInfo(), 'Unsupported external language: <%language%>')
 end extFunDefArgs;
 
 template extReturnType(SimExtArg extArg)
@@ -2111,8 +2112,10 @@ template extFunCall(Function fun, Text &preExp, Text &varDecls, Text &varInit, T
 match fun
 case EXTERNAL_FUNCTION(__) then
   match language
+  case "BUILTIN"
   case "C" then extFunCallC(fun, &preExp, &varDecls, &auxFunction)
   case "FORTRAN 77" then extFunCallF77(fun, &preExp, &varDecls, &varInit, &auxFunction)
+  else error(sourceInfo(), 'Unsupported external language: <%language%>')
 end extFunCall;
 
 template extFunCallC(Function fun, Text &preExp, Text &varDecls, Text &auxFunction)
@@ -4967,13 +4970,21 @@ case BINARY(__) then
       else '<%e1%> - (<%e2%>)'
   case MUL(__) then '(<%e1%>) * (<%e2%>)'
   case DIV(ty = ty) then
-    let tvar = tempDecl(expTypeModelica(ty),&varDecls)
-    let &preExp += '<%tvar%> = <%e2%>;<%\n%>'
-    let &preExp +=
-      if acceptMetaModelicaGrammar()
-        then 'if (<%tvar%> == 0) {<%generateThrow()%>;}<%\n%>'
-        else 'if (<%tvar%> == 0) {throwStreamPrint(threadData, "Division by zero %s", "<%Util.escapeModelicaStringToCString(ExpressionDumpTpl.dumpExp(exp,"\""))%>");}<%\n%>'
-    '(<%e1%>) / <%tvar%>'
+    (match context
+      case FUNCTION_CONTEXT(__)
+      case PARALLEL_FUNCTION_CONTEXT(__) then
+        let tvar = tempDecl(expTypeModelica(ty),&varDecls)
+        let &preExp += '<%tvar%> = <%e2%>;<%\n%>'
+        let &preExp += if acceptMetaModelicaGrammar() then 'if (<%tvar%> == 0) {<%generateThrow()%>;}<%\n%>'
+        '(<%e1%>) / <%tvar%>'
+      case SIMULATION_CONTEXT() then
+        let e2str = Util.escapeModelicaStringToCString(ExpressionDumpTpl.dumpExp(exp2,"\""))
+        'DIVISION_SIM(<%e1%>,<%e2%>,"<%e2str%>",equationIndexes)'
+      else
+        let e2str = Util.escapeModelicaStringToCString(ExpressionDumpTpl.dumpExp(exp2,"\""))
+        'DIVISION(<%e1%>,<%e2%>,"<%e2str%>")'
+    )
+
   case POW(__) then
     if isHalf(exp2) then
       let tmp = tempDecl(expTypeFromExpModelica(exp1),&varDecls)
@@ -5122,7 +5133,15 @@ case BINARY(__) then
     let type = match ty case T_ARRAY(ty=T_INTEGER(__)) then "integer_array"
                         case T_ARRAY(ty=T_ENUMERATION(__)) then "integer_array"
                         else "real_array"
-    'div_alloc_<%type%>_scalar(<%e1%>, <%e2%>)'
+    let e2str = Util.escapeModelicaStringToCString(ExpressionDumpTpl.dumpExp(exp2,"\""))
+    (match context
+      case FUNCTION_CONTEXT(__)
+      case PARALLEL_FUNCTION_CONTEXT(__) then
+        'div_alloc_<%type%>_scalar(<%e1%>, <%e2%>)'
+      else
+        'division_alloc_<%type%>_scalar(threadData,<%e1%>,<%e2%>,"<%e2str%>")'
+    )
+
   case DIV_SCALAR_ARRAY(__) then
     let type = match ty case T_ARRAY(ty = T_INTEGER(__)) then "integer_array"
                         case T_ARRAY(ty = T_ENUMERATION(__)) then "integer_array"
@@ -5569,33 +5588,6 @@ template daeExpCall(Exp call, Context context, Text &preExp, Text &varDecls, Tex
     let var2 = daeExp(e2, context, &preExp, &varDecls, &auxFunction)
     var2
 
-  case CALL(path=IDENT(name="DIVISION"),
-            expLst={e1, e2}) then
-    let var1 = daeExp(e1, context, &preExp, &varDecls, &auxFunction)
-    let var2 = daeExp(e2, context, &preExp, &varDecls, &auxFunction)
-    let var3 = Util.escapeModelicaStringToCString(ExpressionDumpTpl.dumpExp(e2,"\""))
-    (match context
-      case FUNCTION_CONTEXT(__)
-      case PARALLEL_FUNCTION_CONTEXT(__) then
-        'DIVISION(<%var1%>,<%var2%>,"<%var3%>")'
-      else
-        'DIVISION_SIM(<%var1%>,<%var2%>,"<%var3%>",equationIndexes)'
-    )
-
-  case CALL(attr=CALL_ATTR(ty=ty),
-            path=IDENT(name="DIVISION_ARRAY_SCALAR"),
-            expLst={e1, e2}) then
-    let type = match ty case T_ARRAY(ty=T_INTEGER(__)) then "integer_array"
-                        case T_ARRAY(ty=T_ENUMERATION(__)) then "integer_array"
-                        else "real_array"
-    let var1 = daeExp(e1, context, &preExp, &varDecls, &auxFunction)
-    let var2 = daeExp(e2, context, &preExp, &varDecls, &auxFunction)
-    let var3 = Util.escapeModelicaStringToCString(ExpressionDumpTpl.dumpExp(e2,"\""))
-    'division_alloc_<%type%>_scalar(threadData,<%var1%>,<%var2%>,"<%var3%>")'
-
-  case exp as CALL(attr=CALL_ATTR(ty=ty), path=IDENT(name="DIVISION_ARRAY_SCALAR")) then
-    error(sourceInfo(),'Code generation does not support <%ExpressionDumpTpl.dumpExp(exp,"\"")%>')
-
   case CALL(path=IDENT(name="der"), expLst={arg as CREF(__)}) then
     cref(crefPrefixDer(arg.componentRef))
   case CALL(path=IDENT(name="der"), expLst={exp}) then
@@ -5656,6 +5648,11 @@ template daeExpCall(Exp call, Context context, Text &preExp, Text &varDecls, Tex
     let arr = daeExp(e, context, &preExp, &varDecls, &auxFunction)
     let ty_str = '<%expTypeArray(ty)%>'
     'sum_<%ty_str%>(<%arr%>)'
+
+  case CALL(path=IDENT(name="product"), attr=CALL_ATTR(ty = ty), expLst={e}) then
+    let arr = daeExp(e, context, &preExp, &varDecls, &auxFunction)
+    let ty_str = '<%expTypeArray(ty)%>'
+    'product_<%ty_str%>(<%arr%>)'
 
   case CALL(path=IDENT(name="min"), attr=CALL_ATTR(ty = T_REAL(__)), expLst={e1,e2}) then
     let var1 = daeExp(e1, context, &preExp, &varDecls, &auxFunction)
@@ -5769,17 +5766,18 @@ template daeExpCall(Exp call, Context context, Text &preExp, Text &varDecls, Tex
     let exp = daeExp(inExp, context, &preExp, &varDecls, &auxFunction)
     '((modelica_integer)floor(<%exp%>))'
 
-  case CALL(path=IDENT(name="mod"), expLst={e1,e2}, attr=CALL_ATTR(ty=T_INTEGER(__))) then
+  case CALL(path=IDENT(name="mod"), expLst={e1,e2}, attr=CALL_ATTR(ty=ty)) then
+    let tp_str = expTypeModelica(ty)
     let var1 = daeExp(e1, context, &preExp, &varDecls, &auxFunction)
     let var2 = daeExp(e2, context, &preExp, &varDecls, &auxFunction)
-    let tvar = tempDecl("modelica_integer", &varDecls)
+    let tvar = if acceptMetaModelicaGrammar() then '<%var2%>' else tempDecl(tp_str, &varDecls)
     let cstr = ExpressionDumpTpl.dumpExp(call,"\"")
-    let &preExp += '<%tvar%> = <%var2%>;<%\n%>'
+    let &preExp += if acceptMetaModelicaGrammar() then "" else '<%tvar%> = <%var2%>;<%\n%>'
     let &preExp +=
       if acceptMetaModelicaGrammar()
-        then 'if (<%tvar%> == 0) {<%generateThrow()%>;}<%\n%>'
+        then ""
         else 'if (<%tvar%> == 0) {throwStreamPrint(threadData, "Division by zero %s", "<%Util.escapeModelicaStringToCString(cstr)%>");}<%\n%>'
-    '((<%var1%>) - ((<%var1%>) / <%tvar%>) * <%tvar%>)'
+    '<%tp_str%>_mod(<%var1%>, <%tvar%>)'
 
   case CALL(path=IDENT(name="mod"), expLst={e1,e2}) then
     let var1 = daeExp(e1, context, &preExp, &varDecls, &auxFunction)
@@ -6487,7 +6485,7 @@ template daeExpReduction(Exp exp, Context context, Text &preExp,
   let &rangeExpPre = buffer ""
   let arrayTypeResult = expTypeFromExpArray(r)
   let arrIndex = match ri.path case IDENT(name="array") then tempDecl("int",&tmpVarDecls)
-  let foundFirst = if not ri.defaultValue then tempDecl("int",&tmpVarDecls)
+  let foundFirst = match ri.path case IDENT(name="array") then "" else (if not ri.defaultValue then tempDecl("int",&tmpVarDecls))
   let resType = expTypeArrayIf(typeof(exp))
   let res = contextCref(makeUntypedCrefIdent(ri.resultName), context, &auxFunction)
   let &tmpVarDecls += '<%resType%> <%res%>;<%\n%>'
@@ -6529,7 +6527,7 @@ template daeExpReduction(Exp exp, Context context, Text &preExp,
     else match ri.foldExp case SOME(fExp) then
       let &foldExpPre = buffer ""
       let fExpStr = daeExp(fExp, context, &bodyExpPre, &tmpVarDecls, &auxFunction)
-      if not ri.defaultValue then
+      if foundFirst then
       <<
       if(<%foundFirst%>)
       {
@@ -6687,15 +6685,17 @@ template daeExpReduction(Exp exp, Context context, Text &preExp,
         else
           'simple_alloc_1d_<%arrayTypeResult%>(&<%res%>,<%length%>);'%>
        >>
-     else if ri.defaultValue then
-     <<
-     <%&preDefault%>
-     <%res%> = <%defaultValue%>; /* defaultValue */
-     >>
      else
-     <<
-     <%foundFirst%> = 0; /* <%dotPath(ri.path)%> lacks default-value */
-     >>)
+       (if foundFirst then
+       <<
+       <%foundFirst%> = 0; /* <%dotPath(ri.path)%> lacks default-value */
+       >>
+       else
+       <<
+       <%&preDefault%>
+       <%res%> = <%defaultValue%>; /* defaultValue */
+       >>)
+     )
   let loop =
     <<
     while(1) {
@@ -6721,7 +6721,7 @@ template daeExpReduction(Exp exp, Context context, Text &preExp,
     <%firstValue%>
     <% if resTail then '<%resTail%> = &<%res%>;' %>
     <%loop%>
-    <% if not ri.defaultValue then 'if (!<%foundFirst%>) <%generateThrow()%>;' %>
+    <% if foundFirst then 'if (!<%foundFirst%>) <%generateThrow()%>;' %>
     <% if resTail then '*<%resTail%> = mmc_mk_nil();' %>
     <% resTmp %> = <% res %>;
   }<%\n%>

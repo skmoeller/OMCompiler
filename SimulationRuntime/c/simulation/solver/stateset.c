@@ -315,7 +315,7 @@ void printStateSelectionInfo(DATA *data, STATE_SET_DATA *set)
   infoStreamPrint(LOG_DSS, 1, "Select %ld states from %ld candidates.", set->nStates, set->nCandidates);
   for(k=0; k < set->nCandidates; k++)
   {
-    infoStreamPrint(LOG_DSS, 0, "[%ld] cadidate %s", k+1, set->statescandidates[k]->name);
+    infoStreamPrint(LOG_DSS, 0, "[%ld] candidate %s", k+1, set->statescandidates[k]->name);
   }
   messageClose(LOG_DSS);
 
@@ -329,7 +329,7 @@ void printStateSelectionInfo(DATA *data, STATE_SET_DATA *set)
       {
         if (Adump[k*set->nCandidates+l] == 1)
         {
-          infoStreamPrint(LOG_DSS, 0, "[%ld] %s", k+1, set->statescandidates[k]->name);
+          infoStreamPrint(LOG_DSS, 0, "[%ld] %s", l+1, set->statescandidates[l]->name);
         }
       }
     }

@@ -33,11 +33,12 @@ encapsulated uniontype NFExpressionIterator
 protected
   import ExpressionIterator = NFExpressionIterator;
   import ComponentRef = NFComponentRef;
-  import BindingOrigin = NFBindingOrigin;
+  import NFInstNode.InstNode;
+  import ExpandExp = NFExpandExp;
 
 public
   import Expression = NFExpression;
-  import Binding = NFBinding;
+  import NFBinding.Binding;
 
   record ARRAY_ITERATOR
     list<Expression> array;
@@ -55,6 +56,11 @@ public
   record NONE_ITERATOR
   end NONE_ITERATOR;
 
+  record REPEAT_ITERATOR
+    list<Expression> current;
+    list<Expression> all;
+  end REPEAT_ITERATOR;
+
   function fromExp
     input Expression exp;
     output ExpressionIterator iterator;
@@ -63,16 +69,24 @@ public
       local
         list<Expression> arr, slice;
         Expression e;
+        Boolean expanded;
 
       case Expression.ARRAY()
         algorithm
-          (arr, slice) := nextArraySlice(exp.elements);
+          (Expression.ARRAY(elements = arr), expanded) := ExpandExp.expand(exp);
+
+          if not expanded then
+            Error.assertion(false, getInstanceName() + " got unexpandable expression `" +
+              Expression.toString(exp) + "`", sourceInfo());
+          end if;
+
+          (arr, slice) := nextArraySlice(arr);
         then
           ARRAY_ITERATOR(arr, slice);
 
       case Expression.CREF()
         algorithm
-          e := Expression.expandCref(exp);
+          e := ExpandExp.expandCref(exp);
 
           iterator := match e
             case Expression.ARRAY() then fromExp(e);
@@ -83,7 +97,7 @@ public
 
       else
         algorithm
-          e := Expression.expand(exp);
+          e := ExpandExp.expand(exp);
         then
           if referenceEq(e, exp) then SCALAR_ITERATOR(exp) else fromExp(e);
 
@@ -108,12 +122,20 @@ public
     output ExpressionIterator iterator;
   algorithm
     iterator := match binding
+      local
+        list<Expression> expl;
+
+      case Binding.TYPED_BINDING() guard Binding.isClassBinding(binding)
+        algorithm
+          expl := Expression.arrayScalarElements(binding.bindingExp);
+        then
+          if listLength(expl) == 1 then EACH_ITERATOR(listHead(expl)) else REPEAT_ITERATOR(expl, expl);
+
       case Binding.TYPED_BINDING()
-        then if BindingOrigin.isEach(binding.origin) or BindingOrigin.isFromClass(binding.origin) then
-          EACH_ITERATOR(binding.bindingExp) else fromExp(binding.bindingExp);
+        then if binding.isEach then EACH_ITERATOR(binding.bindingExp) else fromExp(binding.bindingExp);
 
       case Binding.FLAT_BINDING()
-        then SCALAR_ITERATOR(binding.bindingExp);
+        then EACH_ITERATOR(binding.bindingExp);
     end match;
   end fromBinding;
 
@@ -126,6 +148,7 @@ public
       case SCALAR_ITERATOR() then true;
       case EACH_ITERATOR() then true;
       case NONE_ITERATOR() then false;
+      case REPEAT_ITERATOR() then true;
     end match;
   end hasNext;
 
@@ -155,6 +178,17 @@ public
         then (NONE_ITERATOR(), iterator.exp);
 
       case EACH_ITERATOR() then (iterator, iterator.exp);
+
+      case REPEAT_ITERATOR(rest, arr)
+        algorithm
+          if not listEmpty(rest) then
+            next :: rest := rest;
+          else
+            next :: rest := arr;
+          end if;
+        then
+          (REPEAT_ITERATOR(rest, arr), next);
+
     end match;
   end next;
 

@@ -10,7 +10,7 @@ else(NOT BUILD_SHARED_LIBS)
  install(FILES $<TARGET_PDB_FILE:${BroydenName}> DESTINATION ${LIBINSTALLEXT} OPTIONAL)
 endif(NOT BUILD_SHARED_LIBS)
 
-target_link_libraries(${BroydenName} ${ExtensionUtilitiesName} ${Boost_LIBRARIES} ${LAPACK_LIBRARIES}  ${ModelicaName})
+target_link_libraries(${BroydenName} ${SolverName} ${ExtensionUtilitiesName} ${Boost_LIBRARIES} ${LAPACK_LIBRARIES}  ${ModelicaName})
 add_precompiled_header(${BroydenName} runtime/include/Solver/Modelica.h)
 
 
@@ -18,7 +18,7 @@ add_precompiled_header(${BroydenName} runtime/include/Solver/Modelica.h)
 
 install(TARGETS ${BroydenName} DESTINATION ${LIBINSTALLEXT})
 install(FILES
-  ${CMAKE_SOURCE_DIR}/runtime/include/Solver/Broyden/Broyden.h
-  ${CMAKE_SOURCE_DIR}/runtime/include/Solver/Broyden/BroydenSettings.h
-  ${CMAKE_SOURCE_DIR}/runtime/include/Solver/Broyden/FactoryExport.h
+  ${CMAKE_SOURCE_DIR}/Include/Solver/Broyden/Broyden.h
+  ${CMAKE_SOURCE_DIR}/Include/Solver/Broyden/BroydenSettings.h
+  ${CMAKE_SOURCE_DIR}/Include/Solver/Broyden/FactoryExport.h
   DESTINATION include/omc/cpp/Solver/Broyden)

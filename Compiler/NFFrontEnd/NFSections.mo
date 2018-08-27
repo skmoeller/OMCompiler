@@ -31,6 +31,7 @@
 
 encapsulated uniontype NFSections
   import Equation = NFEquation;
+  import Algorithm = NFAlgorithm;
   import Statement = NFStatement;
   import ComponentRef = NFComponentRef;
   import Expression = NFExpression;
@@ -43,8 +44,8 @@ public
   record SECTIONS
     list<Equation> equations;
     list<Equation> initialEquations;
-    list<list<Statement>> algorithms;
-    list<list<Statement>> initialAlgorithms;
+    list<Algorithm> algorithms;
+    list<Algorithm> initialAlgorithms;
   end SECTIONS;
 
   record EXTERNAL
@@ -61,8 +62,8 @@ public
   function new
     input list<Equation> equations;
     input list<Equation> initialEquations;
-    input list<list<Statement>> algorithms;
-    input list<list<Statement>> initialAlgorithms;
+    input list<Algorithm> algorithms;
+    input list<Algorithm> initialAlgorithms;
     output Sections sections;
   algorithm
     if listEmpty(equations) and listEmpty(initialEquations) and
@@ -76,8 +77,8 @@ public
   function prepend
     input list<Equation> equations;
     input list<Equation> initialEquations;
-    input list<list<Statement>> algorithms;
-    input list<list<Statement>> initialAlgorithms;
+    input list<Algorithm> algorithms;
+    input list<Algorithm> initialAlgorithms;
     input output Sections sections;
   algorithm
     sections := match sections
@@ -95,23 +96,37 @@ public
   function prependEquation
     input Equation eq;
     input output Sections sections;
+    input Boolean isInitial = false;
   algorithm
     sections := match sections
       case SECTIONS()
         algorithm
-          sections.equations := eq :: sections.equations;
+          if isInitial then
+            sections.initialEquations := eq :: sections.initialEquations;
+          else
+            sections.equations := eq :: sections.equations;
+          end if;
         then
           sections;
 
-      else SECTIONS({eq}, {}, {}, {});
+      case EMPTY()
+        then if isInitial then SECTIONS({}, {eq}, {}, {}) else SECTIONS({eq}, {}, {}, {});
+
+      else
+        algorithm
+          Error.assertion(false, getInstanceName() +
+            " got invalid Sections to prepend equation to", sourceInfo());
+        then
+          fail();
+
     end match;
   end prependEquation;
 
   function append
     input list<Equation> equations;
     input list<Equation> initialEquations;
-    input list<list<Statement>> algorithms;
-    input list<list<Statement>> initialAlgorithms;
+    input list<Algorithm> algorithms;
+    input list<Algorithm> initialAlgorithms;
     input output Sections sections;
   algorithm
     sections := match sections
@@ -157,11 +172,11 @@ public
     end EquationFn;
 
     partial function AlgorithmFn
-      input output list<Statement> alg;
+      input output Algorithm alg;
     end AlgorithmFn;
   protected
     list<Equation> eq, ieq;
-    list<list<Statement>> alg, ialg;
+    list<Algorithm> alg, ialg;
   algorithm
     () := match sections
       case SECTIONS()
@@ -192,12 +207,12 @@ public
     end EquationFn;
 
     partial function AlgorithmFn
-      input output list<Statement> alg;
+      input output Algorithm alg;
       input ArgT arg;
     end AlgorithmFn;
   protected
     list<Equation> eq, ieq;
-    list<list<Statement>> alg, ialg;
+    list<Algorithm> alg, ialg;
   algorithm
     () := match sections
       case SECTIONS()
@@ -213,6 +228,46 @@ public
       else ();
     end match;
   end map1;
+
+  function apply
+    input Sections sections;
+    input EquationFn eqFn;
+    input AlgorithmFn algFn;
+    input EquationFn ieqFn = eqFn;
+    input AlgorithmFn ialgFn = algFn;
+
+    partial function EquationFn
+      input Equation eq;
+    end EquationFn;
+
+    partial function AlgorithmFn
+      input Algorithm alg;
+    end AlgorithmFn;
+  algorithm
+    () := match sections
+      case SECTIONS()
+        algorithm
+          for eq in sections.equations loop
+            eqFn(eq);
+          end for;
+
+          for ieq in sections.initialEquations loop
+            ieqFn(ieq);
+          end for;
+
+          for alg in sections.algorithms loop
+            algFn(alg);
+          end for;
+
+          for ialg in sections.initialAlgorithms loop
+            ialgFn(ialg);
+          end for;
+        then
+          ();
+
+      else ();
+    end match;
+  end apply;
 
   function isEmpty
     input Sections sections;

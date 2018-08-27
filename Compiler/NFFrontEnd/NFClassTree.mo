@@ -36,6 +36,7 @@ encapsulated package NFClassTree
   import Mutable;
   import NFModifier.Modifier;
   import Import = NFImport;
+  import NFBuiltin;
 
 protected
   import Array;
@@ -74,6 +75,12 @@ public
           case IMPORT() then entry.index;
         end match;
       end index;
+
+      function isEqual
+        input Entry entry1;
+        input Entry entry2;
+        output Boolean isEqual = index(entry1) == index(entry2);
+      end isEqual;
     end Entry;
 
     import BaseAvlTree;
@@ -150,6 +157,15 @@ public
       input LookupTree.Entry lentry;
       output Entry entry = ENTRY(lentry, NONE(), {}, EntryType.ENTRY);
     end newEntry;
+
+    function idExistsInEntry
+      input LookupTree.Entry id;
+      input Entry entry;
+      output Boolean exists;
+    algorithm
+      exists := LookupTree.Entry.isEqual(id, entry.entry) or
+                List.exist(entry.children, function idExistsInEntry(id = id));
+    end idExistsInEntry;
 
     annotation(__OpenModelica_Interface="util");
   end DuplicateTree;
@@ -340,28 +356,33 @@ public
       output ClassTree tree;
     protected
       array<InstNode> comps;
+      Integer attr_count = 5;
       Integer i = 0;
       InstNode comp;
       LookupTree.Tree ltree;
       String name;
     algorithm
-      comps := arrayCreateNoInit(listLength(literals), InstNode.EMPTY_NODE());
-      ltree := LookupTree.new();
+      comps := arrayCreateNoInit(listLength(literals) + attr_count, InstNode.EMPTY_NODE());
+      ltree := NFBuiltin.ENUM_LOOKUP_TREE;
+
+      arrayUpdateNoBoundsChecking(comps, 1, InstNode.fromComponent("quantity",
+        Component.TYPE_ATTRIBUTE(Type.STRING(), Modifier.NOMOD()), enumClass));
+      arrayUpdateNoBoundsChecking(comps, 2, InstNode.fromComponent("min",
+        Component.TYPE_ATTRIBUTE(enumType, Modifier.NOMOD()), enumClass));
+      arrayUpdateNoBoundsChecking(comps, 3, InstNode.fromComponent("max",
+        Component.TYPE_ATTRIBUTE(enumType, Modifier.NOMOD()), enumClass));
+      arrayUpdateNoBoundsChecking(comps, 4, InstNode.fromComponent("start",
+        Component.TYPE_ATTRIBUTE(enumType, Modifier.NOMOD()), enumClass));
+      arrayUpdateNoBoundsChecking(comps, 5, InstNode.fromComponent("fixed",
+        Component.TYPE_ATTRIBUTE(Type.BOOLEAN(), Modifier.NOMOD()), enumClass));
 
       for l in literals loop
-        name := l.literal;
-
-        // Check that the literal is not one of the reserved attribute names.
-        if listMember(name, {"quantity", "min", "max", "start", "fixed"}) then
-          Error.addSourceMessage(Error.INVALID_ENUM_LITERAL, {name}, InstNode.info(enumClass));
-          fail();
-        end if;
-
         // Make a new component node for the literal and add it to the lookup tree.
+        name := l.literal;
         i := i + 1;
         comp := InstNode.fromComponent(name, Component.newEnum(enumType, name, i), enumClass);
-        arrayUpdateNoBoundsChecking(comps, i, comp);
-        ltree := LookupTree.add(ltree, name, LookupTree.Entry.COMPONENT(i),
+        arrayUpdateNoBoundsChecking(comps, i + attr_count, comp);
+        ltree := LookupTree.add(ltree, name, LookupTree.Entry.COMPONENT(i + attr_count),
           function addEnumConflict(literal = comp));
       end for;
 
@@ -551,13 +572,20 @@ public
             // extends say they should go. The order shouldn't matter for classes,
             // and otherwise we wouldn't be able to reuse the lookup tree.
             for ext in exts loop
-              INSTANTIATED_TREE(classes = ext_clss) := Class.classTree(InstNode.getClass(ext));
-              cls_count := arrayLength(ext_clss);
+              () := match Class.classTree(InstNode.getClass(ext))
+                case INSTANTIATED_TREE(classes = ext_clss)
+                  algorithm
+                    cls_count := arrayLength(ext_clss);
 
-              if cls_count > 0 then
-                Array.copyRange(ext_clss, clss, 1, cls_count, cls_idx);
-                cls_idx := cls_idx + cls_count;
-              end if;
+                    if cls_count > 0 then
+                      Array.copyRange(ext_clss, clss, 1, cls_count, cls_idx);
+                      cls_idx := cls_idx + cls_count;
+                    end if;
+                  then
+                    ();
+
+                else ();
+              end match;
             end for;
 
             // Copy both local and inherited components into the new array.
@@ -592,20 +620,48 @@ public
             end for;
 
             // Sanity check.
-            Error.assertion(comp_idx == compCount + 1, getInstanceName() + " miscounted components in " + InstNode.name(clsNode), sourceInfo());
-            Error.assertion(cls_idx == classCount + 1, getInstanceName() + " miscounted classes in " + InstNode.name(clsNode), sourceInfo());
+            if comp_idx <> compCount + 1 then
+              Error.assertion(false, getInstanceName() + " miscounted components in " +
+                InstNode.name(clsNode), sourceInfo());
+            end if;
+
+            if cls_idx <> classCount + 1 then
+              Error.assertion(false, getInstanceName() + " miscounted classes in " +
+                InstNode.name(clsNode), sourceInfo());
+            end if;
 
             // Create a new class tree and update the class in the node.
             cls.elements := INSTANTIATED_TREE(ltree, clss, comps, local_comps, exts, imps, dups);
           then
             ();
 
-        case Class.DERIVED_CLASS()
+        case Class.EXPANDED_DERIVED(baseClass = node)
           algorithm
-            (node, _, classCount, compCount) := instantiate(cls.baseClass);
+            node := InstNode.setNodeType(
+              InstNodeType.BASE_CLASS(clsNode, InstNode.definition(node)), node);
+            (node, _, classCount, compCount) := instantiate(node);
             cls.baseClass := node;
           then
             ();
+
+        case Class.PARTIAL_BUILTIN(elements = tree as FLAT_TREE(components = old_comps))
+          algorithm
+            instance := if InstNode.isEmpty(instance) then clsNode else instance;
+            old_comps := arrayCopy(old_comps);
+
+            for i in 1:arrayLength(old_comps) loop
+              node := old_comps[i];
+              node := InstNode.setParent(instance, node);
+              old_comps[i] := InstNode.replaceComponent(InstNode.component(node), node);
+            end for;
+
+            tree.components := old_comps;
+            cls.elements := tree;
+            compCount := arrayLength(old_comps);
+          then
+            ();
+
+        case Class.PARTIAL_BUILTIN() then ();
 
         else
           algorithm
@@ -626,28 +682,26 @@ public
     protected
       LookupTree.Tree ltree = LookupTree.new();
       Integer i = 1;
-      array<Mutable<InstNode>> comps;
+      array<InstNode> comps;
     algorithm
-      comps := arrayCreateNoInit(listLength(inputs) + listLength(locals) + 1,
-        Mutable.create(InstNode.EMPTY_NODE()));
+      comps := arrayCreateNoInit(listLength(inputs) + listLength(locals) + 1, InstNode.EMPTY_NODE());
 
       for ci in inputs loop
-        comps[i] := Mutable.create(ci);
+        comps[i] := ci;
         ltree := addLocalElement(InstNode.name(ci), LookupTree.Entry.COMPONENT(i), tree, ltree);
         i := i + 1;
       end for;
 
       for cl in locals loop
-        comps[i] := Mutable.create(cl);
+        comps[i] := cl;
         ltree := addLocalElement(InstNode.name(cl), LookupTree.Entry.COMPONENT(i), tree, ltree);
         i := i + 1;
       end for;
 
-      comps[i] := Mutable.create(out);
+      comps[i] := out;
       ltree := addLocalElement(InstNode.name(out), LookupTree.Entry.COMPONENT(i), tree, ltree);
 
-      tree := INSTANTIATED_TREE(ltree, listArray({}), comps, List.intRange(i),
-        listArray({}), listArray({}), DuplicateTree.new());
+      tree := FLAT_TREE(ltree, listArray({}), comps, listArray({}), DuplicateTree.new());
     end fromRecordConstructor;
 
     function mapRedeclareChains
@@ -797,6 +851,15 @@ public
         elements := {lookupElementPtr(name, tree)};
       end try;
     end lookupElementsPtr;
+
+    function lookupComponentIndex
+      input String name;
+      input ClassTree tree;
+      output Integer index;
+    algorithm
+      LookupTree.Entry.COMPONENT(index = index) :=
+        LookupTree.get(lookupTree(tree), name);
+    end lookupComponentIndex;
 
     function mapClasses
       input ClassTree tree;
@@ -1103,6 +1166,16 @@ public
       end match;
     end getComponents;
 
+    function isEmptyTree
+      input ClassTree tree;
+      output Boolean isEmpty;
+    algorithm
+      isEmpty := match tree
+        case EMPTY_TREE() then true;
+        else false;
+      end match;
+    end isEmptyTree;
+
   protected
 
     function instExtendsComps
@@ -1110,16 +1183,39 @@ public
       input array<Mutable<InstNode>> comps;
       input output Integer index "The first free index in comps";
     protected
-      array<Mutable<InstNode>> ext_comps;
+      array<Mutable<InstNode>> ext_comps_ptrs;
+      array<InstNode> ext_comps;
       Integer comp_count;
+      InstNode ext_comp;
     algorithm
-      INSTANTIATED_TREE(components = ext_comps) := Class.classTree(InstNode.getClass(extNode));
-      comp_count := arrayLength(ext_comps);
+      () := match Class.classTree(InstNode.getClass(extNode))
+        case INSTANTIATED_TREE(components = ext_comps_ptrs)
+          algorithm
+            comp_count := arrayLength(ext_comps_ptrs);
 
-      if comp_count > 0 then
-        Array.copyRange(ext_comps, comps, 1, comp_count, index);
-        index := index + comp_count;
-      end if;
+            if comp_count > 0 then
+              Array.copyRange(ext_comps_ptrs, comps, 1, comp_count, index);
+              index := index + comp_count;
+            end if;
+          then
+            ();
+
+        case FLAT_TREE(components = ext_comps)
+          algorithm
+            comp_count := arrayLength(ext_comps);
+
+            if comp_count > 0 then
+              for i in index:index+comp_count-1 loop
+                arrayUpdate(comps, i, Mutable.create(ext_comps[i]));
+              end for;
+
+              index := index + comp_count;
+            end if;
+          then
+            ();
+
+        else ();
+      end match;
     end instExtendsComps;
 
     function getDuplicates
@@ -1467,20 +1563,31 @@ public
       input output Integer classCount = 0;
       input output Integer componentCount = 0;
     protected
-      LookupTree.Tree ltree;
       array<InstNode> clss, comps, exts;
     algorithm
-      EXPANDED_TREE(tree = ltree, classes = clss, components = comps, exts = exts) :=
-        Class.classTree(InstNode.getClass(extendsNode));
+      () := match Class.classTree(InstNode.getClass(extendsNode))
+        case EXPANDED_TREE(classes = clss, components = comps, exts = exts)
+          algorithm
+            // The component array contains placeholders for extends, which need to be
+            // subtracted to get the proper component count.
+            componentCount := componentCount + arrayLength(comps) - arrayLength(exts);
+            classCount := classCount + arrayLength(clss);
 
-      // The component array contains placeholders for extends, which need to be
-      // subtracted to get the proper component count.
-      componentCount := componentCount + arrayLength(comps) - arrayLength(exts);
-      classCount := classCount + arrayLength(clss);
+            for ext in exts loop
+              (classCount, componentCount) := countInheritedElements(ext, classCount, componentCount);
+            end for;
+          then
+            ();
 
-      for ext in exts loop
-        (classCount, componentCount) := countInheritedElements(ext, classCount, componentCount);
-      end for;
+        case FLAT_TREE(classes = clss, components = comps)
+          algorithm
+            componentCount := componentCount + arrayLength(comps);
+            classCount := classCount + arrayLength(clss);
+          then
+            ();
+
+        else ();
+      end match;
     end countInheritedElements;
 
     function expandExtends
@@ -1501,7 +1608,12 @@ public
       // lookup tree, add the class or component index as an offset, and then
       // add the entry to the given lookup tree.
       cls_tree := Class.classTree(InstNode.getClass(extendsNode));
-      EXPANDED_TREE(tree = ext_tree, duplicates = ext_dups) := cls_tree;
+
+      (ext_tree, ext_dups) := match cls_tree
+        case EXPANDED_TREE() then (cls_tree.tree, cls_tree.duplicates);
+        case FLAT_TREE() then (cls_tree.tree, cls_tree.duplicates);
+        else algorithm return; then (tree, DuplicateTree.new());
+      end match;
 
       // Copy entries from the extends node's duplicate tree if there are any.
       if not DuplicateTree.isEmpty(ext_dups) then
@@ -1568,6 +1680,7 @@ public
       DuplicateTree.Entry dup_entry;
       Integer new_id = LookupTree.Entry.index(newEntry);
       Integer old_id = LookupTree.Entry.index(oldEntry);
+      DuplicateTree.EntryType ty;
     algorithm
       dups := Mutable.access(duplicates);
       opt_dup_entry := DuplicateTree.getOpt(dups, name);
@@ -1584,48 +1697,56 @@ public
 
         dups := DuplicateTree.add(dups, name, dup_entry);
         Mutable.update(duplicates, dups);
-      elseif isNone(DuplicateTree.getOpt(extDuplicates, name)) then
-        // If a duplicate entry does exist, but not in the extends node's duplicate
-        // tree, then we need to add the inherited element to the existing entry.
-        // This happens when the element is not a duplicate in its own scope.
-        SOME(dup_entry) := opt_dup_entry;
-
-        // TODO: Change this to an if-statement when compiler bug #4502 is fixed.
-        () := match dup_entry.ty
-          case DuplicateTree.EntryType.REDECLARE
-            algorithm
-              // If the existing entry is for a redeclare, then the position of
-              // the element doesn't matter and the new entry should be added as
-              // a child to the redeclare.
-              entry := newEntry;
-              dup_entry.children := DuplicateTree.newEntry(newEntry) :: dup_entry.children;
-            then
-              ();
-          else
-            algorithm
-              // Otherwise we need to keep the 'first' element as the parent.
-              // Note that this only actually works for components, since we don't
-              // preserve the order for classes. But which class we choose shouldn't
-              // matter since they should be identical. We might also compare e.g. a
-              // component to a class here, but that will be caught in checkDuplicates.
-              if new_id < old_id then
-                entry := newEntry;
-                dup_entry := DuplicateTree.Entry.ENTRY(newEntry, NONE(),
-                  DuplicateTree.newEntry(oldEntry) :: dup_entry.children, dup_entry.ty);
-              else
-                entry := oldEntry;
-                dup_entry.children := DuplicateTree.newEntry(newEntry) :: dup_entry.children;
-              end if;
-            then
-              ();
-        end match;
-
-        dups := DuplicateTree.update(dups, name, dup_entry);
-        Mutable.update(duplicates, dups);
       else
-        // If an entry does exist in both duplicate tree, then it's already been
-        // added by expandExtends and nothing more needs to be done here.
-        entry := if new_id < old_id then newEntry else oldEntry;
+        SOME(dup_entry) := opt_dup_entry;
+        ty := dup_entry.ty;
+
+        // Here it's possible for either the new or the old entry to not exist in the duplicate entry.
+        // The new might not exist simply because it hasn't been added yet, while the old might not
+        // exist because it wasn't a duplicate in its own scope. At least one of them must exist though,
+        // since duplicate entries are added for any name occurring more than once.
+        if not DuplicateTree.idExistsInEntry(newEntry, dup_entry) then
+          if ty == DuplicateTree.EntryType.REDECLARE then
+            // If the existing entry is for a redeclare, then the position of the element
+            // doesn't matter and the new entry should be added as a child to the redeclare.
+            entry := newEntry;
+            dup_entry.children := DuplicateTree.newEntry(newEntry) :: dup_entry.children;
+          else
+            // Otherwise we need to keep the 'first' element as the parent.
+            // Note that this only actually works for components, since we don't
+            // preserve the order for classes. But which class we choose shouldn't
+            // matter since they should be identical. We might also compare e.g. a
+            // component to a class here, but that will be caught in checkDuplicates.
+            if new_id < old_id then
+              entry := newEntry;
+              dup_entry := DuplicateTree.Entry.ENTRY(newEntry, NONE(),
+                DuplicateTree.newEntry(oldEntry) :: dup_entry.children, dup_entry.ty);
+            else
+              entry := oldEntry;
+              dup_entry.children := DuplicateTree.newEntry(newEntry) :: dup_entry.children;
+            end if;
+          end if;
+
+          dups := DuplicateTree.update(dups, name, dup_entry);
+          Mutable.update(duplicates, dups);
+        elseif not DuplicateTree.idExistsInEntry(oldEntry, dup_entry) then
+          // Same as above but we add the old entry instead.
+          if ty == DuplicateTree.EntryType.REDECLARE or new_id < old_id then
+            entry := newEntry;
+            dup_entry.children := DuplicateTree.newEntry(oldEntry) :: dup_entry.children;
+          else
+            entry := newEntry;
+            dup_entry := DuplicateTree.Entry.ENTRY(newEntry, NONE(),
+              DuplicateTree.newEntry(oldEntry) :: dup_entry.children, dup_entry.ty);
+          end if;
+
+          dups := DuplicateTree.update(dups, name, dup_entry);
+          Mutable.update(duplicates, dups);
+        else
+          // If both the old and the new entry already exists, which can happen if the
+          // new entry was added by expandExtents, then we don't need to add anything.
+          entry := if new_id < old_id then newEntry else oldEntry;
+        end if;
       end if;
     end addInheritedElementConflict;
 

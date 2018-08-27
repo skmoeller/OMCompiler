@@ -48,6 +48,7 @@ import BackendDump;
 import BaseHashSet;
 import BaseHashTable;
 import ComponentReference;
+import CommonSubExpression;
 import DAEUtil;
 import Debug;
 import ElementSource;
@@ -1249,6 +1250,17 @@ algorithm
   end match;
 end isAlgebraicOldState;
 
+public function isCSEVar
+"Return true if variable is introduced by wrapFunctionCall and prefixed with '$cse'"
+  input BackendDAE.Var inVar;
+  output Boolean outBoolean;
+algorithm
+  outBoolean := match (inVar)
+    case (BackendDAE.VAR()) guard CommonSubExpression.isCSECref(inVar.varName) then true;
+    else false;
+  end match;
+end isCSEVar;
+
 public function hasMayerTermAnno
 "author: Vitalij Ruge
  Return true if variable has isMayer=true annotation"
@@ -1590,6 +1602,7 @@ algorithm
       outVar = BackendDAE.VAR(inCref, varKind, DAE.BIDIR(), DAE.NON_PARALLEL(), inType, NONE(), NONE(), {}, DAE.emptyElementSource, DAEUtil.setProtectedAttr(NONE(), true), NONE(), DAE.BCONST(false), NONE(), DAE.NON_CONNECTOR(), DAE.NOT_INNER_OUTER(), true);
     then outVar;
   end match;
+  outVar := setHideResult(outVar, DAE.BCONST(true));
 end createCSEVar;
 
 public function generateVar

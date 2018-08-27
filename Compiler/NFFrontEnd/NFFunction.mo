@@ -38,11 +38,12 @@ import NFInstNode.InstNode;
 import Type = NFType;
 import NFPrefixes.*;
 import List;
+import FunctionDerivative = NFFunctionDerivative;
 
 protected
 import ErrorExt;
 import Inst = NFInst;
-import Binding = NFBinding;
+import NFBinding.Binding;
 import Config;
 import DAE;
 import DAEDump;
@@ -66,6 +67,10 @@ import MatchKind = NFTypeCheck.MatchKind;
 import Restriction = NFRestriction;
 import NFTyping.ExpOrigin;
 import Dimension = NFDimension;
+import Statement = NFStatement;
+import Sections = NFSections;
+import Algorithm = NFAlgorithm;
+import OperatorOverloading = NFOperatorOverloading;
 
 
 public
@@ -205,7 +210,9 @@ uniontype Function
     list<Slot> slots;
     Type returnType;
     DAE.FunctionAttributes attributes;
+    list<FunctionDerivative> derivatives;
     Pointer<Boolean> collected "Whether this function has already been added to the function tree or not.";
+    Pointer<Integer> callCounter "Used during function evaluation to limit recursion.";
   end FUNCTION;
 
   function new
@@ -223,7 +230,8 @@ uniontype Function
     attr := makeAttributes(node, inputs, outputs);
     // Make sure builtin functions aren't added to the function tree.
     collected := Pointer.create(isBuiltinAttr(attr));
-    fn := FUNCTION(path, node, inputs, outputs, locals, {}, Type.UNKNOWN(), attr, collected);
+    fn := FUNCTION(path, node, inputs, outputs, locals, {}, Type.UNKNOWN(),
+      attr, {}, collected, Pointer.create(0));
   end new;
 
   function lookupFunctionSimple
@@ -262,11 +270,11 @@ uniontype Function
     end try;
 
     (functionRef, found_scope) := Lookup.lookupFunctionName(functionName, scope, info);
-    prefix := ComponentRef.fromNodeList(InstNode.scopeList(found_scope));
+    prefix := ComponentRef.fromNodeList(InstNode.scopeList(InstNode.classScope(found_scope), includeRoot = true));
     functionRef := ComponentRef.append(functionRef, prefix);
   end lookupFunction;
 
-  function instFunc
+  function instFunction
     input Absyn.ComponentRef functionName;
     input InstNode scope;
     input SourceInfo info;
@@ -276,12 +284,11 @@ uniontype Function
   protected
     CachedData cache;
   algorithm
-    // Look up the the function.
     fn_ref := lookupFunction(functionName, scope, info);
-    (fn_ref, fn_node, specialBuiltin) := instFuncRef(fn_ref, info);
-  end instFunc;
+    (fn_ref, fn_node, specialBuiltin) := instFunctionRef(fn_ref, info);
+  end instFunction;
 
-  function instFuncRef
+  function instFunctionRef
     input output ComponentRef fn_ref;
     input SourceInfo info;
     output InstNode fn_node;
@@ -289,21 +296,17 @@ uniontype Function
   protected
     CachedData cache;
   algorithm
-    // Look up the the function.
-    fn_node := ComponentRef.node(fn_ref);
+    fn_node := InstNode.classScope(ComponentRef.node(fn_ref));
     cache := InstNode.getFuncCache(fn_node);
 
     // Check if a cached instantiation of this function already exists.
     (fn_node, specialBuiltin) := match cache
       case CachedData.FUNCTION() then (fn_node, cache.specialBuiltin);
-      else algorithm
-        (fn_node, specialBuiltin) := instFunc2(ComponentRef.toPath(fn_ref), fn_node, info);
-        instFuncExpressions(fn_node);
-      then (fn_node, specialBuiltin);
+      else instFunction2(ComponentRef.toPath(fn_ref), fn_node, info);
     end match;
-  end instFuncRef;
+  end instFunctionRef;
 
-  function instFuncNode
+  function instFunctionNode
     "Instantiates the given InstNode as a function."
     input output InstNode node;
   protected
@@ -315,27 +318,13 @@ uniontype Function
       case CachedData.FUNCTION() then ();
       else
         algorithm
-          node := instFunc2(InstNode.scopePath(node), node, InstNode.info(node));
-          Inst.instExpressions(node);
+          node := instFunction2(InstNode.scopePath(node), node, InstNode.info(node));
         then
           ();
     end match;
-  end instFuncNode;
+  end instFunctionNode;
 
-  function instFuncExpressions
-    input InstNode node;
-  protected
-    list<Function> funcs;
-    Boolean special;
-  algorithm
-    funcs := getCachedFuncs(node);
-
-    for func in funcs loop
-      Inst.instExpressions(func.node);
-    end for;
-  end instFuncExpressions;
-
-  function instFunc2
+  function instFunction2
     input Absyn.Path fnPath;
     input output InstNode fnNode;
     input SourceInfo info;
@@ -350,20 +339,26 @@ uniontype Function
         Absyn.ComponentRef cr;
         InstNode sub_fnNode;
         list<Function> funcs;
+        list<FunctionDerivative> fn_ders;
+
+      case SCode.CLASS() guard SCode.isOperatorRecord(def)
+        algorithm
+          fnNode := instFunction3(fnNode);
+          fnNode := OperatorOverloading.instConstructor(fnPath, fnNode, info);
+        then
+          (fnNode, false);
 
       case SCode.CLASS() guard SCode.isRecord(def)
         algorithm
-          // fnNode := InstNode.setNodeType(NFInstNode.InstNodeType.ROOT_CLASS(), fnNode);
-          fnNode := Inst.instantiate(fnNode);
-          fnNode := Record.instConstructors(fnPath, fnNode, info);
+          fnNode := instFunction3(fnNode);
+          fnNode := Record.instDefaultConstructor(fnPath, fnNode, info);
         then
           (fnNode, false);
 
       case SCode.CLASS(restriction = SCode.R_OPERATOR(), classDef = cdef as SCode.PARTS())
         algorithm
-          // fnNode := InstNode.setNodeType(NFInstNode.InstNodeType.ROOT_CLASS(), fnNode);
-          fnNode := Inst.instantiate(fnNode);
-          fnNode := Record.instOperatorFunctions(fnNode, info);
+          fnNode := instFunction3(fnNode);
+          fnNode := OperatorOverloading.instOperatorFunctions(fnNode, info);
         then
           (fnNode, false);
 
@@ -371,7 +366,7 @@ uniontype Function
         algorithm
           for p in cdef.pathLst loop
             cr := Absyn.pathToCref(p);
-            (_,sub_fnNode,specialBuiltin) := instFunc(cr,fnNode,info);
+            (_,sub_fnNode,specialBuiltin) := instFunction(cr,fnNode,info);
             for f in getCachedFuncs(sub_fnNode) loop
               fnNode := InstNode.cacheAddFunc(fnNode, f, specialBuiltin);
             end for;
@@ -381,16 +376,31 @@ uniontype Function
 
       case SCode.CLASS()
         algorithm
+          if SCode.isOperator(def) then
+            OperatorOverloading.checkOperatorRestrictions(fnNode);
+          end if;
+
           fnNode := InstNode.setNodeType(NFInstNode.InstNodeType.ROOT_CLASS(), fnNode);
-          fnNode := Inst.instantiate(fnNode);
-          fn := Function.new(fnPath, fnNode);
+          fnNode := instFunction3(fnNode);
+          fn := new(fnPath, fnNode);
           specialBuiltin := isSpecialBuiltin(fn);
+          fn.derivatives := FunctionDerivative.instDerivatives(fnNode, fn);
           fnNode := InstNode.cacheAddFunc(fnNode, fn, specialBuiltin);
         then
           (fnNode, specialBuiltin);
 
     end match;
-  end instFunc2;
+  end instFunction2;
+
+  function instFunction3
+    input output InstNode fnNode;
+  algorithm
+    fnNode := Inst.instantiate(fnNode);
+    // Set up an empty function cache to signal that this function is
+    // currently being instantiated, so recursive functions can be handled.
+    InstNode.cacheInitFunc(fnNode);
+    Inst.instExpressions(fnNode);
+  end instFunction3;
 
   function getCachedFuncs
     input InstNode inNode;
@@ -398,7 +408,7 @@ uniontype Function
   protected
     CachedData cache;
   algorithm
-    cache := InstNode.getFuncCache(inNode);
+    cache := InstNode.getFuncCache(InstNode.classScope(inNode));
     outFuncs := match cache
       case CachedData.FUNCTION() then cache.funcs;
       else fail();
@@ -498,6 +508,11 @@ uniontype Function
     // if isSome(display_name) then Util.getOption(display_name) else fn.path;
     str := Absyn.pathString(fn_name) + "(" + input_str + ")" + output_str;
   end signatureString;
+
+  function candidateFuncListString
+    input list<Function> fns;
+    output String s = stringDelimitList(list(Function.signatureString(fn, true) for fn in fns), "\n  ");
+  end candidateFuncListString;
 
   function callString
     "Constructs a string representing a call, for use in error messages."
@@ -764,9 +779,7 @@ uniontype Function
         end if;
 
         (margexp, mty, matchKind) := TypeCheck.matchTypes(tmpty, compty, argexp, false);
-        // Allow only exact matches for vectorization.
-        // No casting, generic... matches alllowed (which are allowed for non-vected function matching)
-        correct := TypeCheck.isExactMatch(matchKind);
+        correct := TypeCheck.isValidArgumentMatch(matchKind);
         vectorized := true::vectorized;
       end if;
 
@@ -785,6 +798,8 @@ uniontype Function
         correct := false;
         Error.addSourceMessage(Error.FUNCTION_SLOT_VARIABILITY, {
           InstNode.name(inputnode), Expression.toString(argexp),
+          Absyn.pathString(Function.name(func)),
+          Prefixes.variabilityString(var),
           Prefixes.variabilityString(Component.variability(comp))
         }, info);
         funcMatchKind := NO_MATCH;
@@ -852,6 +867,8 @@ uniontype Function
         correct := false;
         Error.addSourceMessage(Error.FUNCTION_SLOT_VARIABILITY, {
           InstNode.name(inputnode), Expression.toString(argexp),
+          Absyn.pathString(name(func)),
+          Prefixes.variabilityString(var),
           Prefixes.variabilityString(Component.variability(comp))
         }, info);
         funcMatchKind := NO_MATCH;
@@ -871,6 +888,7 @@ uniontype Function
     input list<TypedArg> args;
     input list<TypedNamedArg> named_args;
     input SourceInfo info;
+    input Boolean vectorize = true;
     output list<TypedArg> out_args;
     output FunctionMatchKind matchKind = NO_MATCH;
   protected
@@ -882,7 +900,7 @@ uniontype Function
 
       // If we failed to match a function normally then we try to see if
       // we can have a vectorized match.
-      if not matched then
+      if not matched and vectorize then
         (out_args, matched, matchKind) := matchArgsVectorize(func, out_args, info);
       end if;
     end if;
@@ -893,6 +911,7 @@ uniontype Function
     input list<TypedArg> args;
     input list<TypedNamedArg> named_args;
     input SourceInfo info;
+    input Boolean vectorize = true;
     output list<MatchedFunction> matchedFunctions;
   protected
     list<TypedArg> m_args;
@@ -901,7 +920,7 @@ uniontype Function
   algorithm
     matchedFunctions := {};
     for func in funcs loop
-      (m_args, matchKind) := matchFunction(func, args, named_args, info);
+      (m_args, matchKind) := matchFunction(func, args, named_args, info, vectorize);
 
       if FunctionMatchKind.isValid(matchKind) then
         matchedFunctions := MatchedFunction.MATCHED_FUNC(func,m_args,matchKind)::matchedFunctions;
@@ -914,11 +933,12 @@ uniontype Function
     input list<TypedArg> args;
     input list<TypedNamedArg> named_args;
     input SourceInfo info;
+    input Boolean vectorize = true;
     output list<MatchedFunction> matchedFunctions;
   protected
   algorithm
     ErrorExt.setCheckpoint("NFFunction:matchFunctions");
-    matchedFunctions := matchFunctions(funcs, args, named_args, info);
+    matchedFunctions := matchFunctions(funcs, args, named_args, info, vectorize);
     ErrorExt.rollBack("NFFunction:matchFunctions");
   end matchFunctionsSilent;
 
@@ -932,7 +952,52 @@ uniontype Function
     end match;
   end isTyped;
 
+  function typeRefCache
+    "Returns the function(s) referenced by the given cref, and types them if
+     they are not already typed."
+    input ComponentRef functionRef;
+    output list<Function> functions;
+  algorithm
+    functions := match functionRef
+      case ComponentRef.CREF() then typeNodeCache(functionRef.node);
+      else
+        algorithm
+          Error.assertion(false, getInstanceName() + " got invalid function call reference", sourceInfo());
+        then
+          fail();
+    end match;
+  end typeRefCache;
+
+  function typeNodeCache
+    "Returns the function(s) in the cache of the given node, and types them if
+     they are not already typed."
+    input InstNode functionNode;
+    output list<Function> functions;
+  protected
+    InstNode fn_node;
+    Boolean typed, special;
+    String name;
+  algorithm
+    fn_node := InstNode.classScope(functionNode);
+    CachedData.FUNCTION(functions, typed, special) := InstNode.getFuncCache(fn_node);
+
+    // Type the function(s) if not already done.
+    if not typed then
+      functions := list(typeFunctionSignature(f) for f in functions);
+      InstNode.setFuncCache(fn_node, CachedData.FUNCTION(functions, true, special));
+      functions := list(typeFunctionBody(f) for f in functions);
+      InstNode.setFuncCache(fn_node, CachedData.FUNCTION(functions, true, special));
+    end if;
+  end typeNodeCache;
+
   function typeFunction
+    input output Function fn;
+  algorithm
+    fn := typeFunctionSignature(fn);
+    fn := typeFunctionBody(fn);
+  end typeFunction;
+
+  function typeFunctionSignature
     "Types a function's parameters, local components and default arguments."
     input output Function fn;
   protected
@@ -941,6 +1006,7 @@ uniontype Function
   algorithm
     if not isTyped(fn) then
       // Type all the components in the function.
+      Typing.typeClassType(node, NFBinding.EMPTY_BINDING, ExpOrigin.FUNCTION);
       Typing.typeComponents(node, ExpOrigin.FUNCTION);
 
       // Type the binding of the inputs only. This is done because they are
@@ -956,7 +1022,7 @@ uniontype Function
       checkParamTypes(fn);
       fn.returnType := makeReturnType(fn);
     end if;
-  end typeFunction;
+  end typeFunctionSignature;
 
   function typeFunctionBody
     "Types the body of a function, along with any bindings of local variables
@@ -973,7 +1039,12 @@ uniontype Function
     end for;
 
     // Type the algorithm section of the function, if it has one.
-    Typing.typeSections(fn.node, ExpOrigin.FUNCTION);
+    Typing.typeFunctionSections(fn.node, ExpOrigin.FUNCTION);
+
+    // Type any derivatives of the function.
+    for fn_der in fn.derivatives loop
+      FunctionDerivative.typeDerivative(fn_der);
+    end for;
   end typeFunctionBody;
 
   function isBuiltin
@@ -1008,6 +1079,7 @@ uniontype Function
         special := match Absyn.pathFirstIdent(path)
           // Can have variable number of arguments.
           case "array" then true;
+          case "branch" then true;
           case "cardinality" then true;
           case "cat" then true;
           // Function should not be used in function context.
@@ -1019,8 +1091,10 @@ uniontype Function
           case "edge" then true;
           // can have variable number of arguments
           case "fill" then true;
+          case "getInstanceName" then true;
           // Always discrete.
           case "initial" then true;
+          case "isRoot" then true;
           // Arguments can be scalar, vector, matrix, 3d array .... basically anything
           // We need to make sure size(Arg,i) = 1 for 2 < i <= ndims(Arg).
           // return type should always be Matrix.
@@ -1037,11 +1111,14 @@ uniontype Function
           case "noEvent" then true;
           // can have variable number of arguments
           case "ones" then true;
+          case "potentialRoot" then true;
           // Function should not be used in function context.
           // argument should be a cref?
           case "pre" then true;
           // needs unboxing and return type fix.
           case "product" then true;
+          case "root" then true;
+          case "rooted" then true;
           // We need to make sure size(Arg,i) = 1 for 0 <= i <= ndims(Arg).
           // return type should always be scalar.
           case "scalar" then true;
@@ -1078,6 +1155,12 @@ uniontype Function
     output Boolean isPointer = fn.attributes.isFunctionPointer;
   end isFunctionPointer;
 
+  function isExternal
+    input Function fn;
+    output Boolean isExternal = not InstNode.isEmpty(fn.node) and
+                                Class.isExternalFunction(InstNode.getClass(fn.node));
+  end isExternal;
+
   function inlineBuiltin
     input Function fn;
     output DAE.InlineType inlineType;
@@ -1089,21 +1172,33 @@ uniontype Function
     end match;
   end inlineBuiltin;
 
+  function isDefaultRecordConstructor
+    input Function fn;
+    output Boolean isConstructor;
+  algorithm
+    isConstructor := match Class.restriction(InstNode.getClass(fn.node))
+      case Restriction.RECORD_CONSTRUCTOR() then true;
+      else false;
+    end match;
+  end isDefaultRecordConstructor;
+
   function toDAE
     input Function fn;
-    input list<DAE.FunctionDefinition> defs;
+    input DAE.FunctionDefinition def;
     output DAE.Function daeFn;
   protected
     SCode.Visibility vis;
     Boolean par, impr;
     DAE.InlineType ity;
     DAE.Type ty;
+    list<DAE.FunctionDefinition> defs;
   algorithm
     vis := SCode.PUBLIC(); // TODO: Use the actual visibility.
     par := false; // TODO: Use the actual partial prefix.
     impr := fn.attributes.isImpure;
     ity := fn.attributes.inline;
     ty := makeDAEType(fn);
+    defs := def :: list(FunctionDerivative.toDAE(fn_der) for fn_der in fn.derivatives);
     daeFn := DAE.FUNCTION(fn.path, defs, ty, vis, par, impr, ity,
       DAE.emptyElementSource, SCode.getElementComment(InstNode.definition(fn.node)));
   end toDAE;
@@ -1134,6 +1229,11 @@ uniontype Function
     ty := DAE.T_FUNCTION(params, Type.toDAE(fn.returnType), fn.attributes, fn.path);
   end makeDAEType;
 
+  function getBody
+    input Function fn;
+    output list<Statement> body = getBody2(fn.node);
+  end getBody;
+
 protected
   function collectParams
     "Sorts all the function parameters as inputs, outputs and locals."
@@ -1143,17 +1243,21 @@ protected
     input output list<InstNode> locals = {};
   protected
     Class cls;
-    array<Mutable<InstNode>> comps;
+    array<InstNode> comps;
     InstNode n;
   algorithm
     Error.assertion(InstNode.isClass(node), getInstanceName() + " got non-class node", sourceInfo());
     cls := InstNode.getClass(node);
 
     () := match cls
-      case Class.EXPANDED_CLASS(elements = ClassTree.INSTANTIATED_TREE(components = comps))
+      case Class.INSTANCED_CLASS(elements = ClassTree.FLAT_TREE(components = comps))
         algorithm
           for i in arrayLength(comps):-1:1 loop
-            n := Mutable.access(comps[i]);
+            n := comps[i];
+
+            if InstNode.isEmpty(n) then
+              continue;
+            end if;
 
             // Sort the components based on their direction.
             () := match paramDirection(n)
@@ -1165,7 +1269,7 @@ protected
         then
           ();
 
-      case Class.DERIVED_CLASS()
+      case Class.EXPANDED_DERIVED()
         algorithm
           (inputs, outputs, locals) := collectParams(cls.baseClass);
         then
@@ -1186,6 +1290,7 @@ protected
     ConnectorType cty;
     InnerOuter io;
     Visibility vis;
+    Variability var;
   algorithm
     Component.Attributes.ATTRIBUTES(
       connectorType = cty,
@@ -1193,6 +1298,7 @@ protected
       innerOuter = io) := Component.getAttributes(InstNode.component(component));
 
     vis := InstNode.visibility(component);
+    var := Component.variability(InstNode.component(component));
 
     // Function components may not be connectors.
     if cty <> ConnectorType.POTENTIAL then
@@ -1218,10 +1324,14 @@ protected
         fail();
       end if;
     else
+
       if vis == Visibility.PUBLIC then
         Error.addSourceMessage(Error.NON_FORMAL_PUBLIC_FUNCTION_VAR,
           {InstNode.name(component)}, InstNode.info(component));
-        fail();
+        // @adrpo: alow public constants and parameters in functions
+        if var > Variability.PARAMETER then
+          fail();
+        end if;
       end if;
     end if;
   end paramDirection;
@@ -1428,6 +1538,34 @@ protected
       else Type.TUPLE(ret_tyl, NONE());
     end match;
   end makeReturnType;
+
+  function getBody2
+    input InstNode node;
+    output list<Statement> body;
+  protected
+    Class cls = InstNode.getClass(node);
+    Algorithm fn_body;
+  algorithm
+    body := match cls
+      case Class.INSTANCED_CLASS(sections = Sections.SECTIONS(algorithms = {fn_body})) then fn_body.statements;
+      case Class.INSTANCED_CLASS(sections = Sections.EMPTY()) then {};
+
+      case Class.INSTANCED_CLASS(sections = Sections.SECTIONS(algorithms = _ :: _))
+        algorithm
+          Error.assertion(false, getInstanceName() + " got function with multiple algorithm sections", sourceInfo());
+        then
+          fail();
+
+      case Class.TYPED_DERIVED() then getBody2(cls.baseClass);
+
+      else
+        algorithm
+          Error.assertion(false, getInstanceName() + " got unknown function", sourceInfo());
+        then
+          fail();
+
+    end match;
+  end getBody2;
 end Function;
 
 annotation(__OpenModelica_Interface="frontend");

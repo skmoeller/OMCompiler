@@ -48,7 +48,12 @@ public
   record FUNCTION end FUNCTION;
   record MODEL end MODEL;
   record OPERATOR end OPERATOR;
-  record RECORD end RECORD;
+
+  record RECORD
+    Boolean isOperator;
+  end RECORD;
+
+  record RECORD_CONSTRUCTOR end RECORD_CONSTRUCTOR;
   record TYPE end TYPE;
   record UNKNOWN end UNKNOWN;
 
@@ -63,7 +68,7 @@ public
       case SCode.Restriction.R_FUNCTION() then FUNCTION();
       case SCode.Restriction.R_MODEL() then MODEL();
       case SCode.Restriction.R_OPERATOR() then OPERATOR();
-      case SCode.Restriction.R_RECORD() then RECORD();
+      case SCode.Restriction.R_RECORD() then RECORD(sres.isOperator);
       case SCode.Restriction.R_TYPE() then TYPE();
       else MODEL();
     end match;
@@ -98,6 +103,16 @@ public
     end match;
   end isConnector;
 
+  function isExpandableConnector
+    input Restriction res;
+    output Boolean isConnector;
+  algorithm
+    isConnector := match res
+      case CONNECTOR() then res.isExpandable;
+      else false;
+    end match;
+  end isExpandableConnector;
+
   function isExternalObject
     input Restriction res;
     output Boolean isExternalObject;
@@ -117,6 +132,53 @@ public
       else false;
     end match;
   end isFunction;
+
+  function isRecord
+    input Restriction res;
+    output Boolean isRecord;
+  algorithm
+    isRecord := match res
+      case RECORD() then true;
+      else false;
+    end match;
+  end isRecord;
+
+  function isOperatorRecord
+    input Restriction res;
+    output Boolean isOpRecord;
+  algorithm
+    isOpRecord := match res
+      case RECORD() then res.isOperator;
+      else false;
+    end match;
+  end isOperatorRecord;
+
+  function isType
+    input Restriction res;
+    output Boolean isType;
+  algorithm
+    isType := match res
+      case TYPE() then true;
+      else false;
+    end match;
+  end isType;
+
+  function toString
+    input Restriction res;
+    output String str;
+  algorithm
+    str := match res
+      case CLASS() then "class";
+      case ENUMERATION() then "enumeration";
+      case EXTERNAL_OBJECT() then "ExternalObject";
+      case FUNCTION() then "function";
+      case MODEL() then "model";
+      case OPERATOR() then "operator";
+      case RECORD() then "record";
+      case TYPE() then "type";
+      else "unknown";
+    end match;
+  end toString;
 
 annotation(__OpenModelica_Interface="frontend");
 end NFRestriction;

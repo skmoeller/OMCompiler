@@ -39,6 +39,7 @@ protected
   import Type = NFType;
   import RangeIterator = NFRangeIterator;
   import Dump;
+  import ExpandExp = NFExpandExp;
 
 public
   import Expression = NFExpression;
@@ -61,6 +62,10 @@ public
   record SLICE
     Expression slice;
   end SLICE;
+
+  record EXPANDED_SLICE
+    list<Subscript> indices;
+  end EXPANDED_SLICE;
 
   record WHOLE end WHOLE;
 
@@ -144,15 +149,15 @@ public
     end match;
   end isScalar;
 
-  function isScalarConst
+  function isScalarLiteral
     input Subscript sub;
-    output Boolean isScalarConst;
+    output Boolean isScalarLiteral;
   algorithm
-    isScalarConst := match sub
-      case INDEX() then Expression.isScalarConst(sub.index);
+    isScalarLiteral := match sub
+      case INDEX() then Expression.isScalarLiteral(sub.index);
       else false;
     end match;
-  end isScalarConst;
+  end isScalarLiteral;
 
   function isEqual
     input Subscript subscript1;
@@ -294,6 +299,8 @@ public
       case UNTYPED() then Expression.toString(subscript.exp);
       case INDEX() then Expression.toString(subscript.index);
       case SLICE() then Expression.toString(subscript.slice);
+      case EXPANDED_SLICE()
+        then List.toString(subscript.indices, toString, "", "{", ", ", "}", false);
       case WHOLE() then ":";
     end match;
   end toString;
@@ -311,13 +318,13 @@ public
     () := match subscript
       case INDEX()
         algorithm
-          subscript.index := SimplifyExp.simplifyExp(subscript.index);
+          subscript.index := SimplifyExp.simplify(subscript.index);
         then
           ();
 
       case SLICE()
         algorithm
-          subscript.slice := SimplifyExp.simplifyExp(subscript.slice);
+          subscript.slice := SimplifyExp.simplify(subscript.slice);
         then
           ();
 
@@ -337,7 +344,7 @@ public
     end match;
   end toDimension;
 
-  function expand
+  function scalarize
     input Subscript subscript;
     input Dimension dimension;
     output list<Subscript> subscripts;
@@ -345,13 +352,13 @@ public
     subscripts := match subscript
       case INDEX() then {subscript};
       case SLICE()
-        then list(INDEX(e) for e in Expression.arrayElements(Expression.expand(subscript.slice)));
+        then list(INDEX(e) for e in Expression.arrayElements(ExpandExp.expand(subscript.slice)));
       case WHOLE()
         then RangeIterator.map(RangeIterator.fromDim(dimension), makeIndex);
     end match;
-  end expand;
+  end scalarize;
 
-  function expandList
+  function scalarizeList
     input list<Subscript> subscripts;
     input list<Dimension> dimensions;
     output list<list<Subscript>> outSubscripts = {};
@@ -362,7 +369,7 @@ public
   algorithm
     for s in subscripts loop
       dim :: rest_dims := rest_dims;
-      subs := expand(s, dim);
+      subs := scalarize(s, dim);
 
       if listEmpty(subs) then
         outSubscripts := {};
@@ -381,6 +388,42 @@ public
       else
         outSubscripts := subs :: outSubscripts;
       end if;
+    end for;
+
+    outSubscripts := listReverse(outSubscripts);
+  end scalarizeList;
+
+  function expand
+    input Subscript subscript;
+    input Dimension dimension;
+    output Subscript outSubscript;
+  algorithm
+    outSubscript := match subscript
+      case INDEX() then subscript;
+      case SLICE()
+        then EXPANDED_SLICE(list(INDEX(e) for e in Expression.arrayElements(ExpandExp.expand(subscript.slice))));
+      case WHOLE() then EXPANDED_SLICE(RangeIterator.map(RangeIterator.fromDim(dimension), makeIndex));
+    end match;
+  end expand;
+
+  function expandList
+    input list<Subscript> subscripts;
+    input list<Dimension> dimensions;
+    output list<Subscript> outSubscripts = {};
+  protected
+    Dimension dim;
+    list<Dimension> rest_dims = dimensions;
+    Subscript sub;
+  algorithm
+    for s in subscripts loop
+      dim :: rest_dims := rest_dims;
+      sub := expand(s, dim);
+      outSubscripts := sub :: outSubscripts;
+    end for;
+
+    for d in rest_dims loop
+      sub := EXPANDED_SLICE(RangeIterator.map(RangeIterator.fromDim(d), makeIndex));
+      outSubscripts := sub :: outSubscripts;
     end for;
 
     outSubscripts := listReverse(outSubscripts);

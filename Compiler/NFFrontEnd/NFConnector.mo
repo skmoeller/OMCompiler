@@ -81,6 +81,31 @@ public
       Component.connectorType(InstNode.component(node)), NONE(), source);
   end fromFacedCref;
 
+  function fromExp
+    "Constructs a list of Connectors from a cref or an array of crefs."
+    input Expression exp;
+    input DAE.ElementSource source;
+    input output list<Connector> conns = {};
+  algorithm
+    conns := match exp
+      case Expression.CREF() then fromCref(exp.cref, exp.ty, source) :: conns;
+      case Expression.ARRAY()
+        algorithm
+          for e in listReverse(exp.elements) loop
+            conns := fromExp(e, source, conns);
+          end for;
+        then
+          conns;
+
+      else
+        algorithm
+          Error.assertion(false, getInstanceName() + " got unknown expression " +
+            Expression.toString(exp), sourceInfo());
+        then
+          fail();
+    end match;
+  end fromExp;
+
   function getType
     input Connector conn;
     output Type ty = conn.ty;
@@ -104,6 +129,12 @@ public
                              conn1.face == conn2.face;
   end isEqual;
 
+  function isPrefix
+    input Connector conn1;
+    input Connector conn2;
+    output Boolean isPrefix = ComponentRef.isPrefix(conn1.name, conn2.name);
+  end isPrefix;
+
   function isOutside
     input Connector conn;
     output Boolean isOutside;
@@ -121,6 +152,11 @@ public
   algorithm
     isInside := f == Face.INSIDE;
   end isInside;
+
+  function isDeleted
+    input Connector conn;
+    output Boolean isDeleted = ComponentRef.isDeleted(conn.name);
+  end isDeleted;
 
   function name
     input Connector conn;
@@ -145,6 +181,13 @@ public
   algorithm
     connl := splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty);
   end split;
+
+  function flowCref
+    input Connector conn;
+    output ComponentRef cref;
+  algorithm
+    SOME(cref) := conn.associatedFlow;
+  end flowCref;
 
 protected
   function crefFace

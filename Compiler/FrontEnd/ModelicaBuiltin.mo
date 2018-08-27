@@ -102,7 +102,7 @@ annotation(Documentation(info="<html>
 </html>"));
 end floor;
 
-function integer "Round a real number towards minus infinity"
+function integer "Returns the largest integer not greater than x. The argument shall have type Real. The result has type Integer. [Note, outside of a when-clause state events are triggered when the return value changes discontinuously.]."
   input Real x;
   output Integer y;
 external "builtin";
@@ -1021,11 +1021,11 @@ package Internal "Contains internal implementations, e.g. overloaded builtin fun
   package Architecture
     function numBits
       output Integer numBit;
-      external "builtin";
+      external "builtin" numBit = architecture_numbits() annotation(Include="#define architecture_numbits() (8*sizeof(void*))");
     end numBits;
     function integerMax
       output Integer max;
-      external "builtin";
+      external "builtin" max = intMaxLit();
     end integerMax;
   end Architecture;
 
@@ -1993,6 +1993,14 @@ external "builtin";
 annotation(preferredView="text");
 end mkdir;
 
+function copy "copies the source file to the destined directory. Returns true if the file has been copied."
+  input String source;
+  input String destination;
+  output Boolean success;
+external "builtin";
+annotation(preferredView="text");
+end copy;
+
 function remove "removes a file or directory of given path (which may be either relative or absolute)."
   input String path;
   output Boolean success "Returns true on success.";
@@ -2110,6 +2118,8 @@ end saveModel;
 function saveTotalModel
   input String fileName;
   input TypeName className;
+  input Boolean stripAnnotations = false;
+  input Boolean stripComments = false;
   output Boolean success;
 external "builtin";
 annotation(preferredView="text");
@@ -2454,7 +2464,7 @@ The only required argument is the className, while all others have some default 
   input String version = "2.0" "FMU version, 1.0 or 2.0.";
   input String fmuType = "me" "FMU type, me (model exchange), cs (co-simulation), me_cs (both model exchange and co-simulation)";
   input String fileNamePrefix = "<default>" "fileNamePrefix. <default> = \"className\"";
-  input String platforms[:] = {"dynamic"} "The list of platforms to generate code for. \"dynamic\"=current platform, dynamically link the runtime. \"static\"=current platform, statically link everything. Else, use a host triple, e.g. \"x86_64-linux-gnu\" or \"x86_64-w64-mingw32\"";
+  input String platforms[:] = {"static"} "The list of platforms to generate code for. \"dynamic\"=current platform, dynamically link the runtime. \"static\"=current platform, statically link everything. Else, use a host triple, e.g. \"x86_64-linux-gnu\" or \"x86_64-w64-mingw32\"";
   input Boolean includeResources = false "include Modelica based resources via loadResource or not";
   output String generatedFileName "Returns the full path of the generated FMU.";
 external "builtin";
@@ -2464,7 +2474,7 @@ end buildModelFMU;
 function buildEncryptedPackage
   input TypeName className "the class that should encrypted";
   output Boolean success;
-  output String commandOutput "Output of the packagetool execuable";
+  output String commandOutput "Output of the packagetool executable";
 external "builtin";
 annotation(preferredView="text");
 end buildEncryptedPackage;
@@ -2867,11 +2877,18 @@ public function filterSimulationResults
   input String outFile;
   input String[:] vars;
   input Integer numberOfIntervals = 0 "0=Do not resample";
+  input Boolean removeDescription = false;
   output Boolean success;
 external "builtin";
 annotation(Documentation(info="<html>
 <p>Takes one simulation result and filters out the selected variables only, producing the output file.</p>
 <p>If numberOfIntervals<>0, re-sample to that number of intervals, ignoring event points (might be changed in the future).</p>
+<p>if removeDescription=true, the description matrix will contain 0-length strings, making the file smaller.</p>
+</html>",revisions="<html>
+<table>
+<tr><th>Revision</th><th>Author</th><th>Comment</th></tr>
+<tr><td>1.13.0</td><td>sjoelund.se</td><td>Introduced removeDescription.</td></tr>
+</table>
 </html>"),preferredView="text");
 end filterSimulationResults;
 
@@ -3888,6 +3905,28 @@ annotation(
 <p>Forces the GC to limit the maximum heap size.</p>
 </html>"));
 end GC_set_max_heap_size;
+
+record GC_PROFSTATS
+  Integer heapsize_full;
+  Integer free_bytes_full;
+  Integer unmapped_bytes;
+  Integer bytes_allocd_since_gc;
+  Integer allocd_bytes_before_gc;
+  Integer non_gc_bytes;
+  Integer gc_no;
+  Integer markers_m1;
+  Integer bytes_reclaimed_since_gc;
+  Integer reclaimed_bytes_before_gc;
+end GC_PROFSTATS;
+
+function GC_get_prof_stats
+  output GC_PROFSTATS gcStats;
+external "builtin";
+annotation(
+  Documentation(info="<html>
+<p>Returns a record with the GC statistics.</p>
+</html>"));
+end GC_get_prof_stats;
 
 function checkInterfaceOfPackages
   input TypeName cl;

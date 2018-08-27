@@ -676,7 +676,7 @@ algorithm
              title,xLabel,yLabel,filename2,varNameStr,xml_filename,xml_contents,visvar_str,pwd,omhome,omlib,omcpath,os,
              platform,usercflags,senddata,res,workdir,gcc,confcmd,touch_file,uname,filenameprefix,compileDir,libDir,exeDir,configDir,from,to,
              gridStr, logXStr, logYStr, x1Str, x2Str, y1Str, y2Str, curveWidthStr, curveStyleStr, legendPosition, footer, autoScaleStr,scriptFile,logFile, simflags2, outputFile,
-             systemPath, gccVersion, gd, strlinearizeTime, suffix,cname, modeldescriptionfilename;
+             systemPath, gccVersion, gd, strlinearizeTime, suffix,cname, modeldescriptionfilename, tmpDir, tmpFile;
       list<DAE.Exp> simOptions;
       list<Values.Value> vals;
       Absyn.Path path,classpath,className,baseClassPath;
@@ -702,7 +702,7 @@ algorithm
       Option<list<tuple<Integer, Integer, BackendDAE.Equation>>> jac;
       Values.Value ret_val,simValue,value,v,cvar,cvar2,v1,v2,v3;
       Absyn.ComponentRef cr,cr_1;
-      Integer size,resI,i,i1,i2,i3,n,curveStyle,numberOfIntervals, status;
+      Integer size,resI,i,i1,i2,i3,n,curveStyle,numberOfIntervals, status, access;
       Option<Integer> fmiContext, fmiInstance, fmiModelVariablesInstance; /* void* implementation: DO NOT UNBOX THE POINTER AS THAT MIGHT CHANGE IT. Just treat this as an opaque type. */
       Integer fmiLogLevel, direction;
       list<Integer> is;
@@ -755,7 +755,6 @@ algorithm
       list<tuple<Diff, list<SimpleModelicaParser.ParseTree>>> treeDiffs;
       SourceInfo info;
       SymbolTable forkedSymbolTable;
-
 
     case (cache,_,"runScriptParallel",{Values.ARRAY(valueLst=vals),Values.INTEGER(i),Values.BOOL(true)},_)
       equation
@@ -1426,7 +1425,7 @@ algorithm
       equation
         List.map_0(ClockIndexes.buildModelClocks,System.realtimeClear);
         System.realtimeTick(ClockIndexes.RT_CLOCK_SIMULATE_TOTAL);
-        (b,cache,compileDir,executable,_,_,initfilename,_,_) = buildModel(cache,env, vals, msg);
+        (b,cache,compileDir,executable,_,_,initfilename,_,_,vals) = buildModel(cache,env, vals, msg);
         executable = if not Config.getRunningTestsuite() then compileDir + executable else executable;
       then
         (cache,ValuesUtil.makeArray(if b then {Values.STRING(executable),Values.STRING(initfilename)} else {Values.STRING(""),Values.STRING("")}));
@@ -1440,7 +1439,7 @@ algorithm
         //Flags.set(Flags.WRITE_TO_BUFFER,true);
         List.map_0(ClockIndexes.buildModelClocks,System.realtimeClear);
         System.realtimeTick(ClockIndexes.RT_CLOCK_SIMULATE_TOTAL);
-        (b,cache,compileDir,executable,_,_,initfilename,_,_) = buildModel(cache,env, vals, msg);
+        (b,cache,compileDir,executable,_,_,initfilename,_,_,vals) = buildModel(cache,env, vals, msg);
       then
         (cache,ValuesUtil.makeArray(if b then {Values.STRING(executable),Values.STRING(initfilename)} else {Values.STRING(""),Values.STRING("")}));
 
@@ -1498,7 +1497,7 @@ algorithm
     case (cache,env,"simulate",vals as Values.CODE(Absyn.C_TYPENAME(className))::_,_)
       algorithm
         System.realtimeTick(ClockIndexes.RT_CLOCK_SIMULATE_TOTAL);
-        (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues) := buildModel(cache,env,vals,msg);
+        (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues,vals) := buildModel(cache,env,vals,msg);
 
         if b then
           exeDir := compileDir;
@@ -1603,7 +1602,7 @@ algorithm
 
         System.realtimeTick(ClockIndexes.RT_CLOCK_SIMULATE_TOTAL);
 
-        (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues) = buildModel(cache,env,vals,msg);
+        (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues,vals) = buildModel(cache,env,vals,msg);
         if b then
           Values.REAL(linearizeTime) = getListNthShowError(vals,"try to get stop time",0,2);
           executableSuffixedExe = stringAppend(executable, System.getExeExt());
@@ -1664,7 +1663,7 @@ algorithm
         Flags.setConfigEnum(Flags.GRAMMAR, Flags.OPTIMICA);
         Flags.setConfigBool(Flags.GENERATE_DYN_OPTIMIZATION_PROBLEM,true);
 
-        (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues) = buildModel(cache,env,vals,msg);
+        (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues,vals) = buildModel(cache,env,vals,msg);
         if b then
           exeDir=compileDir;
           (cache,simSettings) = calculateSimulationSettings(cache,env,vals,msg);
@@ -1700,12 +1699,29 @@ algorithm
         simValue = createSimulationResultFailure(res, simOptionsAsString(vals));
      then (cache,simValue);
 
+    // handle encryption
+    case (cache,_,"instantiateModel",_,_)
+      equation
+        // if AST contains encrypted class show nothing
+        p = SymbolTable.getAbsyn();
+        true = Interactive.astContainsEncryptedClass(p);
+        Error.addMessage(Error.ACCESS_ENCRYPTED_PROTECTED_CONTENTS, {});
+      then
+        (cache,Values.STRING(""));
+
     case (cache,env,"instantiateModel",{Values.CODE(Absyn.C_TYPENAME(className))},_)
       equation
-        (cache,env,odae) = runFrontEnd(cache,env,className,true);
         ExecStat.execStatReset();
-        str = if isNone(odae) then "" else DAEDump.dumpStr(Util.getOption(odae),FCore.getFunctionTree(cache));
-        ExecStat.execStat("DAEDump.dumpStr(" + Absyn.pathString(className) + ")");
+        (cache,env,odae) = runFrontEnd(cache,env,className,true);
+        ExecStat.execStat("runFrontEnd");
+        if isNone(odae) then
+          str = "";
+        elseif Config.silent() then
+          str = "model " + Absyn.pathString(className) + "\n  /* Silent mode */\nend" + Absyn.pathString(className) + ";\n"; // Not the empty string, so we can
+        else
+          str = DAEDump.dumpStr(Util.getOption(odae),FCore.getFunctionTree(cache));
+          ExecStat.execStat("DAEDump.dumpStr");
+        end if;
       then
         (cache,Values.STRING(str));
 
@@ -1770,12 +1786,16 @@ algorithm
         Error.clearMessages() "Clear messages";
         true = System.regularFileExists(filename);
         workdir = if System.directoryExists(workdir) then workdir else System.pwd();
-        modeldescriptionfilename="modelDescription.fmu";
-        System.systemCall("zip -j " +  modeldescriptionfilename + " " + filename);
+        // create a temporary directory
+        tmpDir = System.createTemporaryDirectory(Settings.getTempDirectoryPath() + "/" + "fmuTmp" + intString(System.intRand(1000)));
+        tmpFile = tmpDir + "/" + "modelDescription.xml";
+        System.systemCall("cp -f " + filename + " " + tmpFile);
+        modeldescriptionfilename = tmpDir + "/modelDescription.fmu";
+        System.systemCall("zip -j " +  modeldescriptionfilename + " " + tmpFile);
         true = System.regularFileExists(modeldescriptionfilename);
         /* Initialize FMI objects */
         (b, fmiContext, fmiInstance, fmiInfo, fmiTypeDefinitionsList, fmiExperimentAnnotation, fmiModelVariablesInstance, fmiModelVariablesList) =
-          FMIExt.initializeFMIImport(modeldescriptionfilename, workdir, fmiLogLevel, inputConnectors, outputConnectors, true);
+          FMIExt.initializeFMIImport(modeldescriptionfilename, tmpDir, fmiLogLevel, inputConnectors, outputConnectors, true);
         true = b; /* if something goes wrong while initializing */
         fmiTypeDefinitionsList = listReverse(fmiTypeDefinitionsList);
         fmiModelVariablesList = listReverse(fmiModelVariablesList);
@@ -1789,6 +1809,7 @@ algorithm
         System.writeFile(outputFile, str);
         /* Release FMI objects */
         FMIExt.releaseFMIImport(fmiModelVariablesInstance, fmiInstance, fmiContext, str3);
+        System.removeDirectory(tmpDir);
       then
         (cache,Values.STRING(filename_1));
 
@@ -1846,24 +1867,37 @@ algorithm
     case (cache,_,"saveModel",{Values.STRING(filename),Values.CODE(Absyn.C_TYPENAME(classpath))},_)
       algorithm
         b := false;
-        absynClass := Interactive.getPathedClassInProgram(classpath, SymbolTable.getAbsyn());
-        str := Dump.unparseStr(Absyn.PROGRAM({absynClass},Absyn.TOP()),true);
-        try
-          System.writeFile(filename, str);
-          b := true;
+        Values.ENUM_LITERAL(index=access) := Interactive.checkAccessAnnotationAndEncryption(classpath, SymbolTable.getAbsyn());
+        if (access >= 9) then // i.e., The class is not encrypted.
+          absynClass := Interactive.getPathedClassInProgram(classpath, SymbolTable.getAbsyn());
+          str := Dump.unparseStr(Absyn.PROGRAM({absynClass},Absyn.TOP()),true);
+          try
+            System.writeFile(filename, str);
+            b := true;
+          else
+            Error.addMessage(Error.WRITING_FILE_ERROR, {filename});
+          end try;
         else
-          Error.addMessage(Error.WRITING_FILE_ERROR, {filename});
-        end try;
+          Error.addMessage(Error.SAVE_ENCRYPTED_CLASS_ERROR, {});
+          b := false;
+        end if;
       then
-        (cache,Values.BOOL(true));
+        (cache,Values.BOOL(b));
 
     case (cache,_,"save",{Values.CODE(Absyn.C_TYPENAME(className))},_)
       equation
-        (newp,filename) = Interactive.getContainedClassAndFile(className, SymbolTable.getAbsyn());
-        str = Dump.unparseStr(newp);
-        System.writeFile(filename, str);
+        Values.ENUM_LITERAL(index=access) = Interactive.checkAccessAnnotationAndEncryption(className, SymbolTable.getAbsyn());
+        if (access >= 9) then // i.e., The class is not encrypted.
+          (newp,filename) = Interactive.getContainedClassAndFile(className, SymbolTable.getAbsyn());
+          str = Dump.unparseStr(newp);
+          System.writeFile(filename, str);
+          b = true;
+        else
+          Error.addMessage(Error.SAVE_ENCRYPTED_CLASS_ERROR, {});
+          b = false;
+        end if;
       then
-        (cache,Values.BOOL(true));
+        (cache,Values.BOOL(b));
 
     case (cache,_,"save",{Values.CODE(Absyn.C_TYPENAME(_))},_)
     then (cache,Values.BOOL(false));
@@ -1882,18 +1916,33 @@ algorithm
       then
         (cache,Values.BOOL(false));
 
-    case (cache,_,"saveTotalModel",{Values.STRING(filename),Values.CODE(Absyn.C_TYPENAME(classpath))},_)
+    case (cache,_,"saveTotalModel",{Values.STRING(filename),Values.CODE(Absyn.C_TYPENAME(classpath)),
+                                    Values.BOOL(b1), Values.BOOL(b2)},_)
       equation
-        saveTotalModel(filename,classpath);
+        Values.ENUM_LITERAL(index=access) = Interactive.checkAccessAnnotationAndEncryption(classpath, SymbolTable.getAbsyn());
+        if (access >= 9) then // i.e., Access.documentation
+          saveTotalModel(filename, classpath, b1, b2);
+          b = true;
+        else
+          Error.addMessage(Error.SAVE_ENCRYPTED_CLASS_ERROR, {});
+          b = false;
+        end if;
       then
-        (cache, Values.BOOL(true));
+        (cache, Values.BOOL(b));
 
-    case (cache,_,"saveTotalModel",{Values.STRING(_),Values.CODE(Absyn.C_TYPENAME(_))},_)
+    case (cache,_,"saveTotalModel",{Values.STRING(_),Values.CODE(Absyn.C_TYPENAME(_)),
+                                    Values.BOOL(_), Values.BOOL(_)},_)
       then (cache, Values.BOOL(false));
 
     case (cache,_,"getDocumentationAnnotation",{Values.CODE(Absyn.C_TYPENAME(classpath))},_)
       equation
-        ((str1,str2,str3)) = Interactive.getNamedAnnotation(classpath, SymbolTable.getAbsyn(), Absyn.IDENT("Documentation"), SOME(("","","")),Interactive.getDocumentationAnnotationString);
+        Values.ENUM_LITERAL(index=access) = Interactive.checkAccessAnnotationAndEncryption(classpath, SymbolTable.getAbsyn());
+        if (access >= 3) then // i.e., Access.documentation
+          ((str1,str2,str3)) = Interactive.getNamedAnnotation(classpath, SymbolTable.getAbsyn(), Absyn.IDENT("Documentation"), SOME(("","","")),Interactive.getDocumentationAnnotationString);
+        else
+          Error.addMessage(Error.ACCESS_ENCRYPTED_PROTECTED_CONTENTS, {});
+          ((str1,str2,str3)) = ("", "", "");
+        end if;
       then
         (cache,ValuesUtil.makeArray({Values.STRING(str1),Values.STRING(str2),Values.STRING(str3)}));
 
@@ -2263,10 +2312,10 @@ algorithm
     case (cache,_,"compareSimulationResults",_,_)
       then (cache,Values.STRING("Error in compareSimulationResults"));
 
-    case (cache,_,"filterSimulationResults",{Values.STRING(filename),Values.STRING(filename_1),Values.ARRAY(valueLst=cvars),Values.INTEGER(numberOfIntervals)},_)
+    case (cache,_,"filterSimulationResults",{Values.STRING(filename),Values.STRING(filename_1),Values.ARRAY(valueLst=cvars),Values.INTEGER(numberOfIntervals),Values.BOOL(b)},_)
       equation
         vars_1 = List.map(cvars, ValuesUtil.extractValueString);
-        b = SimulationResults.filterSimulationResults(filename,filename_1,vars_1,numberOfIntervals);
+        b = SimulationResults.filterSimulationResults(filename,filename_1,vars_1,numberOfIntervals,b);
       then
         (cache,Values.BOOL(b));
 
@@ -2564,7 +2613,13 @@ algorithm
     case (cache,_,"getConnectionCount",{Values.CODE(Absyn.C_TYPENAME(path))},_)
       equation
         absynClass = Interactive.getPathedClassInProgram(path, SymbolTable.getAbsyn());
-        n = listLength(Interactive.getConnections(absynClass));
+        Values.ENUM_LITERAL(index=access) = Interactive.checkAccessAnnotationAndEncryption(path, SymbolTable.getAbsyn());
+        if (access >= 4) then // i.e., Access.diagram
+          n = listLength(Interactive.getConnections(absynClass));
+        else
+          Error.addMessage(Error.ACCESS_ENCRYPTED_PROTECTED_CONTENTS, {});
+          n = 0;
+        end if;
       then
         (cache,Values.INTEGER(n));
 
@@ -2572,7 +2627,13 @@ algorithm
 
     case (cache,_,"getNthConnection",{Values.CODE(Absyn.C_TYPENAME(path)),Values.INTEGER(n)},_)
       equation
-        vals = Interactive.getNthConnection(Absyn.pathToCref(path), SymbolTable.getAbsyn(), n);
+        Values.ENUM_LITERAL(index=access) = Interactive.checkAccessAnnotationAndEncryption(path, SymbolTable.getAbsyn());
+        if (access >= 4) then // i.e., Access.diagram
+          vals = Interactive.getNthConnection(Absyn.pathToCref(path), SymbolTable.getAbsyn(), n);
+        else
+          Error.addMessage(Error.ACCESS_ENCRYPTED_PROTECTED_CONTENTS, {});
+          vals = {};
+        end if;
       then
         (cache,ValuesUtil.makeArray(vals));
 
@@ -3290,21 +3351,25 @@ protected function configureFMU
   input String logfile;
   input Boolean isWindows;
 protected
-  String CC, CFLAGS, LDFLAGS, makefileStr,
+  String CC, CFLAGS, LDFLAGS, makefileStr, container, host, nozip,
     dir=fmutmp+"/sources/", cmd="",
     quote="'",
     dquote = if isWindows then "\"" else "'";
+  list<String> rest;
+  Boolean finishedBuild;
+  Integer uid;
 algorithm
   CC := System.getCCompiler();
   CFLAGS := "-Os "+System.stringReplace(System.getCFlags(),"${MODELICAUSERCFLAGS}","");
   LDFLAGS := ("-L"+dquote+Settings.getInstallationDirectoryPath()+"/lib/"+System.getTriple()+"/omc"+dquote+" "+
                          "-Wl,-rpath,"+dquote+Settings.getInstallationDirectoryPath()+"/lib/"+System.getTriple()+"/omc"+dquote+" "+
                          System.getLDFlags()+" ");
-  if System.regularFileExists(dir + logfile) then
-    System.removeFile(dir + logfile);
+  if System.regularFileExists(logfile) then
+    System.removeFile(logfile);
   end if;
-  _ := match platform
-    case "dynamic"
+  nozip := System.getMakeCommand()+" -j"+intString(Config.noProc()) + " nozip";
+  finishedBuild := match Util.stringSplitAtChar(platform, " ")
+    case {"dynamic"}
       algorithm
         makefileStr := System.readFile(dir + "Makefile.in");
         // replace @XX@ variables in the Makefile
@@ -3322,17 +3387,17 @@ algorithm
         System.writeFile(dir + "Makefile", makefileStr);
         System.writeFile(dir + "config.log", "Using cached values for dynamic platform");
         cmd := "cached values";
-      then ();
-    case "static"
+      then false;
+    case {"static"}
       algorithm
         makefileStr := System.readFile(dir + "Makefile.in");
         // replace @XX@ variables in the Makefile
         makefileStr := System.stringReplace(makefileStr, "@CC@", CC);
         makefileStr := System.stringReplace(makefileStr, "@CFLAGS@", CFLAGS);
-        makefileStr := System.stringReplace(makefileStr, "@LDFLAGS@", LDFLAGS+System.getRTLibsFMU());
+        makefileStr := System.stringReplace(makefileStr, "@LDFLAGS@", LDFLAGS+" -lSimulationRuntimeFMI "+System.getRTLibsFMU());
         makefileStr := System.stringReplace(makefileStr, "@LIBS@", "");
         makefileStr := System.stringReplace(makefileStr, "@DLLEXT@", System.getDllExt());
-        makefileStr := System.stringReplace(makefileStr, "@NEED_RUNTIME@", "1");
+        makefileStr := System.stringReplace(makefileStr, "@NEED_RUNTIME@", "");
         makefileStr := System.stringReplace(makefileStr, "@NEED_DGESV@", "");
         makefileStr := System.stringReplace(makefileStr, "@FMIPLATFORM@", System.modelicaPlatform());
         makefileStr := System.stringReplace(makefileStr, "@CPPFLAGS@", "-DOMC_MINIMAL_RUNTIME=1 -DCMINPACK_NO_DLL=1");
@@ -3341,24 +3406,49 @@ algorithm
         System.writeFile(dir + "Makefile", makefileStr);
         System.writeFile(dir + "config.log", "Using cached values for static platform");
         cmd := "cached values";
-      then ();
-    else
+      then false;
+    case {_}
       algorithm
-        cmd := "cd \"" +  fmutmp + "/sources\" && ./configure --host="+quote+platform+quote+" CFLAGS="+quote+"-Os -flto"+quote+" LDFLAGS=-flto";
+        cmd := "cd \"" +  fmutmp + "/sources\" && ./configure --host="+quote+platform+quote+" CFLAGS="+quote+"-Os"+quote+" LDFLAGS= && " +
+               nozip;
         if 0 <> System.systemCall(cmd, outFile=logfile) then
           Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {System.readFile(logfile)});
           System.removeFile(dir + logfile);
           fail();
         end if;
-      then ();
+      then true;
+    case host::"docker"::"run"::rest
+      algorithm
+        uid := System.getuid();
+        cmd := "docker run "+(if uid<>0 then "--user " + String(uid) else "")+" --rm -w /fmu -v "+quote+System.realpath(fmutmp+"/..")+quote+":/fmu " +stringDelimitList(rest," ")+ " sh -c " + dquote +
+               "cd " + dquote + System.basename(fmutmp) + "/sources" + dquote + " && " +
+               "./configure --host="+quote+host+quote+" CFLAGS="+quote+"-Os"+quote+" LDFLAGS= && " +
+               nozip + dquote;
+        if 0 <> System.systemCall(cmd, outFile=logfile) then
+          Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {System.readFile(logfile)});
+          System.removeFile(dir + logfile);
+          fail();
+        end if;
+      then true;
+    else
+      algorithm
+        Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Unknown platform (contains spaces but does does not conform to \"platform docker run [args] container\""});
+      then fail();
   end match;
-  if not isWindows then
-    if 0 <> System.systemCall("cd " + dir + " && make clean > /dev/null 2>&1") then
-      Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Failed to make clean"});
+  ExecStat.execStat("buildModelFMU: configured platform " + platform + " using " + cmd);
+  if not finishedBuild then
+    if not isWindows then
+      if 0 <> System.systemCall("cd " + dir + " && make clean > /dev/null 2>&1") then
+        Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Failed to make clean"});
+        fail();
+      end if;
+    end if;
+    if 0 <> System.systemCall("cd \"" +  fmutmp + "/sources\" && " + nozip, outFile=logfile) then
+      Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {System.readFile(logfile)});
+      System.removeFile(dir + logfile);
       fail();
     end if;
   end if;
-  ExecStat.execStat("buildModelFMU: configured platform " + platform + " using " + cmd);
 end configureFMU;
 
 protected function buildModelFMU " author: Frenkel TUD
@@ -3370,12 +3460,12 @@ protected function buildModelFMU " author: Frenkel TUD
   input String inFMUType;
   input String inFileNamePrefix;
   input Boolean addDummy "if true, add a dummy state";
-  input list<String> platforms = {"dynamic"};
+  input list<String> platforms = {"static"};
   output FCore.Cache cache;
   output Values.Value outValue;
 protected
   Boolean staticSourceCodeFMU, success;
-  String filenameprefix, fmutmp, logfile, dir;
+  String filenameprefix, fmutmp, logfile, dir, cmd;
   String fmuTargetName;
   GlobalScript.SimulationOptions defaulSimOpt;
   SimCode.SimulationSettings simSettings;
@@ -3447,17 +3537,20 @@ algorithm
   dir := fmutmp+"/sources/";
 
   for platform in platforms loop
-    configureFMU(platform, fmutmp, logfile, isWindows);
-    try
-      CevalScript.compileModel(filenameprefix, libs, workingDir=dir, makeVars={});
-    else
-      outValue := Values.STRING("");
-      Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {System.readFile(logfile)});
-      ExecStat.execStat("buildModelFMU failed for platform " + platform);
-      return;
-    end try;
+    configureFMU(platform, fmutmp, System.realpath(fmutmp)+"/resources/"+System.stringReplace(listGet(Util.stringSplitAtChar(platform," "),1),"/","-")+".log", isWindows);
     ExecStat.execStat("buildModelFMU: Generate platform " + platform);
   end for;
+
+  cmd := "rm -f \"" + fmuTargetName + ".fmu\" && cd \"" +  fmutmp + "\" && zip -r \"../" + fmuTargetName + ".fmu\" *";
+  if 0 <> System.systemCall(cmd, outFile=logfile) then
+    Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {cmd + "\n\n" + System.readFile(logfile)});
+    ExecStat.execStat("buildModelFMU failed");
+  end if;
+
+  if not System.regularFileExists(fmuTargetName + ".fmu") then
+    Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Build commands returned success, but " + fmuTargetName + ".fmu does not exist"});
+    fail();
+  end if;
 
   System.removeDirectory(fmutmp);
 end buildModelFMU;
@@ -4862,8 +4955,9 @@ protected function buildModel "translates and builds the model by running compil
   output String outInitFileName "initFileName";
   output String outSimFlags;
   output list<tuple<String,Values.Value>> resultValues;
+  output list<Values.Value> outArgs;
 algorithm
-  (outCache,compileDir,outString1,outString2,outputFormat_str,outInitFileName,outSimFlags,resultValues):=
+  (outCache,compileDir,outString1,outString2,outputFormat_str,outInitFileName,outSimFlags,resultValues,outArgs):=
   matchcontinue (inCache,inEnv,inValues,inMsg)
     local
       BackendDAE.BackendDAE indexed_dlow_1;
@@ -4880,6 +4974,7 @@ algorithm
       Absyn.Msg msg;
       FCore.Cache cache;
       Boolean existFile;
+      Option<Absyn.Modification> simflags_mod;
 
     // compile the model
     case (cache,env,vals,msg)
@@ -4902,8 +4997,22 @@ algorithm
         (Values.STRING(simflags),vals) := getListFirstShowError(vals, "while retreaving the simflags (12 arg) from the buildModel arguments");
 
         Error.clearMessages() "Clear messages";
+
+        // If simflags is empty and --ignoreSimulationFlagsAnnotation isn't used,
+        // use the __OpenModelica_simulationFlags annotation in the class to be simulated.
+        if stringEmpty(simflags) and not Flags.getConfigBool(Flags.IGNORE_SIMULATION_FLAGS_ANNOTATION) then
+          simflags_mod := Interactive.getNamedAnnotation(classname, SymbolTable.getAbsyn(),
+            Absyn.IDENT("__OpenModelica_simulationFlags"), SOME(NONE()), Util.id);
+          simflags := formatSimulationFlagsString(simflags_mod);
+
+          if not stringEmpty(simflags) then
+            values := List.replaceAt(Values.STRING(simflags), 12, values);
+          end if;
+        end if;
+
         compileDir := System.pwd() + System.pathDelimiter();
         (cache,simSettings) := calculateSimulationSettings(cache, env, values, msg);
+
         SimCode.SIMULATION_SETTINGS(method = method_str, outputFormat = outputFormat_str)
            := simSettings;
         if Config.simCodeTarget() ==  "omsicpp"  then
@@ -4911,6 +5020,7 @@ algorithm
            //       The scripting environment from a user's perspective is like that. fmuTargetName is the name of the .fmu in the templates, etc.
            filenameprefix:= Util.stringReplaceChar(if filenameprefix == "<default>" then Absyn.pathString(classname) else filenameprefix, ".", "_");
         end if;
+
         (success,cache,libs,file_dir,resultValues) := translateModel(cache,env, classname, filenameprefix,true, SOME(simSettings));
         //cname_str = Absyn.pathString(classname);
         //SimCodeUtil.generateInitData(indexed_dlow_1, classname, filenameprefix, init_filename,
@@ -4938,7 +5048,7 @@ algorithm
         end if;
         resultValues := ("timeCompile",Values.REAL(timeCompile)) :: resultValues;
       then
-        (cache,compileDir,filenameprefix,method_str,outputFormat_str,init_filename,simflags,resultValues);
+        (cache,compileDir,filenameprefix,method_str,outputFormat_str,init_filename,simflags,resultValues,values);
 
     // failure
     else
@@ -4947,6 +5057,44 @@ algorithm
       then fail();
   end matchcontinue;
 end buildModel;
+
+function formatSimulationFlagsString
+  "Formats a modification in the format expected by the simflags argument to buildModel."
+  input Option<Absyn.Modification> mod;
+  output String str;
+algorithm
+  str := match mod
+    local
+      list<Absyn.ElementArg> args;
+
+    case SOME(Absyn.CLASSMOD(elementArgLst = args))
+      then List.toString(args, formatSimulationFlagString, "", "-", " -", "", false);
+
+    else "";
+  end match;
+end formatSimulationFlagsString;
+
+function formatSimulationFlagString
+  input Absyn.ElementArg arg;
+  output String str;
+algorithm
+  str := match arg
+    local
+      Absyn.Exp exp;
+
+    case Absyn.ElementArg.MODIFICATION(modification =
+        SOME(Absyn.Modification.CLASSMOD(eqMod = Absyn.EqMod.EQMOD(exp = exp))))
+      then
+        match exp
+          case Absyn.STRING("()") then Absyn.pathString(arg.path);
+          else Absyn.pathString(arg.path) + "=" + Dump.printExpStr(exp);
+        end match;
+
+    case Absyn.ElementArg.MODIFICATION()
+      then Absyn.pathString(arg.path);
+
+  end match;
+end formatSimulationFlagString;
 
 protected function createSimulationResultFromcallModelExecutable
 "This function calls the compiled simulation executable."
@@ -5588,14 +5736,15 @@ algorithm
       String ret;
       FCore.Graph env;
       Boolean b;
+      Integer failed;
 
     case (cache,env,_,b,msg)
       equation
         allClassPaths = getAllClassPathsRecursive(className, b, SymbolTable.getAbsyn());
         print("Number of classes to check: " + intString(listLength(allClassPaths)) + "\n");
         // print ("All paths: \n" + stringDelimitList(List.map(allClassPaths, Absyn.pathString), "\n") + "\n");
-        checkAll(cache, env, allClassPaths, msg);
-        ret = "Number of classes checked: " + intString(listLength(allClassPaths));
+        failed = checkAll(cache, env, allClassPaths, msg, 0);
+        ret = "Number of classes checked / failed: " + intString(listLength(allClassPaths)) + "/" + intString(failed);
       then
         (cache,Values.STRING(ret));
 
@@ -5611,15 +5760,22 @@ function failOrSuccess
 "@author adrpo"
   input String inStr;
   output String outStr;
+  output Boolean failed = false;
 algorithm
   outStr := matchcontinue(inStr)
     local Integer res;
     case _
-      equation
-        res = System.stringFind(inStr, "successfully");
-        true = (res >= 0);
-      then "OK";
-    else "FAILED!";
+      algorithm
+        res := System.stringFind(inStr, "successfully");
+        true := (res >= 0);
+        failed := false;
+      then
+        "OK";
+    else
+      algorithm
+        failed := true;
+      then
+        "FAILED!";
   end matchcontinue;
 end failOrSuccess;
 
@@ -5630,6 +5786,7 @@ function checkAll
   input FCore.Graph inEnv;
   input list<Absyn.Path> allClasses;
   input Absyn.Msg inMsg;
+  input output Integer failed;
 protected
   Absyn.Program p;
 algorithm
@@ -5640,11 +5797,13 @@ algorithm
       Absyn.Path className;
       Absyn.Msg msg;
       FCore.Cache cache;
-      String  str, s;
+      String  str, s, smsg;
       FCore.Graph env;
       Real t1, t2, elapsedTime;
       Absyn.ComponentRef cr;
       Absyn.Class c;
+      Boolean f = false;
+
     case (_,_,{},_) then ();
 
     case (cache,env,className::rest,msg)
@@ -5663,21 +5822,28 @@ algorithm
         Flags.setConfigBool(Flags.CHECK_MODEL, true);
         (_,Values.STRING(str)) = checkModel(FCore.emptyCache(), env, className, msg);
         Flags.setConfigBool(Flags.CHECK_MODEL, false);
-        (_,Values.STRING(str)) = checkModel(FCore.emptyCache(), env, className, msg);
         t2 = clock();
         elapsedTime = t2 - t1;
         s = realString(elapsedTime);
-        print (s + " seconds -> " + failOrSuccess(str) + "\n\t");
+        (smsg, f) = failOrSuccess(str);
+        failed = if f then failed + 1 else 0;
+        print (s + " seconds -> " + smsg + "\n\t");
         print (System.stringReplace(str, "\n", "\n\t"));
         print ("\n");
-        checkAll(cache, env, rest, msg);
+        print ("Error String:\n" + Print.getErrorString() + "\n");
+        print ("Error Buffer:\n" + ErrorExt.printMessagesStr(false) + "\n");
+        print ("#" + (if f then "[-]" else "[+]") + ", " +
+          realString(elapsedTime) + ", " +
+          Absyn.pathString(className) + "\n");
+        print ("-------------------------------------------------------------------------\n");
+        failed = checkAll(cache, env, rest, msg, failed);
       then ();
 
     case (cache,env,className::rest,msg)
       equation
         c = Interactive.getPathedClassInProgram(className, p);
         print("Checking skipped: " + Dump.unparseClassAttributesStr(c) + " " + Absyn.pathString(className) + "... \n");
-        checkAll(cache, env, rest, msg);
+        failed = checkAll(cache, env, rest, msg, failed);
       then
         ();
   end matchcontinue;
@@ -6939,21 +7105,29 @@ end makeUsesArray;
 protected function saveTotalModel
   input String filename;
   input Absyn.Path classpath;
+  input Boolean stripAnnotations;
+  input Boolean stripComments;
 protected
   SCode.Program scodeP;
   String str,str1,str2,str3;
   NFSCodeEnv.Env env;
   SCode.Comment cmt;
 algorithm
+  runFrontEndLoadProgram(classpath);
   scodeP := SymbolTable.getSCode();
   (scodeP, env) := NFSCodeFlatten.flattenClassInProgram(classpath, scodeP);
   (NFSCodeEnv.CLASS(cls=SCode.CLASS(cmt=cmt)),_,_) := NFSCodeLookup.lookupClassName(classpath, env, Absyn.dummyInfo);
   scodeP := SCode.removeBuiltinsFromTopScope(scodeP);
+
+  if stripAnnotations or stripComments then
+    scodeP := SCode.stripCommentsFromProgram(scodeP, stripAnnotations, stripComments);
+  end if;
+
   str := SCodeDump.programStr(scodeP,SCodeDump.defaultOptions);
   str1 := Absyn.pathLastIdent(classpath) + "_total";
-  str2 := SCodeDump.printCommentStr(cmt);
+  str2 := if stripComments then "" else SCodeDump.printCommentStr(cmt);
   str2 := if stringEq(str2,"") then "" else (" " + str2);
-  str3 := SCodeDump.printAnnotationStr(cmt,SCodeDump.defaultOptions);
+  str3 := if stripAnnotations then "" else SCodeDump.printAnnotationStr(cmt,SCodeDump.defaultOptions);
   str3 := if stringEq(str3,"") then "" else (str3 + ";\n");
   str1 := "\nmodel " + str1 + str2 + "\n  extends " + Absyn.pathString(classpath) + ";\n" + str3 + "end " + str1 + ";\n";
   System.writeFile(filename, str + str1);
@@ -6997,69 +7171,6 @@ algorithm
   end matchcontinue;
 end getDymolaStateAnnotationModStr;
 
-protected function getAccessAnnotation
-  "Returns the Protection(access=) annotation of a class.
-  This is annotated with the annotation:
-  annotation(Protection(access = Access.documentation)); in the class definition"
-  input Absyn.Path className;
-  input Absyn.Program p;
-  output String access;
-algorithm
-  access := match(className,p)
-    local
-      String accessStr;
-    case(_,_)
-      equation
-        accessStr = Interactive.getNamedAnnotation(className, p, Absyn.IDENT("Protection"), SOME(""), getAccessAnnotationString);
-      then
-        accessStr;
-    else "";
-  end match;
-end getAccessAnnotation;
-
-protected function getAccessAnnotationString
-  "Extractor function for getAccessAnnotation"
-  input Option<Absyn.Modification> mod;
-  output String access;
-algorithm
-  access := match (mod)
-    local
-      list<Absyn.ElementArg> arglst;
-
-    case (SOME(Absyn.CLASSMOD(elementArgLst = arglst)))
-      then getAccessAnnotationString2(arglst);
-
-  end match;
-end getAccessAnnotationString;
-
-protected function getAccessAnnotationString2
-  "Extractor function for getAccessAnnotation"
-  input list<Absyn.ElementArg> eltArgs;
-  output String access;
-algorithm
-  access := match eltArgs
-    local
-      list<Absyn.ElementArg> xs;
-      Absyn.ComponentRef cref;
-      String name;
-      Absyn.Info info;
-
-    case ({}) then "";
-
-    case (Absyn.MODIFICATION(path = Absyn.IDENT(name="access"),
-          modification = SOME(Absyn.CLASSMOD(eqMod=Absyn.EQMOD(exp=Absyn.CREF(cref)))))::_)
-      equation
-        name = Dump.printComponentRefStr(cref);
-      then name;
-
-    case (_::xs)
-      equation
-        name = getAccessAnnotationString2(xs);
-      then name;
-
-    end match;
-end getAccessAnnotationString2;
-
 protected function getClassInformation
 "author: PA
   Returns all the possible class information.
@@ -7095,7 +7206,7 @@ algorithm
   version := CevalScript.getPackageVersion(path, p);
   Absyn.STRING(preferredView) := Interactive.getNamedAnnotation(path, p, Absyn.IDENT("preferredView"), SOME(Absyn.STRING("")), Interactive.getAnnotationExp);
   isState := getDymolaStateAnnotation(path, p);
-  access := getAccessAnnotation(path, p);
+  access := Interactive.getAccessAnnotation(path, p);
   res_1 := Values.TUPLE({
     Values.STRING(res),
     Values.STRING(cmt),

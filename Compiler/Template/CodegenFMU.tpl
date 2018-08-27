@@ -72,7 +72,7 @@ case sc as SIMCODE(modelInfo=modelInfo as MODELINFO(__)) then
   let()= textFile(recordsFile(fileNamePrefix, recordDecls), '<%fileNamePrefixTmpDir%>_records.c')
   let()= textFile(simulationHeaderFile(simCode), '<%fileNamePrefixTmpDir%>_model.h')
 
-  let _ = generateSimulationFiles(simCode,guid,fileNamePrefixTmpDir)
+  let _ = generateSimulationFiles(simCode,guid,fileNamePrefixTmpDir,FMUVersion)
 
   let()= textFile(simulationInitFunction(simCode,guid), '<%fileNamePrefixTmpDir%>_init_fmu.c')
   let()= textFile(fmumodel_identifierFile(simCode,guid,FMUVersion), '<%fileNamePrefixTmpDir%>_FMU.c')
@@ -92,7 +92,7 @@ case sc as SIMCODE(modelInfo=modelInfo as MODELINFO(__)) then
   "" // Return empty result since result written to files directly
 end translateModel;
 
-/* public */ template generateSimulationFiles(SimCode simCode, String guid, String modelNamePrefix)
+/* public */ template generateSimulationFiles(SimCode simCode, String guid, String modelNamePrefix, String fmuVersion)
  "Generates code in different C files for the simulation target.
   To make the compilation faster we split the simulation files into several
   used in Compiler/Template/CodegenFMU.tpl"
@@ -172,7 +172,7 @@ end translateModel;
      // main file
      let()=tmpTickResetIndex(0, 0)
      let()=tmpTickResetIndex(0, 1)
-     let()= textFileConvertLines(simulationFile(simCode,guid,true), '<%modelNamePrefix%>.c')
+     let()= textFileConvertLines(simulationFile(simCode,guid,fmuVersion), '<%modelNamePrefix%>.c')
      ""
   end match
 end generateSimulationFiles;
@@ -246,6 +246,8 @@ case SIMCODE(__) then
   fmi2String getString(ModelInstance* comp, const fmi2ValueReference vr);
   fmi2Status setString(ModelInstance* comp, const fmi2ValueReference vr, fmi2String value);
   fmi2Status setExternalFunction(ModelInstance* c, const fmi2ValueReference vr, const void* value);
+  fmi2ValueReference mapInputReference2InputNumber(const fmi2ValueReference vr);
+  fmi2ValueReference mapOutputReference2OutputNumber(const fmi2ValueReference vr);
   >>
   else
   <<
@@ -293,6 +295,7 @@ case SIMCODE(__) then
   <%getStringFunction2(simCode, modelInfo)%>
   <%setStringFunction2(simCode, modelInfo)%>
   <%setExternalFunction2(modelInfo)%>
+  <%mapInputAndOutputs(simCode)%>
   >>
   else
   <<
@@ -1105,6 +1108,34 @@ match simVar
      end match
 end SwitchAliasVarsSet;
 
+template mapInputAndOutputs(SimCode simCode)
+""
+::=
+match simCode
+case SIMCODE(modelInfo=MODELINFO(vars=SIMVARS(inputVars=inputVars, outputVars=outputVars))) then
+    <<
+    /* function maps input references to a input index used in partialDerivatives */
+    fmi2ValueReference mapInputReference2InputNumber(const fmi2ValueReference vr) {
+        switch (vr) {
+          <%inputVars |> var hasindex index0 =>  match var case SIMVAR(name=name, type_=T_REAL()) then
+          'case <%lookupVR(name, simCode)%>: return <%index0%>; break;' ;separator="\n"%>
+          default:
+            return -1;
+        }
+    }
+    /* function maps output references to a input index used in partialDerivatives */
+    fmi2ValueReference mapOutputReference2OutputNumber(const fmi2ValueReference vr) {
+        switch (vr) {
+          <%outputVars |> var hasindex index0 =>  match var case SIMVAR(name=name, type_=T_REAL()) then
+          'case <%lookupVR(name, simCode)%>: return <%index0%>; break;' ;separator="\n"%>
+          default:
+            return -1;
+        }
+    }
+    >>
+end match
+end mapInputAndOutputs;
+
 
 template getPlatformString2(String modelNamePrefix, String platform, String fileNamePrefix, String fmuTargetName, String dirExtra, String libsPos1, String libsPos2, String omhome, String FMUVersion)
  "returns compilation commands for the platform. "
@@ -1114,46 +1145,34 @@ match platform
   case "win32"
   case "win64" then
   <<
-  <%fileNamePrefix%>_FMU: $(MAINOBJ) <%fileNamePrefix%>_functions.h <%fileNamePrefix%>_literals.h $(OFILES) $(RUNTIMEFILES)
+  <%fileNamePrefix%>_FMU: nozip
+  <%\t%>cd .. && rm -f ../<%fileNamePrefix%>.fmu && zip -r ../<%fmuTargetName%>.fmu *
+  nozip: $(MAINOBJ) <%fileNamePrefix%>_functions.h <%fileNamePrefix%>_literals.h $(OFILES) $(RUNTIMEFILES)
   <%\t%>$(CXX) -shared -I. -o <%modelNamePrefix%>$(DLLEXT) $(MAINOBJ) $(RUNTIMEFILES) $(OFILES) $(CPPFLAGS) <%dirExtra%> <%libsPos1%> <%libsPos2%> $(CFLAGS) $(LDFLAGS) -llis -Wl,--kill-at
   <%\t%>mkdir.exe -p ../binaries/<%platform%>
   <%\t%>dlltool -d <%fileNamePrefix%>.def --dllname <%fileNamePrefix%>$(DLLEXT) --output-lib <%fileNamePrefix%>.lib --kill-at
   <%\t%>cp <%fileNamePrefix%>$(DLLEXT) <%fileNamePrefix%>.lib <%fileNamePrefix%>_FMU.libs ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libsundials_*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libopenblas.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libexpat*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libgfortran*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libquadmath*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libwinpthread*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/zlib*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libszip*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libhdf5*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libsystre*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libtre*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libintl*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libiconv*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libgcc_s_*.dll ../binaries/<%platform%>/
-  <%\t%>cp <%omhome%>/bin/libstdc*.dll ../binaries/<%platform%>/
-  <%\t%>rm -f <%fileNamePrefix%>.def <%fileNamePrefix%>.o <%fileNamePrefix%>$(DLLEXT) $(OFILES) $(RUNTIMEFILES)
+  <%\t%>rm -f *.o <%fileNamePrefix%>$(DLLEXT) $(OFILES) $(RUNTIMEFILES)
   <%\t%>cd .. && rm -f ../<%fileNamePrefix%>.fmu && zip -r ../<%fmuTargetName%>.fmu *
 
   >>
   else
   <<
-  <%fileNamePrefix%>_FMU: $(MAINOBJ) <%fileNamePrefix%>_functions.h <%fileNamePrefix%>_literals.h $(OFILES) $(RUNTIMEFILES)
+  <%fileNamePrefix%>_FMU: nozip
+  <%\t%>cd .. && rm -f ../<%fileNamePrefix%>.fmu && zip -r ../<%fmuTargetName%>.fmu *
+  nozip: $(MAINOBJ) <%fileNamePrefix%>_functions.h <%fileNamePrefix%>_literals.h $(OFILES) $(RUNTIMEFILES)
   <%\t%>mkdir -p ../binaries/$(FMIPLATFORM)
   ifeq (@LIBTYPE_DYNAMIC@,1)
   <%\t%>$(LD) -o <%modelNamePrefix%>$(DLLEXT) $(MAINOBJ) $(OFILES) $(RUNTIMEFILES) <%dirExtra%> <%libsPos1%> <%libsPos2%> $(LDFLAGS)
-  <%\t%>cp <%fileNamePrefix%>$(DLLEXT) <%fileNamePrefix%>_FMU.libs config.log ../binaries/$(FMIPLATFORM)/
+  <%\t%>cp <%fileNamePrefix%>$(DLLEXT) <%fileNamePrefix%>_FMU.libs ../binaries/$(FMIPLATFORM)/
   endif
-  <%\t%>head -n20 Makefile > ../binaries/$(FMIPLATFORM)/config.summary
+  <%\t%>head -n20 Makefile > ../resources/$(FMIPLATFORM).summary
   ifeq (@LIBTYPE_STATIC@,1)
   <%\t%>rm -f <%modelNamePrefix%>.a
   <%\t%>$(AR) -rsu <%modelNamePrefix%>.a $(MAINOBJ) $(OFILES) $(RUNTIMEFILES)
-  <%\t%>cp <%fileNamePrefix%>.a <%fileNamePrefix%>_FMU.libs config.log ../binaries/$(FMIPLATFORM)/
+  <%\t%>cp <%fileNamePrefix%>.a <%fileNamePrefix%>_FMU.libs ../binaries/$(FMIPLATFORM)/
   endif
   <%\t%>$(MAKE) distclean
-  <%\t%>cd .. && rm -f ../<%fileNamePrefix%>.fmu && zip -r ../<%fmuTargetName%>.fmu *
   distclean: clean
   <%\t%>rm -f Makefile config.status config.log
   clean:

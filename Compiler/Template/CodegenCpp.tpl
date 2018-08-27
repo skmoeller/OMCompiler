@@ -10495,7 +10495,12 @@ template generateAlgloopsolverVariables( ModelInfo modelInfo,SimCode simCode ,Te
       >>
    end match
 
+
 end generateAlgloopsolverVariables;
+
+
+
+
 
 template generateAlgloopsolverVariables2( SimCode simCode ,Text& extraFuncs,Text& extraFuncsDecl,Text extraFuncsNamespace)
 ::=
@@ -10513,6 +10518,7 @@ template generateAlgloopsolverVariables2( SimCode simCode ,Text& extraFuncs,Text
 
   >>
 end generateAlgloopsolverVariables2;
+
 
 template generateAlgloopsolverVariables3(ModelInfo modelInfo,list<SimEqSystem> allEquationsPlusWhen,SimCode simCode ,Text& extraFuncs,Text& extraFuncsDecl,Text extraFuncsNamespace)
 ::=

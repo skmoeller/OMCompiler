@@ -470,21 +470,6 @@ algorithm
     zeroCrossings := updateZeroCrossEqnIndex(zeroCrossings, eqBackendSimCodeMapping, BackendDAEUtil.equationArraySizeBDAE(dlow));
     if debug then execStat("simCode: update zero crossing index"); end if;
 
-    // replace div operator with div operator with check of Division by zero
-    allEquations := List.map(allEquations, addDivExpErrorMsgtoSimEqSystem);
-    odeEquations := List.mapList(odeEquations, addDivExpErrorMsgtoSimEqSystem);
-    algebraicEquations := List.mapList(algebraicEquations, addDivExpErrorMsgtoSimEqSystem);
-    startValueEquations := List.map(startValueEquations, addDivExpErrorMsgtoSimEqSystem);
-    nominalValueEquations := List.map(nominalValueEquations, addDivExpErrorMsgtoSimEqSystem);
-    minValueEquations := List.map(minValueEquations, addDivExpErrorMsgtoSimEqSystem);
-    maxValueEquations := List.map(maxValueEquations, addDivExpErrorMsgtoSimEqSystem);
-    parameterEquations := List.map(parameterEquations, addDivExpErrorMsgtoSimEqSystem);
-    removedEquations := List.map(removedEquations, addDivExpErrorMsgtoSimEqSystem);
-    initialEquations := List.map(initialEquations, addDivExpErrorMsgtoSimEqSystem);
-    initialEquations_lambda0 := List.map(initialEquations_lambda0, addDivExpErrorMsgtoSimEqSystem);
-    removedInitialEquations := List.map(removedInitialEquations, addDivExpErrorMsgtoSimEqSystem);
-    if debug then execStat("simCode: addDivExpErrorMsgtoSimEqSystem"); end if;
-
     // collect all LinearSystem and NonlinearSystem algebraic system in modelInfo and update
     // the corresponding index (indexNonLinear, indexLinear) in SES_NONLINEAR and SES_LINEAR
     // Also collect all jacobians
@@ -797,9 +782,6 @@ algorithm
 
     (ouniqueEqIndex, removedEquations) := BackendEquation.traverseEquationArray(syst.removedEqs, traversedlowEqToSimEqSystem, (ouniqueEqIndex, {}));
 
-    equations := List.map(equations, addDivExpErrorMsgtoSimEqSystem);
-    removedEquations := List.map(removedEquations, addDivExpErrorMsgtoSimEqSystem);
-
     prevClockedVars := {};
     isPrevVar := arrayCreate(BackendVariable.varsSize(syst.orderedVars), false);
 
@@ -1055,51 +1037,50 @@ protected function setSystemIndexMap "
   input array<Integer> inSysIndexMap;
   output SimCode.SimEqSystem outEqn;
 algorithm
-  outEqn := match(inEqn, inSysIndexMap)
+  outEqn := match(inEqn)
     local
-      Integer index, index2, sysIndex, sysIndex2, nUnknowns, nUnknowns2;
-      list<SimCode.SimEqSystem> eqs, eqs2;
-      list<DAE.ComponentRef> crefs, crefs2;
+      Integer index, sysIndex;
+      SimCode.LinearSystem lSystem;
+      SimCode.NonlinearSystem nlSystem;
+      Option<SimCode.LinearSystem> alternativeTearingL;
+      Option<SimCode.NonlinearSystem> alternativeTearingNL;
+      SimCode.SimEqSystem simEq;
       SimCode.SimEqSystem cont;
-      list<SimCodeVar.SimVar> discVars;
-      list<SimCode.SimEqSystem> discEqs;
-      Option<SimCode.JacobianMatrix> optSymJac, optSymJac2;
-      Boolean partOfMixed,partOfMixed2;
-      list<SimCodeVar.SimVar> vars,vars2;
-      list<DAE.Exp> beqs,beqs2;
-      list<tuple<Integer, Integer, SimCode.SimEqSystem>> simJac,simJac2;
-      list<DAE.ElementSource> sources,sources2;
-      Boolean homotopySupport, homotopySupport2;
-      Boolean mixedSystem, mixedSystem2, tornSystem, tornSystem2;
-      BackendDAE.EquationAttributes eqAttr;
 
-    // no dynamic tearing
-    case(SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(index, partOfMixed, tornSystem, vars, beqs, simJac, eqs, optSymJac, sources, _, nUnknowns), NONE(), eqAttr), _) equation
-      sysIndex = inSysIndexMap[index];
-    then SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(index, partOfMixed, tornSystem, vars, beqs, simJac, eqs, optSymJac, sources, sysIndex, nUnknowns), NONE(), eqAttr);
+    case (simEq as SimCode.SES_LINEAR(lSystem=lSystem, alternativeTearing=alternativeTearingL)) equation
+      sysIndex = inSysIndexMap[lSystem.index];
+      lSystem.indexLinearSystem = sysIndex;
+      simEq.lSystem = lSystem;
+      // dynamic tearing
+      if isSome(alternativeTearingL) then
+        lSystem = Util.getOption(alternativeTearingL);
+        sysIndex = inSysIndexMap[lSystem.index];
+        lSystem.indexLinearSystem = sysIndex;
+        alternativeTearingL = SOME(lSystem);
+        simEq.alternativeTearing = alternativeTearingL;
+      end if;
+    then simEq;
 
-    case(SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(index, eqs, crefs, _, nUnknowns, optSymJac, homotopySupport, mixedSystem, tornSystem), NONE(), eqAttr), _) equation
-      eqs = List.map1(eqs, setSystemIndexMap, inSysIndexMap);
-      sysIndex = inSysIndexMap[index];
-    then SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(index, eqs, crefs, sysIndex, nUnknowns, optSymJac, homotopySupport, mixedSystem, tornSystem), NONE(), eqAttr);
+    case (simEq as SimCode.SES_NONLINEAR(nlSystem=nlSystem, alternativeTearing=alternativeTearingNL)) equation
+      sysIndex = inSysIndexMap[nlSystem.index];
+      nlSystem.indexNonLinearSystem = sysIndex;
+      simEq.nlSystem = nlSystem;
+      // dynamic tearing
+      if isSome(alternativeTearingNL) then
+        nlSystem = Util.getOption(alternativeTearingNL);
+        sysIndex = inSysIndexMap[nlSystem.index];
+        nlSystem.indexNonLinearSystem = sysIndex;
+        alternativeTearingNL = SOME(nlSystem);
+        simEq.alternativeTearing = alternativeTearingNL;
+      end if;
+    then simEq;
 
-    // dynamic tearing
-    case(SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(index, partOfMixed, tornSystem, vars, beqs, simJac, eqs, optSymJac, sources, _, nUnknowns), SOME(SimCode.LINEARSYSTEM(index2, partOfMixed2, _, vars2, beqs2, simJac2, eqs2, optSymJac2, sources2, _, nUnknowns2)), eqAttr), _) equation
-      sysIndex = inSysIndexMap[index];
-      sysIndex2 = inSysIndexMap[index2];
-    then SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(index, partOfMixed, tornSystem, vars, beqs, simJac, eqs, optSymJac, sources, sysIndex, nUnknowns), SOME(SimCode.LINEARSYSTEM(index2, partOfMixed2, tornSystem, vars2, beqs2, simJac2, eqs2, optSymJac2, sources2, sysIndex2, nUnknowns2)), eqAttr);
-
-    case(SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(index=index, eqs=eqs, crefs=crefs, nUnknowns=nUnknowns, jacobianMatrix=optSymJac, homotopySupport=homotopySupport, mixedSystem=mixedSystem, tornSystem=tornSystem), SOME(SimCode.NONLINEARSYSTEM(index=index2, eqs=eqs2, crefs=crefs2, nUnknowns=nUnknowns2, jacobianMatrix=optSymJac2, homotopySupport=homotopySupport2, mixedSystem=mixedSystem2, tornSystem=tornSystem2)), eqAttr=eqAttr), _) equation
-      eqs = List.map1(eqs, setSystemIndexMap, inSysIndexMap);
-      sysIndex = inSysIndexMap[index];
-      eqs2 = List.map1(eqs2, setSystemIndexMap, inSysIndexMap);
-      sysIndex2 = inSysIndexMap[index2];
-    then SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(index, eqs, crefs, sysIndex, nUnknowns, optSymJac, homotopySupport, mixedSystem, tornSystem), SOME(SimCode.NONLINEARSYSTEM(index2, eqs2, crefs2, sysIndex2, nUnknowns2, optSymJac2, homotopySupport2, mixedSystem2, tornSystem2)), eqAttr);
-
-    case(SimCode.SES_MIXED(index, cont, discVars, discEqs, _, eqAttr), _) equation
-      sysIndex = inSysIndexMap[index];
+    case (simEq as SimCode.SES_MIXED(cont=cont)) equation
+      sysIndex = inSysIndexMap[simEq.index];
       cont = setSystemIndexMap(cont, inSysIndexMap);
-    then SimCode.SES_MIXED(index, cont, discVars, discEqs, sysIndex, eqAttr);
+      simEq.cont = cont;
+      simEq.indexMixedSystem = sysIndex;
+    then simEq;
 
     else
     then inEqn;
@@ -2735,7 +2716,7 @@ algorithm
 
     case(DAE.CREF(cr, ty)::rest) equation
       slst = List.map(dims, intString);
-      var = SimCodeVar.SIMVAR(cr, BackendDAE.VARIABLE(), "", "", "", 0, NONE(), NONE(), NONE(), NONE(), false, ty, false, SOME(name), SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.NONECAUS(), NONE(), slst, false, true, false, NONE(), NONE());
+      var = SimCodeVar.SIMVAR(cr, BackendDAE.VARIABLE(), "", "", "", 0, NONE(), NONE(), NONE(), NONE(), false, ty, false, SOME(name), SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.NONECAUS(), NONE(), slst, false, true, true, NONE(), NONE());
       tempvars = createTempVarsforCrefs(rest, {var});
     then List.append_reverse(tempvars, itempvars);
   end match;
@@ -2771,7 +2752,7 @@ algorithm
       arrayCref = ComponentReference.getArrayCref(cr);
       inst_dims = ComponentReference.crefDims(cr);
       numArrayElement = List.map(inst_dims, ExpressionDump.dimensionString);
-      var = SimCodeVar.SIMVAR(cr, BackendDAE.VARIABLE(), "", "", "", 0, NONE(), NONE(), NONE(), NONE(), false, ty, false, arrayCref, SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.NONECAUS(), NONE(), numArrayElement, false, true, false, NONE(), NONE());
+      var = SimCodeVar.SIMVAR(cr, BackendDAE.VARIABLE(), "", "", "", 0, NONE(), NONE(), NONE(), NONE(), false, ty, false, arrayCref, SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.NONECAUS(), NONE(), numArrayElement, false, true, true, NONE(), NONE());
     then createTempVarsforCrefs(rest, var::itempvars);
   end match;
 end createTempVarsforCrefs;
@@ -2814,13 +2795,13 @@ algorithm
         arraycref := ComponentReference.crefStripSubs(cr);
         ty := ComponentReference.crefTypeFull(cr);
         var := SimCodeVar.SIMVAR(cr, BackendDAE.VARIABLE(), "", "", "", 0, NONE(), NONE(), NONE(), NONE(), false,
-              ty, false, SOME(arraycref), SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.NONECAUS(), NONE(), {}, false, true, false, NONE(), NONE());
+              ty, false, SOME(arraycref), SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.NONECAUS(), NONE(), {}, false, true, true, NONE(), NONE());
 
         /* The rest don't need to be marked i.e. we have 'NONE()'. Just create simvars. */
         ttmpvars := {var};
         for cr in crlst loop
           ty := ComponentReference.crefTypeFull(cr);
-          var := SimCodeVar.SIMVAR(cr, BackendDAE.VARIABLE(), "", "", "", 0, NONE(), NONE(), NONE(), NONE(), false, ty, false, NONE(), SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.NONECAUS(), NONE(), {}, false, true, false, NONE(), NONE());
+          var := SimCodeVar.SIMVAR(cr, BackendDAE.VARIABLE(), "", "", "", 0, NONE(), NONE(), NONE(), NONE(), false, ty, false, NONE(), SimCodeVar.NOALIAS(), DAE.emptyElementSource, SimCodeVar.NONECAUS(), NONE(), {}, false, true, true, NONE(), NONE());
           ttmpvars := var::ttmpvars;
         end for;
         ttmpvars := Dangerous.listReverseInPlace(ttmpvars);
@@ -9083,247 +9064,6 @@ algorithm
   (_, outExpLst) := Expression.traverseExpList(inExps, inFn, {});
 end getMatchingExpsList;
 
-protected function addDivExpErrorMsgtoExp "author: Frenkel TUD 2010-02
-  Adds the error msg to Expression.Div."
-  input DAE.Exp inExp;
-  input DAE.ElementSource inSource;
-  output DAE.Exp outExp;
-algorithm
-  false := Expression.traverseCrefsFromExp(inExp, traversingXLOCExpFinder, false);
-  (outExp, _) := Expression.traverseExpBottomUp(inExp, traversingDivExpFinder, inSource);
-end addDivExpErrorMsgtoExp;
-
-protected function traversingXLOCExpFinder "author: Frenkel TUD 2010-02"
-  input DAE.ComponentRef inCref;
-  input Boolean inB;
-  output Boolean  outB;
-algorithm
-  outB := match inCref
-    case DAE.CREF_IDENT(ident="xloc", identType=DAE.T_ARRAY(dims={DAE.DIM_UNKNOWN()}))
-    then true;
-
-    else inB;
-  end match;
-end traversingXLOCExpFinder;
-
-protected function traversingDivExpFinder "author: Frenkel TUD 2010-02"
-  input DAE.Exp inExp;
-  input DAE.ElementSource inSource;
-  output DAE.Exp outExp;
-  output DAE.ElementSource outSource;
-algorithm
-  (outExp,outSource) := matchcontinue (inExp,inSource)
-    local
-      DAE.Exp e, e1, e2;
-      DAE.Type ty;
-      String se;
-      DAE.ElementSource source;
-    case (e as DAE.BINARY(operator = DAE.DIV(_), exp2 = e2), source)
-      equation
-        true = Expression.isConst(e2);
-        false = Expression.isZero(e2);
-      then (e, source);
-
-    case (DAE.BINARY(exp1 = e1, operator = DAE.DIV(ty), exp2 = e2), source)
-      then (DAE.CALL(Absyn.IDENT("DIVISION"), {e1, e2}, DAE.CALL_ATTR(ty, false, true, false, false, DAE.NO_INLINE(), DAE.NO_TAIL())), source);
-
-    case (e as DAE.BINARY(operator = DAE.DIV_ARRAY_SCALAR(_), exp2 = e2), source)
-      equation
-        true = Expression.isConst(e2);
-        false = Expression.isZero(e2);
-      then (e, source);
-    case (DAE.BINARY(exp1 = e1, operator = DAE.DIV_ARRAY_SCALAR(ty), exp2 = e2), source)
-      then (DAE.CALL(Absyn.IDENT("DIVISION_ARRAY_SCALAR"), {e1, e2}, DAE.CALL_ATTR(ty, false, true, false, false, DAE.NO_INLINE(), DAE.NO_TAIL())), source);
-
-    case (e as DAE.BINARY(operator = DAE.DIV_SCALAR_ARRAY(_), exp2 = e2), source)
-      equation
-        true = Expression.isConst(e2);
-        false = Expression.isZero(e2);
-      then (e, source);
-    case (DAE.BINARY(exp1 = e1, operator = DAE.DIV_SCALAR_ARRAY(ty), exp2 = e2), source)
-      then (DAE.CALL(Absyn.IDENT("DIVISION_SCALAR_ARRAY"), {e1, e2}, DAE.CALL_ATTR(ty, false, true, false, false, DAE.NO_INLINE(), DAE.NO_TAIL())), source);
-    else (inExp,inSource);
-  end matchcontinue;
-end traversingDivExpFinder;
-
-protected function addDivExpErrorMsgtosimJac
-  input tuple<Integer, Integer, SimCode.SimEqSystem> inJac;
-  output tuple<Integer, Integer, SimCode.SimEqSystem> outJac;
-protected
-  Integer a, b;
-  SimCode.SimEqSystem ses, ses_;
-algorithm
-  ((a, b, ses)) := inJac;
-  ses_ := addDivExpErrorMsgtoSimEqSystem(ses);
-  outJac := if referenceEq(ses, ses_) then inJac else (a, b, ses_);
-end addDivExpErrorMsgtosimJac;
-
-protected function addDivExpErrorMsgtosymJac "helper for addDivExpErrorMsgtoSimEqSystem."
-  input Option<SimCode.JacobianMatrix> inJac;
-  output Option<SimCode.JacobianMatrix> outJac = inJac;
-algorithm
-  outJac := match inJac
-    local
-      list<SimCode.SimEqSystem> eqns;
-      SimCode.JacobianColumn jacColumn;
-      SimCode.JacobianMatrix tmpJac;
-    case SOME(tmpJac as SimCode.JAC_MATRIX(columns={jacColumn as SimCode.JAC_COLUMN()}))
-      equation
-        jacColumn.columnEqns = List.map(jacColumn.columnEqns, addDivExpErrorMsgtoSimEqSystem);
-        tmpJac.columns = {jacColumn};
-      then
-        SOME(tmpJac);
-    else
-      outJac;
-  end match;
-end addDivExpErrorMsgtosymJac;
-
-protected function addDivExpErrorMsgtoSimEqSystem "Traverses all subexpressions of an expression of an equation."
-  input SimCode.SimEqSystem inSES;
-  output SimCode.SimEqSystem outSES;
-algorithm
-  outSES:=
-  matchcontinue (inSES)
-    local
-      DAE.Exp e,left, e_;
-      DAE.ComponentRef cr;
-      Boolean partOfMixed,partOfMixed1;
-      list<SimCodeVar.SimVar> vars,vars1;
-      list<DAE.Exp> elst, elst1;
-      list<tuple<Integer, Integer, SimCode.SimEqSystem>> simJac, simJac1;
-      Integer index, index1, indexSys, indexSys1, nUnknowns, nUnknowns1;
-      list<DAE.ComponentRef> crefs, crefs1;
-      SimCode.SimEqSystem cont, cont1, elseWhenEq, elseWhen;
-      list<SimCode.SimEqSystem> discEqs, discEqs1;
-      list<DAE.ComponentRef> conditions;
-      Boolean initialCall;
-      DAE.ElementSource source;
-      Option<SimCode.JacobianMatrix> symJac, symJac1;
-      list<DAE.ElementSource> sources,sources1;
-      Boolean homotopySupport, homotopySupport1;
-      Boolean mixedSystem, mixedSystem1, tornSystem, tornSystem1;
-      list<BackendDAE.WhenOperator> whenStmtLst, whenOps;
-      BackendDAE.WhenOperator whenOpNew;
-      Option<SimCode.SimEqSystem> oelsewe;
-      BackendDAE.Constraints cons;
-      BackendDAE.EquationAttributes eqAttr;
-
-    case SimCode.SES_RESIDUAL(index= index, exp = e, source = source, eqAttr=eqAttr)
-      equation
-        e = addDivExpErrorMsgtoExp(e, source);
-      then
-        SimCode.SES_RESIDUAL(index, e, source, eqAttr);
-
-    case SimCode.SES_SIMPLE_ASSIGN(index= index, cref = cr, exp = e, source = source, eqAttr=eqAttr)
-      equation
-        e_ = addDivExpErrorMsgtoExp(e, source);
-      then
-        if referenceEq(e,e_) then inSES else SimCode.SES_SIMPLE_ASSIGN(index, cr, e_, source, eqAttr);
-
-    case SimCode.SES_SIMPLE_ASSIGN_CONSTRAINTS(index= index, cref = cr, exp = e, source = source, cons = cons, eqAttr=eqAttr)
-      equation
-        e_ = addDivExpErrorMsgtoExp(e, source);
-      then
-        if referenceEq(e,e_) then inSES else SimCode.SES_SIMPLE_ASSIGN_CONSTRAINTS(index, cr, e_, source, cons, eqAttr);
-
-    case SimCode.SES_ARRAY_CALL_ASSIGN(index = index, lhs = left, exp = e, source = source, eqAttr=eqAttr)
-      equation
-        e = addDivExpErrorMsgtoExp(e, source);
-      then
-        SimCode.SES_ARRAY_CALL_ASSIGN(index, left, e, source, eqAttr);
-        /*
-         case (SimCode.SES_ALGORITHM(), inDlowMode)
-         equation
-         e = addDivExpErrorMsgtoExp(e, (source, inDlowMode));
-         then
-         SimCode.SES_ALGORITHM();
-         */
-
-    // no dynamic tearing
-    case SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(index, partOfMixed, tornSystem, vars, elst, simJac, discEqs, symJac, sources, indexSys, nUnknowns), NONE(), eqAttr=eqAttr)
-      equation
-        simJac1 = List.map(simJac, addDivExpErrorMsgtosimJac);
-        symJac = addDivExpErrorMsgtosymJac(symJac);
-        elst1 = List.map1(elst, addDivExpErrorMsgtoExp, DAE.emptyElementSource);
-        discEqs1 =  List.map(discEqs, addDivExpErrorMsgtoSimEqSystem);
-      then
-        SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(index, partOfMixed, tornSystem, vars, elst1, simJac1, discEqs1, symJac, sources, indexSys, nUnknowns), NONE(), eqAttr);
-
-    case SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(index=index, eqs=discEqs, crefs=crefs, indexNonLinearSystem=indexSys, nUnknowns=nUnknowns, jacobianMatrix=symJac, homotopySupport=homotopySupport, mixedSystem=mixedSystem, tornSystem=tornSystem), NONE(), eqAttr=eqAttr)
-      equation
-        discEqs =  List.map(discEqs, addDivExpErrorMsgtoSimEqSystem);
-        symJac = addDivExpErrorMsgtosymJac(symJac);
-      then
-        SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(index, discEqs, crefs, indexSys, nUnknowns, symJac, homotopySupport, mixedSystem, tornSystem), NONE(), eqAttr);
-
-    // dynamic tearing
-    case SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(index, partOfMixed, tornSystem, vars, elst, simJac, discEqs, symJac, sources, indexSys, nUnknowns), SOME(SimCode.LINEARSYSTEM(index1, partOfMixed1, tornSystem1, vars1, elst1, simJac1, discEqs1, symJac1, sources1, indexSys1, nUnknowns1)), eqAttr=eqAttr)
-      equation
-        simJac = List.map(simJac, addDivExpErrorMsgtosimJac);
-        symJac = addDivExpErrorMsgtosymJac(symJac);
-        elst = List.map1(elst, addDivExpErrorMsgtoExp, DAE.emptyElementSource);
-        discEqs =  List.map(discEqs, addDivExpErrorMsgtoSimEqSystem);
-        simJac1 = List.map(simJac1, addDivExpErrorMsgtosimJac);
-        symJac1 = addDivExpErrorMsgtosymJac(symJac1);
-        elst1 = List.map1(elst1, addDivExpErrorMsgtoExp, DAE.emptyElementSource);
-        discEqs1 =  List.map(discEqs1, addDivExpErrorMsgtoSimEqSystem);
-      then
-        SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(index, partOfMixed, tornSystem, vars, elst, simJac, discEqs, symJac, sources, indexSys, nUnknowns), SOME(SimCode.LINEARSYSTEM(index1, partOfMixed1, tornSystem1, vars1, elst1, simJac1, discEqs1, symJac1, sources1, indexSys1, nUnknowns1)), eqAttr);
-
-    case SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(index=index, eqs=discEqs, crefs=crefs, indexNonLinearSystem=indexSys, nUnknowns=nUnknowns, jacobianMatrix=symJac, homotopySupport=homotopySupport, mixedSystem=mixedSystem, tornSystem=tornSystem), SOME(SimCode.NONLINEARSYSTEM(index=index1, eqs=discEqs1, crefs=crefs1, indexNonLinearSystem=indexSys1, nUnknowns=nUnknowns1, jacobianMatrix=symJac1, homotopySupport=homotopySupport1, mixedSystem=mixedSystem1, tornSystem=tornSystem1)), eqAttr=eqAttr)
-      equation
-        discEqs =  List.map(discEqs, addDivExpErrorMsgtoSimEqSystem);
-        symJac = addDivExpErrorMsgtosymJac(symJac);
-        discEqs1 =  List.map(discEqs1, addDivExpErrorMsgtoSimEqSystem);
-        symJac1 = addDivExpErrorMsgtosymJac(symJac1);
-      then
-        SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(index, discEqs, crefs, indexSys, nUnknowns, symJac, homotopySupport, mixedSystem, tornSystem), SOME(SimCode.NONLINEARSYSTEM(index1, discEqs1, crefs1, indexSys1, nUnknowns1, symJac1, homotopySupport1, mixedSystem1, tornSystem1)), eqAttr);
-
-    case SimCode.SES_MIXED(index, cont, vars, discEqs, indexSys, eqAttr=eqAttr)
-      equation
-        cont1 = addDivExpErrorMsgtoSimEqSystem(cont);
-        discEqs1 = List.map(discEqs, addDivExpErrorMsgtoSimEqSystem);
-      then
-        SimCode.SES_MIXED(index, cont1, vars, discEqs1, indexSys, eqAttr);
-
-    case SimCode.SES_WHEN(index=index, conditions=conditions, initialCall=initialCall, whenStmtLst=whenStmtLst, elseWhen=oelsewe, source=source, eqAttr=eqAttr)
-      algorithm
-        whenOps := {};
-        for whenOp in whenStmtLst loop
-          whenOpNew := match whenOp
-            case BackendDAE.ASSIGN(left, e, source) then  BackendDAE.ASSIGN(left, addDivExpErrorMsgtoExp(e, source), source);
-            else whenOp;
-          end match;
-          whenOps := whenOpNew::whenOps;
-        end for;
-        if isSome(oelsewe) then
-          SOME(elseWhen) := oelsewe;
-          elseWhenEq := addDivExpErrorMsgtoSimEqSystem(elseWhen);
-          oelsewe := SOME(elseWhenEq);
-        else
-          oelsewe := NONE();
-        end if;
-      then
-        SimCode.SES_WHEN(index, conditions, initialCall, whenOps, oelsewe, source, eqAttr);
-    else inSES;
-  end matchcontinue;
-end addDivExpErrorMsgtoSimEqSystem;
-
-protected function addDivExpErrorMsgtoSimEqSystemTuple
-  input tuple<SimCode.SimEqSystem,Integer> inSES;
-  output tuple<SimCode.SimEqSystem, Integer> outSES;
-
-protected
-  Integer sccIdx;
-  SimCode.SimEqSystem eqSyst;
-
-algorithm
-  (eqSyst,sccIdx) := inSES;
-  eqSyst := addDivExpErrorMsgtoSimEqSystem(eqSyst);
-  outSES := (eqSyst,sccIdx);
-
-end addDivExpErrorMsgtoSimEqSystemTuple;
-
 protected function extractVarUnit "author: asodja, 2010-03-11
   Extract variable's unit and displayUnit as strings from
   DAE.VariablesAttributes structures."
@@ -12378,74 +12118,77 @@ end replaceModelInfo;
 public function replaceSimEqSysIndex "updated the index of the given SimEqSysIn.
 author:Waurich TUD 2014-05"
   input SimCode.SimEqSystem simEqSysIn;
-  input Integer idx;
+  input Integer inputIndex;
   output SimCode.SimEqSystem simEqSysOut;
 algorithm
-    simEqSysOut := match(simEqSysIn,idx)
+    simEqSysOut := match(simEqSysIn)
     local
-      Boolean pom,changed,ic, inls;
-      Integer idxLS,idxNLS,idxMX,nUnknowns;
-      list<Boolean> bLst;
-      DAE.ComponentRef cref;
-      DAE.ElementSource source;
-      DAE.Exp exp,lhs;
+      SimCode.LinearSystem lSystem;
+      SimCode.NonlinearSystem nlSystem;
       SimCode.SimEqSystem simEqSys;
-      list<DAE.Exp> expLst;
-      list<DAE.Statement> stmts;
-      list<DAE.ComponentRef> crefs;
-      list<DAE.ElementSource> sources;
-      list<SimCode.SimEqSystem> simEqSysLst,elsebranch;
-      list<SimCodeVar.SimVar> simVars;
-      list<tuple<Integer, Integer, SimCode.SimEqSystem>> simJac;
-      list<tuple<DAE.Exp,list<SimCode.SimEqSystem>>> ifbranches;
-      Option<SimCode.JacobianMatrix> jac;
-      Option<SimCode.SimEqSystem> elseWhen;
-      Boolean homotopySupport;
-      Boolean mixedSystem, tornSystem;
-      list<BackendDAE.WhenOperator> whenStmtLst;
-      BackendDAE.Constraints cons;
-      BackendDAE.EquationAttributes eqAttr;
-    case(SimCode.SES_RESIDUAL(exp=exp,source=source,eqAttr=eqAttr),_)
+
+    case (simEqSys as SimCode.SES_RESIDUAL())
       equation
-        simEqSys = SimCode.SES_RESIDUAL(idx,exp,source, eqAttr);
+        simEqSys.index = inputIndex;
     then simEqSys;
-    case(SimCode.SES_SIMPLE_ASSIGN(cref=cref,exp=exp,source=source,eqAttr=eqAttr),_)
+
+    case (simEqSys as SimCode.SES_SIMPLE_ASSIGN())
       equation
-        simEqSys = SimCode.SES_SIMPLE_ASSIGN(idx,cref,exp,source, eqAttr);
+        simEqSys.index = inputIndex;
     then simEqSys;
-    case(SimCode.SES_SIMPLE_ASSIGN_CONSTRAINTS(cref=cref,exp=exp,source=source,cons=cons,eqAttr=eqAttr),_)
+
+    case (simEqSys as SimCode.SES_SIMPLE_ASSIGN_CONSTRAINTS())
       equation
-        simEqSys = SimCode.SES_SIMPLE_ASSIGN_CONSTRAINTS(idx,cref,exp,source,cons, eqAttr);
+        simEqSys.index = inputIndex;
     then simEqSys;
-    case(SimCode.SES_ARRAY_CALL_ASSIGN(lhs=lhs,exp=exp,source=source,eqAttr=eqAttr),_)
+
+    case (simEqSys as SimCode.SES_ARRAY_CALL_ASSIGN())
       equation
-        simEqSys = SimCode.SES_ARRAY_CALL_ASSIGN(idx,lhs,exp,source, eqAttr);
+        simEqSys.index = inputIndex;
     then simEqSys;
-    case(SimCode.SES_IFEQUATION(ifbranches=ifbranches,elsebranch=elsebranch,source=source,eqAttr=eqAttr),_)
+
+    case (simEqSys as SimCode.SES_IFEQUATION())
       equation
-        simEqSys = SimCode.SES_IFEQUATION(idx,ifbranches,elsebranch,source,eqAttr);
+        simEqSys.index = inputIndex;
     then simEqSys;
-    case(SimCode.SES_ALGORITHM(statements=stmts,eqAttr=eqAttr), _) equation
-      simEqSys = SimCode.SES_ALGORITHM(idx,stmts, eqAttr);
-    then simEqSys;
-    case(SimCode.SES_INVERSE_ALGORITHM(statements=stmts, knownOutputCrefs=crefs,insideNonLinearSystem=inls,eqAttr=eqAttr), _) equation
-      simEqSys = SimCode.SES_INVERSE_ALGORITHM(idx, stmts, crefs, inls, eqAttr);
-    then simEqSys;
-    case(SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(partOfMixed=pom,tornSystem=tornSystem,vars=simVars,beqs=expLst,sources=sources,simJac=simJac,residual=simEqSysLst,jacobianMatrix=jac,indexLinearSystem=idxLS,nUnknowns=nUnknowns),eqAttr=eqAttr),_)
+
+    case (simEqSys as SimCode.SES_ALGORITHM())
       equation
-        simEqSys = SimCode.SES_LINEAR(SimCode.LINEARSYSTEM(idx,pom,tornSystem,simVars,expLst,simJac,simEqSysLst,jac,sources,idxLS,nUnknowns), NONE(),eqAttr);
+        simEqSys.index = inputIndex;
     then simEqSys;
-    case(SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(eqs=simEqSysLst,crefs=crefs,indexNonLinearSystem=idxNLS,nUnknowns=nUnknowns,jacobianMatrix=jac,homotopySupport=homotopySupport,mixedSystem=mixedSystem, tornSystem=tornSystem),eqAttr=eqAttr),_)
+
+    case (simEqSys as SimCode.SES_INVERSE_ALGORITHM())
       equation
-        simEqSys = SimCode.SES_NONLINEAR(SimCode.NONLINEARSYSTEM(idx,simEqSysLst,crefs,idxNLS,nUnknowns,jac,homotopySupport,mixedSystem,tornSystem), NONE(),eqAttr);
+      simEqSys.index = inputIndex;
     then simEqSys;
-    case(SimCode.SES_MIXED(cont=simEqSys,discVars=simVars,discEqs=simEqSysLst,indexMixedSystem=idxMX,eqAttr=eqAttr),_)
+
+    // WARNING: dynamic tearing not handled
+    case (simEqSys as SimCode.SES_LINEAR(lSystem=lSystem))
       equation
-        simEqSys = SimCode.SES_MIXED(idx,simEqSys,simVars,simEqSysLst,idxMX,eqAttr);
+        lSystem.index = inputIndex;
+        simEqSys.lSystem = lSystem;
     then simEqSys;
-    case(SimCode.SES_WHEN(conditions=crefs,initialCall=ic,whenStmtLst=whenStmtLst,elseWhen=elseWhen,source=source,eqAttr=eqAttr),_)
+
+    // WARNING: dynamic tearing not handled
+    case (simEqSys as SimCode.SES_NONLINEAR(nlSystem=nlSystem))
       equation
-        simEqSys = SimCode.SES_WHEN(idx,crefs,ic,whenStmtLst,elseWhen,source,eqAttr);
+        nlSystem.index = inputIndex;
+        simEqSys.nlSystem = nlSystem;
+    then simEqSys;
+
+    case (simEqSys as SimCode.SES_MIXED())
+      equation
+        simEqSys.index = inputIndex;
+    then simEqSys;
+
+    case (simEqSys as SimCode.SES_WHEN())
+      equation
+        simEqSys.index = inputIndex;
+    then simEqSys;
+
+    case (simEqSys as SimCode.SES_FOR_LOOP())
+      equation
+        simEqSys.index = inputIndex;
     then simEqSys;
   end match;
 end replaceSimEqSysIndex;

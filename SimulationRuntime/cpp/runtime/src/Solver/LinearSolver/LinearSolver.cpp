@@ -13,9 +13,10 @@
 #include <Core/Utils/numeric/bindings/ublas.hpp>
 #include <Core/Utils/numeric/utils.h>
 
-LinearSolver::LinearSolver(ILinearAlgLoop* algLoop, ILinSolverSettings* settings)
-  : _algLoop            (algLoop)
-  , _dimSys             (0)
+LinearSolver::LinearSolver(ILinSolverSettings* settings,shared_ptr<ILinearAlgLoop> algLoop)
+   :AlgLoopSolverDefaultImplementation()
+   , _algLoop            (algLoop)
+
 
   , _yNames             (NULL)
   , _yNominal           (NULL)
@@ -45,8 +46,21 @@ LinearSolver::LinearSolver(ILinearAlgLoop* algLoop, ILinSolverSettings* settings
   , _scale              (NULL)
   , _generateoutput     (false)
   , _fNominal           (NULL)
+
 {
-  _sparse = _algLoop->getUseSparseFormat();
+	_max_dimSys = 100;
+	_max_dimZeroFunc=50;
+	if (_algLoop)
+	{
+		_single_instance = false;
+		AlgLoopSolverDefaultImplementation::initialize(_algLoop->getDimZeroFunc(),_algLoop->getDimReal());
+	}
+	else
+	{
+		_single_instance = true;
+		AlgLoopSolverDefaultImplementation::initialize(_max_dimZeroFunc,_max_dimSys);
+	}
+
 }
 
 LinearSolver::~LinearSolver()
@@ -84,17 +98,18 @@ LinearSolver::~LinearSolver()
 
 void LinearSolver::initialize()
 {
-  _firstCall = false;
+
+	if(_firstCall)
+	 _algLoop->initialize();
+
+	_firstCall = false;
   //(Re-) Initialization of algebraic loop
-  _algLoop->initialize();
+  if(!_algLoop)
+     throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
 
-  int dimDouble=_algLoop->getDimReal();
-  int ok=0;
-
-  if (dimDouble!=_dimSys) {
-    _dimSys=dimDouble;
-
-    if (_dimSys>0) {
+  _sparse = _algLoop->getUseSparseFormat();
+  _dimSys =_algLoop->getDimReal();
+  if (_dimSys>0) {
       // Initialization of vector of unknowns
       if (_yNames)          delete [] _yNames;
       if (_yNominal)        delete [] _yNominal;
@@ -166,10 +181,7 @@ void LinearSolver::initialize()
           throw ModelicaSimulationError(ALGLOOP_SOLVER, "error during numerical factorization with Sparse Solver KLU");
       }
 #endif
-    }
-    else {
-      _iterationStatus = SOLVERERROR;
-    }
+
   }
 
   LOGGER_WRITE_BEGIN("LinearSolver: eq" + to_string(_algLoop->getEquationIndex()) +
@@ -179,12 +191,27 @@ void LinearSolver::initialize()
   LOGGER_WRITE_END(LC_LS, LL_DEBUG);
 }
 
+
+void LinearSolver::solve(shared_ptr<ILinearAlgLoop> algLoop, bool first_solve)
+{
+	if (first_solve)
+	{
+		_algLoop = algLoop;
+		_firstCall = true;
+	}
+	if (_algLoop != algLoop)
+		throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
+	solve();
+}
+
 void LinearSolver::solve()
 {
-  if (_firstCall) {
-    initialize();
+  if (_firstCall)
+  {
+      initialize();
   }
-
+  if(!_algLoop)
+    throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
   _iterationStatus = CONTINUE;
 
   LOGGER_WRITE_BEGIN("LinearSolver: eq" + to_string(_algLoop->getEquationIndex()) +
@@ -377,10 +404,31 @@ void LinearSolver::solve()
   LOGGER_WRITE_END(LC_LS, LL_DEBUG);
 }
 
-IAlgLoopSolver::ITERATIONSTATUS LinearSolver::getIterationStatus()
+ILinearAlgLoopSolver::ITERATIONSTATUS LinearSolver::getIterationStatus()
 {
   return _iterationStatus;
 }
+
+bool* LinearSolver::getConditionsWorkArray()
+{
+	return AlgLoopSolverDefaultImplementation::getConditionsWorkArray();
+
+}
+bool* LinearSolver::getConditions2WorkArray()
+{
+
+	return AlgLoopSolverDefaultImplementation::getConditions2WorkArray();
+ }
+
+
+ double* LinearSolver::getVariableWorkArray()
+ {
+
+	return AlgLoopSolverDefaultImplementation::getVariableWorkArray();
+
+ }
+
+
 
 void LinearSolver::stepCompleted(double time)
 {

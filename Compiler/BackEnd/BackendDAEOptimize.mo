@@ -5602,7 +5602,7 @@ algorithm
       varlst = List.map1r(vlst, BackendVariable.getVarAt, inVars);
       false = listEmpty(varlst);
 
-      warning = "Iteration variables of equation system w/o analytic Jacobian:\n" + warnAboutVars(varlst);
+      warning = "Iteration variables of equation system with analytic Jacobian:\n" + warnAboutVars(varlst);
       warningList = listAllIterationVariables2(rest, inVars);
     then warning::warningList;
 
@@ -5610,7 +5610,7 @@ algorithm
       varlst = List.map1r(vlst, BackendVariable.getVarAt, inVars);
       false = listEmpty(varlst);
 
-      warning = "Iteration variables of equation system w/o analytic Jacobian:\n" + warnAboutVars(varlst);
+      warning = "Iteration variables of equation system without analytic Jacobian:\n" + warnAboutVars(varlst);
       warningList = listAllIterationVariables2(rest, inVars);
     then warning::warningList;
 
@@ -5852,6 +5852,7 @@ algorithm
       tasks := List.sort(listAppend(predecessors,listAppend(outputTasks,stateTasks)),intGt);
         //print("predecessors of outputs and states "+stringDelimitList(List.map(tasks,intString),", ")+"\n");
       compsNew := List.map1(tasks,List.getIndexFirst,comps);
+      compsNew := List.unique(compsNew);
         print("There have been "+intString(listLength(comps))+" SCCs and now there are "+intString(listLength(compsNew))+" SCCs.\n");
 
       //get vars and equations from the new reduced set of comps and make a equationIdxMap

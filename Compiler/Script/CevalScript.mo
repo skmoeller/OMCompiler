@@ -316,7 +316,7 @@ algorithm
     // see https://trac.openmodelica.org/OpenModelica/ticket/2422
     // prio = if_(stringEq(prio,""), "default", prio);
     mp := System.realpath(dir + "/../") + System.groupDelimiter() + Settings.getModelicaPath(Config.getRunningTestsuite());
-    (outProgram,true) := loadModel((Absyn.IDENT(cname),{prio},true)::{}, mp, p, true, true, checkUses, true, false);
+    (outProgram,true) := loadModel((Absyn.IDENT(cname),{prio},true)::{}, mp, p, true, true, checkUses, true, filename == "package.moc");
     return;
   end if;
   outProgram := Parser.parse(name,encoding);
@@ -549,9 +549,9 @@ algorithm
       Absyn.Exp aexp;
       DAE.DAElist dae;
       array<list<Integer>> m,mt;
-      Values.Value ret_val,simValue,value,v,cvar,cvar2,v1,v2,v3;
+      Values.Value ret_val,simValue,value,v,cvar,cvar2,v1,v2,v3,gcStatRec;
       Absyn.ComponentRef cr,cr_1;
-      Integer size,resI,i,i1,i2,i3,n,curveStyle,numberOfIntervals, status;
+      Integer size,resI,i,i1,i2,i3,n,curveStyle,numberOfIntervals, status, access;
       list<Integer> is;
       list<String> vars_1,args,strings,strs,strs1,strs2,visvars,postOptModStrings,postOptModStringsOrg,mps,files,dirs;
       Real timeTotal,timeSimulation,timeStamp,val,x1,x2,y1,y2,r,r1,r2,linearizeTime,curveWidth,offset,offset1,offset2,scaleFactor,scaleFactor1,scaleFactor2;
@@ -589,6 +589,8 @@ algorithm
       list<list<Values.Value>> valsLst;
       Boolean new_inst;
       SymbolTable interactiveSymbolTable, interactiveSymbolTable2;
+      GC.ProfStats gcStats;
+      Absyn.Restriction restriction;
 
     case (cache,_,"parseString",{Values.STRING(str1),Values.STRING(str2)},_)
       equation
@@ -634,8 +636,14 @@ algorithm
 
     case (cache,_,"setSourceFile",{Values.CODE(Absyn.C_TYPENAME(path)),Values.STRING(str)},_)
       equation
-        (b,p) = Interactive.setSourceFile(path, str, SymbolTable.getAbsyn());
-        SymbolTable.setAbsyn(p);
+        Values.ENUM_LITERAL(index=access) = Interactive.checkAccessAnnotationAndEncryption(path, SymbolTable.getAbsyn());
+        if (access >= 9) then // i.e., The class is not encrypted.
+          (b,p) = Interactive.setSourceFile(path, str, SymbolTable.getAbsyn());
+          SymbolTable.setAbsyn(p);
+        else
+          Error.addMessage(Error.SAVE_ENCRYPTED_CLASS_ERROR, {});
+          b = false;
+        end if;
       then
         (cache,Values.BOOL(b));
 
@@ -676,6 +684,42 @@ algorithm
         GC.setMaxHeapSize(i);
       then (cache,Values.BOOL(true));
 
+    case (cache,_,"GC_get_prof_stats",{},_)
+      equation
+        gcStats = GC.getProfStats();
+        gcStatRec = match gcStats
+         case GC.PROFSTATS() then
+           Values.RECORD(Absyn.IDENT("GC_PROFSTATS"),
+            {
+              Values.INTEGER(gcStats.heapsize_full),
+              Values.INTEGER(gcStats.free_bytes_full),
+              Values.INTEGER(gcStats.unmapped_bytes),
+              Values.INTEGER(gcStats.bytes_allocd_since_gc),
+              Values.INTEGER(gcStats.allocd_bytes_before_gc),
+              Values.INTEGER(gcStats.bytes_allocd_since_gc+gcStats.allocd_bytes_before_gc),
+              Values.INTEGER(gcStats.non_gc_bytes),
+              Values.INTEGER(gcStats.gc_no),
+              Values.INTEGER(gcStats.markers_m1),
+              Values.INTEGER(gcStats.bytes_reclaimed_since_gc),
+              Values.INTEGER(gcStats.reclaimed_bytes_before_gc)
+            },
+            {
+              "heapsize_full",
+              "free_bytes_full",
+              "unmapped_bytes: ",
+              "bytes_allocd_since_gc",
+              "allocd_bytes_before_gc",
+              "total_allocd_bytes",
+              "non_gc_bytes",
+              "gc_no",
+              "markers_m1",
+              "bytes_reclaimed_since_gc",
+              "reclaimed_bytes_before_gc"
+            },
+            -1);
+       end match;
+      then (cache, gcStatRec);
+
     case (cache,_,"clear",{},_)
       algorithm
         SymbolTable.reset();
@@ -690,6 +734,16 @@ algorithm
       equation
         SymbolTable.setVars({});
       then (cache,Values.BOOL(true));
+
+    // handle encryption
+    case (cache,_,"list",_,_)
+      equation
+        // if AST contains encrypted class show nothing
+        p = SymbolTable.getAbsyn();
+        true = Interactive.astContainsEncryptedClass(p);
+        Error.addMessage(Error.ACCESS_ENCRYPTED_PROTECTED_CONTENTS, {});
+      then
+        (cache,Values.STRING(""));
 
     case (cache,_,"list",{Values.CODE(Absyn.C_TYPENAME(Absyn.IDENT("AllLoadedClasses"))),Values.BOOL(false),Values.BOOL(false),Values.ENUM_LITERAL(name=path)},_)
       equation
@@ -733,8 +787,18 @@ algorithm
           case Absyn.FULLYQUALIFIED() then className.path;
           else className;
         end match;
-        (absynClass as Absyn.CLASS(info=SOURCEINFO(fileName=str))) = Interactive.getPathedClassInProgram(className, SymbolTable.getAbsyn());
-        str = Dump.unparseStr(Absyn.PROGRAM({absynClass}, match path case Absyn.IDENT() then Absyn.TOP(); else Absyn.WITHIN(Absyn.stripLast(path)); end match), options=Dump.DUMPOPTIONS(str));
+        // handle encryption
+        Values.ENUM_LITERAL(index=access) = Interactive.checkAccessAnnotationAndEncryption(path, SymbolTable.getAbsyn());
+        (absynClass as Absyn.CLASS(restriction=restriction, info=SOURCEINFO(fileName=str))) = Interactive.getPathedClassInProgram(className, SymbolTable.getAbsyn());
+        /* If the class has Access.packageText annotation or higher
+         * If the class has Access.nonPackageText annotation or higher and class is not a package
+         */
+        if ((access >= 7) or ((access >= 5) and not Absyn.isPackageRestriction(restriction))) then
+          str = Dump.unparseStr(Absyn.PROGRAM({absynClass}, match path case Absyn.IDENT() then Absyn.TOP(); else Absyn.WITHIN(Absyn.stripLast(path)); end match), options=Dump.DUMPOPTIONS(str));
+        else
+          Error.addMessage(Error.ACCESS_ENCRYPTED_PROTECTED_CONTENTS, {});
+          str = "";
+        end if;
       then
         (cache,Values.STRING(str));
 
@@ -995,6 +1059,12 @@ algorithm
     case (cache,_,"mkdir",{Values.STRING(str)},_)
       equation
         b = Util.createDirectoryTree(str);
+      then
+        (cache,Values.BOOL(b));
+
+    case (cache,_,"copy",{Values.STRING(str1),Values.STRING(str2)},_)
+      equation
+        b = System.copyFile(str1,str2);
       then
         (cache,Values.BOOL(b));
 
@@ -1375,9 +1445,8 @@ algorithm
               b = true;
               s1 = System.basename(filename);
               s2 = Util.removeLast4Char(s1);
-              s3 = System.dirname(filename);
-              filename1 = s3 + "/" + s2 + "/" + s2 + ".moc";
-              filename2 = s3 + "/" + s2 + "/package.moc";
+              filename1 = workdir + "/" + s2 + "/" + s2 + ".moc";
+              filename2 = workdir + "/" + s2 + "/package.moc";
               filename_1 = if System.regularFileExists(filename1) then filename1 else filename2;
               if (System.regularFileExists(filename_1)) then
                 filename_1 = Util.testsuiteFriendlyPath(filename_1);

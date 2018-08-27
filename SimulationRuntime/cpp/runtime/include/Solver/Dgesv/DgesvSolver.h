@@ -4,10 +4,14 @@
  *  @{
  */
 
-class DgesvSolver : public IAlgLoopSolver
+#include "FactoryExport.h"
+#include <Core/Solver/AlgLoopSolverDefaultImplementation.h>
+
+
+class DgesvSolver : public ILinearAlgLoopSolver,  public AlgLoopSolverDefaultImplementation
 {
  public:
-  DgesvSolver(ILinearAlgLoop* algLoop, ILinSolverSettings* settings);
+  DgesvSolver(ILinSolverSettings* settings,shared_ptr<ILinearAlgLoop> algLoop=shared_ptr<ILinearAlgLoop>());
   virtual ~DgesvSolver();
 
   /// (Re-) initialize the solver
@@ -15,6 +19,8 @@ class DgesvSolver : public IAlgLoopSolver
 
   /// Solution of a (non-)linear system of equations
   virtual void solve();
+  //solve for a single instance call
+  virtual void solve(shared_ptr<ILinearAlgLoop> algLoop,bool first_solve = false);
 
   /// Returns the status of iteration
   virtual ITERATIONSTATUS getIterationStatus();
@@ -22,18 +28,20 @@ class DgesvSolver : public IAlgLoopSolver
   virtual void restoreOldValues();
   virtual void restoreNewValues();
 
+  virtual bool* getConditionsWorkArray();
+  virtual bool* getConditions2WorkArray();
+  virtual double* getVariableWorkArray();
  private:
   // Member variables
   //---------------------------------------------------------------
 
-  ILinearAlgLoop
-    *_algLoop;            ///< Algebraic loop to be solved
+  shared_ptr<ILinearAlgLoop> _algLoop;            ///< Algebraic loop to be solved
 
   ITERATIONSTATUS
     _iterationStatus;     ///< Output   - Denotes the status of iteration
 
   long int
-    _dimSys,              ///< Number of unknowns (=dimension of system of equations)
+
     *_iHelp,              ///< Pivot indices for LAPACK routines
     *_jHelp;              ///< Pivot indices for LAPACK routines
 

@@ -39,11 +39,13 @@ encapsulated uniontype NFStatement
 protected
   import Statement = NFStatement;
   import ElementSource;
+  import Util;
 
 public
   record ASSIGNMENT
     Expression lhs "The asignee";
     Expression rhs "The expression";
+    Type ty;
     DAE.ElementSource source;
   end ASSIGNMENT;
 
@@ -55,6 +57,7 @@ public
 
   record FOR
     InstNode iterator;
+    Option<Expression> range;
     list<Statement> body "The body of the for loop.";
     DAE.ElementSource source;
   end FOR;
@@ -107,6 +110,15 @@ public
     DAE.ElementSource source;
   end FAILURE;
 
+  function makeIf
+    input list<tuple<Expression, list<Statement>>> branches;
+    input DAE.ElementSource src;
+    output Statement stmt;
+  algorithm
+    stmt := IF(branches, src);
+    annotation(__OpenModelica_EarlyInline=true);
+  end makeIf;
+
   function source
     input Statement stmt;
     output DAE.ElementSource source;
@@ -132,16 +144,62 @@ public
     output SourceInfo info = ElementSource.getInfo(source(stmt));
   end info;
 
-  function mapExpListList
-    input output list<list<Statement>> stmtl;
-    input MapFunc func;
+  partial function ApplyFn
+    input Statement stmt;
+  end ApplyFn;
 
-    partial function MapFunc
-      input output Expression exp;
-    end MapFunc;
+  function apply
+    input Statement stmt;
+    input ApplyFn func;
   algorithm
-    stmtl := list(mapExpList(s, func) for s in stmtl);
-  end mapExpListList;
+    () := match stmt
+      case FOR()
+        algorithm
+          for e in stmt.body loop
+            apply(e, func);
+          end for;
+        then
+          ();
+
+      case IF()
+        algorithm
+          for b in stmt.branches loop
+            for e in Util.tuple22(b) loop
+              apply(e, func);
+            end for;
+          end for;
+        then
+          ();
+
+      case WHEN()
+        algorithm
+          for b in stmt.branches loop
+            for e in Util.tuple22(b) loop
+              apply(e, func);
+            end for;
+          end for;
+        then
+          ();
+
+      case WHILE()
+        algorithm
+          for e in stmt.body loop
+            apply(e, func);
+          end for;
+        then
+          ();
+
+      case FAILURE()
+        algorithm
+          for e in stmt.body loop
+            apply(e, func);
+          end for;
+        then
+          ();
+    end match;
+
+    func(stmt);
+  end apply;
 
   function mapExpList
     input output list<Statement> stmtl;
@@ -172,11 +230,12 @@ public
           e2 := func(stmt.rhs);
         then
           if referenceEq(e1, stmt.lhs) and referenceEq(e2, stmt.rhs) then
-            stmt else ASSIGNMENT(e1, e2, stmt.source);
+            stmt else ASSIGNMENT(e1, e2, stmt.ty, stmt.source);
 
       case FOR()
         algorithm
           stmt.body := mapExpList(stmt.body, func);
+          stmt.range := Util.applyOption(stmt.range, func);
         then
           stmt;
 
@@ -222,21 +281,6 @@ public
     end match;
   end mapExp;
 
-  function foldExpListList<ArgT>
-    input list<list<Statement>> stmt;
-    input FoldFunc func;
-    input output ArgT arg;
-
-    partial function FoldFunc
-      input Expression exp;
-      input output ArgT arg;
-    end FoldFunc;
-  algorithm
-    for s in stmt loop
-      arg := foldExpList(s, func, arg);
-    end for;
-  end foldExpListList;
-
   function foldExpList<ArgT>
     input list<Statement> stmt;
     input FoldFunc func;
@@ -273,6 +317,10 @@ public
       case Statement.FOR()
         algorithm
           arg := foldExpList(stmt.body, func, arg);
+
+          if isSome(stmt.range) then
+            arg := func(Util.getOption(stmt.range), arg);
+          end if;
         then
           ();
 

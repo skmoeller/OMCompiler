@@ -39,7 +39,7 @@ import ExecStat.execStat;
 import ComponentRef = NFComponentRef;
 import Type = NFType;
 import Expression = NFExpression;
-import Binding = NFBinding;
+import NFBinding.Binding;
 import Equation = NFEquation;
 import ExpressionIterator = NFExpressionIterator;
 import Dimension = NFDimension;
@@ -48,10 +48,13 @@ import MetaModelica.Dangerous.arrayCreateNoInit;
 import Variable = NFVariable;
 import NFComponent.Component;
 import NFPrefixes.Visibility;
+import NFPrefixes.Variability;
 import List;
 import ElementSource;
 import DAE;
 import Statement = NFStatement;
+import Algorithm = NFAlgorithm;
+import ExpandExp = NFExpandExp;
 
 public
 function scalarize
@@ -60,7 +63,7 @@ function scalarize
 protected
   list<Variable> vars = {};
   list<Equation> eql = {}, ieql = {};
-  list<list<Statement>> alg = {}, ialg = {};
+  list<Algorithm> alg = {}, ialg = {};
 algorithm
   for c in flatModel.variables loop
     vars := scalarizeVariable(c, vars);
@@ -94,6 +97,7 @@ protected
   Variable v;
   list<String> ty_attr_names;
   array<ExpressionIterator> ty_attr_iters;
+  Variability bind_var;
 algorithm
   if Type.isArray(var.ty) then
     Variable.VARIABLE(name, ty, binding, vis, attr, ty_attr, cmt, info) := var;
@@ -106,12 +110,13 @@ algorithm
     ty := Type.arrayElementType(ty);
     (ty_attr_names, ty_attr_iters) := scalarizeTypeAttributes(ty_attr);
 
-    if Binding.isBound(binding) and not Binding.isEach(binding) then
+    if Binding.isBound(binding) then
       binding_iter := ExpressionIterator.fromExp(Binding.getTypedExp(binding));
+      bind_var := Binding.variability(binding);
 
       for cr in crefs loop
         (binding_iter, exp) := ExpressionIterator.next(binding_iter);
-        binding := Binding.FLAT_BINDING(exp);
+        binding := Binding.FLAT_BINDING(exp, bind_var);
         ty_attr := nextTypeAttributes(ty_attr_names, ty_attr_iters);
         vars := Variable.VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info) :: vars;
       end for;
@@ -160,7 +165,7 @@ algorithm
     (iter, exp) := ExpressionIterator.next(iters[i]);
     arrayUpdate(iters, i, iter);
     i := i + 1;
-    attrs := (name, Binding.FLAT_BINDING(exp)) :: attrs;
+    attrs := (name, Binding.FLAT_BINDING(exp, Variability.PARAMETER)) :: attrs;
   end for;
 end nextTypeAttributes;
 
@@ -188,22 +193,26 @@ algorithm
       SourceInfo info;
       list<Equation> eql;
 
-    case Equation.EQUALITY(ty = ty, source = src) guard Type.isArray(ty)
+    case Equation.EQUALITY(lhs = lhs, rhs = rhs, ty = ty, source = src) guard Type.isArray(ty)
       algorithm
-        lhs_iter := ExpressionIterator.fromExp(eq.lhs);
-        rhs_iter := ExpressionIterator.fromExp(eq.rhs);
-        ty := Type.arrayElementType(ty);
+        if Expression.hasArrayCall(lhs) or Expression.hasArrayCall(rhs) then
+          equations := Equation.ARRAY_EQUALITY(lhs, rhs, ty, src) :: equations;
+        else
+          lhs_iter := ExpressionIterator.fromExp(lhs);
+          rhs_iter := ExpressionIterator.fromExp(rhs);
+          ty := Type.arrayElementType(ty);
 
-        while ExpressionIterator.hasNext(lhs_iter) loop
-          if not ExpressionIterator.hasNext(rhs_iter) then
-            Error.addInternalError(getInstanceName() + " could not expand rhs " +
-              Expression.toString(eq.rhs), ElementSource.getInfo(src));
-          end if;
+          while ExpressionIterator.hasNext(lhs_iter) loop
+            if not ExpressionIterator.hasNext(rhs_iter) then
+              Error.addInternalError(getInstanceName() + " could not expand rhs " +
+                Expression.toString(eq.rhs), ElementSource.getInfo(src));
+            end if;
 
-          (lhs_iter, lhs) := ExpressionIterator.next(lhs_iter);
-          (rhs_iter, rhs) := ExpressionIterator.next(rhs_iter);
-          equations := Equation.EQUALITY(lhs, rhs, ty, src) :: equations;
-        end while;
+            (lhs_iter, lhs) := ExpressionIterator.next(lhs_iter);
+            (rhs_iter, rhs) := ExpressionIterator.next(rhs_iter);
+            equations := Equation.EQUALITY(lhs, rhs, ty, src) :: equations;
+          end while;
+        end if;
       then
         equations;
 
@@ -223,21 +232,22 @@ algorithm
 end scalarizeEquation;
 
 function scalarizeIfEquation
-  input list<tuple<Expression, list<Equation>>> branches;
+  input list<Equation.Branch> branches;
   input DAE.ElementSource source;
   input output list<Equation> equations;
 protected
-  list<tuple<Expression, list<Equation>>> bl = {};
+  list<Equation.Branch> bl = {};
   Expression cond;
   list<Equation> body;
+  Variability var;
 algorithm
   for b in branches loop
-    (cond, body) := b;
+    Equation.Branch.BRANCH(cond, var, body) := b;
     body := scalarizeEquations(body);
 
     // Remove branches with no equations after scalarization.
     if not listEmpty(body) then
-      bl := (cond, body) :: bl;
+      bl := Equation.makeBranch(cond, body, var) :: bl;
     end if;
   end for;
 
@@ -249,29 +259,36 @@ algorithm
 end scalarizeIfEquation;
 
 function scalarizeWhenEquation
-  input list<tuple<Expression, list<Equation>>> branches;
+  input list<Equation.Branch> branches;
   input DAE.ElementSource source;
   input output list<Equation> equations;
 protected
-  list<tuple<Expression, list<Equation>>> bl = {};
+  list<Equation.Branch> bl = {};
   Expression cond;
   list<Equation> body;
+  Variability var;
 algorithm
   for b in branches loop
-    (cond, body) := b;
+    Equation.Branch.BRANCH(cond, var, body) := b;
     body := scalarizeEquations(body);
 
     if Type.isArray(Expression.typeOf(cond)) then
-      cond := Expression.expand(cond);
+      cond := ExpandExp.expand(cond);
     end if;
 
-    bl := (cond, body) :: bl;
+    bl := Equation.makeBranch(cond, body, var) :: bl;
   end for;
 
   equations := Equation.WHEN(listReverseInPlace(bl), source) :: equations;
 end scalarizeWhenEquation;
 
 function scalarizeAlgorithm
+  input output Algorithm alg;
+algorithm
+  alg.statements := scalarizeStatements(alg.statements);
+end scalarizeAlgorithm;
+
+function scalarizeStatements
   input list<Statement> stmts;
   output list<Statement> statements = {};
 algorithm
@@ -280,7 +297,7 @@ algorithm
   end for;
 
   statements := listReverseInPlace(statements);
-end scalarizeAlgorithm;
+end scalarizeStatements;
 
 function scalarizeStatement
   input Statement stmt;
@@ -288,7 +305,7 @@ function scalarizeStatement
 algorithm
   statements := match stmt
     case Statement.FOR()
-      then Statement.FOR(stmt.iterator, scalarizeAlgorithm(stmt.body), stmt.source) :: statements;
+      then Statement.FOR(stmt.iterator, stmt.range, scalarizeStatements(stmt.body), stmt.source) :: statements;
 
     case Statement.IF()
       then scalarizeIfStatement(stmt.branches, stmt.source, statements);
@@ -297,7 +314,7 @@ algorithm
       then scalarizeWhenStatement(stmt.branches, stmt.source, statements);
 
     case Statement.WHILE()
-      then Statement.WHILE(stmt.condition, scalarizeAlgorithm(stmt.body), stmt.source) :: statements;
+      then Statement.WHILE(stmt.condition, scalarizeStatements(stmt.body), stmt.source) :: statements;
 
     else stmt :: statements;
   end match;
@@ -314,7 +331,7 @@ protected
 algorithm
   for b in branches loop
     (cond, body) := b;
-    body := scalarizeAlgorithm(body);
+    body := scalarizeStatements(body);
 
     // Remove branches with no statements after scalarization.
     if not listEmpty(body) then
@@ -340,10 +357,10 @@ protected
 algorithm
   for b in branches loop
     (cond, body) := b;
-    body := scalarizeAlgorithm(body);
+    body := scalarizeStatements(body);
 
     if Type.isArray(Expression.typeOf(cond)) then
-      cond := Expression.expand(cond);
+      cond := ExpandExp.expand(cond);
     end if;
 
     bl := (cond, body) :: bl;

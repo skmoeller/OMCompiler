@@ -32,7 +32,7 @@
 encapsulated package NFComponent
 
 import DAE;
-import Binding = NFBinding;
+import NFBinding.Binding;
 import NFClass.Class;
 import Dimension = NFDimension;
 import NFInstNode.InstNode;
@@ -166,6 +166,7 @@ uniontype Component
     Binding condition;
     Component.Attributes attributes;
     Option<SCode.Comment> comment;
+    Boolean instantiated;
     SourceInfo info;
   end UNTYPED_COMPONENT;
 
@@ -181,12 +182,22 @@ uniontype Component
 
   record ITERATOR
     Type ty;
-    Binding binding;
+    Variability variability;
+    SourceInfo info;
   end ITERATOR;
 
   record ENUM_LITERAL
     Expression literal;
   end ENUM_LITERAL;
+
+  record TYPE_ATTRIBUTE
+    Type ty;
+    Modifier modifier;
+  end TYPE_ATTRIBUTE;
+
+  record DELETED_COMPONENT
+    Component component;
+  end DELETED_COMPONENT;
 
   function new
     input SCode.Element definition;
@@ -270,6 +281,7 @@ uniontype Component
   algorithm
     modifier := match component
       case COMPONENT_DEF() then component.modifier;
+      case TYPE_ATTRIBUTE() then component.modifier;
       else Modifier.NOMOD();
     end match;
   end getModifier;
@@ -284,6 +296,11 @@ uniontype Component
           component.modifier := modifier;
         then
           ();
+      case TYPE_ATTRIBUTE()
+        algorithm
+          component.modifier := modifier;
+        then
+          ();
     end match;
   end setModifier;
 
@@ -291,12 +308,15 @@ uniontype Component
     input Modifier modifier;
     input output Component component;
   algorithm
-    () := match component
+    component := match component
       case COMPONENT_DEF()
         algorithm
           component.modifier := Modifier.merge(modifier, component.modifier);
         then
-          ();
+          component;
+
+      case TYPE_ATTRIBUTE()
+        then TYPE_ATTRIBUTE(component.ty, Modifier.merge(modifier, component.modifier));
     end match;
   end mergeModifier;
 
@@ -308,6 +328,8 @@ uniontype Component
       case TYPED_COMPONENT() then component.ty;
       case UNTYPED_COMPONENT() then InstNode.getType(component.classInst);
       case ITERATOR() then component.ty;
+      case TYPE_ATTRIBUTE() then component.ty;
+      case DELETED_COMPONENT() then getType(component.component);
       else Type.UNKNOWN();
     end match;
   end getType;
@@ -344,6 +366,7 @@ uniontype Component
       case TYPED_COMPONENT() then true;
       case ITERATOR(ty = Type.UNKNOWN()) then false;
       case ITERATOR() then true;
+      case TYPE_ATTRIBUTE() then true;
       else false;
     end match;
   end isTyped;
@@ -408,7 +431,6 @@ uniontype Component
     b := match component
       case UNTYPED_COMPONENT() then component.binding;
       case TYPED_COMPONENT() then component.binding;
-      case ITERATOR() then component.binding;
     end match;
   end getBinding;
 
@@ -429,11 +451,6 @@ uniontype Component
         then
           ();
 
-      case ITERATOR()
-        algorithm
-          component.binding := binding;
-        then
-          ();
     end match;
   end setBinding;
 
@@ -441,10 +458,7 @@ uniontype Component
     input Component component;
     output Boolean b;
   algorithm
-    b := match getBinding(component)
-      case UNBOUND() then false;
-      else true;
-    end match;
+    b := Binding.isBound(getBinding(component));
   end hasBinding;
 
   function direction
@@ -510,7 +524,7 @@ uniontype Component
     variability := match component
       case TYPED_COMPONENT(attributes = Attributes.ATTRIBUTES(variability = variability)) then variability;
       case UNTYPED_COMPONENT(attributes = Attributes.ATTRIBUTES(variability = variability)) then variability;
-      case ITERATOR() then Variability.CONSTANT;
+      case ITERATOR() then component.variability;
       case ENUM_LITERAL() then Variability.CONSTANT;
       else Variability.CONTINUOUS;
     end match;
@@ -546,6 +560,16 @@ uniontype Component
     input Component component;
     output Boolean isConst = variability(component) == Variability.CONSTANT;
   end isConst;
+
+  function isParameter
+    input Component component;
+    output Boolean b = variability(component) == Variability.PARAMETER;
+  end isParameter;
+
+  function isStructuralParameter
+    input Component component;
+    output Boolean b = variability(component) == Variability.STRUCTURAL_PARAMETER;
+  end isStructuralParameter;
 
   function isVar
     input Component component;
@@ -619,6 +643,7 @@ uniontype Component
     cty := match component
       case UNTYPED_COMPONENT(attributes = Attributes.ATTRIBUTES(connectorType = cty)) then cty;
       case TYPED_COMPONENT(attributes = Attributes.ATTRIBUTES(connectorType = cty)) then cty;
+      case DELETED_COMPONENT() then connectorType(component.component);
       else ConnectorType.POTENTIAL;
     end match;
   end connectorType;
@@ -633,6 +658,12 @@ uniontype Component
     output Boolean isConnector =
       Class.isConnectorClass(InstNode.getDerivedClass(classInstance(component)));
   end isConnector;
+
+  function isExpandableConnector
+    input Component component;
+    output Boolean isExpandableConnector =
+      Class.isExpandableConnectorClass(InstNode.getDerivedClass(classInstance(component)));
+  end isExpandableConnector;
 
   function isIdentical
     input Component comp1;
@@ -684,6 +715,8 @@ uniontype Component
              Type.toString(component.ty) + " " + name +
              Binding.toString(component.binding, " = ");
 
+      case TYPE_ATTRIBUTE()
+        then name + Modifier.toString(component.modifier, printName = false);
     end match;
   end toString;
 
@@ -727,8 +760,43 @@ uniontype Component
       case COMPONENT_DEF() then SCode.getElementComment(component.definition);
       case UNTYPED_COMPONENT() then component.comment;
       case TYPED_COMPONENT() then component.comment;
+      else NONE();
     end match;
   end comment;
+
+  function getEvaluateAnnotation
+    input Component component;
+    output Boolean evaluate;
+  protected
+    SCode.Comment cmt;
+  algorithm
+    evaluate := SCode.getEvaluateAnnotation(comment(component));
+  end getEvaluateAnnotation;
+
+  function getFixedAttribute
+    input Component component;
+    output Boolean fixed = false;
+  protected
+    list<Modifier> typeAttrs = {};
+    Binding binding;
+  algorithm
+    // for parameters the default is fixed = true
+    if isParameter(component) or isStructuralParameter(component) then
+      fixed := true;
+    else
+      fixed := false;
+    end if;
+
+    binding := Class.lookupAttributeBinding("fixed", InstNode.getClass(classInstance(component)));
+
+    // no fixed attribute present
+    if Binding.isUnbound(binding) then
+      return;
+    end if;
+
+    fixed := fixed and Expression.isTrue(Binding.getTypedExp(binding));
+
+  end getFixedAttribute;
 
   function isDeleted
     input Component component;
@@ -740,6 +808,8 @@ uniontype Component
 
       case TYPED_COMPONENT(condition = condition)
         then Binding.isBound(condition) and Expression.isFalse(Binding.getTypedExp(condition));
+
+      case DELETED_COMPONENT() then true;
       else false;
     end match;
   end isDeleted;

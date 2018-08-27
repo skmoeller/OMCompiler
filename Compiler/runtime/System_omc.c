@@ -289,6 +289,16 @@ extern void System_setHasExpandableConnectors(int b)
   hasExpandableConnectors = b;
 }
 
+extern int System_getHasOverconstrainedConnectors()
+{
+  return hasOverconstrainedConnectors;
+}
+
+extern void System_setHasOverconstrainedConnectors(int b)
+{
+  hasOverconstrainedConnectors = b;
+}
+
 extern int System_getPartialInstantiation()
 {
   return isPartialInstantiation;
@@ -538,6 +548,15 @@ extern int System_userIsRoot()
   return CONFIG_USER_IS_ROOT;
 }
 
+extern int System_getuid()
+{
+#if defined(__MINGW32__) || defined(_MSC_VER)
+  return 0;
+#else
+  return getuid();
+#endif
+}
+
 extern const char* System_readEnv(const char *envname)
 {
   char *envvalue = getenv(envname);
@@ -774,6 +793,26 @@ extern const char* System_snprintff(const char *fmt, int len, double d)
   if (snprintf(buf,len,fmt,d) >= len) {
     MMC_THROW();
   }
+  return buf;
+}
+
+extern const char* System_sprintff(const char *fmt, double d)
+{
+  char *buf;
+  const int buf_size = 20;
+  buf = ModelicaAllocateString(buf_size);
+
+  int len = snprintf(buf, buf_size, fmt, d);
+
+  if (len < 0) {
+    MMC_THROW();
+  }
+
+  if (len >= buf_size) {
+    buf = ModelicaAllocateString(len + 1);
+    snprintf(buf, len, fmt, d);
+  }
+
   return buf;
 }
 

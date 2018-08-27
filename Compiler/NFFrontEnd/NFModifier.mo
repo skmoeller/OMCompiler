@@ -42,7 +42,7 @@ encapsulated package NFModifier
 public
 import Absyn;
 import BaseAvlTree;
-import Binding = NFBinding;
+import NFBinding.Binding;
 import NFComponent.Component;
 import NFInstNode.InstNode;
 import SCode;
@@ -126,18 +126,6 @@ uniontype ModifierScope
       case EXTENDS() then "extends " + Absyn.pathString(scope.path);
     end match;
   end toString;
-
-  function toElementType
-    input ModifierScope scope;
-    output ElementType origin;
-    import NFBindingOrigin.ElementType;
-  algorithm
-    origin := match scope
-      case COMPONENT() then ElementType.COMPONENT;
-      case CLASS() then ElementType.CLASS;
-      case EXTENDS() then ElementType.EXTENDS;
-    end match;
-  end toElementType;
 end ModifierScope;
 
 uniontype Modifier
@@ -164,7 +152,7 @@ public
     input SCode.Mod mod;
     input String name;
     input ModifierScope modScope;
-    input Integer level;
+    input list<InstNode> parents;
     input InstNode scope;
     output Modifier newMod;
   algorithm
@@ -175,19 +163,18 @@ public
         Binding binding;
         SCode.Element elem;
         SCode.Mod smod;
-        Integer lvl;
         Boolean is_each;
         InstNode node;
+        list<InstNode> pars;
 
       case SCode.NOMOD() then NOMOD();
 
       case SCode.MOD()
         algorithm
           is_each := SCode.eachBool(mod.eachPrefix);
-          binding := Binding.fromAbsyn(mod.binding, is_each, level,
-             scope, mod.info, ModifierScope.toElementType(modScope));
-          lvl := if is_each then level + 1 else level;
-          submod_lst := list((m.ident, createSubMod(m, modScope, lvl, scope)) for m in mod.subModLst);
+          binding := Binding.fromAbsyn(mod.binding, is_each, parents, scope, mod.info);
+          pars := if is_each then {} else parents;
+          submod_lst := list((m.ident, createSubMod(m, modScope, pars, scope)) for m in mod.subModLst);
           submod_table := ModTable.fromList(submod_lst,
             function mergeLocal(scope = modScope, prefix = {}));
         then
@@ -237,7 +224,7 @@ public
 
   function fromElement
     input SCode.Element element;
-    input Integer level;
+    input list<InstNode> parents;
     input InstNode scope;
     output Modifier mod;
   algorithm
@@ -247,43 +234,23 @@ public
         SCode.Mod smod;
 
       case SCode.EXTENDS()
-        then create(element.modifications, "", ModifierScope.EXTENDS(element.baseClassPath), level, scope);
+        then create(element.modifications, "", ModifierScope.EXTENDS(element.baseClassPath), parents, scope);
 
       case SCode.COMPONENT()
         algorithm
           smod := patchElementModFinal(element.prefixes, element.info, element.modifications);
         then
-          create(smod, element.name, ModifierScope.COMPONENT(element.name), level, scope);
+          create(smod, element.name, ModifierScope.COMPONENT(element.name), parents, scope);
 
       case SCode.CLASS(classDef = def as SCode.DERIVED())
-        then create(def.modifications, element.name, ModifierScope.CLASS(element.name), level, scope);
+        then create(def.modifications, element.name, ModifierScope.CLASS(element.name), parents, scope);
 
       case SCode.CLASS(classDef = def as SCode.CLASS_EXTENDS())
-        then create(def.modifications, element.name, ModifierScope.CLASS(element.name), level, scope);
+        then create(def.modifications, element.name, ModifierScope.CLASS(element.name), parents, scope);
 
       else NOMOD();
     end match;
   end fromElement;
-
-  function makeRedeclareMod
-    input InstNode node;
-    input Integer level;
-    input InstNode scope;
-    output Modifier mod;
-  protected
-    String name;
-    ModifierScope mod_scope;
-    SCode.Mod redecl_mod;
-    SCode.Element element;
-  algorithm
-    element := InstNode.definition(node);
-    mod_scope := ModifierScope.fromElement(element);
-    name := ModifierScope.name(mod_scope);
-    redecl_mod := SCode.Mod.REDECL(SCode.Final.NOT_FINAL(), SCode.Each.NOT_EACH(), element);
-    redecl_mod := SCode.Mod.MOD(SCode.Final.NOT_FINAL(), SCode.Each.NOT_EACH(),
-      {SCode.SubMod.NAMEMOD(name, redecl_mod)}, NONE(), SCode.elementInfo(element));
-    mod := create(redecl_mod, name, mod_scope, level, scope);
-  end makeRedeclareMod;
 
   function patchElementModFinal
     // TODO: This would be cheaper to do in SCodeUtil when creating the
@@ -314,6 +281,48 @@ public
       end match;
     end if;
   end patchElementModFinal;
+
+  function addParent
+    input InstNode parent;
+    input Modifier mod;
+    output Modifier outMod;
+  algorithm
+    outMod := match mod
+      local
+        Binding binding;
+
+      case MODIFIER(binding = binding)
+        algorithm
+          mod.binding := Binding.addParent(parent, binding);
+        then
+          map(mod, function addParent_work(parent = parent));
+
+      else mod;
+    end match;
+  end addParent;
+
+  function addParent_work
+    input String name;
+    input InstNode parent;
+    input Modifier mod;
+    output Modifier outMod;
+  algorithm
+    outMod := match mod
+      local
+        Binding binding;
+
+      case MODIFIER(binding = binding)
+        algorithm
+          mod.binding := Binding.addParent(parent, binding);
+        then
+          if not Binding.isEach(binding) then
+            map(mod, function addParent_work(parent = parent))
+          else
+            mod;
+
+      else mod;
+    end match;
+  end addParent_work;
 
   function lookupModifier
     input String modName;
@@ -363,7 +372,7 @@ public
   algorithm
     binding := match modifier
       case MODIFIER() then modifier.binding;
-      else Binding.UNBOUND();
+      else NFBinding.EMPTY_BINDING;
     end match;
   end binding;
 
@@ -470,39 +479,25 @@ public
     end match;
   end isEach;
 
-  function checkEach
-    input Modifier mod;
-    input Boolean isScalar;
-    input String elementName;
+  function map
+    input output Modifier mod;
+    input FuncT func;
+
+    partial function FuncT
+      input String name;
+      input output Modifier submod;
+    end FuncT;
   algorithm
-    _ := match mod
-      case MODIFIER() guard isScalar
+    () := match mod
+      case MODIFIER()
         algorithm
-          _ := ModTable.forEach(mod.subModifiers,
-           function checkEachBinding(elementName = elementName));
+          mod.subModifiers := ModTable.map(mod.subModifiers, func);
         then
           ();
 
       else ();
     end match;
-  end checkEach;
-
-  function checkEachBinding
-    input String modName;
-    input Modifier mod;
-    input String elementName;
-  algorithm
-    _ := match mod
-      case MODIFIER() guard Binding.isEach(mod.binding)
-        algorithm
-          Error.addSourceMessage(Error.EACH_ON_NON_ARRAY,
-            {elementName}, mod.info);
-        then
-          ();
-
-      else ();
-    end match;
-  end checkEachBinding;
+  end map;
 
   function toString
     input Modifier mod;
@@ -538,9 +533,9 @@ protected
   function createSubMod
     input SCode.SubMod subMod;
     input ModifierScope modScope;
-    input Integer level;
+    input list<InstNode> parents;
     input InstNode scope;
-    output Modifier mod = create(subMod.mod, subMod.ident, modScope, level, scope);
+    output Modifier mod = create(subMod.mod, subMod.ident, modScope, parents, scope);
   end createSubMod;
 
   function checkFinalOverride

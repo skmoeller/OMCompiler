@@ -34,48 +34,7 @@
 #
 # The used defines are stored in the SYSTEM_CFLAGS variable, which is passed to the ModelicaConfig.inc and written in the PrecompiledHeader.cmake
 
-PROJECT(CppOMSISimulation)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
-
-SET(CMAKE_VERBOSE_MAKEFILE ON)
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMake")
-SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-MESSAGE(STATUS "CMake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
-
-STRING(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-
-#Set Options
-OPTION(USE_PARALLEL_OUTPUT "USE_PARALLEL_OUTPUT" OFF)
-OPTION(USE_SCOREP "USE_SCOREP" OFF)
-OPTION(USE_DGESV "USE_DGESV" ON)
-OPTION(BOOST_STATIC_LINKING "BOOST_STATIC_LINKING" OFF)
-OPTION(USE_BOOST_REALPATHS "USE_BOOST_REALPATHS" OFF)
-OPTION(RUNTIME_PROFILING "RUNTIME_PROFILING" OFF)
-OPTION(FMU_SUNDIALS "FMU_SUNDIALS" OFF)
-OPTION(USE_OMSI "Enable omsi nonlinear and linear solver interface" ON)
-OPTION(KLU_ROOT "KLU ROOT" "")
-OPTION(TRILINOS_ROOT "TRILINOS ROOT" "")
-OPTION(USE_CPP_03 "USE_CPP_03" OFF)
-OPTION(USE_FMILIB "use fmi library" ON)
-
-SET(USE_MICO OFF)
-SET(USE_KLU CACHE BOOL OFF)
-SET(USE_TRILINOS CACHE BOOL OFF)
-SET(REDUCE_DAE OFF)
-IF(NOT FMU_TARGET OR FMU_SUNDIALS)
-  SET(USE_SUNDIALS ON)
-ENDIF(NOT FMU_TARGET OR FMU_SUNDIALS)
-SET(OMC_BUILD ON)
-SET(SIMSTER_BUILD OFF)
-SET(Boost_USE_MULTITHREADED ON)
-
-#Set Variables
-SET(MODELICAEXTERNALCDIR  "${CMAKE_SOURCE_DIR}/../../3rdParty/ModelicaExternalC/C-Sources")
-SET(USERTABDIR  "${CMAKE_SOURCE_DIR}/../../libraries/Resources/Data/Tables")
-IF(NOT FMU_TARGET)
-  SET(LIBINSTALLEXT "lib/omc/cpp" CACHE STRING "library directory")
-ENDIF(NOT FMU_TARGET)
 
 IF(UNIX)
 IF(APPLE)
@@ -110,6 +69,9 @@ else()
   message(STATUS "Libs will be installed in ${LIBINSTALLEXT}")
 endif()
 message(STATUS "Libs will be installed in ${LIBINSTALLEXT}")
+SET(CMAKE_VERBOSE_MAKEFILE ON)
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMake")
+SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 MESSAGE(STATUS "CMake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
 
@@ -131,10 +93,10 @@ OPTION(USE_CPP_03 "USE_CPP_03" OFF)
 IF(NOT FMU_TARGET)
  IF(MSVC)
   MESSAGE(STATUS "MSVC")
-  SET(LIBINSTALLEXT "lib/omc/cpp/msvc" )
-ELSE(MSVC)
-   SET(LIBINSTALLEXT "lib/omc/cpp" )
- ENDIF(MSVC)
+  SET(LIBINSTALLEXT "lib/omc/cpp/msvc" CACHE STRINGz "library directory")
+ ELSE(MSVC)
+  SET(LIBINSTALLEXT "lib/omc/cpp" CACHE STRING "library directory")
+ENDIF(MSVC)
 ENDIF(NOT FMU_TARGET)
 MESSAGE(STATUS "Using library folder extension " ${LIBINSTALLEXT})
 SET(MODELICA_MODEL "ModelicaSystem")
@@ -211,7 +173,7 @@ ENDIF(USE_BOOST_REALPATHS)
 IF(MSVC)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm113")
 ENDIF(MSVC)
-INCLUDE(${CMAKE_SOURCE_DIR}/CMake/PrecompiledHeader.cmake)
+INCLUDE(${CMAKE_SOURCE_DIR}/PrecompiledHeader.cmake)
 
 #IF(IS_MINGW32 OR IS_MINGW64)
 # SET(USE_CPP_03 ON)
@@ -389,7 +351,7 @@ IF(WIN32)
   SET(MICO_LIB_HOME $ENV{OMDEV}/lib/mico-msys-mingw/)
   SET(MICO_INCLUDE_HOME  $ENV{OMDEV}/include/mico-msys-mingw/)
 
-  SET(INSTALL_OMDEV_LIBS OFF)
+  SET(INSTALL_OMDEV_LIBS ON)
 ENDIF(WIN32)
 
 # Find OpenMP
@@ -649,76 +611,6 @@ IF(USE_SUNDIALS)
   ENDIF(WIN32)
 ENDIF(USE_SUNDIALS)
 
-
-
-# Find FMI lib
-IF(USE_OMSI)
-  IF(MSVC)
-    SET(FMILIB_INLCUDE_HOME  "${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/install_msvc/include/")
-    SET(FMILIB_LIBRARY_RELEASE_HOME "${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/install_msvc/lib")
-	SET(OMSIBASELIB_LIBRARY_RELEASE_HOME "${CMAKE_SOURCE_DIR}/../../../build/lib/omc/omsi/msvc")
-  ELSE(MSVC)
-    SET(FMILIB_INLCUDE_HOME  "${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/install/include/")
-    SET(FMILIB_LIBRARY_RELEASE_HOME  "${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/build")
-	SET(OMSIBASELIB_LIBRARY_RELEASE_HOME "${CMAKE_SOURCE_DIR}/../../../build/lib/omc/omsi/")
-  ENDIF(MSVC)
-
-  MESSAGE(STATUS "FMI lib include:")
-  MESSAGE(STATUS "${FMILIB_INLCUDE_HOME}")
-  MESSAGE(STATUS "FMI lib library:")
-  MESSAGE(STATUS "${FMILIB_LIBRARY_RELEASE_HOME}")
-
-
-  FIND_PATH(FMILIB_INCLUDE_DIR fmilib_config.h PATHS ${FMILIB_INLCUDE_HOME})
-  IF (NOT FMILIB_INCLUDE_DIR)
-    MESSAGE(FATAL_ERROR "Could not find fmi library; compile omc first")
-  ELSE(NOT FMILIB_INCLUDE_DIR)
-    INCLUDE_DIRECTORIES(${FMILIB_INCLUDE_DIR})
-  ENDIF()
-
-  FIND_LIBRARY(FMILIB_LIB NAMES  "fmilib_shared" NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATHS ${FMILIB_LIBRARY_RELEASE_HOME} )
-  IF(NOT FMILIB_LIB)
-    MESSAGE(FATAL_ERROR "Could not find fmi library!")
-  ENDIF()
-
-   #omsi base library
-  FIND_LIBRARY(OMSIBASE_LIB NAMES  "OMSIBase_static" NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATHS ${OMSIBASELIB_LIBRARY_RELEASE_HOME} )
-  IF(NOT OMSIBASE_LIB)
-    MESSAGE(FATAL_ERROR "Could not find omsi base library!")
-  ENDIF()
-
-
-  MESSAGE(STATUS "FMI-lib Libraries:")
-  MESSAGE(STATUS "${FMILIB_LIB}")
-
-
-  MESSAGE(STATUS "OMSI Libraries:")
-  MESSAGE(STATUS "${OMSIBASE_LIB}")
-  MESSAGE(STATUS "OMSI Includes:")
-  MESSAGE(STATUS "${CMAKE_SOURCE_DIR}/../OMSI/base/include")
-  #omsi base includes
-  include_directories ("${CMAKE_SOURCE_DIR}/../OMSI/base/include")
-  ADD_DEFINITIONS(-DENABLE_OMSI)
-  MESSAGE(STATUS "OSI linear and nonlinear solver interface enabled")
-  #set exapat lib for visual studio compiler used by omsi xml and json  parser
-  IF(MSVC)
-    INCLUDE_DIRECTORIES($ENV{OMDEV}/lib/expat-win32-msvc)
-  ENDIF(MSVC)
-
-
-  # On Windows we need to install those libraries along with the SimManager
-  IF(WIN32)
-    INSTALL(FILES ${FMILIB_LIB} DESTINATION bin)
-  ENDIF(WIN32)
-ENDIF(USE_OMSI)
-
-
-
-
-
-
-
-
 # Find Klu solvers
 IF(USE_KLU)
   #set klu solvers include and library directories
@@ -914,75 +806,86 @@ if(UNIX AND Boost_INCLUDE_DIR STREQUAL "/usr/include")
   execute_process(COMMAND ln -sf /usr/include/boost ./)
 endif(UNIX AND Boost_INCLUDE_DIR STREQUAL "/usr/include")
 
+#set (CMAKE_CXX_FLAGS "-Winvalid-pch")
+#build of simulation.core
+include_directories ("Include")
+include_directories ("Solver")
+#include_directories ("Include/Solver/KLU")
 
-#include path for cpp simulation kernel
-include_directories ("runtime/include")
+#add_subdirectory (Solver/KLU)
+# Needs to be included before Core/Modelica othwise environment variables are not set.
+IF(USE_DGESV)
+  ADD_SUBDIRECTORY(Solver/Dgesv)
+
+  GET_TARGET_PROPERTY(libDgesv ${DgesvName} LOCATION)
+  GET_FILENAME_COMPONENT(libDgesvName ${libDgesv} NAME)
+ENDIF(USE_DGESV)
+
+# adrpo: make sure this is first for the precompiled headers!
+if(NOT FMU_TARGET)
+  # add projects for generating a simulator
+  add_subdirectory(Core/Modelica)
+endif(NOT FMU_TARGET)
+
+# add system default implemention project
+add_subdirectory(Core/System)
+# add solver default implemention project
+add_subdirectory(Core/Solver)
+
+add_subdirectory(Core/Math)
+add_subdirectory(Core/Utils/Modelica)
+add_subdirectory(Core/Utils/extension)
+
+if(NOT FMU_TARGET)
+  # add projects for generating a simulator
+  add_subdirectory(SimCoreFactory/OMCFactory)
+  add_subdirectory(Core/DataExchange)
+  add_subdirectory(Core/SimulationSettings)
+  add_subdirectory(Core/SimController)
+  #add_subdirectory(ModelicaCompiler)
+endif(NOT FMU_TARGET)
+
+# add Newton solver
+add_subdirectory(Solver/Newton)
+
+if(NOT FMU_TARGET)
+  # add more algebraic loop solvers
+  add_subdirectory(Solver/Broyden)
+  add_subdirectory(Solver/Hybrj)
+  add_subdirectory(Solver/UmfPack)
+  add_subdirectory(Solver/Peer)
+  add_subdirectory(Solver/LinearSolver)
+  # add simulation solvers
+  add_subdirectory(Solver/Euler)
+  add_subdirectory(Solver/RK12)
+  add_subdirectory(Solver/RTEuler)
+  if(OPENMP_FOUND)
+    if(SUITESPARSE_UMFPACK_FOUND)
+      message(STATUS "CppDassl enabled")
+      add_subdirectory (Solver/CppDASSL)
+    else(SUITESPARSE_UMFPACK_FOUND)
+      message(STATUS "CppDassl disabled, because of missing UMFPACK support")
+    endif(SUITESPARSE_UMFPACK_FOUND)
+  else(OPENMP_FOUND)
+    message(STATUS "CppDassl disabled, because of missing OpenMP support")
+  endif(OPENMP_FOUND)
+  ##add_subdirectory(Solver/RTRK)
+endif(NOT FMU_TARGET)
+
+add_subdirectory(FMU)
+
+if(REDUCE_DAE)
+  add_subdirectory(Core/ReduceDAE)
+endif()
 
 
 
-
-
-
-
-#set module names
-SET(MODELICA_MODEL "ModelicaSystem")
-SET(LIBPREFIX "OMCpp")
-IF(BUILD_SHARED_LIBS)
-  SET(LIBSUFFIX "")
-ELSE(BUILD_SHARED_LIBS)
-  SET(LIBSUFFIX "_static")
-ENDIF(BUILD_SHARED_LIBS)
-SET(SolverName ${LIBPREFIX}Solver${LIBSUFFIX})
-SET(SystemName ${LIBPREFIX}System${LIBSUFFIX})
-SET(OMCFactoryName ${LIBPREFIX}OMCFactory${LIBSUFFIX})
-SET(MathName ${LIBPREFIX}Math${LIBSUFFIX})
-SET(ModelicaExternalName ModelicaExternalC) # only static version
-SET(ModelicaTablesName ModelicaStandardTables) # only static version
-SET(LibZName zlib) # only static version
-SET(ModelicaMatIOName ModelicaMatIO) # only static version
-SET(SimulationSettings ${LIBPREFIX}SimulationSettings${LIBSUFFIX})
-SET(SimControllerName ${LIBPREFIX}SimController${LIBSUFFIX})
-SET(CVodeName ${LIBPREFIX}CVode${LIBSUFFIX})
-SET(ARKodeName ${LIBPREFIX}ARKode${LIBSUFFIX})
-SET(IDAName ${LIBPREFIX}IDA${LIBSUFFIX})
-SET(PeerName ${LIBPREFIX}Peer${LIBSUFFIX})
-SET(CppDASSLName ${LIBPREFIX}CppDASSL${LIBSUFFIX})
-SET(RTRKName ${LIBPREFIX}RTRK${LIBSUFFIX})
-SET(EulerName ${LIBPREFIX}Euler${LIBSUFFIX})
-SET(RK12Name ${LIBPREFIX}RK12${LIBSUFFIX})
-#SET(kluName ${LIBPREFIX}klu${LIBSUFFIX})
-SET(RTEulerName ${LIBPREFIX}RTEuler${LIBSUFFIX})
-SET(IdaName ${LIBPREFIX}Ida${LIBSUFFIX})
-SET(IdasName ${LIBPREFIX}Idas${LIBSUFFIX})
-SET(KinsolName ${LIBPREFIX}Kinsol${LIBSUFFIX})
-SET(NoxName ${LIBPREFIX}Nox${LIBSUFFIX})
-SET(LinearSolverName ${LIBPREFIX}LinearSolver${LIBSUFFIX})
-SET(DgesvSolverName ${LIBPREFIX}DgesvSolver${LIBSUFFIX})
-SET(ModelicaName ${LIBPREFIX}Modelica${LIBSUFFIX})
-SET(NewtonName ${LIBPREFIX}Newton${LIBSUFFIX})
-SET(BroydenName ${LIBPREFIX}Broyden${LIBSUFFIX})
-SET(HybrjName ${LIBPREFIX}Hybrj${LIBSUFFIX})
-SET(UmfPackName ${LIBPREFIX}UmfPack${LIBSUFFIX})
-SET(DataExchangeName ${LIBPREFIX}DataExchange${LIBSUFFIX})
-SET(ModelicaUtilitiesName ${LIBPREFIX}ModelicaUtilities${LIBSUFFIX})
-SET(ExtensionUtilitiesName ${LIBPREFIX}ExtensionUtilities${LIBSUFFIX})
-SET(BasiLibName ${LIBPREFIX}Base${LIBSUFFIX})
-SET(ModelicaCompilerName ${LIBPREFIX}ModelicaCompiler${LIBSUFFIX})
-SET(FMUName ${LIBPREFIX}FMU${LIBSUFFIX})
-SET(DgesvName ${LIBPREFIX}Dgesv) # only static version
-SET(OSUSimName ${LIBPREFIX}OSUSimulation${LIBSUFFIX})
-SET(OSUName ${LIBPREFIX}OSU${LIBSUFFIX})
-
-
-
-# simulation kernel
-ADD_SUBDIRECTORY(runtime/src)
-
-
-
-#get library names for dynamic loading and linking simulation kernel
 IF(USE_SUNDIALS)
-
+  #add  Cvode solver project
+  ADD_SUBDIRECTORY (Solver/CVode)
+  #add_subdirectory (Solver/ARKode)
+  ADD_SUBDIRECTORY(Solver/IDA)
+  ADD_SUBDIRECTORY(Solver/Kinsol)
   #add  Idas solver project
   ##add_subdirectory (Solver/Idas/Implementation)
   ##add_subdirectory (Solver/Ida/Implementation)
@@ -1098,7 +1001,7 @@ set (SETTINGSFACTORY_LIB ${libSetFactoryName})
 set (MODELICASYSTEM_LIB ${libModelicaName})
 set (NEWTON_LIB ${libNewtonName})
 set (BROYDEN_LIB ${libBroydenName})
-#set (UMFPACK_LIB ${libUmfPackName})
+set (UMFPACK_LIB ${libUmfPackName})
 set (PEER_LIB ${libPeerName})
 set (CPPDASSL_LIB ${libCppDASSLName})
 set (RTRK_LIB ${libRTRKName})
@@ -1119,27 +1022,10 @@ set (DGESV_LIB ${libDgesvName})
 # configure a header file to pass some library names
 # to the source code which are used to dynamic load and instantiate
 configure_file (
-  "${PROJECT_SOURCE_DIR}/runtime/src/LibrariesConfig.h.in"
+  "${PROJECT_SOURCE_DIR}/LibrariesConfig.h.in"
   "${PROJECT_BINARY_DIR}/LibrariesConfig.h"
   )
 
-
-# omsu simulation
-ADD_SUBDIRECTORY(omsi)
-
-
-
-GET_TARGET_PROPERTY(libOSU ${OSUName} LOCATION)
-GET_FILENAME_COMPONENT(OSUName ${libOSU} NAME)
-set (OSU_LIB ${OSUName})
-configure_file (
-  "${PROJECT_SOURCE_DIR}/runtime/src/LibrariesConfig.h.in"
-  "${PROJECT_BINARY_DIR}/LibrariesConfig.h"
-  )
-
-
-
-#install 3rdparty libraries
 if(INSTALL_OMDEV_LIBS)
   #if(USE_SUNDIALS)
   #  install (FILES "${SUNDIALS_NVECSERIAL_LIB}"  "${SUNDIALS_IDAS_LIB}" "${SUNDIALS_IDA_LIB}" "${SUNDIALS_CVODES_LIB}" DESTINATION bin)
@@ -1159,8 +1045,8 @@ MACRO(INSTALL_HEADERS_WITH_DIRECTORY HEADER_LIST)
 
 FOREACH(HEADER ${${HEADER_LIST}})
     STRING(REGEX MATCH "(.*)[/\\]" DIR ${HEADER})
-    STRING(REPLACE runtime/include "" DIR ${DIR})
-   message(STATUS "copy to "include/omc/cpp/${DIR})
+    STRING(REPLACE Include "" DIR ${DIR})
+  #message(STATUS "copy to "include/omc/cpp/${DIR})
   INSTALL(FILES ${HEADER} DESTINATION include/omc/cpp/${DIR})
 ENDFOREACH(HEADER)
 
@@ -1174,42 +1060,43 @@ install (FILES "${PROJECT_BINARY_DIR}/LibrariesConfig.h" DESTINATION include/omc
 install (FILES "Licenses/sundials.license" DESTINATION share/omc/runtime/cpp/licenses)
 
 #copy Utils/extension
-SET(HS 	runtime/include/Core/Utils/extension/adaptable_factory.hpp
-        runtime/include/Core/Utils/extension/common.hpp
-        runtime/include/Core/Utils/extension/convenience.hpp
-        runtime/include/Core/Utils/extension/extension.hpp
-        runtime/include/Core/Utils/extension/factory.hpp
-        runtime/include/Core/Utils/extension/factory_map.hpp
-        runtime/include/Core/Utils/extension/filesystem.hpp
-        runtime/include/Core/Utils/extension/parameter.hpp
-        runtime/include/Core/Utils/extension/parameter_map.hpp
-        runtime/include/Core/Utils/extension/registry.hpp
-        runtime/include/Core/Utils/extension/shared_library.hpp
-        runtime/include/Core/Utils/extension/type_map.hpp
-        runtime/include/Core/Utils/extension/logger.hpp
-        runtime/include/Core/Utils/extension/impl/adaptable_factory.hpp
-        runtime/include/Core/Utils/extension/impl/adaptable_factory_free_functions.hpp
-        runtime/include/Core/Utils/extension/impl/adaptable_factory_set.hpp
-        runtime/include/Core/Utils/extension/impl/create.hpp
-        runtime/include/Core/Utils/extension/impl/create_func.hpp
-        runtime/include/Core/Utils/extension/impl/decl.hpp
-        runtime/include/Core/Utils/extension/impl/factory.hpp
-        runtime/include/Core/Utils/extension/impl/factory_map.hpp
-        runtime/include/Core/Utils/extension/impl/function.hpp
-        runtime/include/Core/Utils/extension/impl/library_impl.hpp
-        runtime/include/Core/Utils/extension/impl/shared_library.hpp
-        runtime/include/Core/Utils/extension/impl/typeinfo.hpp
-        runtime/include/FMU2/fmi2Functions.h
-        runtime/include/FMU2/fmi2FunctionTypes.h
-        runtime/include/FMU2/fmi2TypesPlatform.h
-        runtime/include/FMU2/FMU2GlobalSettings.h
-        runtime/include/FMU2/FMU2Interface.cpp
-        runtime/include/FMU2/FMU2Wrapper.cpp
-        runtime/include/FMU2/FMU2Wrapper.h)
+SET(HS Include/Core/Object/IObject.h
+        Include/Core/Object/Object.h
+        Include/Core/Utils/extension/adaptable_factory.hpp
+        Include/Core/Utils/extension/common.hpp
+        Include/Core/Utils/extension/convenience.hpp
+        Include/Core/Utils/extension/extension.hpp
+        Include/Core/Utils/extension/factory.hpp
+        Include/Core/Utils/extension/factory_map.hpp
+        Include/Core/Utils/extension/filesystem.hpp
+        Include/Core/Utils/extension/parameter.hpp
+        Include/Core/Utils/extension/parameter_map.hpp
+        Include/Core/Utils/extension/registry.hpp
+        Include/Core/Utils/extension/shared_library.hpp
+        Include/Core/Utils/extension/type_map.hpp
+        Include/Core/Utils/extension/logger.hpp
+        Include/Core/Utils/extension/impl/adaptable_factory.hpp
+        Include/Core/Utils/extension/impl/adaptable_factory_free_functions.hpp
+        Include/Core/Utils/extension/impl/adaptable_factory_set.hpp
+        Include/Core/Utils/extension/impl/create.hpp
+        Include/Core/Utils/extension/impl/create_func.hpp
+        Include/Core/Utils/extension/impl/decl.hpp
+        Include/Core/Utils/extension/impl/factory.hpp
+        Include/Core/Utils/extension/impl/factory_map.hpp
+        Include/Core/Utils/extension/impl/function.hpp
+        Include/Core/Utils/extension/impl/library_impl.hpp
+        Include/Core/Utils/extension/impl/shared_library.hpp
+        Include/Core/Utils/extension/impl/typeinfo.hpp
+        Include/FMU2/fmi2Functions.h
+        Include/FMU2/fmi2FunctionTypes.h
+        Include/FMU2/fmi2TypesPlatform.h
+        Include/FMU2/FMU2GlobalSettings.h
+        Include/FMU2/FMU2Interface.cpp
+        Include/FMU2/FMU2Wrapper.cpp
+        Include/FMU2/FMU2Wrapper.h)
    INSTALL_HEADERS_WITH_DIRECTORY(HS)
+
 if(UNIX AND Boost_INCLUDE_DIR STREQUAL "/usr/include")
   # symlink boost includes outside platform specific /usr/include
   install(CODE "execute_process(COMMAND ln -sf /usr/include/boost \"${CMAKE_INSTALL_PREFIX}/include/omc/cpp/\")")
 endif(UNIX AND Boost_INCLUDE_DIR STREQUAL "/usr/include")
-
-

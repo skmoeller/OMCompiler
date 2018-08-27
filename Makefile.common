@@ -25,24 +25,26 @@ INSTALL_MANDIR     = ${DESTDIR}${datadir}/man/
 INSTALL_JAVADIR    = ${DESTDIR}${datadir}/omc/java
 INSTALL_LOCALEDIR  = ${DESTDIR}${datadir}/locale
 
-.PHONY : interactive omc release all mkbuilddirs fmi test install-dirs susan susan_all susgen sustst install-openturns runtimeCPPinstall CMinpack metis Cdaskr boehm-gc libzmq $(MINGW_EXTRA_LIBS)
+.PHONY : interactive omc release all mkbuilddirs fmi test install-dirs susan susan_all susgen sustst install-openturns runtimeCPPinstall CMinpack metis Cdaskr boehm-gc libzmq $(MINGW_EXTRA_LIBS) antlr-copy
 
 ifeq ($(OMENCRYPTION),yes)
 .PHONY : semla semla-clean
 
 semla: mkbuilddirs
-	mkdir -p ../SEMLA/build
-	(cd ../SEMLA/build && test -f Makefile || $(CMAKE) -DCMAKE_COLOR_MAKEFILE:Bool=OFF -DCMAKE_INSTALL_PREFIX:String=../install ../src -G $(CMAKE_TARGET))
-	(cd ../SEMLA/build && $(CMAKE) --build .)
-	(cd ../SEMLA/build && $(CMAKE) --build . --target install)
+	mkdir -p ../OMEncryption/3rdParty/SEMLA/build
+	# Build SEMLA
+	(cd ../OMEncryption/3rdParty/SEMLA/build && test -f Makefile || $(CMAKE) -DCMAKE_COLOR_MAKEFILE:Bool=OFF -DCMAKE_INSTALL_PREFIX:String=../install ../src -G $(CMAKE_TARGET))
+	(cd ../OMEncryption/3rdParty/SEMLA/build && $(CMAKE) --build .)
+	(cd ../OMEncryption/3rdParty/SEMLA/build && $(CMAKE) --build . --target install)
 	mkdir -p $(builddir_lib)/omc/SEMLA/LVE
-	cp -pPR ../SEMLA/install/bin/* $(builddir_lib)/omc/SEMLA
-	cp -pPR ../SEMLA/install/lib/* $(builddir_lib)/omc/SEMLA
+	cp -pPR ../OMEncryption/3rdParty/SEMLA/install/bin/* $(builddir_lib)/omc/SEMLA
+	cp -pPR ../OMEncryption/3rdParty/SEMLA/install/lib/* $(builddir_lib)/omc/SEMLA
 	mv $(builddir_lib)/omc/SEMLA/lve$(EXE) $(builddir_lib)/omc/SEMLA/LVE/lve_$(LVE_EXE_SUFFIX)$(EXE)
 
 semla-clean:
-	rm -rf ../SEMLA/build
-	rm -rf ../SEMLA/install
+	rm -rf ../OMEncryption/3rdParty/SEMLA/build
+	rm -rf ../OMEncryption/3rdParty/SEMLA/install
+	rm -rf $(builddir_lib)/omc/SEMLA
 endif # end of OMENCRYPTION
 
 mkbuilddirs:
@@ -72,10 +74,13 @@ mkbuilddirs:
 
 release: omc
 
-bootstrap-dependencies: graphstream $(BOOTSTRAP_FMIL_DEP) $(MINGW_EXTRA_LIBS) interactive-short libzmq
+bootstrap-dependencies: graphstream antlr-copy $(BOOTSTRAP_FMIL_DEP) $(MINGW_EXTRA_LIBS) interactive-short libzmq
 	$(MAKE) -f $(defaultMakefileTarget) -C Compiler/runtime install_bootstrapping BOOTSTRAPPING=1 OMBUILDDIR=$(OMBUILDDIR)
 	$(MAKE) -f $(defaultMakefileTarget) -C Compiler builtin OMBUILDDIR=$(OMBUILDDIR)
 	$(MAKE) -f $(defaultMakefileTarget) -C Parser install_bootstrapping OMBUILDDIR=$(OMBUILDDIR) OMENCRYPTION=$(OMENCRYPTION)
+
+antlr-copy: mkbuilddirs
+	cp ./3rdParty/antlr/3.2/tool/antlr-3.2.jar ./3rdParty/antlr/3.2/tool/antlr-2.7.7.jar ${builddir_java}/
 
 sim-dependencies: fmi $(BOOTSTRAP_FMIL_DEP) opencl_rt lis metis opc
 
@@ -87,12 +92,12 @@ $(builddir_share)/omc/omc_communication.idl: Compiler/runtime/omc_communication.
 	cp -a "$<" "$@"
 idl: $(builddir_share)/omc/omc_communication.idl
 
-interactive-common: .testvariables mkbuilddirs boehm-gc idl ModelicaExternalC $(MINGW_EXTRA_LIBS)
+interactive-common: .testvariables mkbuilddirs boehm-gc idl ModelicaExternalC antlr-copy $(MINGW_EXTRA_LIBS)
 
 interactive-short: .testvariables interactive-common
 	$(MAKE) -C SimulationRuntime/c -f $(defaultMakefileTarget) bootstrap-dependencies OMBUILDDIR=$(OMBUILDDIR)
 
-interactive: .testvariables interactive-common fmil lis Cdaskr CMinpack docs libzmq $(SUNDIALS_TARGET) $(IPOPT_TARGET) $(UMFPACK_TARGET) $(MINGW_EXTRA_LIBS)
+interactive: .testvariables interactive-common fmil lis Cdaskr CMinpack docs libzmq $(SUNDIALS_TARGET) $(IPOPT_TARGET) $(UMFPACK_TARGET) antlr-copy $(MINGW_EXTRA_LIBS)
 	$(MAKE) -C SimulationRuntime/c -f $(defaultMakefileTarget) OMBUILDDIR=$(OMBUILDDIR)
 
 opc: .testvariables mkbuilddirs boehm-gc
@@ -199,7 +204,7 @@ all-runtimeCPPinstall: mkbuilddirs CMinpack sundials
 omc-and-runtimeCPPinstall: mkbuilddirs CMinpack sundials
 	$(MAKE) omc runtimeCPPinstall OMBUILDDIR=$(OMBUILDDIR)
 
-runtimeCPP: CMinpack sundials $(MINGW_EXTRA_LIBS)
+runtimeCPP: CMinpack sundials antlr-copy $(MINGW_EXTRA_LIBS)
 	$(MAKE) -C SimulationRuntime/cpp/ -f $(defaultMakefileTarget) OMBUILDDIR=$(OMBUILDDIR)
 
 CMAKE_ARGS=$(filter CMAKE_%, $(MAKEFLAGS))
@@ -245,7 +250,8 @@ fmil:
 	cp -pPR 3rdParty/FMIL/build/$(LIBFMILIB) $(builddir_lib_omc)
 	test ! -f $(OMBUILDDIR)/$(LIB_OMC)/libfmilib_shared$(SHREXT) || ln -sf libfmilib_shared$(SHREXT) $(OMBUILDDIR)/$(LIB_OMC)/libfmilib$(SHREXT)
 	#TODO: Only copy required headers, add them in omc/fmi subfolder, and do not copy c/txt-files
-	#cp -rp 3rdParty/FMIL/install/include/* $(builddir_inc)
+	mkdir -p $(builddir_inc)/fmil/
+	cp -pPR 3rdParty/FMIL/install/include/* $(builddir_inc)/fmil/
 
 qjson:
 	test -d 3rdParty/qjson-0.8.1
@@ -350,7 +356,11 @@ openblas-clean:
 	# OpenBLAS make clean actually gives error-messages. Let it do it, but silently
 	test ! -d 3rdParty/OpenBLAS-0.2.8 || $(MAKE) -C 3rdParty/OpenBLAS-0.2.8 clean > /dev/null 2>&1
 
+ifeq ($(OMENCRYPTION),yes)
+clean: semla-clean fmil-clean opencl_rt_clean gc-clean lis-clean runtimeCPPclean CMinpack-clean metis-clean Cdaskr-clean bootstrap-clean msgpack-clean graphstream-clean openblas-clean umfpack-clean
+else
 clean: fmil-clean opencl_rt_clean gc-clean lis-clean runtimeCPPclean CMinpack-clean metis-clean Cdaskr-clean bootstrap-clean msgpack-clean graphstream-clean openblas-clean umfpack-clean
+endif
 	(cd SimulationRuntime/c && $(MAKE) -f $(defaultMakefileTarget) clean OMBUILDDIR=$(OMBUILDDIR))
 	(cd Compiler && $(MAKE) -f $(defaultMakefileTarget) clean OMBUILDDIR=$(OMBUILDDIR))
 	(cd Parser && $(MAKE) -f $(defaultMakefileTarget) clean OMBUILDDIR=$(OMBUILDDIR))
@@ -397,7 +407,7 @@ install: install-dirs
 	# man pages
 	# cp -p ${builddir_man}/man1/*.gz ${INSTALL_MANDIR}/man1/
 	# Shared data
-	cp -p ${builddir_share}/omc/*.* ${builddir_share}/omc/runtime ${INSTALL_SHAREDIR}/omc/
+	cp -rp ${builddir_share}/omc/*.* ${builddir_share}/omc/runtime ${INSTALL_SHAREDIR}/omc/
 	# Scripts
 	cp -rp ${builddir_share}/omc/scripts/*.* ${builddir_share}/omc/scripts/OpenTurns ${INSTALL_SHAREDIR}/omc/scripts
 	# Java

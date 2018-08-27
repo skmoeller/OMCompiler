@@ -503,10 +503,10 @@ algorithm
 
     // modulo for real values
     case (DAE.CALL(path=Absyn.IDENT("mod"),expLst={DAE.RCONST(r1),DAE.RCONST(r2)}))
-      then DAE.RCONST(r1-floor(r1/r2)*r2);
+      then DAE.RCONST(mod(r1,r2));
     // modulo for integer values
     case (DAE.CALL(path=Absyn.IDENT("mod"),expLst={DAE.ICONST(i1),DAE.ICONST(i2)}))
-      then DAE.ICONST(realInt(intReal(i1)-floor(intReal(i1)/intReal(i2))*intReal(i2)));
+      then DAE.ICONST(mod(i1,i2));
     // integer call
     case (DAE.CALL(path=Absyn.IDENT("integer"),expLst={DAE.RCONST(r1)}))
       then DAE.ICONST(realInt(r1));
@@ -1636,7 +1636,7 @@ algorithm
   true := dim >= 1;
   false := listEmpty(exps);
   if 1 == dim then
-    outExps := listAppend(getArrayContents(e) for e in exps);
+    outExps := listAppend(getArrayContents(e) for e in listReverse(exps));
     outDims := {listLength(outExps)};
     return;
   end if;
@@ -1649,7 +1649,11 @@ algorithm
   end for;
   for i in 1:(dim-1) loop
     j := min(listHead(d) for d in dimsLst);
-    Error.assertion(j == max(listHead(d) for d in dimsLst), getInstanceName() + ": cat got uneven dimensions for dim=" + String(i) + " " + stringDelimitList(list(toString(e) for e in exps), ", "), sourceInfo());
+
+    if j <> max(listHead(d) for d in dimsLst) then
+      Error.assertion(false, getInstanceName() + ": cat got uneven dimensions for dim=" + String(i) + " " + stringDelimitList(list(toString(e) for e in exps), ", "), sourceInfo());
+    end if;
+
     firstDims := j :: firstDims;
     dimsLst := list(listRest(d) for d in dimsLst);
   end for;
@@ -1707,8 +1711,8 @@ algorithm
     (arr, dims) := evalCatGetFlatArray(exp, dim-1, getArrayContents=getArrayContents, toString=toString);
     if listEmpty(outDims) then
       outDims := dims;
-    else
-      Error.assertion(valueEq(dims, outDims), getInstanceName() + ": Got unbalanced array from " + toString(e), sourceInfo());
+    elseif not valueEq(dims, outDims) then
+      Error.assertion(false, getInstanceName() + ": Got unbalanced array from " + toString(e), sourceInfo());
     end if;
     outExps := listAppend(arr, outExps);
     i := i+1;
