@@ -149,11 +149,10 @@ typedef struct omsi_callback_functions{
     const void*                         componentEnvironment;
 }omsi_callback_functions;
 
-/* global functions */
-#ifndef OMSI_GLOBAL_FUNC
-#define OMSI_GLOBAL_FUNC
-omsi_callback_allocate_memory   global_allocateMemory;
-omsi_callback_free_memory       global_freeMemory;
+/* global callback functions */
+#ifndef OMSI_GLOBAL_CALLBACK
+#define OMSI_GLOBAL_CALLBACK
+omsi_callback_functions global_callback;
 #endif
 
 /*
