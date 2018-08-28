@@ -148,7 +148,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
 
   match equationSystem
   case algSystem as SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
-    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, "this_algSyst", &includes, &evaluationCode, &functionCall, &residualCall)
+    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, "this_function", &includes, &evaluationCode, &functionCall, &residualCall)
     let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix)
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
@@ -164,7 +164,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   extern "C" {
   #endif
 
-  /* Instantiation and initalization*/
+  /* Instantiation and initialization */
   <%initlaizationFunction%>
 
   <%matrixString%>
@@ -172,7 +172,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   /* Evaluation functions for <%FileNamePrefix%>_resFunction_<%index%> */
   <%evaluationCode%>
 
-  void <%FileNamePrefix%>_resFunction_<%index%> (omsi_function* this_function, omsi_real* res) {
+  void <%FileNamePrefix%>_resFunction_<%index%> (omsi_function_t* this_function, const omsi_values* model_vars_and_params, omsi_real* res) {
     omsi_unsigned_int i=0;
     <%functionCall%>
     <%residualCall%>
@@ -187,7 +187,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
                             omsi_values* out_function_vars){
 
     /* call API function something */
-    solveLapack(this_alg_system, model_vars_and_params, omsi_callback_functions);
+    solveLapack(this_alg_system, model_vars_and_params, global_callback);
 
       /* ToDo: Add crazy stuff here */
 
@@ -268,8 +268,8 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
 
       algSystem->isLinear = <% if linearSystem then 'omsi_true' else 'omsi_false'%>;
 
-      /* initliazie omsi_function_t jacobian*/
-      algSystem->functions = (omsi_function_t*) omsi_callback_functions->omsi_callback_allocate_memory(1, sizeOf(omsi_function_t));
+      /* initialize omsi_function_t jacobian */
+      algSystem->functions = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
       if (!algSystem->functions) {
         /* ToDo: Log error */
         return omsi_error;
@@ -277,13 +277,13 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       if (!problem2_initialize_resFunc<%index%>_OMSIFunc(algSystem->functions)){
         return omsi_error;
       }
-      /* initliazile omsi_function_t function */
+      /* initialize omsi_function_t function */
 
       /* ToDo: put into init functions */
       algSystem->functions->evaluate = <%FileNamePrefix%>_resFunction_<%index%>;
       algSystem->jacobian->evaluate = <%FileNamePrefix%>_derivativeMatFunc_<%index%>;
 
-      algSystem->solverData = NULL;
+      algSystem->solver_data = NULL;
 
       return omsi_ok;
     }
@@ -354,15 +354,15 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
 
     <<
     omsi_status <%FileNamePrefix%>_initialize_<%functionName%>_OMSIFunc (omsi_function_t* omsi_function) {
-      omsi_function->n_algebraic_system = <%nAlgebraicSystems%>
+      omsi_function->n_algebraic_system = <%nAlgebraicSystems%>;
 
       omsi_function->n_input_vars = <%listLength(inputVars)%>;
       omsi_function->n_inner_vars = <%listLength(innerVars)%>;
       omsi_function->n_output_vars = <%listLength(outputVars)%>;
 
       /* Allocate memory */
-      omsi_function->algebraic_system_t = (omsi_algebraic_system_t*) omsi_callback_functions->omsi_callback_allocate_memory(<%nAlgebraicSystems%>, sizeOf(omsi_algebraic_system_t));
-      omsi_function->function_vars = (omsi_values*) omsi_callback_functions->omsi_callback_allocate_memory(<%nAllVars%>, sizeOf(omsi_values));
+      omsi_function->algebraic_system_t = (omsi_algebraic_system_t*) global_callback->allocateMemory(<%nAlgebraicSystems%>, sizeof(omsi_algebraic_system_t));
+      omsi_function->function_vars = (omsi_values*) global_callback->allocateMemory(<%nAllVars%>, sizeof(omsi_values));
       if (!omsi_function->algebraic_system_t || !omsi_function->function_vars) {
         /* ToDo: Log error */
         return omsi_error;
@@ -370,7 +370,7 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
 
       <%if listLength(inputVars) then
         <<
-        omsi_function->input_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(inputVars)%>, sizeOf(omsi_index_type));
+        omsi_function->input_vars_indices = (omsi_index_type*) global_callback->allocateMemory(<%listLength(inputVars)%>, sizeof(omsi_index_type));
         if (!omsi_function->input_vars_indices) {
           /* ToDo: Log error */
           return omsi_error;
@@ -380,7 +380,7 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
         'omsi_function->input_vars_indices = NULL;'
       %>
       <%if listLength(outputVars) then
-        <<omsi_function->output_vars_indices = (omsi_index_type*) omsi_callback_functions->omsi_callback_allocate_memory(<%listLength(outputVars)%>, sizeOf(omsi_index_type));
+        <<omsi_function->output_vars_indices = (omsi_index_type*) global_callback->allocateMemory(<%listLength(outputVars)%>, sizeof(omsi_index_type));
         if (!omsi_function->output_vars_indices) {
           /* ToDo: Log error */
           return omsi_error;

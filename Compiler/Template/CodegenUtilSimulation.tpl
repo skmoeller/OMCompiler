@@ -257,7 +257,7 @@ template dumpAlgSystemOps (Option<DerivativeMatrix> derivativeMatrix)
     )
 
   <<
-  iteraton vars: <%varsBuffer%>
+  iteration vars: <%varsBuffer%>
 
   <%columnBuffer%>
   >>
