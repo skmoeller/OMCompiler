@@ -70,7 +70,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let &functionCall = buffer ""
 
   let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, "simulation", &includes, &evaluationCode, &functionCall, "")
-  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "simulation", FileNamePrefix)
+  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "allEqns", FileNamePrefix)
 
   <<
   /* All Equations Code */
@@ -214,7 +214,7 @@ template generateDerivativeFile (Option<DerivativeMatrix> matrix, String modelNa
     case SOME(derMat as DERIVATIVE_MATRIX(__)) then
     let initalizationCodeCol = (derMat.columns |> column =>
       <<
-      <%generateInitalizationOMSIFunction(column, 'derivativeMatFunc<%index%>', modelName)%>
+      <%generateInitalizationOMSIFunction(column, 'derivativeMatFunc_<%index%>', modelName)%>
       >>
     ;separator="\n\n")
     <<
@@ -274,7 +274,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
         /* ToDo: Log error */
         return omsi_error;
       }
-      if (!problem2_initialize_resFunc<%index%>_OMSIFunc(algSystem->functions)){
+      if (!problem2_initialize_resFunction<%index%>_OMSIFunc(algSystem->functions)){
         return omsi_error;
       }
       /* initialize omsi_function_t function */
@@ -288,7 +288,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       return omsi_ok;
     }
 
-    <%generateInitalizationOMSIFunction (residual, 'resFunc<%index%>', FileNamePrefix)%>
+    <%generateInitalizationOMSIFunction (residual, 'resFunction_<%index%>', FileNamePrefix)%>
     >>
 end generateInitalizationAlgSystem;
 
@@ -350,7 +350,8 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
 ::=
   match omsiFunction
   case func as OMSI_FUNCTION(__) then
-    let evaluationTarget = FileNamePrefix+"_allEqns"
+    let evaluationTarget = FileNamePrefix+"_"+functionName
+    let algSystemInit = generateAlgebraicSystemInstantiation (FileNamePrefix, nAlgebraicSystems, equations)
 
     <<
     omsi_status <%FileNamePrefix%>_initialize_<%functionName%>_OMSIFunc (omsi_function_t* omsi_function) {
@@ -360,33 +361,23 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
       omsi_function->n_inner_vars = <%listLength(innerVars)%>;
       omsi_function->n_output_vars = <%listLength(outputVars)%>;
 
-      /* Allocate memory */
-      omsi_function->algebraic_system_t = (omsi_algebraic_system_t*) global_callback->allocateMemory(<%nAlgebraicSystems%>, sizeof(omsi_algebraic_system_t));
-      omsi_function->function_vars = (omsi_values*) global_callback->allocateMemory(<%nAllVars%>, sizeof(omsi_values));
-      if (!omsi_function->algebraic_system_t || !omsi_function->function_vars) {
+      <%if nAlgebraicSystems then
+        <<
+        /* Initialize algebraic system */
+        omsi_function->algebraic_system_t = initialize_alg_system_array(<%nAlgebraicSystems%>);
+        if (!omsi_function->algebraic_system_t) {
+          /* ToDo: Log error */
+          return omsi_error;
+        }
+        <%algSystemInit%>
+
+        >>
+      %>
+
+      if (!instantiate_input_inner_output_indices (omsi_function, <%listLength(inputVars)%>, <%listLength(outputVars)%>)) {
         /* ToDo: Log error */
         return omsi_error;
       }
-
-      <%if listLength(inputVars) then
-        <<
-        omsi_function->input_vars_indices = (omsi_index_type*) global_callback->allocateMemory(<%listLength(inputVars)%>, sizeof(omsi_index_type));
-        if (!omsi_function->input_vars_indices) {
-          /* ToDo: Log error */
-          return omsi_error;
-        }
-        >>
-      else
-        'omsi_function->input_vars_indices = NULL;'
-      %>
-      <%if listLength(outputVars) then
-        <<omsi_function->output_vars_indices = (omsi_index_type*) global_callback->allocateMemory(<%listLength(outputVars)%>, sizeof(omsi_index_type));
-        if (!omsi_function->output_vars_indices) {
-          /* ToDo: Log error */
-          return omsi_error;
-        }
-        >>
-      %>
 
       /* fill omsi_index_type indices */
       <%generateOmsiIndexTypeInitialization(inputVars, "omsi_function->input_vars_indices", "sim_data->model_vars_and_params", "omsi_function->input_vars_indices")%>
@@ -400,6 +391,27 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
     }
     >>
 end generateInitalizationOMSIFunction;
+
+
+template generateAlgebraicSystemInstantiation (String FileNamePrefix, Integer nAlgebraicSystems, list<SimEqSystem> equations)
+"Generates code for instantiation of array of omsi_algebraic_system_t"
+::=
+  let initialization =  (equations |> equation hasindex i0 =>
+    match equation
+      case SES_ALGEBRAIC_SYSTEM(__) then
+      <<
+      <%FileNamePrefix%>_initializeAlgSystem_<%index%>(&(omsi_function->algebraic_system_t[<%i0%>]));
+      if (!omsi_function->algebraic_system_t[<%i0%>]) {
+        /* ToDo: Log error */
+        return omsi_error;
+      }
+      >>
+  ;separator="\n")
+
+  <<
+  <%initialization%>
+  >>
+end generateAlgebraicSystemInstantiation;
 
 
 template insertCopyrightOpenModelica()

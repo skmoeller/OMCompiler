@@ -633,6 +633,9 @@ omsi_status omsu_print_omsi_values (omsi_values*        omsi_values,
 }
 
 
+/*
+ * Print all informations of algebraic_system_t structure.
+ */
 omsi_status omsu_print_algebraic_system(omsi_algebraic_system_t*    algebraic_system_t,
                                         omsi_string                 indent) {
 

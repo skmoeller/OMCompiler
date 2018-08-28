@@ -258,6 +258,9 @@ void freeLapackData(DATA_LAPACK* lapack_data) {
 }
 
 
+/*
+ * Debug function. Print all information of DATA_LAPACK structure.
+ */
 void printLapackData(DATA_LAPACK*   lapack_data,
                      omsi_string    indent) {
 

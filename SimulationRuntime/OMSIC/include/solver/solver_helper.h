@@ -40,6 +40,30 @@
 extern "C" {
 #endif
 
+
+/* MACROS */
+#define CHECK_MEMORY_ERROR(pointer)                                           \
+if (!pointer) {                                                               \
+    /* ToDo: Log error */                                                     \
+    return omsi_error;                                                        \
+}                                                                             \
+
+omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,
+                                      omsi_unsigned_int   n_ints,
+                                      omsi_unsigned_int   n_bools,
+                                      omsi_unsigned_int   n_externs);
+
+omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_function,
+                                                    omsi_unsigned_int   n_input_vars,
+                                                    omsi_unsigned_int   n_output_vars);
+
+omsi_status free_omsi_function (omsi_function_t*    omsi_function,
+                                omsi_bool           shared_function_vars);
+
+omsi_status free_alg_system (omsi_algebraic_system_t* algebraic_system);
+
+omsi_status free_omsi_values (omsi_values* values);
+
 omsi_status omsu_set_omsi_value (omsi_values*       vars,
                                  omsi_index_type**  targetPlaces,
                                  omsi_unsigned_int  numTargetPlaces,

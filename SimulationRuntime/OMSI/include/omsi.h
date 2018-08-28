@@ -131,7 +131,6 @@ typedef enum {
 }omsi_status;
 
 
-/* ToDo: is this the right location for these definitions? */
 /*
  * OMSI callback functions
  */
@@ -190,10 +189,10 @@ typedef struct omsi_values {
  * general algebraic system
  */
 typedef struct omsi_algebraic_system_t {
-    omsi_unsigned_int n_iteration_vars;
+    omsi_unsigned_int n_iteration_vars; /* number of iteration variables */
 
-    omsi_unsigned_int n_conditions;
-    omsi_int* zerocrossing_indices;
+    omsi_unsigned_int n_conditions;     /* number of zerocrossing conditions */
+    omsi_int* zerocrossing_indices;     /* array of zerocrossing indices */
 
     omsi_bool isLinear;         /* linear system=true and non-linear system=false */
     omsi_function_t* jacobian;  /* pointer to omsi_function for jacobian matrix
