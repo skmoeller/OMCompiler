@@ -294,8 +294,8 @@ fmi2Status OSU::completedIntegratorStep(fmi2Boolean noSetFMUStatePriorToCurrentP
                                                 fmi2Boolean *enterEventMode,
                                                 fmi2Boolean *terminateSimulation)
 {
-  bool isStepEvent = _step_event_system->isStepEvent(_simTime);
-  if(isStepEvent)
+  bool stepCompleted = _step_event_system->stepCompleted(_simTime);
+  if(stepCompleted)
   {
     *enterEventMode = fmi2True;
   }

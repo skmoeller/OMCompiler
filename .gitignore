@@ -87,6 +87,7 @@ SimulationRuntime/c/Makefile
 SimulationRuntime/cpp/Makefile
 SimulationRuntime/cpp/Makefile.env
 SimulationRuntime/cpp/Build_*/
+SimulationRuntime/OMSI/Build_*/
 SimulationRuntime/cpp/Debug/
 SimulationRuntime/cpp/.cproject
 SimulationRuntime/cpp/confdefs.h

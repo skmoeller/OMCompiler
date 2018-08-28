@@ -128,7 +128,8 @@ public:
     virtual void handleEvent(const bool* events);
     //Checks if a discrete variable has changed and triggers an event
     virtual bool checkForDiscreteEvents();
-    virtual bool isStepEvent(double time);
+    virtual bool stepCompleted(double time);
+
     //sets the terminal status
     virtual void setTerminal(bool);
     //returns the terminal status

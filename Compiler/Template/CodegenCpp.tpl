@@ -6594,85 +6594,85 @@ match  Config.simCodeTarget()
                  const output_der_vars_t& outputDerVars = _reader->getDerOutVars();
                  const output_res_vars_t& outputResVars= _reader->getResOutVars();;
 
-    //Write head line
-    if (command & IWriteOutput::HEAD_LINE)
-    {
-      const all_names_t outputVarNames = make_tuple(outputRealVars.ourputVarNames,outputIntVars.ourputVarNames,outputBoolVars.ourputVarNames,outputDerVars.ourputVarNames,outputResVars.ourputVarNames);
-      const all_description_t outputVarDescription = make_tuple(outputRealVars.ourputVarDescription,outputIntVars.ourputVarDescription,outputBoolVars.ourputVarDescription,outputDerVars.ourputVarDescription,outputResVars.ourputVarDescription);
-      <%
-      match   settings.outputFormat
-        case "mat" then
-        <<
-         const all_names_t parameterVarNames =  make_tuple(outputRealVars.parameterNames,outputIntVars.parameterNames,outputBoolVars.parameterNames,outputDerVars.ourputVarNames,outputResVars.ourputVarNames);
-         const all_description_t parameterVarDescription =  make_tuple(outputRealVars.parameterDescription,outputIntVars.parameterDescription,outputBoolVars.parameterDescription,outputDerVars.ourputVarDescription,outputResVars.ourputVarDescription);
-        >>
-       else
-       <<
-       const all_names_t parameterVarNames;
-       const all_description_t parameterVarDescription;
-       >>
-      %>
-      _writeOutput->write(outputVarNames,outputVarDescription,parameterVarNames,parameterVarDescription);
-      <%
-      match   settings.outputFormat
-        case "mat" then
-        <<
-        const all_vars_t params = make_tuple(outputRealVars.outputParams,outputIntVars.outputParams,outputBoolVars.outputParams,outputDerVars.outputParams,outputResVars.outputParams);
-        >>
-        else
-        <<
-        const all_vars_t params;
-        >>
-      %>
-      _writeOutput->write(params,_global_settings->getStartTime(),_global_settings->getEndTime());
-    }
-    //Write the current values
-     else
-    {
-      <%generateMeasureTimeStartCode("measuredFunctionStartValues", "writeOutput", "MEASURETIME_MODELFUNCTIONS")%>
-      <%if Flags.isSet(Flags.WRITE_TO_BUFFER) then
-      <<
-
-      <%(allEquations |> eqs => (eqs |> eq => writeoutputAlgloopsolvers(eq,simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace));separator="\n")%>
-      double residues [] = {<%(allEquations |> eqn => writeoutput3(eqn, simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation));separator=","%>};
-      output_res_vars_t _resVars;
-      for(int i=0;i<<%numResidues(allEquations,modelInfo)%>;i++)
-      {
-        double* realVarPtr = &residues[i];
-        string str;
-       _resVars.addOutputVar(str, str,realVarPtr, false);
-
-      }
-
-      <%generateMeasureTimeEndCode("measuredFunctionStartValues", "measuredFunctionEndValues", "(*measureTimeFunctionsArray)[2]", "writeOutput", "MEASURETIME_MODELFUNCTIONS")%>
-      write_data_t& container = _writeOutput->getFreeContainer();
-        all_vars_time_t all_vars = make_tuple(outputRealVars.outputVars,outputIntVars.outputVars,outputBoolVars.outputVars,_simTime,outputDerVars.outputVars,_resVars.outputVars);
-        neg_all_vars_t neg_all_vars =      make_tuple(outputRealVars.negateOutputVars,outputIntVars.negateOutputVars,outputBoolVars.negateOutputVars,outputDerVars.negateOutputVars,_resVars.negateOutputVars);
-       _writeOutput->addContainerToWriteQueue(make_tuple(all_vars,neg_all_vars));
-
-                  >>
-                else
-                  <<
-                          <%generateMeasureTimeEndCode("measuredFunctionStartValues", "measuredFunctionEndValues", "(*measureTimeFunctionsArray)[2]",  "writeOutput", "MEASURETIME_MODELFUNCTIONS")%>
-                    write_data_t& container = _writeOutput->getFreeContainer();
-                    all_vars_time_t all_vars = make_tuple(outputRealVars.outputVars,outputIntVars.outputVars,outputBoolVars.outputVars,_simTime,outputDerVars.outputVars,outputResVars.outputVars);
-                    neg_all_vars_t neg_all_vars =      make_tuple(outputRealVars.negateOutputVars,outputIntVars.negateOutputVars,outputBoolVars.negateOutputVars,outputDerVars.negateOutputVars,outputResVars.negateOutputVars);
-                   _writeOutput->addContainerToWriteQueue(make_tuple(all_vars,neg_all_vars));
-                  >>
-                %>
+                //Write head line
+                if (command & IWriteOutput::HEAD_LINE)
+                {
+                  const all_names_t outputVarNames = make_tuple(outputRealVars.ourputVarNames,outputIntVars.ourputVarNames,outputBoolVars.ourputVarNames,outputDerVars.ourputVarNames,outputResVars.ourputVarNames);
+                  const all_description_t outputVarDescription = make_tuple(outputRealVars.ourputVarDescription,outputIntVars.ourputVarDescription,outputBoolVars.ourputVarDescription,outputDerVars.ourputVarDescription,outputResVars.ourputVarDescription);
+                  <%
+                  match   settings.outputFormat
+                    case "mat" then
+                    <<
+                     const all_names_t parameterVarNames =  make_tuple(outputRealVars.parameterNames,outputIntVars.parameterNames,outputBoolVars.parameterNames,outputDerVars.ourputVarNames,outputResVars.ourputVarNames);
+                     const all_description_t parameterVarDescription =  make_tuple(outputRealVars.parameterDescription,outputIntVars.parameterDescription,outputBoolVars.parameterDescription,outputDerVars.ourputVarDescription,outputResVars.ourputVarDescription);
+                    >>
+                   else
+                   <<
+                   const all_names_t parameterVarNames;
+                   const all_description_t parameterVarDescription;
+                   >>
+                  %>
+                  _writeOutput->write(outputVarNames,outputVarDescription,parameterVarNames,parameterVarDescription);
+                  <%
+                  match   settings.outputFormat
+                    case "mat" then
+                    <<
+                    const all_vars_t params = make_tuple(outputRealVars.outputParams,outputIntVars.outputParams,outputBoolVars.outputParams,outputDerVars.outputParams,outputResVars.outputParams);
+                    >>
+                    else
+                    <<
+                    const all_vars_t params;
+                    >>
+                  %>
+                  _writeOutput->write(params,_global_settings->getStartTime(),_global_settings->getEndTime());
                 }
-               }
+                //Write the current values
+                 else
+                {
+                  <%generateMeasureTimeStartCode("measuredFunctionStartValues", "writeOutput", "MEASURETIME_MODELFUNCTIONS")%>
+                  <%if Flags.isSet(Flags.WRITE_TO_BUFFER) then
+                  <<
 
-          >>
-         end match
-     else
-       match simCode
-       case SIMCODE(modelInfo = MODELINFO(__)) then
-           <<
-            void <%lastIdentOfPath(modelInfo.name)%>WriteOutput::writeOutput(const IWriteOutput::OUTPUT command)
-            {
-            }
-           >>
+                  <%(allEquations |> eqs => (eqs |> eq => writeoutputAlgloopsolvers(eq,simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace));separator="\n")%>
+                  double residues [] = {<%(allEquations |> eqn => writeoutput3(eqn, simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation));separator=","%>};
+                  output_res_vars_t _resVars;
+                  for(int i=0;i<<%numResidues(allEquations,modelInfo)%>;i++)
+                  {
+                    double* realVarPtr = &residues[i];
+                    string str;
+                   _resVars.addOutputVar(str, str,realVarPtr, false);
+
+                  }
+
+                  <%generateMeasureTimeEndCode("measuredFunctionStartValues", "measuredFunctionEndValues", "(*measureTimeFunctionsArray)[2]", "writeOutput", "MEASURETIME_MODELFUNCTIONS")%>
+                  write_data_t& container = _writeOutput->getFreeContainer();
+                    all_vars_time_t all_vars = make_tuple(outputRealVars.outputVars,outputIntVars.outputVars,outputBoolVars.outputVars,_simTime,outputDerVars.outputVars,_resVars.outputVars);
+                    neg_all_vars_t neg_all_vars =      make_tuple(outputRealVars.negateOutputVars,outputIntVars.negateOutputVars,outputBoolVars.negateOutputVars,outputDerVars.negateOutputVars,_resVars.negateOutputVars);
+                   _writeOutput->addContainerToWriteQueue(make_tuple(all_vars,neg_all_vars));
+
+                              >>
+                            else
+                              <<
+                                      <%generateMeasureTimeEndCode("measuredFunctionStartValues", "measuredFunctionEndValues", "(*measureTimeFunctionsArray)[2]",  "writeOutput", "MEASURETIME_MODELFUNCTIONS")%>
+                                write_data_t& container = _writeOutput->getFreeContainer();
+                                all_vars_time_t all_vars = make_tuple(outputRealVars.outputVars,outputIntVars.outputVars,outputBoolVars.outputVars,_simTime,outputDerVars.outputVars,outputResVars.outputVars);
+                                neg_all_vars_t neg_all_vars =      make_tuple(outputRealVars.negateOutputVars,outputIntVars.negateOutputVars,outputBoolVars.negateOutputVars,outputDerVars.negateOutputVars,outputResVars.negateOutputVars);
+                               _writeOutput->addContainerToWriteQueue(make_tuple(all_vars,neg_all_vars));
+                              >>
+                            %>
+                            }
+                           }
+
+                      >>
+                     end match
+                 else
+                   match simCode
+                   case SIMCODE(modelInfo = MODELINFO(__)) then
+                       <<
+                        void <%lastIdentOfPath(modelInfo.name)%>WriteOutput::writeOutput(const IWriteOutput::OUTPUT command)
+                        {
+                        }
+                       >>
 
   //<%writeAlgloopvars(odeEquations,algebraicEquations, parameterEquations,simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace)%>
 end writeoutput;
@@ -7615,7 +7615,7 @@ case SIMCODE(modelInfo = MODELINFO(vars = vars as SIMVARS(__))) then
     virtual void handleEvent(const bool* events);
     //Checks if a discrete variable has changed and triggers an event
     virtual bool checkForDiscreteEvents();
-    virtual bool isStepEvent(double time);
+
     //sets the terminal status
     virtual void setTerminal(bool);
     //returns the terminal status

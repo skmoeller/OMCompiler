@@ -798,7 +798,7 @@ void OSUSystem::setStateDerivatives(const double* f)
   throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "setStateDerivatives is not yet implemented");
 }
 
-bool OSUSystem::isStepEvent(double time)
+bool OSUSystem::stepCompleted(double time)
 {
   if (_osu_me->solving_mode == omsi_continuousTime_mode)
   {

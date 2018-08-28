@@ -403,7 +403,7 @@ void Arkode::ArkodeCore()
     }
 
     //set completed step to system and check if terminate was called
-    /*Todo, replaced by isStepEvent
+    /*Todo, replaced by stepCompleted
     if(_continuous_system->stepCompleted(_tCurrent))
         _solverStatus = DONE;*/
 
