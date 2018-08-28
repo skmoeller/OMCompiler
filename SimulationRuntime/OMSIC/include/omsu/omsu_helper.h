@@ -34,6 +34,8 @@
 #include "omsi.h"
 #include "omsu_common.h"
 
+#include "solver/solver_lapack.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
@@ -42,6 +44,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/* extern function prototypes */
+extern void printLapackData(DATA_LAPACK*    lapack_data,
+                            omsi_string     indent);
 
 
 /* function prototypes */
@@ -100,6 +107,12 @@ omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
                                    omsi_unsigned_int    size,
                                    omsi_string          indent);
 
+omsi_status omsu_print_externs(void*                externs,
+                               omsi_unsigned_int    n_externs);
+
+omsi_status omsu_print_solver_data(omsi_string  solver_name,
+                                   void*        solver_data,
+                                   omsi_string  indent);
 #ifdef __cplusplus
 }  /* end of extern "C" { */
 #endif

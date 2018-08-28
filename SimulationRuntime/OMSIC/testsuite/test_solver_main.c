@@ -1,8 +1,8 @@
+#include <solver/solver_lapack.h>
 #include<stdio.h>
 
 #include "../include/math/omsi_math.h"
 #include "../include/math/omsi_vector.h"
-#include "Lapack.h"
 #include "TotalPivot_Interface.h"
 //#include "Newton.h"
 //#include "newtonIteration.h"

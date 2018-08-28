@@ -2,11 +2,11 @@
 
 include ../../makefile
 
-SOLVER_SRCS = lapack/lapack.c solver_helper.c
+SOLVER_SRCS = lapack/solver_lapack.c solver_helper.c
 
 SOLVER_OBJS = $(SOLVER_SRCS:%.c=%.o)
 
-SOLVER_HDRS = $(OMSIC_INCLUDE)/solver/lapack.h $(OMSIC_INCLUDE)/solver/solver_helper.h\
+SOLVER_HDRS = $(OMSIC_INCLUDE)/solver/solver_lapack.h $(OMSIC_INCLUDE)/solver/solver_helper.h\
  $(OMSI_INCLUDE)/omsi.h
 
 SOLVER_INCS = -I$(OMSIC_INCLUDE) -I$(OMSI_INCLUDE)

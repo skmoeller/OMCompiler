@@ -602,7 +602,7 @@ omsi_status omsu_print_omsi_values (omsi_values*        omsi_values,
                                     omsi_string         omsi_values_name,
                                     omsi_string         indent) {
 
-    omsi_int i;
+    omsi_unsigned_int i;
 
     if (omsi_values==NULL) {
         printf("%sNo omsi_values %s\n",indent, omsi_values_name);
@@ -634,7 +634,7 @@ omsi_status omsu_print_omsi_values (omsi_values*        omsi_values,
 
 
 omsi_status omsu_print_algebraic_system(omsi_algebraic_system_t*    algebraic_system_t,
-                                        omsi_string                 indent,) {
+                                        omsi_string                 indent) {
 
     omsi_unsigned_int i;
     omsi_char* nextIndent;
@@ -676,7 +676,8 @@ omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
 
 
 /* ToDo: finish function */
-omsi_status omsu_print_externs(void* externs, omsi_unsigned_int n_externs) {
+omsi_status omsu_print_externs(void*                externs,
+                               omsi_unsigned_int    n_externs) {
 
     printf("ERROR: omsu_print_externs not implemented yet\n");
     return omsi_error;
@@ -687,14 +688,14 @@ omsi_status omsu_print_solver_data(omsi_string  solver_name,
                                    void*        solver_data,
                                    omsi_string  indent) {
 
-    switch (solver_data) {
-        case "lapack_solver":
-            printLapackData(solver_data, indent);
-            break;
-        default:
-            printf("WARING in function omsu_print_solver_data: type of solver_data unknown\n");
-            return omsi_warning;
+    if (strcmp("lapack_solver", solver_name)==0) {
+        printLapackData(solver_data, indent);
     }
+    else {
+        printf("WARING in function omsu_print_solver_data: type of solver_data unknown\n");
+        return omsi_warning;
+    }
+
     return omsi_ok;
 }
 

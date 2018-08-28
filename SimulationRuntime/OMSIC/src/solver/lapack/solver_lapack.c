@@ -28,7 +28,7 @@
  *
  */
 
-#include "solver/lapack.h"
+#include "solver/solver_lapack.h"
 
 /* forward global functions */
 omsi_callback_allocate_memory   global_allocateMemory;
@@ -268,7 +268,7 @@ void printLapackData(DATA_LAPACK*   lapack_data,
 
     printf("%sA in row major order:\n%s| ", indent, indent);
     for (i=0; i<lapack_data->lda*lapack_data->n; i++) {
-        printf("%f\t\n", indent, lapack_data->A[i]);
+        printf("%s%f\t\n", indent, lapack_data->A[i]);
     }
     printf("\n");
 
@@ -281,7 +281,7 @@ void printLapackData(DATA_LAPACK*   lapack_data,
 
     printf("%sb in row major order:\n%s| ", indent, indent);
     for (i=0; i<lapack_data->ldb*lapack_data->nrhs; i++) {
-        printf("%f\t\n", indent, lapack_data->b[i]);
+        printf("%s%f\t\n", indent, lapack_data->b[i]);
     }
     printf("\n");
 
