@@ -53,8 +53,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     XML_Parser parser = NULL;
 
     /* set global function pointer */
-    global_allocateMemory = functions->allocateMemory;
-    global_freeMemory = functions->freeMemory;
+    global_callback = functions;
 
     /* open xml file */
     file = fopen(filename, "r");
@@ -126,48 +125,48 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_string(omsu_findHashStringString(mi.de,"solver"), (omsi_char**) &(osu_data->experiment->solver_name));
 
     /* process all model data */
-    omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), (omsi_char**) &(osu_data->model_data.modelGUID));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data.n_states));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data.n_derivatives));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealAlgebraicVariables"), &(osu_data->model_data.n_real_vars));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerAlgebraicVariables"), &(osu_data->model_data.n_int_vars));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanAlgebraicVariables"), &(osu_data->model_data.n_bool_vars));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringAlgebraicVariables"), &(osu_data->model_data.n_string_vars));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealParameters"), &(osu_data->model_data.n_real_parameters));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerParameters"), &(osu_data->model_data.n_int_parameters));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanParameters"), &(osu_data->model_data.n_bool_parameters));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringParameters"), &(osu_data->model_data.n_string_parameters));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealAlgebraicAliasVariables"), &(osu_data->model_data.n_real_aliases));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerAliasVariables"), &(osu_data->model_data.n_int_aliases));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanAliasVariables"), &(osu_data->model_data.n_bool_aliases));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringAliasVariables"), &(osu_data->model_data.n_string_aliases));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data.n_zerocrossings));       /* ToDo: Is numberOfTimeEvents also part of n_zerocrossings???? */
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEquations"), &(osu_data->model_data.n_equations));      /* ToDo: Is numberOfEquations in XML??? */
+    omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), (omsi_char**) &(osu_data->model_data->modelGUID));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data->n_states));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data->n_derivatives));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealAlgebraicVariables"), &(osu_data->model_data->n_real_vars));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerAlgebraicVariables"), &(osu_data->model_data->n_int_vars));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanAlgebraicVariables"), &(osu_data->model_data->n_bool_vars));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringAlgebraicVariables"), &(osu_data->model_data->n_string_vars));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealParameters"), &(osu_data->model_data->n_real_parameters));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerParameters"), &(osu_data->model_data->n_int_parameters));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanParameters"), &(osu_data->model_data->n_bool_parameters));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringParameters"), &(osu_data->model_data->n_string_parameters));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfRealAlgebraicAliasVariables"), &(osu_data->model_data->n_real_aliases));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerAliasVariables"), &(osu_data->model_data->n_int_aliases));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanAliasVariables"), &(osu_data->model_data->n_bool_aliases));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringAliasVariables"), &(osu_data->model_data->n_string_aliases));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data->n_zerocrossings));       /* ToDo: Is numberOfTimeEvents also part of n_zerocrossings???? */
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEquations"), &(osu_data->model_data->n_equations));      /* ToDo: Is numberOfEquations in XML??? */
 
     /* read model_vars_info_t */
-    n_model_vars_and_params = osu_data->model_data.n_states + osu_data->model_data.n_derivatives
-                            + osu_data->model_data.n_real_vars + osu_data->model_data.n_int_vars
-                            + osu_data->model_data.n_bool_vars + osu_data->model_data.n_string_vars
-                            + osu_data->model_data.n_real_parameters + osu_data->model_data.n_int_parameters
-                            + osu_data->model_data.n_bool_parameters + osu_data->model_data.n_string_parameters
-                            + osu_data->model_data.n_real_aliases + osu_data->model_data.n_int_aliases
-                            + osu_data->model_data.n_bool_aliases + osu_data->model_data.n_string_aliases;
-    osu_data->model_data.model_vars_info_t = (model_variable_info_t*) functions->allocateMemory(n_model_vars_and_params, sizeof(model_variable_info_t));
-    if (!osu_data->model_data.model_vars_info_t) {
+    n_model_vars_and_params = osu_data->model_data->n_states + osu_data->model_data->n_derivatives
+                            + osu_data->model_data->n_real_vars + osu_data->model_data->n_int_vars
+                            + osu_data->model_data->n_bool_vars + osu_data->model_data->n_string_vars
+                            + osu_data->model_data->n_real_parameters + osu_data->model_data->n_int_parameters
+                            + osu_data->model_data->n_bool_parameters + osu_data->model_data->n_string_parameters
+                            + osu_data->model_data->n_real_aliases + osu_data->model_data->n_int_aliases
+                            + osu_data->model_data->n_bool_aliases + osu_data->model_data->n_string_aliases;
+    osu_data->model_data->model_vars_info_t = (model_variable_info_t*) functions->allocateMemory(n_model_vars_and_params, sizeof(model_variable_info_t));
+    if (!osu_data->model_data->model_vars_info_t) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
     /*read model_vars_info_t inner stuff */
-    omsu_read_var_infos(&osu_data->model_data, &mi);
+    omsu_read_var_infos(osu_data->model_data, &mi);
 
     /* now all data from init_xml should be utilized */
     omsu_free_ModelInput(mi, osu_data, functions->freeMemory);
 
 
     /* ToDo: read equation_info_t from JSON file */
-    osu_data->model_data.equation_info_t = (equation_info_t*) functions->allocateMemory(osu_data->model_data.n_equations, sizeof(equation_info_t));
-    if (!osu_data->model_data.equation_info_t) {
+    osu_data->model_data->equation_info_t = (equation_info_t*) functions->allocateMemory(osu_data->model_data->n_equations, sizeof(equation_info_t));
+    if (!osu_data->model_data->equation_info_t) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
         return -1;
@@ -236,7 +235,7 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
         break;
 
         case OMSI_TYPE_REAL:
-            attribute_real = (real_var_attribute_t *) global_allocateMemory(1, sizeof(real_var_attribute_t));
+            attribute_real = (real_var_attribute_t *) global_callback->allocateMemory(1, sizeof(real_var_attribute_t));
             omsu_read_value_string(omsu_findHashStringStringEmpty(v,"unit"), (omsi_char**) &attribute_real->unit);
             omsu_read_value_string(omsu_findHashStringStringEmpty(v,"displayUnit"), (omsi_char**) &attribute_real->displayUnit);
             omsu_read_value_real(omsu_findHashStringString(v,"min"), &attribute_real->min, -OMSI_DBL_MAX);
@@ -248,7 +247,7 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
         break;
 
         case OMSI_TYPE_INTEGER:
-            attribute_int = (int_var_attribute_t *) global_allocateMemory(1, sizeof(int_var_attribute_t));
+            attribute_int = (int_var_attribute_t *) global_callback->allocateMemory(1, sizeof(int_var_attribute_t));
             omsu_read_value_int(omsu_findHashStringString(v,"min"), &attribute_int->min, -OMSI_INT_MAX);
             omsu_read_value_int(omsu_findHashStringString(v,"max"), &attribute_int->min, OMSI_INT_MAX);
             omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_int->fixed);
@@ -257,13 +256,13 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
         break;
 
         case OMSI_TYPE_BOOLEAN:
-            attribute_bool = (bool_var_attribute_t *) global_allocateMemory(1, sizeof(bool_var_attribute_t));
+            attribute_bool = (bool_var_attribute_t *) global_callback->allocateMemory(1, sizeof(bool_var_attribute_t));
             omsu_read_value_bool(omsu_findHashStringString(v,"fixed"), &attribute_bool->fixed);
             omsu_read_value_bool_default(omsu_findHashStringString(v,"start"), &attribute_bool->start, 0);
             model_var_info->modelica_attributes = attribute_bool;
         break;
         case OMSI_TYPE_STRING:
-            attribute_string = (string_var_attribute_t *) global_allocateMemory(1, sizeof(string_var_attribute_t));
+            attribute_string = (string_var_attribute_t *) global_callback->allocateMemory(1, sizeof(string_var_attribute_t));
             omsu_read_value_string(omsu_findHashStringStringEmpty(v,"start"), &attribute_string->start);
             model_var_info->modelica_attributes = attribute_string;
         break;
@@ -419,7 +418,7 @@ omsi_string omsu_findHashStringString(hash_string_string *ht, omsi_string key) {
  *
  */
 void omsu_addHashLongVar(hash_long_var **ht, omsi_long key, omc_ScalarVariable *val) {
-  hash_long_var *v = (hash_long_var*) global_allocateMemory(1, sizeof(hash_long_var));      /* ToDo: where is this memory freed? */
+  hash_long_var *v = (hash_long_var*) global_callback->allocateMemory(1, sizeof(hash_long_var));      /* ToDo: where is this memory freed? */
   v->id=key;
   v->val=val;
   HASH_ADD_INT( *ht, id, v );
@@ -429,7 +428,7 @@ void omsu_addHashLongVar(hash_long_var **ht, omsi_long key, omc_ScalarVariable *
  *
  */
 void omsu_addHashStringString(hash_string_string **ht, omsi_string key, omsi_string val) {
-  hash_string_string *v = (hash_string_string*) global_allocateMemory(1, sizeof(hash_string_string));
+  hash_string_string *v = (hash_string_string*) global_callback->allocateMemory(1, sizeof(hash_string_string));
   v->id=strdup(key);
   v->val=strdup(val);
   HASH_ADD_KEYPTR( hh, *ht, v->id, strlen(v->id), v );
@@ -653,13 +652,13 @@ void omsu_free_ModelInput(omc_ModelInput mi, omsi_t* omsi_data, const omsi_callb
     freeMemory((omsi_char *)mi.de->val);
     freeMemory(mi.de);
 
-    for (i=0; i<omsi_data->model_data.n_states ; i++) {
+    for (i=0; i<omsi_data->model_data->n_states ; i++) {
         freeMemory((omsi_char *)mi.rSta[i].val->id);
         freeMemory((omsi_char *)mi.rSta[i].val->val);
         freeMemory(mi.rSta[i].val);
     }
     freeMemory(mi.rSta);
-    for (i=0; i<omsi_data->model_data.n_derivatives ; i++) {
+    for (i=0; i<omsi_data->model_data->n_derivatives ; i++) {
         freeMemory((omsi_char *)mi.rDer[i].val->id);
         freeMemory((omsi_char *)mi.rDer[i].val->val);
         freeMemory(mi.rDer[i].val);

@@ -111,7 +111,7 @@ static FILE* omc_mmap_common(omsi_string fileName, omsi_string mode, omsi_unsign
     *size = fileSize;
   }
 
-  *data = (omsi_char*) global_allocateMemory(*size, 1);
+  *data = (omsi_char*) global_callback->allocateMemory(*size, 1);
 
   if (1 != fread(*data, (*size > fileSize ? fileSize : *size), 1, file)) {
     /*throwStreamPrint(NULL, "Failed to read file data: %s\n", fileName);       ToDo: add logger */
@@ -137,17 +137,17 @@ omc_mmap_write_inmemory omc_mmap_open_write_inmemory(omsi_string fileName, omsi_
 
 void omc_mmap_close_read_inmemory(omc_mmap_read_inmemory map)
 {
-  global_freeMemory((void*)map.data);
+    global_callback->freeMemory((void*)map.data);
 }
 
 void omc_mmap_close_write_inmemory(omc_mmap_write_inmemory map)
 {
   rewind(map.file);
   if (1 != fwrite(map.data, map.size, 1, map.file)) {
-      global_freeMemory(map.data);
+      global_callback->freeMemory(map.data);
     /*throwStreamPrint(NULL, "Failed to write back to file");               ToDo: add logger*/
   }
-  global_freeMemory((void*)map.data);
+  global_callback->freeMemory((void*)map.data);
 }
 
 

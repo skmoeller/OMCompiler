@@ -67,10 +67,10 @@ typedef omsi_unsigned_int uint8_t;
 #define uthash_fatal(msg) exit(-1)        /* fatal error (out of memory,etc) */
 #endif
 #ifndef uthash_malloc
-#define uthash_malloc(sz) global_allocateMemory(1,sz)   /* malloc fcn        */
+#define uthash_malloc(sz) global_callback->allocateMemory(1,sz)   /* malloc fcn        */
 #endif
 #ifndef uthash_free
-#define uthash_free(ptr,sz) global_freeMemory(ptr)      /* free fcn          */
+#define uthash_free(ptr,sz) global_callback->freeMemory(ptr)      /* free fcn          */
 #endif
 
 #ifndef uthash_noexpand_fyi

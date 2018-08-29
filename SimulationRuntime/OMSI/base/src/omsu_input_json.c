@@ -51,14 +51,13 @@ omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi
     /* Variables */
     omc_mmap_read mmap_reader;
 
-    /* set global functions */
-    global_allocateMemory = functions->allocateMemory;
-    global_freeMemory = functions->freeMemory;
+    /* set global function pointer */
+    global_callback = functions;
 
 
     /* read JSON file */
     mmap_reader = omc_mmap_open_read (fileName);
-    readInfoJson(mmap_reader.data, &osu_data->model_data);
+    readInfoJson(mmap_reader.data, osu_data->model_data);
 
     /* free memory */
     omc_mmap_close_read(mmap_reader);
@@ -290,11 +289,11 @@ omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_u
             str = str+1;
             j++;
         }
-        tmp_number = (omsi_char *) global_allocateMemory(j+1, sizeof(omsi_char));
+        tmp_number = (omsi_char *) global_callback->allocateMemory(j+1, sizeof(omsi_char));
         strncpy (tmp_number, str-j, sizeof(omsi_char)*j);
         tmp_number[j+1] = '\0';
         equation_info->parent = (omsi_int) strtol(tmp_number,NULL ,10);
-        global_freeMemory(tmp_number);
+        global_callback->freeMemory(tmp_number);
     }
     str=skipSpace(str);
 
@@ -364,7 +363,7 @@ omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_u
     };
     assertChar(str, ']');
     equation_info->numVar = n;
-    equation_info->variables = (omsi_string*) global_allocateMemory(n, sizeof(omsi_string));
+    equation_info->variables = (omsi_string*) global_callback->allocateMemory(n, sizeof(omsi_string));
 
     /* save defining variables */
     str = str2;
@@ -378,7 +377,7 @@ omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_u
             str++;
         }
         str = assertChar(str, '\"');
-        tmp = (omsi_char*) global_allocateMemory(len+1, sizeof(omsi_char));
+        tmp = (omsi_char*) global_callback->allocateMemory(len+1, sizeof(omsi_char));
         strncpy(tmp, str3+1, len);
         tmp[len] = '\0';
         equation_info->variables[j] = tmp;
@@ -434,7 +433,7 @@ omsi_string readEquations(omsi_string str, model_data_t* model_data) {
     }while (omsi_true);
 
     model_data->n_equations = i;
-    model_data->equation_info_t = (equation_info_t*) global_allocateMemory(model_data->n_equations, sizeof(equation_info_t));
+    model_data->equation_info_t = (equation_info_t*) global_callback->allocateMemory(model_data->n_equations, sizeof(equation_info_t));
 
     str = str_start;    /* reset str to start of equations */
     endNotFound = omsi_true;
