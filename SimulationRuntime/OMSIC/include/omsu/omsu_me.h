@@ -37,12 +37,12 @@
 #define OMSI_ME_H
 
 // OpenModelica Simulation Unit / OpenModelica Simulation Interface
+#include <omsu/omsu_initialization.h>
 #include "omsu_common.h"
 #include "omsu_utils.h"
 #include "omsu_GettersAndSetters.h"
 #include "omsu_EventSimulation.h"
 #include "omsu_ContinuousSimulation.h"
-#include "omsu_Initialization.h"
 
 #ifdef __cplusplus
 extern "C" {

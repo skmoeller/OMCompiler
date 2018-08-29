@@ -37,6 +37,7 @@
 #define OSI_FMI2_WRAPPER_H
 
 //FMI2 interface
+#include <omsu/omsu_initialization.h>
 #include "fmi2Functions.h"
 #include "fmi2FunctionTypes.h"
 #include "fmi2TypesPlatform.h"
@@ -44,7 +45,6 @@
 //OpenModelica Simulation Interface
 #include "omsu/omsu_common.h"
 #include "omsu/omsu_utils.h"
-#include "omsu/omsu_Initialization.h"
 #include "omsu/omsu_me.h"
 #include "omsi.h"
 
