@@ -48,8 +48,6 @@ extern "C" {
 #include "omsu_input_xml.h"
 #include "omsu_input_json.h"
 #include "omsu_utils.h"
-//#include "omsu_me.h"
-//#include "fmi2/fmi2Functions.h"
 
 /* forward struct */
 typedef struct osu_t osu_t;

@@ -3,7 +3,7 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -O2 -g -std=c89 -pedantic
 LDFLAGS=-shared
-TARGET_LIB = so
+TARGET_LIB = dll
 # =dll or =so for dynamic-link library and shared objects
 
 SOLVER_LIB_DIR = -L/d/workspace/Testlab/libs/
@@ -23,6 +23,7 @@ THIRD_PARTY = $(PATH_TO_OPENMODELICA)/OMCompiler/3rdParty
 
 OMSIC_INCLUDE = $(PATH_TO_OMSIC)/include
 OMSI_INCLUDE = $(PATH_TO_OMSI)/include
+OMSI_BASE = $(PATH_TO_OMSI)/base/include
 
 # detect OS
 TARGET_TRIPLE := $(subst -, ,$(shell $(CC) -dumpmachine))
@@ -38,8 +39,8 @@ endif
 .PHONY: clean clean_o_files
 
 all:
-#	make -C src/omsu libomsu
 	make -C src/solver libomsisolver
+	make -C src/omsu libomsu
 #	make -C testsuite test
 
 clean:

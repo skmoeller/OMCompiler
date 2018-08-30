@@ -47,12 +47,16 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
                         omsi_bool                      __attribute__((unused)) visible,
                         omsi_bool                      loggingOn)
 {
+    /* Variables */
     osu_t *OSU;
+    omsi_char* initXMLFilename;
+    omsi_char* infoJsonFilename;
+    omsi_int i;
 
     /* check all input arguments */
     /* ignoring arguments: fmuResourceLocation, visible */
     if (!functions->logger) {
-        // ToDo: Add error message, even if no loger is available
+        /* ToDo: Add error message, even if no logger is available */
         return NULL;
     }
     if (!functions->allocateMemory || !functions->freeMemory) {
@@ -77,9 +81,9 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
 
     /* process XML file and read experiment_data and parts of model_data in osu_data*/
     OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
-    omsi_char* initXMLFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
+    initXMLFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(initXMLFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
-    if (omsu_process_input_xml(OSU->osu_data, initXMLFilename, fmuGUID, instanceName, functions)) {     // ToDo: needs some information beforehand
+    if (omsu_process_input_xml(OSU->osu_data, initXMLFilename, fmuGUID, instanceName, functions)) {     /* ToDo: needs some information beforehand */
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename);
         omsu_free_osu_data(OSU->osu_data, functions->freeMemory);
         return NULL;
@@ -87,9 +91,9 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     functions->freeMemory(initXMLFilename);
 
     /* process JSON file and read missing parts of model_data in osu_data */
-    omsi_char* infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
+    infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, instanceName);
-    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {     // ToDo: implement
+    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {     /* ToDo: implement */
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", infoJsonFilename);
         omsu_free_osu_data(OSU->osu_data, functions->freeMemory);
         return NULL;
@@ -102,12 +106,11 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
             "fmi2Instantiate: Not enough memory.");
         return NULL;
     }
-    // ToDo: where do we get sim_data_t->inputs_real_index and so on? Probably from JSON file
     /* initialize sim_data */
-//    omsi_model_setup_data(OSU);      // ToDo: implement, write stuff into sim_data
+    /* omsi_model_setup_data(OSU); */       /* ToDo: implement, write stuff into sim_data */
 
 
-    OSU->osu_functions = (omsi_functions_t *) functions->allocateMemory(1, sizeof(omsi_functions_t));
+    /*OSU->osu_functions = (omsi_functions_t *) functions->allocateMemory(1, sizeof(omsi_functions_t)); ToDo: fix*/
     OSU->instanceName = (omsi_char*) functions->allocateMemory(1 + strlen(instanceName), sizeof(omsi_char));
     OSU->vrStates = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
     OSU->vrStatesDerivatives = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
@@ -118,8 +121,9 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     }
 
 
-    // set all categories to on or off. fmi2SetDebugLogging should be called to choose specific categories.
-    for (omsi_int i = 0; i < NUMBER_OF_CATEGORIES; i++) {
+    /* set all categories to on or off
+     * fmi2SetDebugLogging should be called to choose specific categories. */
+    for (i = 0; i < NUMBER_OF_CATEGORIES; i++) {
         OSU->logCategories[i] = loggingOn;
     }
     OSU->loggingOn = loggingOn;
@@ -134,26 +138,26 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     OSU->fmiCallbackFunctions = functions;
 
     /* setup simulation data with default start values */
-    //OSU->osu_functions->setupStartValues(OSU->osu_data);       // ToDo: implement. Probably pointer to generated function to set up default start data
+    /*OSU->osu_functions->setupStartValues(OSU->osu_data);*/       /* ToDo: implement. Probably pointer to generated function to set up default start data */
 
     OSU->state = modelInstantiated;
     FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2Instantiate: GUID=%s", fmuGUID)
-    omsu_print_debug(OSU);      // ToDo: delete
+    omsu_print_osu(OSU);      /* ToDo: set optional with debug flag */
     return OSU;
 }
 
 /*
  * Informs the OpenModelica Simulation Unit to enter the initialization mode.
  */
-omsi_status omsi_enter_initialization_mode(void* c) {
-    osu_t* OSU = (osu_t *)c;
+omsi_status omsi_enter_initialization_mode(void* component) {
+    osu_t* OSU = (osu_t *)component;
 
     if (invalidState(OSU, "fmi2EnterInitializationMode", modelInstantiated, ~0)) {
         FILTERED_LOG(OSU, omsi_error, LOG_FMI2_CALL, "fmi2EnterInitializationMode: call was not allowed", NULL)
         return omsi_error;
     }
 
-    // ToDo: Do we need to do some stuff here? Maybe allocate memory for OSU->osu_data->sim_data->initialization and fill it.
+    /* ToDo: Do we need to do some stuff here? Maybe allocate memory for OSU->osu_data->sim_data->initialization and fill it. */
 
     OSU->state = modelInitializationMode;
     FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2EnterInitializationMode: succeed", NULL)
@@ -161,17 +165,17 @@ omsi_status omsi_enter_initialization_mode(void* c) {
 }
 
 /*
- * Informs the Openmodelica Simulation Unit to exit initialization mode.
+ * Informs the OpenNodelica Simulation Unit to exit initialization mode.
  */
-omsi_status omsi_exit_initialization_mode(void* c)
-{
-    osu_t* OSU = (osu_t *)c;
+omsi_status omsi_exit_initialization_mode(void* component) {
+
+    osu_t* OSU = (osu_t *)component;
     if (invalidState(OSU, "fmi2ExitInitializationMode", modelInitializationMode, ~0))
         return omsi_error;
     FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2ExitInitializationMode...", NULL)
 
-    // ToDo: free OSU->omsi_data->initialization
-    // ToDo: allocate OSU->omsi_data->simulation here to save some memory?
+    /* ToDo: free OSU->omsi_data->initialization */
+    /* ToDo: allocate OSU->omsi_data->simulation here to save some memory? */
 
     OSU->state = modelEventMode;
     FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2ExitInitializationMode: succeed", NULL)
@@ -182,13 +186,13 @@ omsi_status omsi_exit_initialization_mode(void* c)
  * Setup experiment data for the Openmodelica Simulation Unit.
  * Gets called from function fmi2SetupExperiment.
  */
-omsi_status omsi_setup_experiment(void*      c,
+omsi_status omsi_setup_experiment(void*      component,
                                   omsi_bool  toleranceDefined,
                                   omsi_real  tolerance,
                                   omsi_real  startTime,
                                   omsi_bool  stopTimeDefined,
                                   omsi_real  stopTime) {
-    osu_t* OSU = (osu_t *)c;
+    osu_t* OSU = (osu_t *)component;
 
     if (invalidState(OSU, "fmi2SetupExperiment", modelInstantiated, ~0))
         return omsi_error;
@@ -197,14 +201,14 @@ omsi_status omsi_setup_experiment(void*      c,
         OSU->osu_data->experiment->tolerance = tolerance;
     }
     else {
-        OSU->osu_data->experiment->tolerance = 1e-5;    // default tolerance
+        OSU->osu_data->experiment->tolerance = 1e-5;    /* default tolerance */
     }
     OSU->osu_data->experiment->start_time = startTime;
     if (stopTimeDefined) {
         OSU->osu_data->experiment->stop_time = stopTime;
     }
     else {
-        OSU->osu_data->experiment->stop_time = startTime+1;     // default stop time
+        OSU->osu_data->experiment->stop_time = startTime+1;     /* default stop time */
     }
     OSU->osu_data->experiment->step_size = (OSU->osu_data->experiment->stop_time
                                             - OSU->osu_data->experiment->start_time) / 500;
@@ -221,31 +225,33 @@ omsi_status omsi_setup_experiment(void*      c,
  * Does nothing if a null pointer is provided.
  * Gets called from function fmi2FreeInstance.
  */
-void omsi_free_instance(void* c) {
-    if (c==NULL) {
+void omsi_free_instance(void* component) {
+
+    /* Variables */
+    osu_t* OSU;
+    omsi_int meStates;
+    omsi_int csStates;
+
+    if (component==NULL) {
         return;
     }
 
-    osu_t* OSU = (osu_t *)c;
-    omsi_int meStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError;
-    omsi_int csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError;
+    OSU = (osu_t *)component;
+    meStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError;
+    csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError;
 
     if (invalidState(OSU, "fmi2FreeInstance", meStates, csStates)) {
         return;
     }
 
-    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2FreeInstance", NULL)
+    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2FreeInstance", NULL)     /* ToDo: change logger */
 
     /* free OSU data */
-    omsu_free_osu_data(OSU->osu_data, OSU->fmiCallbackFunctions->freeMemory);     // ToDo: implement, should free everything inside osu_data
+    omsu_free_osu_data(OSU->osu_data, OSU->fmiCallbackFunctions->freeMemory);
     OSU->fmiCallbackFunctions->freeMemory(OSU->osu_data);
-    // ToDo: free everything inside osu_functions
+    /* ToDo: free everything inside osu_functions */
     OSU->fmiCallbackFunctions->freeMemory(OSU->osu_functions);
 
-    /* free fmuData */
-    OSU->fmiCallbackFunctions->freeMemory(OSU->threadData);
-
-    OSU->fmiCallbackFunctions->freeMemory(OSU->old_data);
     /* free instanceName & GUID */
     if (OSU->instanceName) OSU->fmiCallbackFunctions->freeMemory((void*)OSU->instanceName);
     if (OSU->GUID) OSU->fmiCallbackFunctions->freeMemory((void*)OSU->GUID);
@@ -258,18 +264,18 @@ void omsi_free_instance(void* c) {
  * Resets the Openmodelica Simulation Unit.
  * Gets called from function fmi2Reset.
  */
-omsi_status omsi_reset(void* c) {
-    osu_t* OSU = (osu_t *)c;
+omsi_status omsi_reset(void* component) {
+    osu_t* OSU = (osu_t *)component;
     if (invalidState(OSU, "fmi2Reset", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
         return omsi_error;
     FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2Reset", NULL)
 
     if (OSU->state & modelTerminated) {
       /* initialize OSU */
-//      omsic_model_setup_data(OSU);            // ToDo: implement
+      /* omsic_model_setup_data(OSU);*/            /* ToDo: implement */
     }
     /* reset the values to start */
-//    setDefaultStartValues(OSU);     // ToDo: implement
+    /*setDefaultStartValues(OSU);*/     /* ToDo: implement */
 
     OSU->state = modelInstantiated;
     return omsi_ok;
@@ -279,8 +285,8 @@ omsi_status omsi_reset(void* c) {
  * Informs that the simulation run is terminated.
  * Gets called from function fmi2Terminate.
  */
-omsi_status omsi_terminate(void* c) {
-    osu_t* OSU = (osu_t *)c;
+omsi_status omsi_terminate(void* component) {
+    osu_t* OSU = (osu_t *)component;
     if (invalidState(OSU, "fmi2Terminate", modelEventMode|modelContinuousTimeMode, ~0))
         return omsi_error;
     FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2Terminate", NULL)

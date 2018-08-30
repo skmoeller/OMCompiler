@@ -22,7 +22,7 @@ $(SOLVER_OBJS): $(SOLVER_SRCS) $(SOLVER_HDRS)
 	$(CC) $(CFLAGS) $(SOLVER_INCS) -c -o $@ $(@:%.o=%.c)
 
 clean_solver_all: clean_solver_o
-	rm -rf ../../lib/libomsuSolver.*
+	rm -rf ../libomsuSolver.*
 
 clean_solver_o:
 	rm -rf $(SOLVER_OBJS)
