@@ -106,52 +106,6 @@ void omsu_free_osu_data(omsi_t*                         omsi_data,
 
 
 /*
- * Allocates memory for sim_data_t struct and all its components.
- * Gets called from omsu_process_input_xml().
- */
-omsi_status omsu_allocate_sim_data(omsi_t*                              omsi_data,
-                                   const omsi_callback_allocate_memory  allocateMemory) {
-
-    omsi_int n_model_vars_and_params;
-
-    omsi_data->sim_data->initialization = (omsi_function_t*) allocateMemory(1, sizeof(omsi_function_t));
-    if (!omsi_data->sim_data->initialization) {
-        return omsi_error;      /* Error: Out of memory */
-    }
-    /* ToDo: add stuff, e.g. allocate memory for all parts of struct initialization */
-
-    omsi_data->sim_data->simulation = (omsi_function_t*) allocateMemory(1, sizeof(omsi_function_t));
-    if (!omsi_data->sim_data->initialization) {
-        return omsi_error;      /* Error: Out of memory */
-    }
-    /* ToDo: add more stuff */
-
-    n_model_vars_and_params = omsi_data->model_data->n_real_vars + omsi_data->model_data->n_int_vars + omsi_data->model_data->n_bool_vars + omsi_data->model_data->n_string_vars
-                              + omsi_data->model_data->n_real_parameters + omsi_data->model_data->n_int_parameters + omsi_data->model_data->n_bool_parameters + omsi_data->model_data->n_string_parameters;
-    omsi_data->sim_data->model_vars_and_params = (omsi_values *) allocateMemory(n_model_vars_and_params, sizeof(omsi_values));
-    if (!omsi_data->sim_data->model_vars_and_params) {
-        return omsi_error;      /* Error: Out of memory */
-    }
-    omsi_data->sim_data->model_vars_and_params->reals = (omsi_real *) allocateMemory(omsi_data->model_data->n_real_vars + omsi_data->model_data->n_real_parameters, sizeof(omsi_real));
-    omsi_data->sim_data->model_vars_and_params->ints = (omsi_int*) allocateMemory(omsi_data->model_data->n_int_vars + omsi_data->model_data->n_int_parameters, sizeof(omsi_int));
-    omsi_data->sim_data->model_vars_and_params->bools = (omsi_bool*) allocateMemory(omsi_data->model_data->n_bool_vars + omsi_data->model_data->n_bool_parameters, sizeof(omsi_bool));
-    if (!omsi_data->sim_data->model_vars_and_params->reals || !omsi_data->sim_data->model_vars_and_params->ints || !omsi_data->sim_data->model_vars_and_params->bools ) {
-        return omsi_error;      /* Error: Out of memory */
-    }
-
-    /* ToDo: allocate memory for some pre-values */
-
-    omsi_data->sim_data->zerocrossings_vars = (omsi_bool *) allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));
-    omsi_data->sim_data->pre_zerocrossings_vars = (omsi_bool *) allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));
-
-    /* ToDo: Add error cases */
-
-    return omsi_ok;
-}
-
-
-
-/*
  * ============================================================================
  * Section for print and debug functions
  * ============================================================================

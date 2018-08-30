@@ -44,7 +44,14 @@
 extern "C" {
 #endif
 
-typedef struct omsi_functions_t omsi_functions_t; /* ToDo: add definition here */
+
+typedef omsi_status (*omsu_initialize_omsi_function) (omsi_function_t* omsi_function);
+
+typedef struct omsi_functions_t {
+    const omsu_initialize_omsi_function initialize_initialization_problem;  /* function pointer to initialize the initialization problem */
+    const omsu_initialize_omsi_function initialize_simulation_problem;      /* function pointer to initialize the simulation problem */
+}omsi_functions_t;
+
 
 typedef enum {
   modelInstantiated       = 1<<0, /* ME and CS */

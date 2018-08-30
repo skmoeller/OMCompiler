@@ -28,72 +28,7 @@
  *
  */
 
-
-
 #include "solver/solver_helper.h"
-
-
-/* forward global functions */
-omsi_callback_allocate_memory   global_allocateMemory;
-omsi_callback_free_memory       global_freeMemory;
-
-
-
-
-/*
- * Allocates memory for omsi_algebraic_system_t struct.
- * Since n_conditions is unknown memory for zerocrossing_indices is not allocated!
- */
-omsi_algebraic_system_t* initialize_alg_system_array (omsi_unsigned_int n_algebraic_system) {
-
-    /* Variables */
-    omsi_algebraic_system_t* algebraic_system;
-
-    /* allocate memory */
-    algebraic_system = (omsi_algebraic_system_t*) global_allocateMemory(n_algebraic_system, sizeof(omsi_algebraic_system_t));
-
-    if (!algebraic_system) {
-        /* ToDo: Log error */
-        return NULL;
-    }
-
-    return algebraic_system;
-}
-
-
-/*
- * Allocates memory for omsi_values struct.
- * Needs length for arrays reals, ints, bools and externs as input.
- * Returns NULL in error case.
- */
-omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,    /* length of array reals */
-                                      omsi_unsigned_int   n_ints,     /* length of array ints */
-                                      omsi_unsigned_int   n_bools,    /* length of array bools */
-                                      omsi_unsigned_int   n_externs){ /* length of array externs */
-
-    omsi_values* values;
-
-    /* catch not implemented case*/
-    if (n_externs > 0) {
-        /* ToDo: Log error, not implemented yet */
-        return NULL;
-    }
-
-    /* Allocate memory */
-    values = (omsi_values*) global_allocateMemory(1, sizeof(omsi_values));
-
-    values->reals = (omsi_real*) global_allocateMemory(n_reals, sizeof(omsi_real));
-    values->ints = (omsi_int*) global_allocateMemory(n_ints, sizeof(omsi_int));
-    values->bools = (omsi_bool*) global_allocateMemory(n_bools, sizeof(omsi_bool));
-
-    /* check for out of memory error */
-    if (!values || !values->reals || !values->ints || !values->bools) {
-        /* ToDo: Log error out of memory */
-        return NULL;
-    }
-
-    return values;
-}
 
 
 omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_function,
@@ -101,10 +36,10 @@ omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_fun
                                                     omsi_unsigned_int   n_output_vars) {
 
 
-    omsi_function->input_vars_indices = (omsi_index_type*) global_allocateMemory(n_input_vars, sizeof(omsi_index_type));
+    omsi_function->input_vars_indices = (omsi_index_type*) global_callback->allocateMemory(n_input_vars, sizeof(omsi_index_type));
     CHECK_MEMORY_ERROR(omsi_function->input_vars_indices)
 
-    omsi_function->output_vars_indices = (omsi_index_type*) global_allocateMemory(n_output_vars, sizeof(omsi_index_type));
+    omsi_function->output_vars_indices = (omsi_index_type*) global_callback->allocateMemory(n_output_vars, sizeof(omsi_index_type));
     CHECK_MEMORY_ERROR(omsi_function->output_vars_indices)
 
     return omsi_ok;
@@ -123,16 +58,16 @@ omsi_status free_omsi_function (omsi_function_t*    omsi_function,
     for (i=0; i<omsi_function->n_algebraic_system; i++) {
         free_alg_system(&(omsi_function->algebraic_system_t[i]));
     }
-    global_freeMemory(omsi_function->algebraic_system_t);
+    global_callback->freeMemory(omsi_function->algebraic_system_t);
 
     if (!shared_function_vars) {
         free_omsi_values(omsi_function->function_vars);
     }
 
-    global_freeMemory(omsi_function->input_vars_indices);
-    global_freeMemory(omsi_function->output_vars_indices);
+    global_callback->freeMemory(omsi_function->input_vars_indices);
+    global_callback->freeMemory(omsi_function->output_vars_indices);
 
-    global_freeMemory(omsi_function);
+    global_callback->freeMemory(omsi_function);
 
     return omsi_ok;
 }
@@ -143,11 +78,11 @@ omsi_status free_omsi_function (omsi_function_t*    omsi_function,
  */
 omsi_status free_alg_system (omsi_algebraic_system_t* algebraic_system) {
 
-    global_freeMemory(algebraic_system->zerocrossing_indices);
+    global_callback->freeMemory(algebraic_system->zerocrossing_indices);
     free_omsi_function(algebraic_system->jacobian, omsi_true);
     free_omsi_function(algebraic_system->functions, omsi_true);
 
-    global_freeMemory(algebraic_system);
+    global_callback->freeMemory(algebraic_system);
     return omsi_ok;
 }
 
@@ -157,12 +92,12 @@ omsi_status free_alg_system (omsi_algebraic_system_t* algebraic_system) {
  */
 omsi_status free_omsi_values (omsi_values* values) {
 
-    global_freeMemory(values->reals);
-    global_freeMemory(values->ints);
-    global_freeMemory(values->bools);
-    global_freeMemory(values->externs);
+    global_callback->freeMemory(values->reals);
+    global_callback->freeMemory(values->ints);
+    global_callback->freeMemory(values->bools);
+    global_callback->freeMemory(values->externs);
 
-    global_freeMemory(values);
+    global_callback->freeMemory(values);
     return omsi_ok;
 }
 
@@ -224,7 +159,7 @@ omsi_values* save_omsi_values (const omsi_values*   vars,
     /* allocate memory */
     size = n_reals*sizeof(omsi_real) + n_ints*sizeof(omsi_int)
            + n_bools*sizeof(omsi_bool);
-    savedVars = (omsi_values*) global_allocateMemory(1, size);
+    savedVars = (omsi_values*) global_callback->allocateMemory(1, size);
     if (!savedVars) {
         return NULL;
     }
@@ -252,7 +187,7 @@ omsi_values* save_omsi_values (const omsi_values*   vars,
             break;
         default:
             /* ToDo: Add error case */
-            global_freeMemory(savedVars);
+            global_callback->freeMemory(savedVars);
             return NULL;
         }
     }
@@ -277,8 +212,8 @@ omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t*    algebraicSys
     omsi_unsigned_int dim1, dim2;
     omsi_unsigned_int i_row, i_column;
 
-    omsi_real* tmpColumnVector = (omsi_real*) global_allocateMemory(dim, sizeof(omsi_real));
-    omsi_real* seedVector = (omsi_real*) global_allocateMemory(dim, sizeof(omsi_real));            /*seed vector, initialized with zeros */
+    omsi_real* tmpColumnVector = (omsi_real*) global_callback->allocateMemory(dim, sizeof(omsi_real));
+    omsi_real* seedVector = (omsi_real*) global_callback->allocateMemory(dim, sizeof(omsi_real));            /*seed vector, initialized with zeros */
 
     if (!tmpColumnVector || !seedVector) {
         /* ToDo: add error case out of memory */
@@ -307,8 +242,8 @@ omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t*    algebraicSys
     }
 
     /* free memory */
-    global_freeMemory(tmpColumnVector);
-    global_freeMemory(seedVector);
+    global_callback->freeMemory(tmpColumnVector);
+    global_callback->freeMemory(seedVector);
 
     return omsi_ok;
 }

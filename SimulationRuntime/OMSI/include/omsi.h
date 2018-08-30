@@ -134,7 +134,11 @@ typedef enum {
 /*
  * OMSI callback functions
  */
-typedef void      (*omsi_callback_logger)           (const void*, omsi_string, omsi_status, omsi_string, omsi_string, ...);
+typedef void      (*omsi_callback_logger)           (const void*,       /* component environment */
+                                                     omsi_string,       /* instance name */
+                                                     omsi_status,       /* status */
+                                                     omsi_string,       /* category */
+                                                     omsi_string, ...); /* message, ... */
 typedef void*     (*omsi_callback_allocate_memory)  (omsi_unsigned_int, omsi_unsigned_int);
 typedef void      (*omsi_callback_free_memory)      (void*);
 typedef void      (*omsi_step_finished)             (void*, omsi_status);

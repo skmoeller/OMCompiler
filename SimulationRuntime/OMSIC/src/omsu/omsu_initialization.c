@@ -93,24 +93,21 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     /* process JSON file and read missing parts of model_data in osu_data */
     infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, instanceName);
-    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {     /* ToDo: implement */
+    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", infoJsonFilename);
         omsu_free_osu_data(OSU->osu_data, functions->freeMemory);
         return NULL;
     }
     functions->freeMemory(infoJsonFilename);
 
-    /* allocate memory for sim_data */
-    if (omsu_allocate_sim_data(OSU->osu_data, functions->allocateMemory)) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-            "fmi2Instantiate: Not enough memory.");
-        return NULL;
-    }
-    /* initialize sim_data */
-    /* omsi_model_setup_data(OSU); */       /* ToDo: implement, write stuff into sim_data */
+    /* Set template function pointers */
+    OSU->osu_functions = (omsi_functions_t *) functions->allocateMemory(1, sizeof(omsi_functions_t));
+    /* ToDo: actually set pointers */
+
+    /* Instantiate and initialize sim_data */
+    omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, OSU->fmiCallbackFunctions);
 
 
-    /*OSU->osu_functions = (omsi_functions_t *) functions->allocateMemory(1, sizeof(omsi_functions_t)); ToDo: fix*/
     OSU->instanceName = (omsi_char*) functions->allocateMemory(1 + strlen(instanceName), sizeof(omsi_char));
     OSU->vrStates = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
     OSU->vrStatesDerivatives = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));

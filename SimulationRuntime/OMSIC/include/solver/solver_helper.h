@@ -48,11 +48,8 @@ if (!pointer) {                                                               \
     return omsi_error;                                                        \
 }                                                                             \
 
-omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,
-                                      omsi_unsigned_int   n_ints,
-                                      omsi_unsigned_int   n_bools,
-                                      omsi_unsigned_int   n_externs);
 
+/* Function prototypes */
 omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_function,
                                                     omsi_unsigned_int   n_input_vars,
                                                     omsi_unsigned_int   n_output_vars);

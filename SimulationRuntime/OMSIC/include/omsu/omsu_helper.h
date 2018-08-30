@@ -55,9 +55,6 @@ extern void printLapackData(DATA_LAPACK*    lapack_data,
 void omsu_free_osu_data(omsi_t*                         omsi_data,
                         const omsi_callback_free_memory freeMemory);
 
-omsi_status omsu_allocate_sim_data(omsi_t*                              omsi_data,
-                                   const omsi_callback_allocate_memory  allocateMemory);
-
 void omsu_print_osu (osu_t* OSU);
 
 void omsu_print_omsi_t (omsi_t*     omsi,
