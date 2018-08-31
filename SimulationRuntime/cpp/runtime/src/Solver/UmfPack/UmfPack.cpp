@@ -11,8 +11,24 @@
 #include <boost/numeric/ublas/io.hpp>
 namespace umf = boost::numeric::bindings::umfpack;
 #endif
-UmfPack::UmfPack(ILinearAlgLoop* algLoop, ILinSolverSettings* settings) : _iterationStatus(CONTINUE), _umfpackSettings(settings), _algLoop(algLoop), _rhs(NULL), _x(NULL), _firstuse(true), _jacd(NULL)
+UmfPack::UmfPack(ILinSolverSettings* settings,shared_ptr<ILinearAlgLoop> algLoop)
+  :AlgLoopSolverDefaultImplementation()
+  ,_iterationStatus(CONTINUE),
+ _umfpackSettings(settings),
+ _algLoop(algLoop),
+ _rhs(NULL),
+ _x(NULL),
+ _firstuse(true),
+ _jacd(NULL)
 {
+	if (_algLoop)
+	{
+		AlgLoopSolverDefaultImplementation::initialize(_algLoop->getDimZeroFunc(),_algLoop->getDimReal());
+	}
+	else
+	{
+		throw ModelicaSimulationError(ALGLOOP_SOLVER, "solve for single instance is not supported");
+	}
 }
 
 UmfPack::~UmfPack()
@@ -26,8 +42,13 @@ void UmfPack::initialize()
 {
 #ifdef USE_UMFPACK
     _firstuse=false;
-    _algLoop->initialize();
-    if(_algLoop->queryDensity()<1. &&_umfpackSettings->getUseSparseFormat() )
+     if(_algLoop)
+      _algLoop->initialize();
+    else
+	  throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
+     _dimSys = _algLoop->getDimReal();
+
+	if(_algLoop->queryDensity()<1. &&_umfpackSettings->getUseSparseFormat() )
     {
         _algLoop->setUseSparseFormat(true);
 
@@ -44,10 +65,42 @@ void UmfPack::initialize()
 #endif
 }
 
+
+bool* UmfPack::getConditionsWorkArray()
+{
+	return AlgLoopSolverDefaultImplementation::getConditionsWorkArray();
+
+}
+bool* UmfPack::getConditions2WorkArray()
+{
+
+	return AlgLoopSolverDefaultImplementation::getConditions2WorkArray();
+ }
+
+
+ double* UmfPack::getVariableWorkArray()
+ {
+
+	return AlgLoopSolverDefaultImplementation::getVariableWorkArray();
+
+ }
+
+void UmfPack::solve(shared_ptr<ILinearAlgLoop> algLoop,bool first_solve)
+{
+	throw ModelicaSimulationError(ALGLOOP_SOLVER, "solve for single instance is not supported");
+}
 void UmfPack::solve()
 {
 #ifdef USE_UMFPACK
-    if(_firstuse) initialize();
+
+
+
+	if(!_algLoop)
+       throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
+
+
+	 if(_firstuse)
+		 initialize();
     if(!_algLoop->getUseSparseFormat())
     {
         long int dimRHS  = 1;          // Dimension of right hand side of linear system (=b)
@@ -108,7 +161,7 @@ void UmfPack::solve()
 #endif
 }
 
-IAlgLoopSolver::ITERATIONSTATUS UmfPack::getIterationStatus()
+ILinearAlgLoopSolver::ITERATIONSTATUS UmfPack::getIterationStatus()
 {
     return _iterationStatus;
 }

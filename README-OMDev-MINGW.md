@@ -1,15 +1,26 @@
 # Compiling OMC using OMDev package
 
-- Checkout the OMDev package from SVN https://openmodelica.org/svn/OpenModelicaExternal/trunk/tools/windows/OMDev
+- Checkout the OMDev package
+  - Install git for windows https://git-scm.com/downloads
+  - make sure we git clone with the correct line endings, run in a terminal:
+    ```bash
+      git config --global core.eol lf
+      git config --global core.autocrlf input
+	```
+  - get OMDev from git
+     ```bash
+	  git clone https://openmodelica.org/git/OMDev.git
+	 ```
   - this package contains all prerequisites to compile OMC on Windows using msys2+mingw32+mingw64
-  - if you get issues with OpenModelica compilation maybe you should update OMDev
+  - if you get issues with OpenModelica compilation maybe you should update OMDev (git pull)
+  - please make sure you have OMDEV environment variable defined and that you have restarted or logout/login to make it available
 - Make sure you place the OMDev package into `C:\OMDev\`
   - Follow the instructions in the `C:\OMDev\INSTALL.txt` file
 - Install Java SE Development Kit (for javac)
-- Install svn tools for windows in TortoiseSVN
-- Install git for windows https://git-scm.com/downloads
+- Install svn tools for windows in TortoiseSVN (needed to checkout some of the Modelica libraries)
   - do not install git using pacman in msys, it does not work correctly!
 - get OpenModelica from git
+  - do not create an OpenModelica directory in which you clone OpenModelica repository, it will be created when you clone it
   - start `$OMDEV\tools\msys\mingw64_shell.bat` or `$OMDEV\tools\msys\mingw32_shell.bat` and type:
 
 		```bash
@@ -18,7 +29,7 @@
 		# note: if you have a space in your path to your tool you need to escape it, i.e.: /c/Program\ Files
 		export PATH=$PATH:/c/path/to/git/bin:/c/path/to/svn/tools/bin:/c/path/to/jdk/bin
 		# git clone OpenModelica recursively using the installed git for windows
-		git clone https://github.com/OpenModelica/OpenModelica --recursive
+		git clone https://github.com/OpenModelica/OpenModelica.git --recursive
 		```
   - you should have an OpenModelica directory you got from OpenModelica GIT repository https://github.com/OpenModelica/OpenModelica
   - you can also follow the instructions at the bottom of the page on how to get OpenModelica sources
@@ -96,6 +107,7 @@ If something does not work in Eclipse, please check:
 5. Right click on the OpenModelica project in Eclipse and say Properties
    - Go to Builders and see if you have the builder `OMDev-MINGW-OpenModelicaBuilder32bit` or `OMDev-MINGW-OpenModelicaBuilder64bit` available.
 6. Right click on the OpenModelica project and say **Rebuild**.
+7. Make sure OMDEV environment variable is defined (and you have restarted or logout/login from Windows to make it available)
 
 If these do not work, look into your OpenModelica/.project
 to see if you have any reference to: `OMDev-MINGW-OpenModelicaBuilder32bit` or `OMDev-MINGW-OpenModelicaBuilder64bit` there. If you don't, then:

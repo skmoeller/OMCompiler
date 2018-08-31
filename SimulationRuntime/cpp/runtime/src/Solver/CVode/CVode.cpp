@@ -485,8 +485,8 @@ void Cvode::CVodeCore()
 			throw ModelicaSimulationError(SOLVER, "CVodeGetLastStep failed. The cvode mem pointer is NULL");
 
 		//set completed step to system and check if terminate was called
-    /*Todo: replaced by isStepEvent, check for terminate has to be done*/
-    _step_event_system->isStepEvent(_tCurrent);
+    /*Todo: replaced by stepCompleted, check for terminate has to be done*/
+    _step_event_system->stepCompleted(_tCurrent);
         //_solverStatus = DONE;
 
 		//Check if there was at least one output-point within the last solver interval
@@ -635,7 +635,7 @@ void Cvode::CVodeCore()
 			// Der Eventzeitpunkt kann auf der Endzeit liegen (Time-Events). In diesem Fall wird der Solver beendet, da CVode sonst eine interne Warnung schmeißt
 			if (_tCurrent == _tEnd)
 				_cv_rt = CV_TSTOP_RETURN;
-      if (_step_event_system->isStepEvent(_tCurrent))
+      if (_step_event_system->stepCompleted(_tCurrent))
 		_cv_rt = 2;
 
     }

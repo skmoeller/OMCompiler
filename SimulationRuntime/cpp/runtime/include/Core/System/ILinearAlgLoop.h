@@ -29,7 +29,7 @@ public:
 
   /// Provide number (dimension) of variables according to the data type
   virtual int getDimReal() const = 0;
-
+   virtual int getDimZeroFunc() const =0;
   /// (Re-) initialize the system of equations
   virtual void initialize() = 0;
 
@@ -48,7 +48,8 @@ public:
   virtual void getReal(double* lambda) const = 0;
   /// Set variables with given data type
   virtual void setReal(const double* lambda) = 0;
-
+  virtual void setRealStartValues() = 0;
+  virtual void getRealStartValues(double* vars) const= 0;
   /// Evaluate equations for given variables
   virtual void evaluate() = 0;
 

@@ -27,17 +27,21 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
-
+#include <uthash.h>
 #include <omsu_input_xml.h>
+#include "omsi_global.h"
+
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
+
+
 
 /*
  * Reads input values from a xml file and allocates memory for osu_data struct.
  * Entry point for all other functions in this file
  */
 omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
-                                omsi_char*                      filename,
+                                omsi_string                     filename,
                                 omsi_string                     fmuGUID,
                                 omsi_string                     instanceName,
                                 const omsi_callback_functions*  functions) {

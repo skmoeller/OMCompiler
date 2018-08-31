@@ -4,6 +4,8 @@
  *  @{
  */
 #include "FactoryExport.h"
+#include <Core/Solver/AlgLoopSolverDefaultImplementation.h>
+
 #include "HybrjSettings.h"
 
 #if defined(__MINGW32__) || defined(_MSC_VER) /* we have static libcminpack.a on MinGW and MSVC */
@@ -16,25 +18,33 @@
  see documentation: http://www.math.utah.edu/software/minpack/minpack/hybrj.html
 */
 
-class Hybrj : public IAlgLoopSolver
+class Hybrj : public INonLinearAlgLoopSolver,  public AlgLoopSolverDefaultImplementation
 {
 public:
 
-    Hybrj(INonLinearAlgLoop* algLoop,INonLinSolverSettings* settings);
+    Hybrj(INonLinSolverSettings* settings,shared_ptr<INonLinearAlgLoop> algLoop=shared_ptr<INonLinearAlgLoop>());
 
     virtual ~Hybrj();
 
     /// (Re-) initialize the solver
     virtual void initialize();
 
+
     /// Solution of a (non-)linear system of equations
     virtual void solve();
+    //solve for a single instance call
+    virtual void solve(shared_ptr<INonLinearAlgLoop> algLoop,bool first_solve = false);
+
 
     /// Returns the status of iteration
     virtual ITERATIONSTATUS getIterationStatus();
     virtual void stepCompleted(double time);
     virtual void restoreOldValues();
     virtual void restoreNewValues();
+
+	virtual bool* getConditionsWorkArray();
+    virtual bool* getConditions2WorkArray();
+    virtual double* getVariableWorkArray();
 
 private:
     /// Encapsulation of determination of residuals to given unknowns
@@ -50,14 +60,12 @@ private:
     INonLinSolverSettings
         *_newtonSettings;            ///< Settings for the solver
 
-    INonLinearAlgLoop
-        *_algLoop;                    ///< Algebraic loop to be solved
+    shared_ptr<INonLinearAlgLoop> _algLoop;                    ///< Algebraic loop to be solved
 
     ITERATIONSTATUS
         _iterationStatus;            ///< Output        - Denotes the status of iteration
 
-    int
-        _dimSys;                    ///< Temp        - Number of unknowns (=dimension of system of equations)
+
 
     bool
         _firstCall;                    ///< Temp        - Denotes the first call to the solver, initialize() is called

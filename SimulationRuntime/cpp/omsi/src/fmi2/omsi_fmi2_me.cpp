@@ -424,7 +424,7 @@ fmi2Component omsi_fmi2_me_instantiate( fmi2String    instanceName,
 
     OSU *osu;
     try {
-      osu = new OSU(instanceName, fmuGUID, functions, loggingOn,fmuResourceLocation);
+      osu = new OSU(instanceName, fmuGUID, functions, visible, loggingOn,fmuResourceLocation);
     }
     catch (std::exception &e) {
       if (functions && functions->logger)

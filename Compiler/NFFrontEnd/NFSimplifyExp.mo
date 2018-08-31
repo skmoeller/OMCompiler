@@ -40,331 +40,375 @@ protected
 
 import Dimension = NFDimension;
 import ExpressionSimplify;
+import Ceval = NFCeval;
+import NFCeval.EvalTarget;
+import NFFunction.Function;
+import ComponentRef = NFComponentRef;
+import ExpandExp = NFExpandExp;
+import TypeCheck = NFTypeCheck;
+import Absyn;
 
 public
 
-function simplifyExp
+function simplify
   input output Expression exp;
-algorithm
-  exp := preSimplify(exp);
-  exp := postSimplify(exp);
-end simplifyExp;
-
-function simplifyExpOpt
-  input output Option<Expression> oexp;
-algorithm
-  oexp := match oexp
-    local
-      Expression exp;
-
-    case SOME(exp)
-      algorithm
-        exp := preSimplify(exp);
-        exp := postSimplify(exp);
-      then
-        SOME(exp);
-
-    else oexp;
-  end match;
-end simplifyExpOpt;
-
-protected
-
-function preSimplify
-  input output Expression exp;
-protected
-  Expression exp1, exp2, exp3;
-  Option<Expression> oexp;
-  list<Expression> expl = {};
-  Call call;
 algorithm
   exp := match exp
+    case Expression.CREF()
+      algorithm
+        exp.cref := ComponentRef.simplifySubscripts(exp.cref);
+        exp.ty := ComponentRef.getSubscriptedType(exp.cref);
+      then
+        exp;
+
     case Expression.ARRAY()
       algorithm
-        for e in exp.elements loop
-          exp1 := simplifyExp(e);
-          expl := exp1 :: expl;
-        end for;
-      then Expression.ARRAY(exp.ty, listReverse(expl));
+        exp.elements := list(simplify(e) for e in exp.elements);
+      then
+        exp;
 
     case Expression.RANGE()
-      algorithm
-        exp1 := simplifyExp(exp.start);
-        oexp := simplifyExpOpt(exp.step);
-        exp2 := simplifyExp(exp.stop);
-      then
-        Expression.RANGE(exp.ty, exp1, oexp, exp2);
+      then simplifyRange(exp);
 
     case Expression.RECORD()
       algorithm
-        Error.assertion(false, "Unimplemented case for " + Expression.toString(exp) + " in " + getInstanceName(), sourceInfo());
-      then fail();
+        exp.elements := list(simplify(e) for e in exp.elements);
+      then
+        exp;
 
-    case Expression.CALL(call = call as Call.TYPED_CALL())
+    case Expression.CALL() then simplifyCall(exp);
+    case Expression.SIZE() then simplifySize(exp);
+    case Expression.BINARY() then simplifyBinary(exp);
+    case Expression.UNARY() then simplifyUnary(exp);
+    case Expression.LBINARY() then simplifyLogicBinary(exp);
+    case Expression.LUNARY() then simplifyLogicUnary(exp);
+    case Expression.RELATION() then simplifyRelation(exp);
+    case Expression.IF() then simplifyIf(exp);
+    case Expression.CAST() then simplifyCast(simplify(exp.exp), exp.ty);
+    case Expression.UNBOX() then Expression.UNBOX(simplify(exp.exp), exp.ty);
+    case Expression.SUBSCRIPTED_EXP() then simplifySubscriptedExp(exp);
+    case Expression.TUPLE_ELEMENT() then simplifyTupleElement(exp);
+    case Expression.BOX() then Expression.BOX(simplify(exp.exp));
+    case Expression.MUTABLE() then simplify(Mutable.access(exp.exp));
+    else exp;
+  end match;
+end simplify;
+
+function simplifyOpt
+  input output Option<Expression> exp;
+protected
+  Expression e;
+algorithm
+  exp := match exp
+    case SOME(e) then SOME(simplify(e));
+    else exp;
+  end match;
+end simplifyOpt;
+
+function simplifyRange
+  input Expression range;
+  output Expression exp;
+protected
+  Expression start_exp1, stop_exp1, start_exp2, stop_exp2;
+  Option<Expression> step_exp1, step_exp2;
+  Type ty;
+algorithm
+  Expression.RANGE(ty = ty, start = start_exp1, step = step_exp1, stop = stop_exp1) := range;
+
+  start_exp2 := simplify(start_exp1);
+  step_exp2 := simplifyOpt(step_exp1);
+  stop_exp2 := simplify(stop_exp1);
+
+  if referenceEq(start_exp1, start_exp2) and
+     referenceEq(step_exp1, step_exp2) and
+     referenceEq(stop_exp1, stop_exp2) then
+    exp := range;
+  else
+    ty := TypeCheck.getRangeType(start_exp2, step_exp2, stop_exp2,
+      Type.arrayElementType(ty), Absyn.dummyInfo);
+    exp := Expression.RANGE(ty, start_exp2, step_exp2, stop_exp2);
+  end if;
+end simplifyRange;
+
+function simplifyCall
+  input output Expression callExp;
+protected
+  Call call;
+  list<Expression> args;
+  Boolean builtin;
+algorithm
+  Expression.CALL(call = call) := callExp;
+
+  callExp := match call
+    case Call.TYPED_CALL() guard not Call.isExternal(call)
       algorithm
-        call.arguments := list(simplifyExp(e) for e in call.arguments);
+        args := list(simplify(arg) for arg in call.arguments);
+        call.arguments := args;
+        builtin := Function.isBuiltin(call.fn);
+
+        // Use Ceval for builtin pure functions with literal arguments.
+        if builtin and not Function.isImpure(call.fn) and List.all(args, Expression.isLiteral) then
+          callExp := Ceval.evalCall(call, EvalTarget.IGNORE_ERRORS());
+        else
+          callExp := simplifyBuiltinCall(Function.nameConsiderBuiltin(call.fn), args, call);
+        end if;
+      then
+        callExp;
+
+    case Call.TYPED_MAP_CALL()
+      algorithm
+        call.exp := simplify(call.exp);
+        call.iters := list((Util.tuple21(i), simplify(Util.tuple22(i))) for i in call.iters);
       then
         Expression.CALL(call);
 
-    case Expression.BINARY()
-      algorithm
-        exp1 := simplifyExp(exp.exp1);
-        exp2 := simplifyExp(exp.exp2);
-      then Expression.BINARY(exp1, exp.operator, exp2);
-
-    case Expression.UNARY()
-      algorithm
-        exp1 := simplifyExp(exp.exp);
-      then Expression.UNARY(exp.operator, exp1);
-
-    case Expression.LBINARY()
-      algorithm
-        exp1 := simplifyExp(exp.exp1);
-        exp2 := simplifyExp(exp.exp2);
-      then Expression.LBINARY(exp1, exp.operator, exp2);
-
-    case Expression.LUNARY()
-      algorithm
-        exp1 := simplifyExp(exp.exp);
-      then Expression.LUNARY(exp.operator, exp1);
-
-    case Expression.RELATION()
-      algorithm
-        exp1 := simplifyExp(exp.exp1);
-        exp2 := simplifyExp(exp.exp2);
-      then Expression.RELATION(exp1, exp.operator, exp2);
-
-    case Expression.IF()
-      algorithm
-        exp1 := simplifyExp(exp.condition);
-        exp2 := simplifyExp(exp.trueBranch);
-        exp3 := simplifyExp(exp.falseBranch);
-      then Expression.IF(exp1, exp2, exp3);
-
-    case Expression.CAST()
-      algorithm
-        exp1 := simplifyExp(exp.exp);
-      then Expression.CAST(exp.ty, exp1);
-
-    case Expression.UNBOX()
-      algorithm
-        exp1 := simplifyExp(exp.exp);
-      then Expression.UNBOX(exp1, exp.ty);
-
-    else exp;
+    else callExp;
   end match;
-end preSimplify;
+end simplifyCall;
 
-function postSimplify
-  input output Expression exp;
-protected
-  Expression exp1, exp2;
-  Integer i1, i2;
-  Real r1, r2;
-  Boolean b1, b2;
-  list<Expression> expl = {}, expl1, expl2;
-  Type ty;
-
-  import NFOperator.Op;
+function simplifyBuiltinCall
+  input Absyn.Path name;
+  input list<Expression> args;
+  input Call call;
+  output Expression exp;
 algorithm
-  exp := match exp
-    case Expression.ARRAY()
+  exp := match Absyn.pathFirstIdent(name)
+    case "cat"
       algorithm
-        for e in exp.elements loop
-          exp1 := postSimplify(e);
-          expl := exp1 :: expl;
-        end for;
-      then Expression.ARRAY(exp.ty, listReverse(expl));
+        exp := ExpandExp.expandBuiltinCat(args, call);
+      then
+        exp;
 
-    case Expression.RECORD()
-      algorithm
-        Error.assertion(false, "Unimplemented case for " + Expression.toString(exp) + " in " + getInstanceName(), sourceInfo());
-      then fail();
+    case "sum"     then simplifySumProduct(listHead(args), call, isSum = true);
+    case "product" then simplifySumProduct(listHead(args), call, isSum = false);
 
-    case Expression.CALL()
-      algorithm
-        Error.assertion(false, "Unimplemented case for " + Expression.toString(exp) + " in " + getInstanceName(), sourceInfo());
-      then fail();
-
-    case Expression.BINARY(exp1=Expression.INTEGER(value=i1), exp2=Expression.INTEGER(value=i2))
-      then match exp.operator.op
-        case Op.ADD then Expression.INTEGER(i1 + i2);
-        case Op.SUB then Expression.INTEGER(i1 - i2);
-        case Op.MUL then Expression.INTEGER(i1 * i2);
-        case Op.DIV then Expression.REAL(i1 / i2);
-        else exp;
-      end match;
-
-    case Expression.BINARY(exp1=Expression.REAL(value=r1), exp2=Expression.REAL(value=r2))
-      then match exp.operator.op
-        case Op.ADD then Expression.REAL(r1 + r2);
-        case Op.SUB then Expression.REAL(r1 - r2);
-        case Op.MUL then Expression.REAL(r1 * r2);
-        case Op.DIV then Expression.REAL(r1 / r2);
-        case Op.POW then Expression.REAL(r1 ^ r2);
-        else exp;
-      end match;
-
-    case Expression.BINARY(exp1=Expression.ARRAY(ty=ty, elements=expl1), exp2=Expression.ARRAY(elements=expl2))
-      then match (exp.operator.op, Type.elementType(ty))
-        case (Op.SCALAR_PRODUCT, Type.REAL())
-          algorithm
-            try
-              exp1 := Expression.REAL(sum(Expression.realValue(e1)*Expression.realValue(e2) threaded for e1 in expl1, e2 in expl2));
-            else
-              exp1 := exp;
-            end try;
-          then exp1;
-        case (Op.SCALAR_PRODUCT, Type.INTEGER())
-          algorithm
-            try
-              exp1 := Expression.INTEGER(sum(Expression.integerValue(e1)*Expression.integerValue(e2) threaded for e1 in expl1, e2 in expl2));
-            else
-              exp1 := exp;
-            end try;
-          then exp1;
-        else exp;
-      end match;
-
-    case Expression.UNARY(operator = Operator.OPERATOR(op = Op.UMINUS))
-      then match exp.exp
-        case Expression.INTEGER(value = i1) then Expression.INTEGER(-i1);
-        case Expression.REAL(value = r1) then Expression.REAL(-r1);
-        else exp;
-      end match;
-
-    case Expression.LBINARY(exp1=Expression.BOOLEAN(value=b1), exp2=Expression.BOOLEAN(value=b2))
-      then match exp.operator.op
-        case Op.AND then Expression.BOOLEAN(b1 and b2);
-        case Op.OR then Expression.BOOLEAN(b1 or b2);
-      end match;
-
-    case Expression.LUNARY(operator = Operator.OPERATOR(op = NFOperator.Op.NOT),
-                           exp = Expression.BOOLEAN(value=b1))
-      then Expression.BOOLEAN(not b1);
-
-    case Expression.RELATION(exp1=Expression.BOOLEAN(value=b1), exp2=Expression.BOOLEAN(value=b2))
-      then match exp.operator.op
-        case Op.EQUAL then Expression.BOOLEAN(b1 == b2);
-        case Op.NEQUAL then Expression.BOOLEAN(b1 <> b2);
-      end match;
-
-    case Expression.RELATION(exp1=Expression.INTEGER(value=i1), exp2=Expression.INTEGER(value=i2))
-      then match exp.operator.op
-        case Op.LESS then Expression.BOOLEAN(i1 < i2);
-        case Op.LESSEQ then Expression.BOOLEAN(i1 <= i2);
-        case Op.GREATER then Expression.BOOLEAN(i1 > i2);
-        case Op.GREATEREQ then Expression.BOOLEAN(i1 >= i2);
-        case Op.EQUAL then Expression.BOOLEAN(i1 == i2);
-        case Op.NEQUAL then Expression.BOOLEAN(i1 <> i2);
-      end match;
-
-    case Expression.RELATION(exp1=Expression.REAL(value=r1), exp2=Expression.REAL(value=r2))
-      then match exp.operator.op
-        case Op.LESS then Expression.BOOLEAN(r1 < r2);
-        case Op.LESSEQ then Expression.BOOLEAN(r1 <= r2);
-        case Op.GREATER then Expression.BOOLEAN(r1 > r2);
-        case Op.GREATEREQ then Expression.BOOLEAN(r1 >= r2);
-      end match;
-
-    case Expression.RELATION(exp1 = Expression.ENUM_LITERAL(index = i1),
-                             exp2 = Expression.ENUM_LITERAL(index = i2))
-      then Expression.BOOLEAN(match exp.operator.op
-        case Op.LESS      then i1 < i2;
-        case Op.LESSEQ    then i1 <= i2;
-        case Op.GREATER   then i1 > i2;
-        case Op.GREATEREQ then i1 >= i2;
-        case Op.EQUAL     then i1 == i2;
-        case Op.NEQUAL    then i1 <> i2;
-      end match);
-
-    case Expression.IF(condition=Expression.BOOLEAN(value=b1))
-      then if b1 then exp.trueBranch else exp.falseBranch;
-
-    case Expression.RANGE()
-      then simplifyRange(exp.start, exp.step, exp.stop, exp.ty);
-
-    case Expression.CAST()
-      then simplifyCast(exp.ty, exp.exp);
-
-    case Expression.UNBOX()
-      algorithm
-        Error.assertion(false, "Unimplemented case for " + Expression.toString(exp) + " in " + getInstanceName(), sourceInfo());
-      then fail();
-
-    else exp;
+    else Expression.CALL(call);
   end match;
-end postSimplify;
+end simplifyBuiltinCall;
+
+function simplifySumProduct
+  input Expression arg;
+  input Call call;
+  input Boolean isSum;
+  output Expression exp;
+protected
+  Boolean expanded;
+  list<Expression> args;
+  Type ty;
+  Operator op;
+algorithm
+  (exp, expanded) := ExpandExp.expand(arg);
+
+  if expanded then
+    args := Expression.arrayScalarElements(exp);
+    ty := Type.arrayElementType(Expression.typeOf(arg));
+
+    if listEmpty(args) then
+      exp := if isSum then Expression.makeZero(ty) else Expression.makeOne(ty);
+    else
+      exp :: args := args;
+      op := if isSum then Operator.makeAdd(ty) else
+                          Operator.makeMul(ty);
+
+      for e in args loop
+        exp := Expression.BINARY(exp, op, e);
+      end for;
+    end if;
+  else
+    exp := Expression.CALL(call);
+  end if;
+end simplifySumProduct;
+
+function simplifySize
+  input output Expression sizeExp;
+algorithm
+  sizeExp := match sizeExp
+    local
+      Expression exp, index;
+      Dimension dim;
+      list<Dimension> dims;
+
+    case Expression.SIZE(exp, dimIndex = SOME(index))
+      algorithm
+        index := simplify(index);
+
+        if Expression.isLiteral(index) then
+          dim := listGet(Type.arrayDims(Expression.typeOf(exp)), Expression.toInteger(index));
+
+          if Dimension.isKnown(dim) then
+            exp := Expression.INTEGER(Dimension.size(dim));
+          else
+            exp := Expression.SIZE(exp, SOME(index));
+          end if;
+        else
+          exp := Expression.SIZE(exp, SOME(index));
+        end if;
+      then
+        exp;
+
+    case Expression.SIZE()
+      algorithm
+        dims := Type.arrayDims(Expression.typeOf(sizeExp.exp));
+
+        if List.all(dims, function Dimension.isKnown(allowExp = true)) then
+          exp := Expression.ARRAY(Type.ARRAY(Type.INTEGER(), {Dimension.fromInteger(listLength(dims))}),
+                                  list(Dimension.sizeExp(d) for d in dims));
+        else
+          exp := sizeExp;
+        end if;
+      then
+        exp;
+
+  end match;
+end simplifySize;
+
+function simplifyBinary
+  input output Expression binaryExp;
+protected
+  Expression e1, e2, se1, se2;
+  Operator op;
+algorithm
+  Expression.BINARY(e1, op, e2) := binaryExp;
+  se1 := simplify(e1);
+  se2 := simplify(e2);
+
+  if Expression.isLiteral(se1) and Expression.isLiteral(se2) then
+    binaryExp := Ceval.evalBinaryOp(se1, op, se2);
+  elseif not (referenceEq(e1, se1) and referenceEq(e2, se2)) then
+    binaryExp := Expression.BINARY(se1, op, se2);
+  end if;
+end simplifyBinary;
+
+function simplifyUnary
+  input output Expression unaryExp;
+protected
+  Expression e, se;
+  Operator op;
+algorithm
+  Expression.UNARY(op, e) := unaryExp;
+  se := simplify(e);
+
+  if Expression.isLiteral(se) then
+    unaryExp := Ceval.evalUnaryOp(se, op);
+  elseif not referenceEq(e, se) then
+    unaryExp := Expression.UNARY(op, se);
+  end if;
+end simplifyUnary;
+
+function simplifyLogicBinary
+  input output Expression binaryExp;
+protected
+  Expression e1, e2, se1, se2;
+  Operator op;
+algorithm
+  Expression.LBINARY(e1, op, e2) := binaryExp;
+  se1 := simplify(e1);
+  se2 := simplify(e2);
+
+  if Expression.isLiteral(se1) and Expression.isLiteral(se2) then
+    binaryExp := Ceval.evalLogicBinaryOp(se1, op, se2, EvalTarget.IGNORE_ERRORS());
+  elseif not (referenceEq(e1, se1) and referenceEq(e2, se2)) then
+    binaryExp := Expression.LBINARY(se1, op, se2);
+  end if;
+end simplifyLogicBinary;
+
+function simplifyLogicUnary
+  input output Expression unaryExp;
+protected
+  Expression e, se;
+  Operator op;
+algorithm
+  Expression.LUNARY(op, e) := unaryExp;
+  se := simplify(e);
+
+  if Expression.isLiteral(se) then
+    unaryExp := Ceval.evalLogicUnaryOp(se, op);
+  elseif not referenceEq(e, se) then
+    unaryExp := Expression.LUNARY(op, se);
+  end if;
+end simplifyLogicUnary;
+
+function simplifyRelation
+  input output Expression relationExp;
+protected
+  Expression e1, e2, se1, se2;
+  Operator op;
+algorithm
+  Expression.RELATION(e1, op, e2) := relationExp;
+  se1 := simplify(e1);
+  se2 := simplify(e2);
+
+  if Expression.isLiteral(se1) and Expression.isLiteral(se2) then
+    relationExp := Ceval.evalRelationOp(se1, op, se2);
+  elseif not (referenceEq(e1, se1) and referenceEq(e2, se2)) then
+    relationExp := Expression.RELATION(se1, op, se2);
+  end if;
+end simplifyRelation;
+
+function simplifyIf
+  input output Expression ifExp;
+protected
+  Expression cond, tb, fb;
+algorithm
+  Expression.IF(cond, tb, fb) := ifExp;
+  cond := simplify(cond);
+
+  ifExp := match cond
+    case Expression.BOOLEAN()
+      then simplify(if cond.value then tb else fb);
+
+    else Expression.IF(cond, simplify(tb), simplify(fb));
+  end match;
+end simplifyIf;
 
 function simplifyCast
-  input Type ty;
   input Expression exp;
-  output Expression outExp;
+  input Type ty;
+  output Expression castExp;
 algorithm
-  outExp := match (ty, exp)
+  castExp := match (ty, exp)
     case (Type.REAL(), Expression.INTEGER())
       then Expression.REAL(intReal(exp.value));
 
     case (Type.ARRAY(elementType = Type.REAL()), Expression.ARRAY())
       then Expression.mapArrayElements(exp, function simplifyCast(ty = Type.REAL()));
 
-    else
-      algorithm
-        Error.assertion(false, getInstanceName() + " failed on " + Expression.toString(exp) + " to type: " + Type.toString(ty), sourceInfo());
-      then
-        fail();
+    else Expression.CAST(ty, exp);
   end match;
 end simplifyCast;
 
-function simplifyRange
-  input Expression start;
-  input Option<Expression> optStep;
-  input Expression stop;
-  input Type ty;
-  output Expression exp;
+function simplifySubscriptedExp
+  input output Expression subscriptedExp;
 protected
-  Expression step;
-  Integer i1, i2, i3;
-  Real r1, r2, r3;
-  Boolean b1, b2;
-  list<Expression> exps;
-  list<String> literals;
-  Type enumType;
+  Expression e;
+  list<Expression> subs;
+  Type ty;
 algorithm
-  step := match (optStep, ty)
-    case (SOME(step),_) then step;
-    case (_,Type.ARRAY(elementType=Type.INTEGER())) then Expression.INTEGER(1);
-    case (_,Type.ARRAY(elementType=Type.REAL())) then Expression.REAL(1.0);
-    case (_,Type.ARRAY(elementType=Type.BOOLEAN())) then Expression.INTEGER(1); // dummy
-    case (_,Type.ARRAY(elementType=Type.ENUMERATION())) then Expression.INTEGER(1); // dummy
+  Expression.SUBSCRIPTED_EXP(e, subs, ty) := subscriptedExp;
+  subscriptedExp := simplify(e);
+
+  for s in subs loop
+    s := simplify(s);
+
+    if Type.isArray(Expression.typeOf(s)) then
+      subscriptedExp := Expression.applySliceSubscript(s, subscriptedExp);
     else
-      algorithm
-        Error.assertion(false, getInstanceName() + " failed to type: " + Type.toString(ty), sourceInfo());
-      then fail();
-  end match;
-  exp := match (start, step, stop)
-    case (Expression.INTEGER(i1),Expression.INTEGER(i2),Expression.INTEGER(i3))
-      algorithm
-        exps := list(Expression.INTEGER(i) for i in ExpressionSimplify.simplifyRange(i1, i2, i3));
-      then Expression.ARRAY(Type.ARRAY(Type.INTEGER(), {Dimension.fromInteger(listLength(exps))}), exps);
-    case (Expression.REAL(r1),Expression.REAL(r2),Expression.REAL(r3))
-      algorithm
-        exps := list(Expression.REAL(r) for r in ExpressionSimplify.simplifyRangeReal(r1, r2, r3));
-      then Expression.ARRAY(Type.ARRAY(Type.REAL(), {Dimension.fromInteger(listLength(exps))}), exps);
-    case (Expression.BOOLEAN(b1),_,Expression.BOOLEAN(b2))
-      algorithm
-        exps := list(Expression.BOOLEAN(b) for b in ExpressionSimplify.simplifyRangeBool(b1, b2));
-      then Expression.ARRAY(Type.ARRAY(Type.BOOLEAN(), {Dimension.fromInteger(listLength(exps))}), exps);
-    case (Expression.ENUM_LITERAL(ty=enumType as Type.ENUMERATION(literals=literals), index=i1),_,Expression.ENUM_LITERAL(index=i2))
-      algorithm
-        exps := list(Expression.ENUM_LITERAL(enumType, listGet(literals, i), i) for i in i1:i2);
-      then Expression.ARRAY(Type.ARRAY(enumType, {Dimension.fromInteger(listLength(exps))}), exps);
-    else
-      algorithm
-        Error.assertion(false, getInstanceName() + " failed to type: " + Type.toString(ty), sourceInfo());
-      then fail();
-  end match;
-end simplifyRange;
+      subscriptedExp := Expression.applyIndexSubscript(s, subscriptedExp);
+    end if;
+  end for;
+end simplifySubscriptedExp;
+
+function simplifyTupleElement
+  input output Expression tupleExp;
+protected
+  Expression e;
+  Integer index;
+  Type ty;
+algorithm
+  Expression.TUPLE_ELEMENT(e, index, ty) := tupleExp;
+  e := simplify(e);
+  tupleExp := Expression.tupleElement(e, ty, index);
+end simplifyTupleElement;
 
 annotation(__OpenModelica_Interface="frontend");
 end NFSimplifyExp;

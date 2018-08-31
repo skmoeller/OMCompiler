@@ -184,7 +184,7 @@ void CppDASSL::solve(const SOLVERCALL action)
     bool state_selection;
     if(!_dimZeroFunc) {
         int idid=dasslSolver.solve(&res,_dimSys,t,&_y[0],&_yp[0],tend,_data,NULL,NULL,NULL,_dimZeroFunc,NULL,false);
-        /*Todo: replaced by isStepEvent
+        /*Todo: replaced by stepCompleted
         for(int i=0; i<_numThreads; ++i) _continuous_systems[i]->stepCompleted(t);
         */
         state_selection = stateSelection();
@@ -215,7 +215,7 @@ void CppDASSL::solve(const SOLVERCALL action)
             }
 
             idid=dasslSolver.solve(&res,_dimSys,t,&_y[0],&_yp[0],tend,_data,NULL,NULL,NULL,_dimZeroFunc,NULL,true);
-            /*Todo: Replaced by isStepEvent
+            /*Todo: Replaced by stepCompleted
             _continuous_systems[0]->stepCompleted(t);
             */
             state_selection = stateSelection();
@@ -234,7 +234,7 @@ void CppDASSL::solve(const SOLVERCALL action)
         for(int i=0; i<_numThreads; ++i) {
             _continuous_systems[i]->setContinuousStates(_y);
             //_continuous_systems[i]->evaluateODE(IContinuous::ALL);
-            /*Todo: Replaced by isStepEvent
+            /*Todo: Replaced by stepCompleted
             _continuous_systems[i]->stepCompleted(t);
             */
         }
@@ -309,7 +309,7 @@ void CppDASSL::solve(const SOLVERCALL action)
             for(int i=0; i<_numThreads; ++i) {
                 _continuous_systems[i]->setContinuousStates(_y);
                 //_continuous_systems[i]->evaluateODE(IContinuous::ALL);
-                /*Todo: Replaced by isStepEvent
+                /*Todo: Replaced by stepCompleted
                _continuous_systems[i]->stepCompleted(t);
                */
             }

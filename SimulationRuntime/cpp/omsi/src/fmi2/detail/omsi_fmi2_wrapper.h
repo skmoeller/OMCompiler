@@ -59,7 +59,7 @@ class OSU
  public:
   // Creation and destruction of FMU instances and setting logging status
   OSU(fmi2String instanceName, fmi2String GUID,
-              const fmi2CallbackFunctions *functions, fmi2Boolean loggingOn,fmi2String fmuResourceLocation);
+              const fmi2CallbackFunctions *functions, fmi2Boolean                  visible, fmi2Boolean loggingOn,fmi2String fmuResourceLocation);
   virtual ~OSU();
 
   // Debug logging

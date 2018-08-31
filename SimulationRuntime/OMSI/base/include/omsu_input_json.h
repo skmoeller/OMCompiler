@@ -31,11 +31,18 @@
 #ifndef OMSU_INPUT_JSON_H
 #define OMSU_INPUT_JSON_H
 
+
+
+
+
 #include "omsi.h"
 #include "omsu_mmap.h"
-
+#include "omsi_callbacks.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+
+
 
 /* function prototypes */
 omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi_string fmuGUID, omsi_string instanceName, const omsi_callback_functions* functions);

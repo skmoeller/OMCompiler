@@ -38,7 +38,7 @@ encapsulated package NFRecord
   Functions used by NFInst for handling records.
 "
 
-import Binding = NFBinding;
+import NFBinding.Binding;
 import NFClass.Class;
 import NFComponent.Component;
 import Dimension = NFDimension;
@@ -67,152 +67,103 @@ import ErrorExt;
 
 public
 
-function instConstructors
+function instDefaultConstructor
   input Absyn.Path path;
   input output InstNode node;
   input SourceInfo info;
 protected
-  Class cls;
-  list<InstNode> inputs, outputs, locals, params;
-  InstNode out_rec, ctor_over, def_ctor_node;
+  list<InstNode> inputs, locals;
   DAE.FunctionAttributes attr;
   Pointer<Boolean> collected;
-  Absyn.Path con_path;
-  ComponentRef con_ref;
-  Boolean ctor_defined;
+  InstNode ctor_node, out_rec;
   Component out_comp;
-  Class def_ctor_cls;
+  Class ctor_cls;
+  InstNode ty_node;
 algorithm
+  // The node we get is usually a record instance, with applied modifiers and so on.
+  // So the first thing we do is to create a "pure" instance of the record.
 
-  // See if we have overloaded costructors.
+  // TODO: The lookup will fail for records declared in redeclare modifiers,
+  //       since the parent will be the class scope of the modifier instead of
+  //       the element being modified. In that case we just reinstantiate the
+  //       record completely, but this probably isn't entirely correct. We
+  //       should make the expanded but not fully instantiated class available
+  //       here somehow.
   try
-    con_ref := Function.lookupFunctionSimple("'constructor'", node);
-    ctor_defined := true;
+    ctor_node := Lookup.lookupLocalSimpleName(InstNode.name(node), InstNode.classScope(InstNode.parent(node)));
+    true := referenceEq(InstNode.definition(node), InstNode.definition(ctor_node));
   else
-    ctor_defined := false;
+    ctor_node := InstNode.replaceClass(Class.NOT_INSTANTIATED(), node);
   end try;
 
-  if ctor_defined then
-    ctor_over := ComponentRef.node(con_ref);
-    ctor_over := Function.instFunc2(InstNode.scopePath(ctor_over), ctor_over, InstNode.info(ctor_over));
-    for f in Function.getCachedFuncs(ctor_over) loop
-      node := InstNode.cacheAddFunc(node, f, false);
-    end for;
-  end if;
+  ctor_node := Inst.instantiate(ctor_node);
+  Inst.instExpressions(ctor_node);
 
-  // See if we have '0' costructor.
-  try
-    con_ref := Function.lookupFunctionSimple("'0'", node);
-    ctor_defined := true;
-  else
-    ctor_defined := false;
-  end try;
+  // Collect the record fields.
+  (inputs, locals) := collectRecordParams(ctor_node);
 
-  if ctor_defined then
-    ctor_over := ComponentRef.node(con_ref);
+  // Create the output record element, using the instance created above as both parent and type.
+  out_comp := Component.UNTYPED_COMPONENT(ctor_node, listArray({}),
+                NFBinding.EMPTY_BINDING, NFBinding.EMPTY_BINDING,
+                NFComponent.OUTPUT_ATTR, NONE(), false, Absyn.dummyInfo);
+  out_rec := InstNode.fromComponent("$out" + InstNode.name(ctor_node), out_comp, ctor_node);
 
-    ctor_over := Function.instFunc2(InstNode.scopePath(ctor_over), ctor_over, InstNode.info(ctor_over));
-    for f in Function.getCachedFuncs(ctor_over) loop
-      node := InstNode.cacheAddFunc(node, f, false);
-    end for;
-  end if;
+  // Make a record constructor class and create a node for the constructor.
+  ctor_cls := Class.makeRecordConstructor(inputs, locals, out_rec);
+  ctor_node := InstNode.replaceClass(ctor_cls, ctor_node);
 
-  // Create the default constructor.
-  (inputs, locals) := collectRecordParams(node);
+  // Create the constructor function and add it to the function cache.
   attr := DAE.FUNCTION_ATTRIBUTES_DEFAULT;
-  // attr := makeAttributes(node, inputs, outputs);
   collected := Pointer.create(false);
-  con_path := Absyn.suffixPath(path,"'constructor'.'$default'");
-
-  // Create a new node for the default constructor.
-  def_ctor_node := InstNode.replaceClass(Class.NOT_INSTANTIATED(), node);
-
-  // Create the output record element, using the node created above as parent.
-  out_comp := Component.UNTYPED_COMPONENT(node, listArray({}), Binding.UNBOUND(),
-    Binding.UNBOUND(), NFComponent.OUTPUT_ATTR, NONE(), Absyn.dummyInfo);
-  out_rec := InstNode.fromComponent("$out" + InstNode.name(node), out_comp, def_ctor_node);
-
-  // Make a record constructor class and update the node with it.
-  def_ctor_cls := Class.makeRecordConstructor(inputs, locals, out_rec);
-  def_ctor_node := InstNode.updateClass(def_ctor_cls, def_ctor_node);
-
-  InstNode.cacheAddFunc(node, Function.FUNCTION(con_path, def_ctor_node, inputs, {out_rec}, locals, {}, Type.UNKNOWN(), attr, collected), false);
-end instConstructors;
-
+  InstNode.cacheAddFunc(node, Function.FUNCTION(path, ctor_node, inputs,
+    {out_rec}, locals, {}, Type.UNKNOWN(), attr, {}, collected, Pointer.create(0)), false);
+end instDefaultConstructor;
 
 function collectRecordParams
   input InstNode recNode;
   output list<InstNode> inputs = {};
   output list<InstNode> locals = {};
 protected
-
   Class cls;
-  array<Mutable<InstNode>> components;
+  array<InstNode> components;
   InstNode n;
   Component comp;
+  ClassTree tree;
 algorithm
-
   Error.assertion(InstNode.isClass(recNode), getInstanceName() + " got non-class node", sourceInfo());
-  cls := InstNode.getClass(recNode);
+  tree := Class.classTree(InstNode.getClass(recNode));
 
-  () := match cls
-    case Class.EXPANDED_CLASS(elements = ClassTree.INSTANTIATED_TREE(components = components))
+  () := match tree
+    case ClassTree.FLAT_TREE(components = components)
       algorithm
         for i in arrayLength(components):-1:1 loop
-          n := Mutable.access(components[i]);
+          n := components[i];
+
+          if InstNode.isEmpty(n) then
+            continue;
+          end if;
+
           comp := InstNode.component(n);
 
           if InstNode.isProtected(n) or
              Component.isConst(comp) and Component.hasBinding(comp) then
             locals := n :: locals;
           else
-            n := InstNode.replaceComponent(Component.makeInput(comp), n);
+            n := InstNode.updateComponent(Component.makeInput(comp), n);
             inputs := n :: inputs;
           end if;
         end for;
       then
         ();
+
     else
       algorithm
         Error.assertion(false, getInstanceName() + " got non-instantiated function", sourceInfo());
       then
         fail();
+
   end match;
-
 end collectRecordParams;
-
-function instOperatorFunctions
-  input output InstNode node;
-  input SourceInfo info;
-protected
-  Class cls;
-  array<Mutable<InstNode>> mclss;
-  InstNode op;
-  Absyn.Path path;
-  list<Function> allfuncs = {}, funcs;
-
-algorithm
-  cls := InstNode.getClass(node);
-
-    () := match cls
-      case Class.EXPANDED_CLASS(elements = ClassTree.INSTANTIATED_TREE(classes = mclss))  algorithm
-        for i in arrayLength(mclss):-1:1 loop
-          op := Mutable.access(mclss[i]);
-          path := InstNode.scopePath(op);
-          Function.instFunc2(path, op, info);
-          funcs := Function.getCachedFuncs(op);
-          allfuncs := listAppend(allfuncs,funcs);
-        end for;
-        for f in allfuncs loop
-          node := InstNode.cacheAddFunc(node, f, false);
-        end for;
-      then ();
-
-      else algorithm
-        Error.assertion(false, getInstanceName() + " got non-instantiated function", sourceInfo());
-      then fail();
-    end match;
-end instOperatorFunctions;
 
 annotation(__OpenModelica_Interface="frontend");
 end NFRecord;

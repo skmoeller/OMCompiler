@@ -38,12 +38,25 @@ protected
 public
   record CLASS end CLASS;
 
+  record EXTENDS_TYPE
+    "Used for long class declarations extending from a type, e.g.:
+       type SomeType
+         extends Real;
+       end SomeType;"
+    InstNode baseClass;
+  end EXTENDS_TYPE;
+
   record CONNECTOR
     list<InstNode> potentials;
     list<InstNode> flows;
     list<InstNode> streams;
     Boolean isExpandable;
   end CONNECTOR;
+
+  record RECORD
+    InstNode constructor;
+    list<String> fieldNames;
+  end RECORD;
 
   record EXTERNAL_OBJECT
     InstNode constructor;

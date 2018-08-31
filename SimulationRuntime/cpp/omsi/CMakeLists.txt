@@ -10,11 +10,14 @@ include_directories ("${CMAKE_SOURCE_DIR}/omsi/src")
 # FMI 2.0 Header
 include_directories ("${CMAKE_SOURCE_DIR}/../../3rdParty/FMIL/ThirdParty/FMI/default/FMI2")
 
-add_library(${OSUName} STATIC src/fmi2/omsi_fmi2_me.cpp src/fmi2/detail/omsi_fmi2_log.cpp src/fmi2/detail/omsi_fmi2_wrapper.cpp src/omsi_factory.cpp src/omsi_global_settings.cpp  )
+  MESSAGE(STATUS "OMSI Library:")
+  MESSAGE(STATUS "${OMSIBASE_LIB}")
+
+add_library(${OSUName} STATIC src/fmi2/omsi_fmi2_me.cpp src/fmi2/detail/omsi_fmi2_log.cpp src/fmi2/detail/omsi_fmi2_wrapper.cpp src/fmi2/detail/omsi_data.cpp src/omsi_factory.cpp src/omsi_global_settings.cpp  )
 IF(WIN32)
     target_link_libraries(${OSUName}  ${OMCFactoryName} ${SimControllerName} ${ExtensionUtilitiesName} ${ModelicaUtilitiesName} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS} wsock32 ws2_32)
 ELSE(WIN32)
-    target_link_libraries(${OSUName} ${OMCFactoryName}  ${SimControllerName} ${ExtensionUtilitiesName} ${ModelicaUtilitiesName} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS} )
+    target_link_libraries(${OSUName} ${OMCFactoryName}  ${SimControllerName} ${ExtensionUtilitiesName} ${ModelicaUtilitiesName} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS})
 ENDIF(WIN32)
 
 install(TARGETS ${OSUName} DESTINATION ${LIBINSTALLEXT})

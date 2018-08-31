@@ -59,8 +59,13 @@ uniontype InstNodeType
   record BASE_CLASS
     "A base class extended by another class."
     InstNode parent;
-    SCode.Element definition;
+    SCode.Element definition "The extends clause definition.";
   end BASE_CLASS;
+
+  record DERIVED_CLASS
+    "A short class definition."
+    InstNodeType ty "The base node type not considering that it's a derived class.";
+  end DERIVED_CLASS;
 
   record BUILTIN_CLASS
     "A builtin element."
@@ -125,6 +130,20 @@ uniontype CachedData
   function empty
     output array<CachedData> cache = arrayCreate(NUMBER_OF_CACHES, NO_CACHE());
   end empty;
+
+  function initFunc
+    input array<CachedData> caches;
+  protected
+    CachedData func_cache;
+  algorithm
+    func_cache := getFuncCache(caches);
+    func_cache := match func_cache
+      case NO_CACHE() then FUNCTION({}, false, false);
+      case FUNCTION() then func_cache;
+    end match;
+
+    setFuncCache(caches, func_cache);
+  end initFunc;
 
   function addFunc
     input Function fn;
@@ -204,7 +223,6 @@ uniontype InstNode
     String name;
     Visibility visibility;
     Pointer<Component> component;
-    Integer level;
     InstNode parent "The instance that this component is part of.";
   end COMPONENT_NODE;
 
@@ -264,7 +282,7 @@ uniontype InstNode
   algorithm
     SCode.COMPONENT(name = name, prefixes = SCode.PREFIXES(visibility = vis)) := definition;
     node := COMPONENT_NODE(name, Prefixes.visibilityFromSCode(vis),
-      Pointer.create(Component.new(definition)), 0, parent);
+      Pointer.create(Component.new(definition)), parent);
   end newComponent;
 
   function newExtends
@@ -289,7 +307,7 @@ uniontype InstNode
     input InstNode parent;
     output InstNode node;
   algorithm
-    node := COMPONENT_NODE(name, Visibility.PUBLIC, Pointer.create(component), 0, parent);
+    node := COMPONENT_NODE(name, Visibility.PUBLIC, Pointer.create(component), parent);
   end fromComponent;
 
   function isClass
@@ -312,6 +330,22 @@ uniontype InstNode
       else false;
     end match;
   end isBaseClass;
+
+  function isUserdefinedClass
+    input InstNode node;
+    output Boolean isUserdefined;
+  algorithm
+    isUserdefined := match node
+      case CLASS_NODE()
+        then match node.nodeType
+          case InstNodeType.NORMAL_CLASS() then true;
+          case InstNodeType.BASE_CLASS() then true;
+          case InstNodeType.DERIVED_CLASS() then true;
+          else false;
+        end match;
+      else false;
+    end match;
+  end isUserdefinedClass;
 
   function isComponent
     input InstNode node;
@@ -364,6 +398,34 @@ uniontype InstNode
     end match;
   end isConnector;
 
+  function isExpandableConnector
+    input InstNode node;
+    output Boolean isConnector;
+  algorithm
+    isConnector := match node
+      case COMPONENT_NODE() then Component.isExpandableConnector(component(node));
+      else false;
+    end match;
+  end isExpandableConnector;
+
+  function hasParentExpandableConnector
+  "@author: adrpo
+   returns true if itself or any of the parents are expandable connectors"
+    input InstNode node;
+    output Boolean b = isExpandableConnector(node);
+  protected
+    InstNode p;
+  algorithm
+    p := node;
+    while not isEmpty(p) loop
+      p := parent(p);
+      b := boolOr(b, isExpandableConnector(p));
+      if b then
+        break;
+      end if;
+    end while;
+  end hasParentExpandableConnector;
+
   function name
     input InstNode node;
     output String name;
@@ -379,6 +441,13 @@ uniontype InstNode
       case EMPTY_NODE() then "$EMPTY";
     end match;
   end name;
+
+  function className
+    input InstNode node;
+    output String name;
+  algorithm
+    CLASS_NODE(name = name) := node;
+  end className;
 
   function scopeName
     "Returns the name of a scope, which in the case of a component is the name
@@ -434,6 +503,25 @@ uniontype InstNode
     end match;
   end parent;
 
+  function classParent
+    input InstNode node;
+    output InstNode parent;
+  algorithm
+    CLASS_NODE(parentScope = parent) := node;
+  end classParent;
+
+  function derivedParent
+    input InstNode node;
+    output InstNode parent;
+  algorithm
+    parent := match node
+      case CLASS_NODE() then getDerivedNode(node.parentScope);
+      case COMPONENT_NODE() then getDerivedNode(node.parent);
+      case IMPLICIT_SCOPE() then getDerivedNode(node.parentScope);
+      else EMPTY_NODE();
+    end match;
+  end derivedParent;
+
   function parentScope
     "Returns the parent scope of a node. In the case of a class this is simply
      the enclosing class. In the case of a component it is the enclosing class of
@@ -442,6 +530,8 @@ uniontype InstNode
     output InstNode scope;
   algorithm
     scope := match node
+      case CLASS_NODE(nodeType = InstNodeType.DERIVED_CLASS())
+        then parentScope(Class.lastBaseClass(node));
       case CLASS_NODE() then node.parentScope;
       case COMPONENT_NODE() then parentScope(Component.classInstance(Pointer.access(node.component)));
       case IMPLICIT_SCOPE() then node.parentScope;
@@ -493,7 +583,6 @@ uniontype InstNode
       case COMPONENT_NODE()
         algorithm
           node.parent := parent;
-          node.level := level(parent) + 1;
         then
           ();
 
@@ -543,14 +632,22 @@ uniontype InstNode
     output Class cls;
   algorithm
     cls := match node
-      local
-        InstNode parent;
-
-      case CLASS_NODE(nodeType = InstNodeType.BASE_CLASS(parent = parent)) then getDerivedClass(parent);
-      case CLASS_NODE() then Pointer.access(node.cls);
-      case COMPONENT_NODE() then getDerivedClass(Component.classInstance(Pointer.access(node.component)));
+      case CLASS_NODE() then getClass(getDerivedNode(node));
+      case COMPONENT_NODE()
+        then getClass(getDerivedNode(Component.classInstance(Pointer.access(node.component))));
     end match;
   end getDerivedClass;
+
+  function getDerivedNode
+    input InstNode node;
+    output InstNode derived;
+  algorithm
+    derived := match node
+      case CLASS_NODE(nodeType = InstNodeType.BASE_CLASS(parent = derived))
+        then getDerivedNode(derived);
+      else node;
+    end match;
+  end getDerivedNode;
 
   function updateClass
     input Class cls;
@@ -725,33 +822,53 @@ uniontype InstNode
 
   function scopeList
     input InstNode node;
+    input Boolean includeRoot = false "Whether to include the root class name or not.";
     input list<InstNode> accumScopes = {};
     output list<InstNode> scopes;
   algorithm
     scopes := match node
-      local
-        InstNodeType it;
-
-      case CLASS_NODE(nodeType = it)
-        then
-          match it
-            case InstNodeType.NORMAL_CLASS()
-              then scopeList(node.parentScope, node :: accumScopes);
-            case InstNodeType.BASE_CLASS()
-              then scopeList(it.parent, accumScopes);
-            case InstNodeType.BUILTIN_CLASS()
-              then node :: accumScopes;
-            else accumScopes;
-          end match;
-
+      case CLASS_NODE() then scopeListClass(node, node.nodeType, includeRoot, accumScopes);
       case COMPONENT_NODE(parent = EMPTY_NODE()) then accumScopes;
-      case COMPONENT_NODE() then scopeList(node.parent, node :: accumScopes);
-      case IMPLICIT_SCOPE() then scopeList(node.parentScope, accumScopes);
+      case COMPONENT_NODE() then scopeList(node.parent, includeRoot, node :: accumScopes);
+      case IMPLICIT_SCOPE() then scopeList(node.parentScope, includeRoot, accumScopes);
+      else accumScopes;
     end match;
   end scopeList;
 
+  function scopeListClass
+    input InstNode clsNode;
+    input InstNodeType ty;
+    input Boolean includeRoot;
+    input list<InstNode> accumScopes = {};
+    output list<InstNode> scopes;
+  algorithm
+    scopes := match ty
+      case InstNodeType.NORMAL_CLASS()
+        then scopeList(parent(clsNode), includeRoot, clsNode :: accumScopes);
+      case InstNodeType.BASE_CLASS()
+        then scopeList(ty.parent, includeRoot, accumScopes);
+      case InstNodeType.DERIVED_CLASS()
+        then scopeListClass(clsNode, ty.ty, includeRoot, accumScopes);
+      case InstNodeType.BUILTIN_CLASS()
+        then clsNode :: accumScopes;
+      case InstNodeType.TOP_SCOPE()
+        then accumScopes;
+      case InstNodeType.ROOT_CLASS()
+        then if includeRoot then
+            scopeList(parent(clsNode), includeRoot, clsNode :: accumScopes)
+          else
+            accumScopes;
+      else
+        algorithm
+          Error.assertion(false, getInstanceName() + " got unknown node type", sourceInfo());
+        then
+          fail();
+    end match;
+  end scopeListClass;
+
   function scopePath
     input InstNode node;
+    input Boolean includeRoot = false "Whether to include the root class name or not.";
     output Absyn.Path path;
   algorithm
     path := match node
@@ -761,12 +878,12 @@ uniontype InstNode
       case CLASS_NODE(nodeType = it)
         then
           match it
-            case InstNodeType.BASE_CLASS() then scopePath(it.parent);
-            else scopePath2(node.parentScope, Absyn.IDENT(node.name));
+            case InstNodeType.BASE_CLASS() then scopePath(it.parent, includeRoot);
+            else scopePath2(node.parentScope, includeRoot, Absyn.IDENT(node.name));
           end match;
 
-      case COMPONENT_NODE() then scopePath2(node.parent, Absyn.IDENT(node.name));
-      case IMPLICIT_SCOPE() then scopePath(node.parentScope);
+      case COMPONENT_NODE() then scopePath2(node.parent, includeRoot, Absyn.IDENT(node.name));
+      case IMPLICIT_SCOPE() then scopePath(node.parentScope, includeRoot);
 
       // For debugging.
       else Absyn.IDENT(name(node));
@@ -775,31 +892,47 @@ uniontype InstNode
 
   function scopePath2
     input InstNode node;
+    input Boolean includeRoot;
     input Absyn.Path accumPath;
     output Absyn.Path path;
   algorithm
     path := match node
-      local
-        InstNodeType it;
-
-      case CLASS_NODE(nodeType = it)
-        then
-          match it
-            case InstNodeType.NORMAL_CLASS()
-              then scopePath2(node.parentScope, Absyn.QUALIFIED(node.name, accumPath));
-            case InstNodeType.BASE_CLASS()
-              then scopePath2(it.parent, accumPath);
-            case InstNodeType.BUILTIN_CLASS()
-              then Absyn.QUALIFIED(node.name, accumPath);
-            else accumPath;
-          end match;
-
-      case COMPONENT_NODE()
-        then scopePath2(node.parent, Absyn.QUALIFIED(node.name, accumPath));
-
+      case CLASS_NODE() then scopePathClass(node, node.nodeType, includeRoot, accumPath);
+      case COMPONENT_NODE() then scopePath2(node.parent, includeRoot, Absyn.QUALIFIED(node.name, accumPath));
       else accumPath;
     end match;
   end scopePath2;
+
+  function scopePathClass
+    input InstNode node;
+    input InstNodeType ty;
+    input Boolean includeRoot;
+    input Absyn.Path accumPath;
+    output Absyn.Path path;
+  algorithm
+    path := match ty
+      case InstNodeType.NORMAL_CLASS()
+        then scopePath2(classParent(node), includeRoot, Absyn.QUALIFIED(className(node), accumPath));
+      case InstNodeType.BASE_CLASS()
+        then scopePath2(ty.parent, includeRoot, accumPath);
+      case InstNodeType.DERIVED_CLASS()
+        then scopePathClass(node, ty.ty, includeRoot, accumPath);
+      case InstNodeType.BUILTIN_CLASS()
+        then Absyn.QUALIFIED(className(node), accumPath);
+      case InstNodeType.TOP_SCOPE()
+        then accumPath;
+      case InstNodeType.ROOT_CLASS()
+        then if includeRoot then
+            scopePath2(classParent(node), includeRoot, Absyn.QUALIFIED(className(node), accumPath))
+          else
+            accumPath;
+      else
+        algorithm
+          Error.assertion(false, getInstanceName() + " got unknown node type", sourceInfo());
+        then
+          fail();
+    end match;
+  end scopePathClass;
 
   function isInput
     input InstNode node;
@@ -889,6 +1022,15 @@ uniontype InstNode
       else node;
     end match;
   end resolveOuter;
+
+  function cacheInitFunc
+    input output InstNode node;
+  algorithm
+    () := match node
+      case CLASS_NODE() algorithm CachedData.initFunc(node.caches); then ();
+      else algorithm Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo()); then fail();
+    end match;
+  end cacheInitFunc;
 
   function cacheAddFunc
     input output InstNode node;
@@ -1071,24 +1213,6 @@ uniontype InstNode
     end match;
   end isRedeclare;
 
-  function countDimensions
-    input InstNode node;
-    input Integer levels;
-    input Integer accumCount = 0;
-    output Integer dimCount;
-  algorithm
-    if levels <= 0 then
-      dimCount := accumCount;
-    else
-      dimCount := match node
-        case COMPONENT_NODE()
-          then countDimensions(node.parent, levels - 1,
-            Component.dimensionCount(Pointer.access(node.component)));
-        else accumCount;
-      end match;
-    end if;
-  end countDimensions;
-
   function isProtectedBaseClass
     input InstNode node;
     output Boolean isProtected;
@@ -1155,16 +1279,6 @@ uniontype InstNode
     end match;
   end protectComponent;
 
-  function level
-    input InstNode node;
-    output Integer level;
-  algorithm
-    level := match node
-      case COMPONENT_NODE() then node.level;
-      else 0;
-    end match;
-  end level;
-
   function getModifier
     input InstNode node;
     output Modifier mod;
@@ -1218,13 +1332,57 @@ uniontype InstNode
     end match;
   end setModifier;
 
-  function toDAEType
+  function toPartialDAEType
+    "Returns the DAE type for a class, without the list of variables filled in."
     input InstNode clsNode;
     output DAE.Type outType;
   algorithm
     outType := match clsNode
       local
         Class cls;
+        ClassInf.State state;
+
+      case CLASS_NODE()
+        algorithm
+          cls := Pointer.access(clsNode.cls);
+        then
+          match cls
+            case Class.DAE_TYPE() then stripDAETypeVars(cls.ty);
+
+            else
+              algorithm
+                state := Restriction.toDAE(Class.restriction(cls), scopePath(clsNode));
+              then
+                DAE.Type.T_COMPLEX(state, {}, NONE());
+
+          end match;
+    end match;
+  end toPartialDAEType;
+
+  function stripDAETypeVars
+    input output DAE.Type ty;
+  algorithm
+    () := match ty
+      case DAE.Type.T_COMPLEX()
+        algorithm
+          ty.varLst := {};
+        then
+          ();
+
+      else ();
+    end match;
+  end stripDAETypeVars;
+
+  function toFullDAEType
+    "Returns the DAE type for a class, with the list of variables filled in."
+    input InstNode clsNode;
+    output DAE.Type outType;
+  algorithm
+    outType := match clsNode
+      local
+        Class cls;
+        list<DAE.Var> vars;
+        ClassInf.State state;
 
       case CLASS_NODE()
         algorithm
@@ -1232,18 +1390,18 @@ uniontype InstNode
         then
           match cls
             case Class.DAE_TYPE() then cls.ty;
+
             else
               algorithm
-                outType := DAE.Type.T_COMPLEX(
-                  Restriction.toDAE(Class.restriction(cls), scopePath(clsNode)),
-                  ConvertDAE.makeTypesVars(clsNode),
-                  NONE());
+                state := Restriction.toDAE(Class.restriction(cls), scopePath(clsNode));
+                vars := ConvertDAE.makeTypeVars(clsNode);
+                outType := DAE.Type.T_COMPLEX(state, vars, NONE());
                 Pointer.update(clsNode.cls, Class.DAE_TYPE(outType));
               then
                 outType;
           end match;
     end match;
-  end toDAEType;
+  end toFullDAEType;
 
   function isBuiltin
     input InstNode node;

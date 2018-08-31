@@ -31,13 +31,15 @@
 #ifndef OMSU_INPUT_XML_H
 #define OMSU_INPUT_XML_H
 
+
+
 #include <expat.h>          /* use expat XML parser */
 #include <uthash.h>
 #include <omsi.h>
 
 #include <stdio.h>
 #include <float.h>
-
+#include "omsi_callbacks.h"
 
 /* typedefs for structures */
 typedef struct hash_string_string {
@@ -102,7 +104,7 @@ extern "C" {
 
 /* public function prototypes */
 omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
-                                omsi_char*                      filename,
+                                omsi_string                      filename,
                                 omsi_string                     fmuGUID,
                                 omsi_string                     instanceName,
                                 const omsi_callback_functions*  functions);

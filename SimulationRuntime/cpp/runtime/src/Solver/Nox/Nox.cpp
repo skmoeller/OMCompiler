@@ -24,8 +24,9 @@
 
 
 //!Constructor
-Nox::Nox(INonLinearAlgLoop* algLoop, INonLinSolverSettings* settings)
-	: _algLoop            (algLoop)
+Nox::Nox(INonLinSolverSettings* settings,shared_ptr<INonLinearAlgLoop> algLoop)
+	 :AlgLoopSolverDefaultImplementation()
+	, _algLoop            (algLoop)
 	, _noxSettings        ((INonLinSolverSettings*)settings)
 	, _iterationStatus    (CONTINUE)
 	, _y                  (NULL)
@@ -37,11 +38,19 @@ Nox::Nox(INonLinearAlgLoop* algLoop, INonLinSolverSettings* settings)
 	, _firstCall		  (true)
 	, _useDomainScaling         (false)
 	, _currentIterate             (NULL)
-	, _dimSys (_algLoop->getDimReal())
+
   , _lc(LC_NLS)
   , _SimTimeOld  (0.0)
   , _SimTimeNew  (0.0)
 {
+	if (_algLoop)
+	{
+		AlgLoopSolverDefaultImplementation::initialize(_algLoop->getDimZeroFunc(),_algLoop->getDimReal());
+	}
+	else
+	{
+		throw ModelicaSimulationError(ALGLOOP_SOLVER, "solve for single instance is not supported");
+	}
 
 }
 
@@ -66,9 +75,12 @@ Nox::~Nox()
 void Nox::initialize()
 {
 	_firstCall = false;
-	_algLoop->initialize();//this sets values in the real variable
-
-
+	 if(_algLoop)
+      _algLoop->initialize();
+    else
+	  throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
+    _dimSys = _algLoop->getDimReal();
+	AlgLoopSolverDefaultImplementation::initialize(_algLoop->getDimZeroFunc(),_dimSys);
 	if(_y) delete [] _y;
 	if(_y0) delete [] _y0;
 	if(_y_old) delete [] _y_old;
@@ -133,6 +145,11 @@ void Nox::initialize()
  *  For detailed calibration, check https://trilinos.org/docs/dev/packages/nox/doc/html/parameters.html
  *
  */
+
+void Nox::solve(shared_ptr<INonLinearAlgLoop> algLoop,bool first_solve = false)
+{
+	throw ModelicaSimulationError(ALGLOOP_SOLVER, "solve for single instance is not supported");
+}
 void Nox::solve()
 {
 	int iter=-1; //Iterationcount of proper methods
@@ -144,11 +161,16 @@ void Nox::solve()
   LOGGER_WRITE_BEGIN("Nox: start solving algebraic loop no. " + to_string(_algLoop->getEquationIndex()) + " at Simulation time " + to_string(_algLoop->getSimTime()), _lc, LL_DEBUG);
 
   //setup solver
-  if (_firstCall){
-    LOGGER_WRITE("initialize...",_lc, LL_DEBUG);
+  if (!restart)
+  {
+
+	LOGGER_WRITE("initialize...",_lc, LL_DEBUG);
+    _algLoop = algLoop;
     initialize();
-    LOGGER_WRITE("init done!",_lc, LL_DEBUG);
+	LOGGER_WRITE("init done!",_lc, LL_DEBUG);
   }
+  if(!_algLoop)
+    throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
 
 	// Create the list of solver parameters. For detailed calibration, check https://trilinos.org/docs/dev/packages/nox/doc/html/parameters.html
   _solverParametersPtr = Teuchos::rcp(new Teuchos::ParameterList);
@@ -350,7 +372,7 @@ void Nox::solve()
  *
  *  \details Details
  */
-IAlgLoopSolver::ITERATIONSTATUS Nox::getIterationStatus()
+INonLinearAlgLoopSolver::ITERATIONSTATUS Nox::getIterationStatus()
 {
 	return _iterationStatus;
 }
@@ -364,6 +386,9 @@ IAlgLoopSolver::ITERATIONSTATUS Nox::getIterationStatus()
  */
 void Nox::stepCompleted(double time)
 {
+   if(!_algLoop)
+      throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
+
 	memcpy(_y0,_y,_dimSys*sizeof(double));
   memcpy(_y_old,_y_new,_dimSys*sizeof(double));
   memcpy(_y_new,_y,_dimSys*sizeof(double));
@@ -372,7 +397,24 @@ void Nox::stepCompleted(double time)
     _SimTimeNew = _algLoop->getSimTime();
   }
 }
+bool* Nox::getConditionsWorkArray()
+{
+	return AlgLoopSolverDefaultImplementation::getConditionsWorkArray();
 
+}
+bool* Nox::getConditions2WorkArray()
+{
+
+	return AlgLoopSolverDefaultImplementation::getConditions2WorkArray();
+ }
+
+
+ double* Nox::getVariableWorkArray()
+ {
+
+	return AlgLoopSolverDefaultImplementation::getVariableWorkArray();
+
+ }
 /**
  *  \brief Restores all algloop variables for a output step
  *  \return Return_Description
@@ -402,6 +444,8 @@ void Nox::restoreNewValues()
  */
 void Nox::check4EventRetry(double* y)
 {
+	 if(!_algLoop)
+      throw ModelicaSimulationError(ALGLOOP_SOLVER, "algloop system is not initialized");
 	_algLoop->setReal(y);
 	if(!(_algLoop->isConsistent()) && !_eventRetry)
 	{

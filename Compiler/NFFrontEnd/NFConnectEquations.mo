@@ -41,6 +41,7 @@ import Connector = NFConnector;
 import DAE;
 import ConnectionSets = NFConnectionSets.ConnectionSets;
 import Equation = NFEquation;
+import CardinalityTable = NFCardinalityTable;
 
 protected
 import ComponentReference;
@@ -58,9 +59,10 @@ import NFCall.Call;
 import NFBuiltinFuncs;
 import NFInstNode.InstNode;
 import NFClass.Class;
-import Binding = NFBinding;
+import NFBinding.Binding;
 import NFFunction.Function;
 import Global;
+import BuiltinCall = NFBuiltinCall;
 
 constant Expression EQ_ASSERT_STR =
   Expression.STRING("Connected constants/parameters must be equal");
@@ -101,8 +103,10 @@ function evaluateOperators
   input output Expression exp;
   input ConnectionSets.Sets sets;
   input array<list<Connector>> setsArray;
+  input CardinalityTable.Table ctable;
 algorithm
-  exp := Expression.map(exp, function evaluateOperatorExp(sets = sets, setsArray = setsArray));
+  exp := Expression.map(exp,
+    function evaluateOperatorExp(sets = sets, setsArray = setsArray, ctable = ctable));
 end evaluateOperators;
 
 protected
@@ -209,7 +213,7 @@ algorithm
     // Modelica doesn't allow == for Reals, so to keep the flat Modelica
     // somewhat valid we use 'abs(lhs - rhs) <= 0' instead.
     exp := Expression.BINARY(lhs_exp, Operator.makeSub(ty), rhs_exp);
-    exp := Expression.CALL(Call.makeBuiltinCall(NFBuiltinFuncs.ABS_REAL, {exp}));
+    exp := Expression.CALL(Call.makeTypedCall(NFBuiltinFuncs.ABS_REAL, {exp}, Expression.variability(exp)));
     exp := Expression.RELATION(exp, Operator.makeLessEq(ty), Expression.REAL(0.0));
   else
     // For any other type, generate assertion for 'lhs == rhs'.
@@ -295,6 +299,7 @@ algorithm
       DAE.ElementSource src, src1, src2;
       Expression cref1, cref2, e1, e2;
       list<Connector> inside, outside;
+      Variability var1, var2;
 
     // Unconnected stream connector, do nothing.
     case ({Connector.CONNECTOR(face = Face.INSIDE)}) then {};
@@ -453,7 +458,7 @@ protected
   Expression stream_exp, flow_exp;
 algorithm
   (stream_exp, flow_exp) := streamFlowExp(element);
-  exp := Expression.BINARY(makePositiveMaxCall(flow_exp, flowThreshold),
+  exp := Expression.BINARY(makePositiveMaxCall(flow_exp, element, flowThreshold),
     Operator.makeMul(Type.REAL()), makeInStreamCall(stream_exp));
 end sumOutside1;
 
@@ -469,7 +474,7 @@ protected
 algorithm
   (stream_exp, flow_exp) := streamFlowExp(element);
   flow_exp := Expression.UNARY(Operator.makeUMinus(Type.REAL()), flow_exp);
-  exp := Expression.BINARY(makePositiveMaxCall(flow_exp, flowThreshold),
+  exp := Expression.BINARY(makePositiveMaxCall(flow_exp, element, flowThreshold),
     Operator.makeMul(Type.REAL()), stream_exp);
 end sumInside1;
 
@@ -484,7 +489,7 @@ protected
   Expression flow_exp;
 algorithm
   flow_exp := flowExp(element);
-  exp := makePositiveMaxCall(flow_exp, flowThreshold);
+  exp := makePositiveMaxCall(flow_exp, element, flowThreshold);
 end sumOutside2;
 
 function sumInside2
@@ -499,7 +504,7 @@ protected
 algorithm
   flow_exp := flowExp(element);
   flow_exp := Expression.UNARY(Operator.makeUMinus(Type.REAL()), flow_exp);
-  exp := makePositiveMaxCall(flow_exp, flowThreshold);
+  exp := makePositiveMaxCall(flow_exp, element, flowThreshold);
 end sumInside2;
 
 function makeInStreamCall
@@ -508,12 +513,14 @@ function makeInStreamCall
   output Expression inStreamCall;
   annotation(__OpenModelica_EarlyInline = true);
 algorithm
-  inStreamCall := Expression.CALL(Call.makeBuiltinCall(NFBuiltinFuncs.IN_STREAM, {streamExp}));
+  inStreamCall := Expression.CALL(Call.makeTypedCall(
+    NFBuiltinFuncs.IN_STREAM, {streamExp}, Expression.variability(streamExp)));
 end makeInStreamCall;
 
 function makePositiveMaxCall
   "Generates a max(flow_exp, eps) call."
   input Expression flowExp;
+  input Connector element;
   input Expression flowThreshold;
   output Expression positiveMaxCall;
 protected
@@ -521,7 +528,7 @@ protected
   Option<Expression> nominal_oexp;
   Expression nominal_exp, flow_threshold;
 algorithm
-  flow_node := ComponentRef.node(Expression.toCref(flowExp));
+  flow_node := ComponentRef.node(Connector.flowCref(element));
   nominal_oexp := Class.lookupAttributeValue("nominal", InstNode.getClass(flow_node));
 
   if isSome(nominal_oexp) then
@@ -531,8 +538,8 @@ algorithm
     flow_threshold := flowThreshold;
   end if;
 
-  positiveMaxCall := Expression.CALL(Call.makeBuiltinCall(NFBuiltinFuncs.POSITIVE_MAX_REAL,
-    {flowExp, flow_threshold}));
+  positiveMaxCall := Expression.CALL(Call.makeTypedCall(NFBuiltinFuncs.POSITIVE_MAX_REAL,
+    {flowExp, flow_threshold}, Connector.variability(element)));
 
   setGlobalRoot(Global.isInStream, SOME(true));
 end makePositiveMaxCall;
@@ -541,6 +548,7 @@ function evaluateOperatorExp
   input Expression exp;
   input ConnectionSets.Sets sets;
   input array<list<Connector>> setsArray;
+  input CardinalityTable.Table ctable;
   output Expression evalExp;
 algorithm
   evalExp := match exp
@@ -550,9 +558,11 @@ algorithm
     case Expression.CALL(call = call as Call.TYPED_CALL())
       then match Function.name(call.fn)
         case Absyn.IDENT("inStream")
-          then evaluateInStream(Expression.toCref(listHead(call.arguments)), sets, setsArray);
+          then evaluateInStream(Expression.toCref(listHead(call.arguments)), sets, setsArray, ctable);
         //case Absyn.IDENT("actualStream")
         //  then evaluateActualStream(Expression.toCref(listHead(call.arguments)), sets, setsArray);
+        case Absyn.IDENT("cardinality")
+          then CardinalityTable.evaluateCardinality(listHead(call.arguments), ctable);
         else exp;
       end match;
 
@@ -565,6 +575,7 @@ function evaluateInStream
   input ComponentRef cref;
   input ConnectionSets.Sets sets;
   input array<list<Connector>> setsArray;
+  input CardinalityTable.Table ctable;
   output Expression exp;
 protected
   Connector c;
@@ -581,7 +592,7 @@ algorithm
     sl := {c};
   end try;
 
-  exp := generateInStreamExp(cref, sl, sets, setsArray,
+  exp := generateInStreamExp(cref, sl, sets, setsArray, ctable,
     Flags.getConfigReal(Flags.FLOW_THRESHOLD));
 end evaluateInStream;
 
@@ -592,6 +603,7 @@ function generateInStreamExp
   input list<Connector> streams;
   input ConnectionSets.Sets sets;
   input array<list<Connector>> setsArray;
+  input CardinalityTable.Table ctable;
   input Real flowThreshold;
   output Expression exp;
 protected
@@ -626,7 +638,7 @@ algorithm
         {Connector.CONNECTOR(name = cr)} :=
           removeStreamSetElement(streamCref, reducedStreams);
       then
-        evaluateInStream(cr, sets, setsArray);
+        evaluateInStream(cr, sets, setsArray, ctable);
 
     // The general case:
     else
@@ -635,7 +647,7 @@ algorithm
         inside := removeStreamSetElement(streamCref, inside);
         exp := streamSumEquationExp(outside, inside, Expression.REAL(flowThreshold));
         // Evaluate any inStream calls that were generated.
-        exp := evaluateOperatorExp(exp, sets, setsArray);
+        exp := evaluateOperatorExp(exp, sets, setsArray, ctable);
       then
         exp;
 

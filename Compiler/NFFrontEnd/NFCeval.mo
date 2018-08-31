@@ -31,13 +31,14 @@
 
 encapsulated package NFCeval
 
-import Binding = NFBinding;
+import NFBinding.Binding;
 import ComponentRef = NFComponentRef;
 import Error;
 import NFComponent.Component;
 import Expression = NFExpression;
 import NFInstNode.InstNode;
 import Operator = NFOperator;
+import NFOperator.Op;
 import Typing = NFTyping;
 import NFCall.Call;
 import Dimension = NFDimension;
@@ -45,11 +46,18 @@ import Type = NFType;
 import NFTyping.ExpOrigin;
 import ExpressionSimplify;
 import NFPrefixes.Variability;
+import NFClassTree.ClassTree;
+import ComplexType = NFComplexType;
+import Subscript = NFSubscript;
 
 protected
 import NFFunction.Function;
-import SimplifyExp = NFSimplifyExp;
+import EvalFunction = NFEvalFunction;
 import List;
+import System;
+import ExpressionIterator = NFExpressionIterator;
+import MetaModelica.Dangerous.*;
+import NFClass.Class;
 
 public
 uniontype EvalTarget
@@ -116,7 +124,7 @@ end EvalTarget;
 
 function evalExp
   input output Expression exp;
-  input EvalTarget target;
+  input EvalTarget target = EvalTarget.IGNORE_ERRORS();
 algorithm
   exp := match exp
     local
@@ -129,42 +137,40 @@ algorithm
       Option<Expression> oexp;
       ComponentRef cref;
       Dimension dim;
+      ExpOrigin.Type exp_origin;
 
-    case Expression.CREF(cref = cref as ComponentRef.CREF(node = c as InstNode.COMPONENT_NODE(),
-                                                          origin = NFComponentRef.Origin.CREF))
-      algorithm
-        Typing.typeComponentBinding(c, ExpOrigin.CLASS);
-        binding := Component.getBinding(InstNode.component(c));
-        exp1 := evalBinding(binding, exp, target);
-      then
-        Expression.applySubscripts(cref.subscripts, exp1);
+    case Expression.CREF()
+      then evalCref(exp.cref, exp, target);
 
     case Expression.TYPENAME()
       then evalTypename(exp.ty, exp, target);
 
     case Expression.ARRAY()
       algorithm
-        for e in exp.elements loop
-          exp1 := evalExp(e, target);
-          expl := exp1 :: expl;
-        end for;
-      then Expression.ARRAY(exp.ty, listReverse(expl));
+        exp.elements := list(evalExp(e, target) for e in exp.elements);
+      then
+        exp;
 
-    // Ranges could be evaluated into arrays, but that's less efficient in some
-    // cases. So here we just evaluate the range's expressions, and let the
-    // caller worry about vectorization.
     case Expression.RANGE()
       algorithm
         exp1 := evalExp(exp.start, target);
         oexp := evalExpOpt(exp.step, target);
         exp3 := evalExp(exp.stop, target);
       then
-        Expression.RANGE(exp.ty, exp1, oexp, exp3);
+        if EvalTarget.isRange(target) then
+          Expression.RANGE(exp.ty, exp1, oexp, exp3) else evalRange(exp1, oexp, exp3);
+
+    case Expression.TUPLE()
+      algorithm
+        exp.elements := list(evalExp(e, target) for e in exp.elements);
+      then
+        exp;
 
     case Expression.RECORD()
       algorithm
-        Error.addInternalError("Unimplemented case for " + Expression.toString(exp) + " in " + getInstanceName(), sourceInfo());
-      then fail();
+        exp.elements := list(evalExp(e, target) for e in exp.elements);
+      then
+        exp;
 
     case Expression.CALL()
       then evalCall(exp.call, target);
@@ -177,7 +183,7 @@ algorithm
 
     case Expression.SIZE()
       algorithm
-        expl := list(Expression.INTEGER(Dimension.size(d)) for d in Type.arrayDims(Expression.typeOf(exp.exp)));
+        expl := list(Dimension.sizeExp(d) for d in Type.arrayDims(Expression.typeOf(exp.exp)));
         dim := Dimension.INTEGER(listLength(expl), Variability.PARAMETER);
       then
         Expression.ARRAY(Type.ARRAY(Type.INTEGER(), {dim}), expl);
@@ -186,46 +192,58 @@ algorithm
       algorithm
         exp1 := evalExp(exp.exp1, target);
         exp2 := evalExp(exp.exp2, target);
-      then Expression.BINARY(exp1, exp.operator, exp2);
+      then
+        evalBinaryOp(exp1, exp.operator, exp2);
 
     case Expression.UNARY()
       algorithm
         exp1 := evalExp(exp.exp, target);
-      then Expression.UNARY(exp.operator, exp1);
+      then
+        evalUnaryOp(exp1, exp.operator);
 
     case Expression.LBINARY()
-      algorithm
-        exp1 := evalExp(exp.exp1, target);
-        exp2 := evalExp(exp.exp2, target);
-      then Expression.LBINARY(exp1, exp.operator, exp2);
+      then evalLogicBinaryOp(exp.exp1, exp.operator, exp.exp2, target);
 
     case Expression.LUNARY()
       algorithm
         exp1 := evalExp(exp.exp, target);
-      then Expression.LUNARY(exp.operator, exp1);
+      then
+        evalLogicUnaryOp(exp1, exp.operator);
 
     case Expression.RELATION()
       algorithm
         exp1 := evalExp(exp.exp1, target);
         exp2 := evalExp(exp.exp2, target);
-      then Expression.RELATION(exp1, exp.operator, exp2);
+      then
+        evalRelationOp(exp1, exp.operator, exp2);
 
-    case Expression.IF()
-      algorithm
-        exp1 := evalExp(exp.condition, target);
-        exp2 := evalExp(exp.trueBranch, target);
-        exp3 := evalExp(exp.falseBranch, target);
-      then Expression.IF(exp1, exp2, exp3);
+    case Expression.IF() then evalIfExp(exp.condition, exp.trueBranch, exp.falseBranch, target);
 
     case Expression.CAST()
       algorithm
         exp1 := evalExp(exp.exp, target);
-      then Expression.CAST(exp.ty, exp1);
+      then
+        evalCast(exp1, exp.ty);
 
     case Expression.UNBOX()
       algorithm
         exp1 := evalExp(exp.exp, target);
       then Expression.UNBOX(exp1, exp.ty);
+
+    case Expression.SUBSCRIPTED_EXP()
+      then evalSubscriptedExp(exp.exp, exp.subscripts, target);
+
+    case Expression.TUPLE_ELEMENT()
+      algorithm
+        exp1 := evalExp(exp.tupleExp, target);
+      then
+        Expression.tupleElement(exp1, exp.ty, exp.index);
+
+    case Expression.MUTABLE()
+      algorithm
+        exp1 := evalExp(Mutable.access(exp.exp), target);
+      then
+        exp1;
 
     else exp;
   end match;
@@ -244,26 +262,220 @@ algorithm
   end match;
 end evalExpOpt;
 
-function evalBinding
-  input Binding binding;
-  input Expression originExp "The expression the binding came from, e.g. a cref.";
+function evalCref
+  input ComponentRef cref;
+  input Expression defaultExp;
   input EvalTarget target;
   output Expression exp;
+protected
+  InstNode c;
 algorithm
-  exp := match binding
-    case Binding.TYPED_BINDING() then evalExp(binding.bindingExp, target);
+  exp := match cref
+    // TODO: Rewrite this, we need to take all subscripts into account and not
+    //       just the ones on the last identifier.
+    case ComponentRef.CREF(node = c as InstNode.COMPONENT_NODE(),
+                           origin = NFComponentRef.Origin.CREF)
+      algorithm
+        exp := evalComponentBinding(c, defaultExp, target);
+      then
+        Expression.applySubscripts(list(evalSubscript(s, target) for s in cref.subscripts), exp);
+
+    else defaultExp;
+  end match;
+end evalCref;
+
+function evalComponentBinding
+  input InstNode node;
+  input Expression defaultExp "The expression returned if the binding couldn't be evaluated";
+  input EvalTarget target;
+  output Expression exp;
+  output Boolean evaluated;
+protected
+  ExpOrigin.Type exp_origin;
+  Component comp;
+  Binding binding;
+algorithm
+  exp_origin := if Class.isFunction(InstNode.getClass(InstNode.parent(node)))
+    then ExpOrigin.FUNCTION else ExpOrigin.CLASS;
+
+  Typing.typeComponentBinding(node, exp_origin);
+  comp := InstNode.component(node);
+  binding := Component.getBinding(comp);
+
+  if Binding.isUnbound(binding) then
+   // use the start value only if the component is a parameter(fixed=true)
+   if Component.getFixedAttribute(comp) and (Component.isParameter(comp) or Component.isStructuralParameter(comp)) then
+     binding := Class.lookupAttributeBinding("start", InstNode.getClass(node));
+   end if;
+  end if;
+
+  if Binding.isUnbound(binding) then
+    binding := makeComponentBinding(comp, node, Expression.toCref(defaultExp), target);
+  end if;
+
+  (exp, evaluated) := match binding
+    case Binding.TYPED_BINDING()
+      algorithm
+        exp := evalExp(binding.bindingExp, target);
+
+        if not referenceEq(exp, binding.bindingExp) then
+          binding.bindingExp := exp;
+          comp := Component.setBinding(binding, comp);
+          InstNode.updateComponent(comp, node);
+        end if;
+      then
+        (exp, true);
+
+    case Binding.CEVAL_BINDING() then (binding.bindingExp, true);
+
     case Binding.UNBOUND()
       algorithm
-        printUnboundError(target, originExp);
+        printUnboundError(comp, target, defaultExp);
       then
-        originExp;
+        (defaultExp, false);
+
     else
       algorithm
         Error.addInternalError(getInstanceName() + " failed on untyped binding", sourceInfo());
       then
         fail();
+
   end match;
-end evalBinding;
+end evalComponentBinding;
+
+function makeComponentBinding
+  input Component component;
+  input InstNode node;
+  input ComponentRef cref;
+  input EvalTarget target;
+  output Binding binding;
+protected
+  ClassTree tree;
+  array<InstNode> comps;
+  list<Expression> fields;
+  Type ty;
+  InstNode rec_node;
+  Expression exp;
+  ComponentRef rest_cr;
+algorithm
+  binding := matchcontinue (component, cref)
+    // A record component without an explicit binding, create one from its children.
+    case (Component.TYPED_COMPONENT(ty = Type.COMPLEX(complexTy = ComplexType.RECORD(rec_node))), _)
+      algorithm
+        exp := makeRecordBindingExp(component.classInst, rec_node, component.ty, cref);
+        binding := Binding.CEVAL_BINDING(exp);
+        InstNode.updateComponent(Component.setBinding(binding, component), node);
+      then
+        binding;
+
+    // A record array component without an explicit binding, create one from its children.
+    case (Component.TYPED_COMPONENT(ty = ty as Type.ARRAY(elementType =
+            Type.COMPLEX(complexTy = ComplexType.RECORD(rec_node)))), _)
+      algorithm
+        exp := makeRecordBindingExp(component.classInst, rec_node, component.ty, cref);
+        exp := splitRecordArrayExp(exp);
+        binding := Binding.CEVAL_BINDING(exp);
+        InstNode.updateComponent(Component.setBinding(binding, component), node);
+      then
+        binding;
+
+    // A record field without an explicit binding, evaluate the parent's binding
+    // if it has one and fetch the binding from it instead.
+    case (_, ComponentRef.CREF(restCref = rest_cr as ComponentRef.CREF(ty = ty)))
+      guard Type.isRecord(Type.arrayElementType(ty))
+      algorithm
+        exp := evalCref(rest_cr, Expression.EMPTY(ty), target);
+        exp := makeComponentBinding2(exp, InstNode.name(node));
+        binding := Binding.CEVAL_BINDING(exp);
+
+        // TODO: If the cref has subscripts we can't cache the binding, since it
+        //       will have been evaluated with regards to the subscripts. We
+        //       should create the complete binding and cache it first, then
+        //       subscript it.
+        if not ComponentRef.hasSubscripts(cref) then
+          InstNode.updateComponent(Component.setBinding(binding, component), node);
+        end if;
+      then
+        binding;
+
+    else NFBinding.EMPTY_BINDING;
+  end matchcontinue;
+end makeComponentBinding;
+
+function makeComponentBinding2
+  input Expression exp;
+  input String name;
+  output Expression result;
+algorithm
+  result := match exp
+    local
+      list<Expression> expl;
+      Type ty;
+      Dimension dim;
+
+    case Expression.RECORD() then Expression.lookupRecordField(name, exp);
+
+    // An empty array of records will still be empty, only the type needs to be changed.
+    case Expression.ARRAY(elements = {})
+      algorithm
+        exp.ty := Type.lookupRecordFieldType(name, exp.ty);
+      then
+        exp;
+
+    // For a non-empty array of records, look up the field in each record and
+    // create an array from them.
+    // TODO: Optimize this, the index of the field will be the same for each
+    //       element of the array so we only need to do lookup once.
+    case Expression.ARRAY(ty = Type.ARRAY(dimensions = dim :: _))
+      algorithm
+        expl := list(makeComponentBinding2(e, name) for e in exp.elements);
+        ty := Type.liftArrayLeft(Expression.typeOf(listHead(expl)), dim);
+      then
+        Expression.ARRAY(ty, expl);
+
+  end match;
+end makeComponentBinding2;
+
+function makeRecordBindingExp
+  input InstNode typeNode;
+  input InstNode recordNode;
+  input Type recordType;
+  input ComponentRef cref;
+  output Expression exp;
+protected
+  ClassTree tree;
+  array<InstNode> comps;
+  list<Expression> fields;
+  Type ty;
+  InstNode c;
+  ComponentRef cr;
+algorithm
+  tree := Class.classTree(InstNode.getClass(typeNode));
+  comps := ClassTree.getComponents(tree);
+  fields := {};
+
+  for i in arrayLength(comps):-1:1 loop
+    c := comps[i];
+    ty := InstNode.getType(c);
+    cr := ComponentRef.CREF(c, {}, ty, NFComponentRef.Origin.CREF, cref);
+    fields := Expression.CREF(ty, cr) :: fields;
+  end for;
+
+  exp := Expression.RECORD(InstNode.scopePath(recordNode), recordType, fields);
+  exp := evalExp(exp);
+end makeRecordBindingExp;
+
+function splitRecordArrayExp
+  input output Expression exp;
+protected
+  Absyn.Path path;
+  Type ty;
+  list<Expression> expl;
+algorithm
+  Expression.RECORD(path, ty, expl) := exp;
+  exp := Expression.RECORD(path, Type.arrayElementType(ty), expl);
+  exp := Expression.fillType(ty, exp);
+end splitRecordArrayExp;
 
 function evalTypename
   input Type ty;
@@ -298,6 +510,847 @@ algorithm
   end if;
 end evalTypename;
 
+function evalRange
+  input Expression start;
+  input Option<Expression> optStep;
+  input Expression stop;
+  output Expression exp;
+protected
+  Expression step;
+  list<Expression> expl;
+  Type ty;
+  list<String> literals;
+  Integer istep;
+algorithm
+  if isSome(optStep) then
+    SOME(step) := optStep;
+
+    (ty, expl) := match (start, step, stop)
+      case (Expression.INTEGER(), Expression.INTEGER(istep), Expression.INTEGER())
+        algorithm
+          // The compiler decided to randomly dislike using step.value here, hence istep.
+          expl := list(Expression.INTEGER(i) for i in start.value:istep:stop.value);
+        then
+          (Type.INTEGER(), expl);
+
+      case (Expression.REAL(), Expression.REAL(), Expression.REAL())
+        algorithm
+          expl := list(Expression.REAL(r) for r in start.value:step.value:stop.value);
+        then
+          (Type.REAL(), expl);
+
+      else
+        algorithm
+          printWrongArgsError(getInstanceName(), {start, step, stop}, sourceInfo());
+        then
+          fail();
+    end match;
+  else
+    (ty, expl) := match (start, stop)
+      case (Expression.INTEGER(), Expression.INTEGER())
+        algorithm
+          expl := list(Expression.INTEGER(i) for i in start.value:stop.value);
+        then
+          (Type.INTEGER(), expl);
+
+      case (Expression.REAL(), Expression.REAL())
+        algorithm
+          expl := list(Expression.REAL(r) for r in start.value:stop.value);
+        then
+          (Type.REAL(), expl);
+
+      case (Expression.BOOLEAN(), Expression.BOOLEAN())
+        algorithm
+          expl := list(Expression.BOOLEAN(b) for b in start.value:stop.value);
+        then
+          (Type.BOOLEAN(), expl);
+
+      case (Expression.ENUM_LITERAL(ty = ty as Type.ENUMERATION()), Expression.ENUM_LITERAL())
+        algorithm
+          expl := list(Expression.ENUM_LITERAL(ty, listGet(ty.literals, i), i) for i in start.index:stop.index);
+        then
+          (ty, expl);
+
+      else
+        algorithm
+          printWrongArgsError(getInstanceName(), {start, stop}, sourceInfo());
+        then
+          fail();
+    end match;
+  end if;
+
+  exp := Expression.ARRAY(Type.ARRAY(ty, {Dimension.fromInteger(listLength(expl))}), expl);
+end evalRange;
+
+function printFailedEvalError
+  input String name;
+  input Expression exp;
+  input SourceInfo info;
+algorithm
+  Error.addInternalError(name + " failed to evaluate ‘" + Expression.toString(exp) + "‘", info);
+end printFailedEvalError;
+
+function evalBinaryOp
+  input Expression exp1;
+  input Operator op;
+  input Expression exp2;
+  output Expression exp;
+algorithm
+  exp := match op.op
+    case Op.ADD then evalBinaryAdd(exp1, exp2);
+    case Op.SUB then evalBinarySub(exp1, exp2);
+    case Op.MUL then evalBinaryMul(exp1, exp2);
+    case Op.DIV then evalBinaryDiv(exp1, exp2);
+    case Op.POW then evalBinaryPow(exp1, exp2);
+    case Op.ADD_SCALAR_ARRAY then evalBinaryScalarArray(exp1, exp2, evalBinaryAdd);
+    case Op.ADD_ARRAY_SCALAR then evalBinaryArrayScalar(exp1, exp2, evalBinaryAdd);
+    case Op.SUB_SCALAR_ARRAY then evalBinaryScalarArray(exp1, exp2, evalBinarySub);
+    case Op.SUB_ARRAY_SCALAR then evalBinaryArrayScalar(exp1, exp2, evalBinarySub);
+    case Op.MUL_SCALAR_ARRAY then evalBinaryScalarArray(exp1, exp2, evalBinaryMul);
+    case Op.MUL_ARRAY_SCALAR then evalBinaryArrayScalar(exp1, exp2, evalBinaryMul);
+    case Op.MUL_VECTOR_MATRIX then evalBinaryMulVectorMatrix(exp1, exp2);
+    case Op.MUL_MATRIX_VECTOR then evalBinaryMulMatrixVector(exp1, exp2);
+    case Op.SCALAR_PRODUCT then evalBinaryScalarProduct(exp1, exp2);
+    case Op.MATRIX_PRODUCT then evalBinaryMatrixProduct(exp1, exp2);
+    case Op.DIV_SCALAR_ARRAY then evalBinaryScalarArray(exp1, exp2, evalBinaryDiv);
+    case Op.DIV_ARRAY_SCALAR then evalBinaryArrayScalar(exp1, exp2, evalBinaryDiv);
+    case Op.POW_SCALAR_ARRAY then evalBinaryScalarArray(exp1, exp2, evalBinaryPow);
+    case Op.POW_ARRAY_SCALAR then evalBinaryArrayScalar(exp1, exp2, evalBinaryPow);
+    case Op.POW_MATRIX then evalBinaryPowMatrix(exp1, exp2);
+    else
+      algorithm
+        Error.addInternalError(getInstanceName() + ": unimplemented case for " +
+          Expression.toString(Expression.BINARY(exp1, op, exp2)), sourceInfo());
+      then
+        fail();
+  end match;
+end evalBinaryOp;
+
+function evalBinaryAdd
+  input Expression exp1;
+  input Expression exp2;
+  output Expression exp;
+algorithm
+  exp := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then Expression.INTEGER(exp1.value + exp2.value);
+
+    case (Expression.REAL(), Expression.REAL())
+      then Expression.REAL(exp1.value + exp2.value);
+
+    case (Expression.STRING(), Expression.STRING())
+      then Expression.STRING(exp1.value + exp2.value);
+
+    case (Expression.ARRAY(), Expression.ARRAY())
+      guard listLength(exp1.elements) == listLength(exp2.elements)
+      then Expression.ARRAY(exp1.ty,
+        list(evalBinaryAdd(e1, e2) threaded for e1 in exp1.elements, e2 in exp2.elements));
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makeAdd(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end match;
+end evalBinaryAdd;
+
+function evalBinarySub
+  input Expression exp1;
+  input Expression exp2;
+  output Expression exp;
+algorithm
+  exp := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then Expression.INTEGER(exp1.value - exp2.value);
+
+    case (Expression.REAL(), Expression.REAL())
+      then Expression.REAL(exp1.value - exp2.value);
+
+    case (Expression.ARRAY(), Expression.ARRAY())
+      guard listLength(exp1.elements) == listLength(exp2.elements)
+      then Expression.ARRAY(exp1.ty,
+        list(evalBinarySub(e1, e2) threaded for e1 in exp1.elements, e2 in exp2.elements));
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makeSub(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end match;
+end evalBinarySub;
+
+function evalBinaryMul
+  input Expression exp1;
+  input Expression exp2;
+  output Expression exp;
+algorithm
+  exp := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then Expression.INTEGER(exp1.value * exp2.value);
+
+    case (Expression.REAL(), Expression.REAL())
+      then Expression.REAL(exp1.value * exp2.value);
+
+    case (Expression.ARRAY(), Expression.ARRAY())
+      guard listLength(exp1.elements) == listLength(exp2.elements)
+      then Expression.ARRAY(exp1.ty,
+        list(evalBinaryMul(e1, e2) threaded for e1 in exp1.elements, e2 in exp2.elements));
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makeMul(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end match;
+end evalBinaryMul;
+
+function evalBinaryDiv
+  input Expression exp1;
+  input Expression exp2;
+  output Expression exp;
+algorithm
+  exp := match (exp1, exp2)
+    case (Expression.REAL(), Expression.REAL())
+      then Expression.REAL(exp1.value / exp2.value);
+
+    case (Expression.ARRAY(), Expression.ARRAY())
+      guard listLength(exp1.elements) == listLength(exp2.elements)
+      then Expression.ARRAY(exp1.ty,
+        list(evalBinaryDiv(e1, e2) threaded for e1 in exp1.elements, e2 in exp2.elements));
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makeDiv(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end match;
+end evalBinaryDiv;
+
+function evalBinaryPow
+  input Expression exp1;
+  input Expression exp2;
+  output Expression exp;
+algorithm
+  exp := match (exp1, exp2)
+    case (Expression.REAL(), Expression.REAL())
+      then Expression.REAL(exp1.value ^ exp2.value);
+
+    case (Expression.ARRAY(), Expression.ARRAY())
+      guard listLength(exp1.elements) == listLength(exp2.elements)
+      then Expression.ARRAY(exp1.ty,
+        list(evalBinaryPow(e1, e2) threaded for e1 in exp1.elements, e2 in exp2.elements));
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makePow(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end match;
+end evalBinaryPow;
+
+function evalBinaryScalarArray
+  input Expression scalarExp;
+  input Expression arrayExp;
+  input FuncT opFunc;
+  output Expression exp;
+
+  partial function FuncT
+    input Expression exp1;
+    input Expression exp2;
+    output Expression exp;
+  end FuncT;
+algorithm
+  exp := match arrayExp
+    case Expression.ARRAY()
+      then Expression.ARRAY(arrayExp.ty,
+        list(evalBinaryScalarArray(scalarExp, e, opFunc) for e in arrayExp.elements));
+
+    else opFunc(scalarExp, arrayExp);
+  end match;
+end evalBinaryScalarArray;
+
+function evalBinaryArrayScalar
+  input Expression arrayExp;
+  input Expression scalarExp;
+  input FuncT opFunc;
+  output Expression exp;
+
+  partial function FuncT
+    input Expression exp1;
+    input Expression exp2;
+    output Expression exp;
+  end FuncT;
+algorithm
+  exp := match arrayExp
+    case Expression.ARRAY()
+      then Expression.ARRAY(arrayExp.ty,
+        list(evalBinaryArrayScalar(e, scalarExp, opFunc) for e in arrayExp.elements));
+
+    else opFunc(arrayExp, scalarExp);
+  end match;
+end evalBinaryArrayScalar;
+
+function evalBinaryMulVectorMatrix
+  input Expression vectorExp;
+  input Expression matrixExp;
+  output Expression exp;
+protected
+  list<Expression> expl;
+  Dimension m;
+  Type ty;
+algorithm
+  exp := match Expression.transposeArray(matrixExp)
+    case Expression.ARRAY(Type.ARRAY(ty, {m, _}), expl)
+      algorithm
+        expl := list(evalBinaryScalarProduct(vectorExp, e) for e in expl);
+      then
+        Expression.ARRAY(Type.ARRAY(ty, {m}), expl);
+
+    else
+      algorithm
+        exp := Expression.BINARY(vectorExp, Operator.makeMul(Type.UNKNOWN()), matrixExp);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+
+  end match;
+end evalBinaryMulVectorMatrix;
+
+function evalBinaryMulMatrixVector
+  input Expression matrixExp;
+  input Expression vectorExp;
+  output Expression exp;
+protected
+  list<Expression> expl;
+  Dimension n;
+  Type ty;
+algorithm
+  exp := match matrixExp
+    case Expression.ARRAY(Type.ARRAY(ty, {n, _}), expl)
+      algorithm
+        expl := list(evalBinaryScalarProduct(e, vectorExp) for e in expl);
+      then
+        Expression.ARRAY(Type.ARRAY(ty, {n}), expl);
+
+    else
+      algorithm
+        exp := Expression.BINARY(matrixExp, Operator.makeMul(Type.UNKNOWN()), vectorExp);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+
+  end match;
+end evalBinaryMulMatrixVector;
+
+function evalBinaryScalarProduct
+  input Expression exp1;
+  input Expression exp2;
+  output Expression exp;
+algorithm
+  exp := match (exp1, exp2)
+    local
+      Type elem_ty;
+      Expression e2;
+      list<Expression> rest_e2;
+
+    case (Expression.ARRAY(ty = Type.ARRAY(elem_ty)), Expression.ARRAY())
+      guard listLength(exp1.elements) == listLength(exp2.elements)
+      algorithm
+        exp := Expression.makeZero(elem_ty);
+        rest_e2 := exp2.elements;
+
+        for e1 in exp1.elements loop
+          e2 :: rest_e2 := rest_e2;
+          exp := evalBinaryAdd(exp, evalBinaryMul(e1, e2));
+        end for;
+      then
+        exp;
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makeMul(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+
+  end match;
+end evalBinaryScalarProduct;
+
+function evalBinaryMatrixProduct
+  input Expression exp1;
+  input Expression exp2;
+  output Expression exp;
+protected
+  Expression e2;
+  list<Expression> expl1, expl2;
+  Type elem_ty, row_ty, mat_ty;
+  Dimension n, p;
+algorithm
+  e2 := Expression.transposeArray(exp2);
+
+  exp := match (exp1, e2)
+    case (Expression.ARRAY(Type.ARRAY(elem_ty, {n, _}), expl1),
+          Expression.ARRAY(Type.ARRAY(_, {p, _}), expl2))
+      algorithm
+        mat_ty := Type.ARRAY(elem_ty, {n, p});
+
+        if listEmpty(expl2) then
+          exp := Expression.makeZero(mat_ty);
+        else
+          row_ty := Type.ARRAY(elem_ty, {p});
+          expl1 := list(Expression.ARRAY(row_ty, list(evalBinaryScalarProduct(r, c) for c in expl2)) for r in expl1);
+          exp := Expression.ARRAY(mat_ty, expl1);
+        end if;
+      then
+        exp;
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makeMul(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+
+  end match;
+end evalBinaryMatrixProduct;
+
+function evalBinaryPowMatrix
+  input Expression matrixExp;
+  input Expression nExp;
+  output Expression exp;
+protected
+  Integer n;
+algorithm
+  exp := match (matrixExp, nExp)
+    case (Expression.ARRAY(), Expression.INTEGER(value = 0))
+      algorithm
+        n := Dimension.size(listHead(Type.arrayDims(matrixExp.ty)));
+      then
+        Expression.makeIdentityMatrix(n, Type.REAL());
+
+    case (_, Expression.INTEGER(value = n))
+      then evalBinaryPowMatrix2(matrixExp, n);
+
+    else
+      algorithm
+        exp := Expression.BINARY(matrixExp, Operator.makePow(Type.UNKNOWN()), nExp);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+
+  end match;
+end evalBinaryPowMatrix;
+
+function evalBinaryPowMatrix2
+  input Expression matrix;
+  input Integer n;
+  output Expression exp;
+algorithm
+  exp := match n
+    // A^1 = A
+    case 1 then matrix;
+
+    // A^2 = A * A
+    case 2 then evalBinaryMatrixProduct(matrix, matrix);
+
+    // A^n = A^m * A^m where n = 2*m
+    case _ guard intMod(n, 2) == 0
+      algorithm
+        exp := evalBinaryPowMatrix2(matrix, intDiv(n, 2));
+      then
+        evalBinaryMatrixProduct(exp, exp);
+
+    // A^n = A * A^(n-1)
+    else
+      algorithm
+        exp := evalBinaryPowMatrix2(matrix, n - 1);
+      then
+        evalBinaryMatrixProduct(matrix, exp);
+
+  end match;
+end evalBinaryPowMatrix2;
+
+function evalUnaryOp
+  input Expression exp1;
+  input Operator op;
+  output Expression exp;
+algorithm
+  exp := match op.op
+    case Op.UMINUS then evalUnaryMinus(exp1);
+    else
+      algorithm
+        Error.addInternalError(getInstanceName() + ": unimplemented case for " +
+          Expression.toString(Expression.UNARY(op, exp1)), sourceInfo());
+      then
+        fail();
+  end match;
+end evalUnaryOp;
+
+function evalUnaryMinus
+  input Expression exp1;
+  output Expression exp;
+algorithm
+  exp := match exp1
+    case Expression.INTEGER() then Expression.INTEGER(-exp1.value);
+    case Expression.REAL() then Expression.REAL(-exp1.value);
+    case Expression.ARRAY()
+      algorithm
+        exp1.elements := list(evalUnaryMinus(e) for e in exp1.elements);
+      then
+        exp1;
+
+    else
+      algorithm
+        exp := Expression.UNARY(Operator.makeUMinus(Type.UNKNOWN()), exp1);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end match;
+end evalUnaryMinus;
+
+function evalLogicBinaryOp
+  input Expression exp1;
+  input Operator op;
+  input Expression exp2;
+  input EvalTarget target = EvalTarget.IGNORE_ERRORS();
+  output Expression exp;
+algorithm
+  exp := match op.op
+    case Op.AND then evalLogicBinaryAnd(evalExp(exp1, target), exp2, target);
+    case Op.OR then evalLogicBinaryOr(evalExp(exp1, target), exp2, target);
+    else
+      algorithm
+        Error.addInternalError(getInstanceName() + ": unimplemented case for " +
+          Expression.toString(Expression.LBINARY(exp1, op, exp2)), sourceInfo());
+      then
+        fail();
+  end match;
+end evalLogicBinaryOp;
+
+function evalLogicBinaryAnd
+  input Expression exp1;
+  input Expression exp2;
+  input EvalTarget target;
+  output Expression exp;
+algorithm
+  exp := matchcontinue exp1
+    local
+      list<Expression> expl;
+
+    case Expression.BOOLEAN()
+      then if exp1.value then evalExp(exp2, target) else exp1;
+
+    case Expression.ARRAY()
+      algorithm
+        Expression.ARRAY(elements = expl) := evalExp(exp2, target);
+        expl := list(evalLogicBinaryAnd(e1, e2, target)
+                     threaded for e1 in exp1.elements, e2 in expl);
+      then
+        Expression.ARRAY(Type.setArrayElementType(exp1.ty, Type.BOOLEAN()), expl);
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makeAnd(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end matchcontinue;
+end evalLogicBinaryAnd;
+
+function evalLogicBinaryOr
+  input Expression exp1;
+  input Expression exp2;
+  input EvalTarget target;
+  output Expression exp;
+algorithm
+  exp := match exp1
+    local
+      list<Expression> expl;
+
+    case Expression.BOOLEAN()
+      then if exp1.value then exp1 else evalExp(exp2, target);
+
+    case Expression.ARRAY()
+      algorithm
+        Expression.ARRAY(elements = expl) := evalExp(exp2, target);
+        expl := list(evalLogicBinaryOr(e1, e2, target)
+                     threaded for e1 in exp1.elements, e2 in expl);
+      then
+        Expression.ARRAY(Type.setArrayElementType(exp1.ty, Type.BOOLEAN()), expl);
+
+    else
+      algorithm
+        exp := Expression.BINARY(exp1, Operator.makeOr(Type.UNKNOWN()), exp2);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end match;
+end evalLogicBinaryOr;
+
+function evalLogicUnaryOp
+  input Expression exp1;
+  input Operator op;
+  output Expression exp;
+algorithm
+  exp := match op.op
+    case Op.NOT then Expression.mapArrayElements(exp1, evalLogicUnaryNot);
+    else
+      algorithm
+        Error.addInternalError(getInstanceName() + ": unimplemented case for " +
+          Expression.toString(Expression.UNARY(op, exp1)), sourceInfo());
+      then
+        fail();
+  end match;
+end evalLogicUnaryOp;
+
+function evalLogicUnaryNot
+  input Expression exp1;
+  output Expression exp;
+algorithm
+  exp := match exp1
+    case Expression.BOOLEAN() then Expression.BOOLEAN(not exp1.value);
+
+    else
+      algorithm
+        exp := Expression.UNARY(Operator.makeNot(Type.UNKNOWN()), exp1);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+  end match;
+end evalLogicUnaryNot;
+
+function evalRelationOp
+  input Expression exp1;
+  input Operator op;
+  input Expression exp2;
+  output Expression exp;
+protected
+  Boolean res;
+algorithm
+  res := match op.op
+    case Op.LESS then evalRelationLess(exp1, exp2);
+    case Op.LESSEQ then evalRelationLessEq(exp1, exp2);
+    case Op.GREATER then evalRelationGreater(exp1, exp2);
+    case Op.GREATEREQ then evalRelationGreater(exp1, exp2);
+    case Op.EQUAL then evalRelationEqual(exp1, exp2);
+    case Op.NEQUAL then evalRelationNotEqual(exp1, exp2);
+    else
+      algorithm
+        Error.addInternalError(getInstanceName() + ": unimplemented case for " +
+          Expression.toString(Expression.BINARY(exp1, op, exp2)), sourceInfo());
+      then
+        fail();
+  end match;
+
+  exp := Expression.BOOLEAN(res);
+end evalRelationOp;
+
+function evalRelationLess
+  input Expression exp1;
+  input Expression exp2;
+  output Boolean res;
+algorithm
+  res := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then exp1.value < exp2.value;
+    case (Expression.REAL(), Expression.REAL())
+      then exp1.value < exp2.value;
+    case (Expression.BOOLEAN(), Expression.BOOLEAN())
+      then exp1.value < exp2.value;
+    case (Expression.STRING(), Expression.STRING())
+      then stringCompare(exp1.value, exp2.value) < 0;
+    case (Expression.ENUM_LITERAL(), Expression.ENUM_LITERAL())
+      then exp1.index < exp2.index;
+
+    else
+      algorithm
+        printFailedEvalError(getInstanceName(),
+          Expression.RELATION(exp1, Operator.makeLess(Type.UNKNOWN()), exp2), sourceInfo());
+      then
+        fail();
+  end match;
+end evalRelationLess;
+
+function evalRelationLessEq
+  input Expression exp1;
+  input Expression exp2;
+  output Boolean res;
+algorithm
+  res := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then exp1.value <= exp2.value;
+    case (Expression.REAL(), Expression.REAL())
+      then exp1.value <= exp2.value;
+    case (Expression.BOOLEAN(), Expression.BOOLEAN())
+      then exp1.value <= exp2.value;
+    case (Expression.STRING(), Expression.STRING())
+      then stringCompare(exp1.value, exp2.value) <= 0;
+    case (Expression.ENUM_LITERAL(), Expression.ENUM_LITERAL())
+      then exp1.index <= exp2.index;
+
+    else
+      algorithm
+        printFailedEvalError(getInstanceName(),
+          Expression.RELATION(exp1, Operator.makeLessEq(Type.UNKNOWN()), exp2), sourceInfo());
+      then
+        fail();
+  end match;
+end evalRelationLessEq;
+
+function evalRelationGreater
+  input Expression exp1;
+  input Expression exp2;
+  output Boolean res;
+algorithm
+  res := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then exp1.value > exp2.value;
+    case (Expression.REAL(), Expression.REAL())
+      then exp1.value > exp2.value;
+    case (Expression.BOOLEAN(), Expression.BOOLEAN())
+      then exp1.value > exp2.value;
+    case (Expression.STRING(), Expression.STRING())
+      then stringCompare(exp1.value, exp2.value) > 0;
+    case (Expression.ENUM_LITERAL(), Expression.ENUM_LITERAL())
+      then exp1.index > exp2.index;
+
+    else
+      algorithm
+        printFailedEvalError(getInstanceName(),
+          Expression.RELATION(exp1, Operator.makeGreater(Type.UNKNOWN()), exp2), sourceInfo());
+      then
+        fail();
+  end match;
+end evalRelationGreater;
+
+function evalRelationGreaterEq
+  input Expression exp1;
+  input Expression exp2;
+  output Boolean res;
+algorithm
+  res := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then exp1.value >= exp2.value;
+    case (Expression.REAL(), Expression.REAL())
+      then exp1.value >= exp2.value;
+    case (Expression.BOOLEAN(), Expression.BOOLEAN())
+      then exp1.value >= exp2.value;
+    case (Expression.STRING(), Expression.STRING())
+      then stringCompare(exp1.value, exp2.value) >= 0;
+    case (Expression.ENUM_LITERAL(), Expression.ENUM_LITERAL())
+      then exp1.index >= exp2.index;
+
+    else
+      algorithm
+        printFailedEvalError(getInstanceName(),
+          Expression.RELATION(exp1, Operator.makeGreaterEq(Type.UNKNOWN()), exp2), sourceInfo());
+      then
+        fail();
+  end match;
+end evalRelationGreaterEq;
+
+function evalRelationEqual
+  input Expression exp1;
+  input Expression exp2;
+  output Boolean res;
+algorithm
+  res := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then exp1.value == exp2.value;
+    case (Expression.REAL(), Expression.REAL())
+      then exp1.value == exp2.value;
+    case (Expression.BOOLEAN(), Expression.BOOLEAN())
+      then exp1.value == exp2.value;
+    case (Expression.STRING(), Expression.STRING())
+      then stringCompare(exp1.value, exp2.value) == 0;
+    case (Expression.ENUM_LITERAL(), Expression.ENUM_LITERAL())
+      then exp1.index == exp2.index;
+
+    else
+      algorithm
+        printFailedEvalError(getInstanceName(),
+          Expression.RELATION(exp1, Operator.makeEqual(Type.UNKNOWN()), exp2), sourceInfo());
+      then
+        fail();
+  end match;
+end evalRelationEqual;
+
+function evalRelationNotEqual
+  input Expression exp1;
+  input Expression exp2;
+  output Boolean res;
+algorithm
+  res := match (exp1, exp2)
+    case (Expression.INTEGER(), Expression.INTEGER())
+      then exp1.value <> exp2.value;
+    case (Expression.REAL(), Expression.REAL())
+      then exp1.value <> exp2.value;
+    case (Expression.BOOLEAN(), Expression.BOOLEAN())
+      then exp1.value <> exp2.value;
+    case (Expression.STRING(), Expression.STRING())
+      then stringCompare(exp1.value, exp2.value) <> 0;
+    case (Expression.ENUM_LITERAL(), Expression.ENUM_LITERAL())
+      then exp1.index <> exp2.index;
+
+    else
+      algorithm
+        printFailedEvalError(getInstanceName(),
+          Expression.RELATION(exp1, Operator.makeNotEqual(Type.UNKNOWN()), exp2), sourceInfo());
+      then
+        fail();
+  end match;
+end evalRelationNotEqual;
+
+function evalIfExp
+  input Expression condition;
+  input Expression trueBranch;
+  input Expression falseBranch;
+  input EvalTarget target;
+  output Expression exp;
+protected
+  Expression cond;
+algorithm
+  cond := evalExp(condition, target);
+
+  exp := match cond
+    case Expression.BOOLEAN()
+      then evalExp(if cond.value then trueBranch else falseBranch, target);
+
+    else
+      algorithm
+        Error.addInternalError(getInstanceName() + ": unimplemented case for " +
+          Expression.toString(Expression.IF(condition, trueBranch, falseBranch)), sourceInfo());
+      then
+        fail();
+  end match;
+end evalIfExp;
+
+function evalCast
+  input Expression castExp;
+  input Type castTy;
+  output Expression exp;
+algorithm
+  exp := Expression.typeCastElements(castExp, Type.elementType(castTy));
+
+  // Expression.typeCastElements will just create a CAST if it can't typecast
+  // the expression, so make sure we actually got something else back.
+  () := match exp
+    case Expression.CAST()
+      algorithm
+        exp := Expression.CAST(castTy, castExp);
+        printFailedEvalError(getInstanceName(), exp, sourceInfo());
+      then
+        fail();
+
+    else ();
+  end match;
+end evalCast;
+
 function evalCall
   input Call call;
   input EvalTarget target;
@@ -309,19 +1362,15 @@ algorithm
 
     case Call.TYPED_CALL()
       algorithm
-        args := list(SimplifyExp.simplifyExp(evalExp(arg, target))
-          for arg in call.arguments);
+        args := list(evalExp(arg, target) for arg in call.arguments);
       then
         if Function.isBuiltin(call.fn) then
           evalBuiltinCall(call.fn, args, target)
         else
-          evalNormalCall(call.fn, args, call);
+          evalNormalCall(call.fn, args);
 
-    case Call.UNTYPED_MAP_CALL()
-      algorithm
-        Error.addInternalError(getInstanceName() + ": unimplemented case for mapcall", sourceInfo());
-      then
-        fail();
+    case Call.TYPED_MAP_CALL()
+      then evalReduction(call.exp, call.ty, call.iters);
 
     else
       algorithm
@@ -351,7 +1400,6 @@ algorithm
     case "ceil" then evalBuiltinCeil(listHead(args));
     case "cosh" then evalBuiltinCosh(listHead(args));
     case "cos" then evalBuiltinCos(listHead(args));
-    case "cross" then evalBuiltinCross(args);
     case "der" then evalBuiltinDer(listHead(args));
     // TODO: Fix typing of diagonal so the argument isn't boxed.
     case "diagonal" then evalBuiltinDiagonal(Expression.unbox(listHead(args)));
@@ -361,11 +1409,12 @@ algorithm
     case "floor" then evalBuiltinFloor(listHead(args));
     case "identity" then evalBuiltinIdentity(listHead(args));
     case "integer" then evalBuiltinInteger(listHead(args));
+    case "Integer" then evalBuiltinIntegerEnum(listHead(args));
     case "log10" then evalBuiltinLog10(listHead(args), target);
     case "log" then evalBuiltinLog(listHead(args), target);
-    //case "matrix" then evalBuiltinMatrix(args);
-    case "max" then evalBuiltinMax(args);
-    case "min" then evalBuiltinMin(args);
+    case "matrix" then evalBuiltinMatrix(listHead(args));
+    case "max" then evalBuiltinMax(args, fn);
+    case "min" then evalBuiltinMin(args, fn);
     case "mod" then evalBuiltinMod(args);
     case "noEvent" then listHead(args); // No events during ceval, just return the argument.
     case "ones" then evalBuiltinOnes(args);
@@ -377,14 +1426,22 @@ algorithm
     case "sinh" then evalBuiltinSinh(listHead(args));
     case "sin" then evalBuiltinSin(listHead(args));
     case "skew" then evalBuiltinSkew(listHead(args));
+    case "smooth" then listGet(args, 2);
     case "sqrt" then evalBuiltinSqrt(listHead(args));
+    case "String" then evalBuiltinString(args);
     case "sum" then evalBuiltinSum(listHead(args));
-    //case "symmetric" then evalBuiltinSymmetric(args);
+    case "symmetric" then evalBuiltinSymmetric(listHead(args));
     case "tanh" then evalBuiltinTanh(listHead(args));
     case "tan" then evalBuiltinTan(listHead(args));
     case "transpose" then evalBuiltinTranspose(listHead(args));
     case "vector" then evalBuiltinVector(listHead(args));
     case "zeros" then evalBuiltinZeros(args);
+    case "OpenModelica_uriToFilename" then evalUriToFilename(listHead(args));
+    case "intBitAnd" then evalIntBitAnd(args);
+    case "intBitOr" then evalIntBitOr(args);
+    case "intBitXor" then evalIntBitXor(args);
+    case "intBitLShift" then evalIntBitLShift(args);
+    case "intBitRShift" then evalIntBitRShift(args);
     else
       algorithm
         Error.addInternalError(getInstanceName() + ": unimplemented case for " +
@@ -394,57 +1451,11 @@ algorithm
   end match;
 end evalBuiltinCall;
 
-protected
-
-function printUnboundError
-  input EvalTarget target;
-  input Expression exp;
-algorithm
-  () := match target
-    case EvalTarget.DIMENSION()
-      algorithm
-        Error.addSourceMessage(Error.STRUCTURAL_PARAMETER_OR_CONSTANT_WITH_NO_BINDING,
-          {Expression.toString(exp), InstNode.name(target.component)}, target.info);
-      then
-        fail();
-
-    case EvalTarget.CONDITION()
-      algorithm
-        Error.addSourceMessage(Error.CONDITIONAL_EXP_WITHOUT_VALUE,
-          {Expression.toString(exp)}, target.info);
-      then
-        fail();
-
-    case EvalTarget.GENERIC()
-      algorithm
-        Error.addMultiSourceMessage(Error.UNBOUND_CONSTANT,
-          {Expression.toString(exp)},
-          {InstNode.info(ComponentRef.node(Expression.toCref(exp))), target.info});
-      then
-        fail();
-
-    else ();
-  end match;
-end printUnboundError;
-
 function evalNormalCall
   input Function fn;
   input list<Expression> args;
-  input Call call;
-  output Expression result;
-algorithm
-  Error.addInternalError(getInstanceName() + ": IMPLEMENT ME: " + Call.toString(call), sourceInfo());
-  fail();
+  output Expression result = EvalFunction.evaluate(fn, args);
 end evalNormalCall;
-
-function printWrongArgsError
-  input String evalFunc;
-  input list<Expression> args;
-  input SourceInfo info;
-algorithm
-  Error.addInternalError(evalFunc + " got invalid arguments " +
-    List.toString(args, Expression.toString, "", "(", ", ", ")", true), info);
-end printWrongArgsError;
 
 function evalBuiltinAbs
   input Expression arg;
@@ -563,7 +1574,7 @@ algorithm
     fail();
   end if;
   (es,dims) := ExpressionSimplify.evalCat(n, args, getArrayContents=Expression.arrayElements, toString=Expression.toString);
-  result := Expression.arrayFromList(es, Type.arrayElementType(ty), list(Dimension.fromInteger(d) for d in dims));
+  result := Expression.arrayFromList(es, Expression.typeOf(listHead(es)), list(Dimension.fromInteger(d) for d in dims));
 end evalBuiltinCat;
 
 function evalBuiltinCeil
@@ -595,27 +1606,6 @@ algorithm
     else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
   end match;
 end evalBuiltinCos;
-
-function evalBuiltinCross
-  input list<Expression> args;
-  output Expression result;
-protected
-  Real x1, x2, x3, y1, y2, y3;
-  Expression z1, z2, z3;
-algorithm
-  result := match args
-    case {Expression.ARRAY(elements = {Expression.REAL(x1), Expression.REAL(x2), Expression.REAL(x3)}),
-          Expression.ARRAY(elements = {Expression.REAL(y1), Expression.REAL(y2), Expression.REAL(y3)})}
-      algorithm
-        z1 := Expression.REAL(x2 * y3 - x3 * y2);
-        z2 := Expression.REAL(x3 * y1 - x1 * y3);
-        z3 := Expression.REAL(x1 * y2 - x2 * y1);
-      then
-        Expression.ARRAY(Type.ARRAY(Type.REAL(), {Dimension.fromInteger(3)}), {z1, z2, z3});
-
-    else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
-  end match;
-end evalBuiltinCross;
 
 function evalBuiltinDer
   input Expression arg;
@@ -716,6 +1706,7 @@ algorithm
   end match;
 end evalBuiltinExp;
 
+public
 function evalBuiltinFill
   input list<Expression> args;
   output Expression result;
@@ -744,6 +1735,7 @@ algorithm
   end for;
 end evalBuiltinFill2;
 
+protected
 function evalBuiltinFloor
   input Expression arg;
   output Expression result;
@@ -776,6 +1768,16 @@ algorithm
     else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
   end match;
 end evalBuiltinInteger;
+
+function evalBuiltinIntegerEnum
+  input Expression arg;
+  output Expression result;
+algorithm
+  result := match arg
+    case Expression.ENUM_LITERAL() then Expression.INTEGER(arg.index);
+    else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
+  end match;
+end evalBuiltinIntegerEnum;
 
 function evalBuiltinLog10
   input Expression arg;
@@ -827,16 +1829,86 @@ algorithm
   end match;
 end evalBuiltinLog;
 
+function evalBuiltinMatrix
+  input Expression arg;
+  output Expression result;
+algorithm
+  result := match arg
+    local
+      Integer dim_count;
+      list<Expression> expl;
+      Dimension dim1, dim2;
+      Type ty;
+
+    case Expression.ARRAY(ty = ty)
+      algorithm
+        dim_count := Type.dimensionCount(ty);
+
+        if dim_count < 2 then
+          result := Expression.promote(arg, ty, 2);
+        elseif dim_count == 2 then
+          result := arg;
+        else
+          dim1 :: dim2 :: _ := Type.arrayDims(ty);
+          ty := Type.liftArrayLeft(Type.arrayElementType(ty), dim2);
+          expl := list(evalBuiltinMatrix2(e, ty) for e in arg.elements);
+          ty := Type.liftArrayLeft(ty, dim1);
+          result := Expression.ARRAY(ty, expl);
+        end if;
+      then
+        result;
+
+    else
+      algorithm
+        ty := Expression.typeOf(arg);
+
+        if Type.isScalar(ty) then
+          result := Expression.promote(arg, ty, 2);
+        else
+          printWrongArgsError(getInstanceName(), {arg}, sourceInfo());
+          fail();
+        end if;
+      then
+        result;
+
+  end match;
+end evalBuiltinMatrix;
+
+function evalBuiltinMatrix2
+  input Expression arg;
+  input Type ty;
+  output Expression result;
+algorithm
+  result := match arg
+    case Expression.ARRAY()
+      then Expression.ARRAY(ty, list(Expression.toScalar(e) for e in arg.elements));
+
+    else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
+  end match;
+end evalBuiltinMatrix2;
+
 function evalBuiltinMax
   input list<Expression> args;
+  input Function fn;
   output Expression result;
 protected
   Expression e1, e2;
   list<Expression> expl;
+  Type ty;
 algorithm
   result := match args
     case {e1, e2} then evalBuiltinMax2(e1, e2);
-    case {Expression.ARRAY(elements = expl)} then evalBuiltinMax2(e for e in expl);
+    case {e1 as Expression.ARRAY(ty = ty)}
+      algorithm
+        result := Expression.fold(e1, evalBuiltinMax2, Expression.EMPTY(ty));
+
+        if Expression.isEmpty(result) then
+          result := Expression.CALL(Call.makeTypedCall(fn,
+            {Expression.ARRAY(ty, {})}, Variability.CONSTANT, Type.arrayElementType(ty)));
+        end if;
+      then
+        result;
+
     else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
   end match;
 end evalBuiltinMax;
@@ -855,25 +1927,34 @@ algorithm
       then if exp1.value < exp2.value then exp2 else exp1;
     case (Expression.ENUM_LITERAL(), Expression.ENUM_LITERAL())
       then if exp1.index < exp2.index then exp2 else exp1;
-    case (Expression.ARRAY(), Expression.ARRAY())
-      then evalBuiltinMax2(evalBuiltinMax2(e for e in exp1.elements),
-                           evalBuiltinMax2(e for e in exp2.elements));
-    case (Expression.ARRAY(), _)
-      then evalBuiltinMax2(evalBuiltinMax2(e for e in exp1.elements), exp2);
+    case (Expression.ARRAY(), _) then exp2;
+    case (_, Expression.EMPTY()) then exp1;
     else algorithm printWrongArgsError(getInstanceName(), {exp1, exp2}, sourceInfo()); then fail();
   end match;
 end evalBuiltinMax2;
 
 function evalBuiltinMin
   input list<Expression> args;
+  input Function fn;
   output Expression result;
 protected
   Expression e1, e2;
   list<Expression> expl;
+  Type ty;
 algorithm
   result := match args
     case {e1, e2} then evalBuiltinMin2(e1, e2);
-    case {Expression.ARRAY(elements = expl)} then evalBuiltinMin2(e for e in expl);
+    case {e1 as Expression.ARRAY(ty = ty)}
+      algorithm
+        result := Expression.fold(e1, evalBuiltinMin2, Expression.EMPTY(ty));
+
+        if Expression.isEmpty(result) then
+          result := Expression.CALL(Call.makeTypedCall(fn,
+            {Expression.ARRAY(ty, {})}, Variability.CONSTANT, Type.arrayElementType(ty)));
+        end if;
+      then
+        result;
+
     else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
   end match;
 end evalBuiltinMin;
@@ -892,11 +1973,8 @@ algorithm
       then if exp1.value > exp2.value then exp2 else exp1;
     case (Expression.ENUM_LITERAL(), Expression.ENUM_LITERAL())
       then if exp1.index > exp2.index then exp2 else exp1;
-    case (Expression.ARRAY(), Expression.ARRAY())
-      then evalBuiltinMin2(evalBuiltinMin2(e for e in exp1.elements),
-                           evalBuiltinMin2(e for e in exp2.elements));
-    case (Expression.ARRAY(), _)
-      then evalBuiltinMin2(evalBuiltinMin2(e for e in exp1.elements), exp2);
+    case (Expression.ARRAY(), _) then exp2;
+    case (_, Expression.EMPTY()) then exp1;
     else algorithm printWrongArgsError(getInstanceName(), {exp1, exp2}, sourceInfo()); then fail();
   end match;
 end evalBuiltinMin2;
@@ -931,11 +2009,16 @@ function evalBuiltinProduct
   input Expression arg;
   output Expression result;
 algorithm
-  result := matchcontinue Type.arrayElementType(Expression.typeOf(arg))
-    case Type.INTEGER() then Expression.INTEGER(Expression.fold(arg, evalBuiltinProductInt, 1));
-    case Type.REAL() then Expression.REAL(Expression.fold(arg, evalBuiltinProductReal, 1.0));
+  result := match arg
+    case Expression.ARRAY()
+      then match Type.arrayElementType(Expression.typeOf(arg))
+        case Type.INTEGER() then Expression.INTEGER(Expression.fold(arg, evalBuiltinProductInt, 1));
+        case Type.REAL() then Expression.REAL(Expression.fold(arg, evalBuiltinProductReal, 1.0));
+        else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
+      end match;
+
     else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
-  end matchcontinue;
+  end match;
 end evalBuiltinProduct;
 
 function evalBuiltinProductInt
@@ -964,44 +2047,16 @@ function evalBuiltinPromote
   input Expression arg, argN;
   output Expression result;
 protected
-  Integer n, numToPromote;
-  Type ty;
+  Integer n;
 algorithm
-  Expression.INTEGER(n) := argN;
-  ty := Expression.typeOf(arg);
-  numToPromote := n - Type.dimensionCount(ty);
-  result := evalBuiltinPromoteWork(arg, numToPromote);
+  if Expression.isInteger(argN) then
+    Expression.INTEGER(n) := argN;
+    result := Expression.promote(arg, Expression.typeOf(arg), n);
+  else
+    printWrongArgsError(getInstanceName(), {arg, argN}, sourceInfo());
+    fail();
+  end if;
 end evalBuiltinPromote;
-
-function evalBuiltinPromoteWork
-  input Expression arg;
-  input Integer n;
-  output Expression result;
-protected
-  Expression exp;
-  list<Expression> exps;
-  Type ty;
-algorithm
-  Error.assertion(n >= 0, "Promote called with n<number of dimensions", sourceInfo());
-  if n == 0 then
-    result := arg;
-    return;
-  end if;
-  if n == 1 then
-    result := Expression.ARRAY(Type.liftArrayLeft(Expression.typeOf(arg),Dimension.fromInteger(1)), {arg});
-    return;
-  end if;
-  result := match arg
-    case Expression.ARRAY()
-      algorithm
-        (exps as (Expression.ARRAY(ty=ty)::_)) := list(evalBuiltinPromoteWork(e, n-1) for e in arg.elements);
-      then Expression.ARRAY(Type.liftArrayLeft(ty,Dimension.fromInteger(listLength(arg.elements))), exps);
-    else
-      algorithm
-        (exp as Expression.ARRAY(ty=ty)) := evalBuiltinPromoteWork(arg, n-1);
-      then Expression.ARRAY(Type.liftArrayLeft(ty,Dimension.fromInteger(1)), {exp});
-  end match;
-end evalBuiltinPromoteWork;
 
 function evalBuiltinRem
   input list<Expression> args;
@@ -1121,15 +2176,70 @@ algorithm
   end match;
 end evalBuiltinSqrt;
 
+function evalBuiltinString
+  input list<Expression> args;
+  output Expression result;
+algorithm
+  result := match args
+    local
+      Expression arg;
+      Integer min_len, str_len, significant_digits, idx, c;
+      Boolean left_justified;
+      String str, format;
+      Real r;
+
+    case {arg, Expression.INTEGER(min_len), Expression.BOOLEAN(left_justified)}
+      algorithm
+        str := match arg
+          case Expression.INTEGER() then intString(arg.value);
+          case Expression.BOOLEAN() then boolString(arg.value);
+          case Expression.ENUM_LITERAL() then arg.name;
+          else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
+        end match;
+
+        str_len := stringLength(str);
+        if str_len < min_len then
+          if left_justified then
+            str := str + stringAppendList(List.fill(" ", min_len - str_len));
+          else
+            str := stringAppendList(List.fill(" ", min_len - str_len)) + str;
+          end if;
+        end if;
+      then
+        Expression.STRING(str);
+
+    case {Expression.REAL(r), Expression.INTEGER(significant_digits),
+          Expression.INTEGER(min_len), Expression.BOOLEAN(left_justified)}
+      algorithm
+        format := "%" + (if left_justified then "-" else "") +
+                  intString(min_len) + "." + intString(significant_digits) + "g";
+        str := System.sprintff(format, r);
+      then
+        Expression.STRING(str);
+
+    case {Expression.REAL(r), Expression.STRING(format)}
+      algorithm
+        str := System.sprintff(format, r);
+      then
+        Expression.STRING(str);
+
+  end match;
+end evalBuiltinString;
+
 function evalBuiltinSum
   input Expression arg;
   output Expression result;
 algorithm
-  result := matchcontinue Type.arrayElementType(Expression.typeOf(arg))
-    case Type.INTEGER() then Expression.INTEGER(Expression.fold(arg, evalBuiltinSumInt, 0));
-    case Type.REAL() then Expression.REAL(Expression.fold(arg, evalBuiltinSumReal, 0.0));
+  result := match arg
+    case Expression.ARRAY()
+      then match Type.arrayElementType(Expression.typeOf(arg))
+        case Type.INTEGER() then Expression.INTEGER(Expression.fold(arg, evalBuiltinSumInt, 0));
+        case Type.REAL() then Expression.REAL(Expression.fold(arg, evalBuiltinSumReal, 0.0));
+        else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
+      end match;
+
     else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
-  end matchcontinue;
+  end match;
 end evalBuiltinSum;
 
 function evalBuiltinSumInt
@@ -1153,6 +2263,38 @@ algorithm
     else fail();
   end match;
 end evalBuiltinSumReal;
+
+function evalBuiltinSymmetric
+  input Expression arg;
+  output Expression result;
+protected
+  array<array<Expression>> mat;
+  Integer n;
+  Type row_ty;
+  list<Expression> expl, accum = {};
+algorithm
+  result := match arg
+    case Expression.ARRAY() guard Type.isMatrix(arg.ty)
+      algorithm
+        mat := listArray(list(listArray(Expression.arrayElements(row))
+                           for row in Expression.arrayElements(arg)));
+        n := arrayLength(mat);
+        row_ty := Type.unliftArray(arg.ty);
+
+        for i in n:-1:1 loop
+          expl := {};
+          for j in n:-1:1 loop
+            expl := (if i > j then arrayGet(mat[j], i) else arrayGet(mat[i], j)) :: expl;
+          end for;
+
+          accum := Expression.ARRAY(row_ty, expl) :: accum;
+        end for;
+      then
+        Expression.ARRAY(arg.ty, accum);
+
+    else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
+  end match;
+end evalBuiltinSymmetric;
 
 function evalBuiltinTanh
   input Expression arg;
@@ -1230,6 +2372,234 @@ function evalBuiltinZeros
 algorithm
   result := evalBuiltinFill2(Expression.INTEGER(0), args);
 end evalBuiltinZeros;
+
+function evalUriToFilename
+  input Expression arg;
+  output Expression result;
+algorithm
+  result := match arg
+    case Expression.STRING()
+      then Expression.STRING(OpenModelica.Scripting.uriToFilename(arg.value));
+
+    else algorithm printWrongArgsError(getInstanceName(), {arg}, sourceInfo()); then fail();
+  end match;
+end evalUriToFilename;
+
+function evalIntBitAnd
+  input list<Expression> args;
+  output Expression result;
+protected
+  Integer i1, i2;
+algorithm
+  result := match args
+    case {Expression.INTEGER(value = i1), Expression.INTEGER(value = i2)}
+      then Expression.INTEGER(intBitAnd(i1, i2));
+
+    else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
+  end match;
+end evalIntBitAnd;
+
+function evalIntBitOr
+  input list<Expression> args;
+  output Expression result;
+protected
+  Integer i1, i2;
+algorithm
+  result := match args
+    case {Expression.INTEGER(value = i1), Expression.INTEGER(value = i2)}
+      then Expression.INTEGER(intBitOr(i1, i2));
+
+    else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
+  end match;
+end evalIntBitOr;
+
+function evalIntBitXor
+  input list<Expression> args;
+  output Expression result;
+protected
+  Integer i1, i2;
+algorithm
+  result := match args
+    case {Expression.INTEGER(value = i1), Expression.INTEGER(value = i2)}
+      then Expression.INTEGER(intBitXor(i1, i2));
+
+    else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
+  end match;
+end evalIntBitXor;
+
+function evalIntBitLShift
+  input list<Expression> args;
+  output Expression result;
+protected
+  Integer i1, i2;
+algorithm
+  result := match args
+    case {Expression.INTEGER(value = i1), Expression.INTEGER(value = i2)}
+      then Expression.INTEGER(intBitLShift(i1, i2));
+
+    else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
+  end match;
+end evalIntBitLShift;
+
+function evalIntBitRShift
+  input list<Expression> args;
+  output Expression result;
+protected
+  Integer i1, i2;
+algorithm
+  result := match args
+    case {Expression.INTEGER(value = i1), Expression.INTEGER(value = i2)}
+      then Expression.INTEGER(intBitRShift(i1, i2));
+
+    else algorithm printWrongArgsError(getInstanceName(), args, sourceInfo()); then fail();
+  end match;
+end evalIntBitRShift;
+
+function evalReduction
+  input Expression exp;
+  input Type ty;
+  input list<tuple<InstNode, Expression>> iterators;
+  output Expression result;
+protected
+  Expression e = exp, range;
+  InstNode node;
+  list<Expression> ranges = {}, expl;
+  Mutable<Expression> iter;
+  list<Mutable<Expression>> iters = {};
+algorithm
+  for i in iterators loop
+    (node, range) := i;
+    iter := Mutable.create(Expression.INTEGER(0));
+    e := Expression.replaceIterator(e, node, Expression.MUTABLE(iter));
+    iters := iter :: iters;
+    ranges := evalExp(range) :: ranges;
+  end for;
+
+  result := evalReduction2(e, ty, ranges, iters);
+end evalReduction;
+
+function evalReduction2
+  input Expression exp;
+  input Type ty;
+  input list<Expression> ranges;
+  input list<Mutable<Expression>> iterators;
+  output Expression result;
+protected
+  Expression range;
+  list<Expression> ranges_rest, expl = {};
+  Mutable<Expression> iter;
+  list<Mutable<Expression>> iters_rest;
+  ExpressionIterator range_iter;
+  Expression value;
+  Type el_ty;
+algorithm
+  if listEmpty(ranges) then
+    result := evalExp(exp);
+  else
+    range :: ranges_rest := ranges;
+    iter :: iters_rest := iterators;
+    range_iter := ExpressionIterator.fromExp(range);
+    el_ty := Type.unliftArray(ty);
+
+    while ExpressionIterator.hasNext(range_iter) loop
+      (range_iter, value) := ExpressionIterator.next(range_iter);
+      Mutable.update(iter, value);
+      expl := evalReduction2(exp, el_ty, ranges_rest, iters_rest) :: expl;
+    end while;
+
+    result := Expression.ARRAY(ty, listReverseInPlace(expl));
+  end if;
+end evalReduction2;
+
+function evalSubscriptedExp
+  input Expression exp;
+  input list<Expression> subs;
+  input EvalTarget target;
+  output Expression result;
+algorithm
+  result := match exp
+    case Expression.RANGE()
+      then Expression.RANGE(exp.ty,
+                            evalExp(exp.start, target),
+                            evalExpOpt(exp.step, target),
+                            evalExp(exp.stop, target));
+
+    else evalExp(exp, target);
+  end match;
+
+  for s in subs loop
+    result := Expression.applyIndexSubscript(evalExp(s, target), result);
+  end for;
+end evalSubscriptedExp;
+
+function evalSubscript
+  input Subscript subscript;
+  input EvalTarget target;
+  output Subscript outSubscript;
+algorithm
+  outSubscript := match subscript
+    case Subscript.INDEX() then Subscript.INDEX(evalExp(subscript.index, target));
+    case Subscript.SLICE() then Subscript.SLICE(evalExp(subscript.slice, target));
+    else subscript;
+  end match;
+end evalSubscript;
+
+protected
+
+function printUnboundError
+  input Component component;
+  input EvalTarget target;
+  input Expression exp;
+algorithm
+  () := match target
+    case EvalTarget.IGNORE_ERRORS() then ();
+
+    case EvalTarget.DIMENSION()
+      algorithm
+        Error.addSourceMessage(Error.STRUCTURAL_PARAMETER_OR_CONSTANT_WITH_NO_BINDING,
+          {Expression.toString(exp), InstNode.name(target.component)}, target.info);
+      then
+        fail();
+
+    case EvalTarget.CONDITION()
+      algorithm
+        Error.addSourceMessage(Error.CONDITIONAL_EXP_WITHOUT_VALUE,
+          {Expression.toString(exp)}, target.info);
+      then
+        fail();
+
+    else
+      algorithm
+        // check if we have a parameter with (fixed = true), annotation(Evaluate = true) and no binding
+        if listMember(Component.variability(component), {Variability.STRUCTURAL_PARAMETER, Variability.PARAMETER}) and
+           Component.getEvaluateAnnotation(component)
+        then
+          // only add an error if fixed = true
+          if Component.getFixedAttribute(component) then
+	          Error.addMultiSourceMessage(Error.UNBOUND_PARAMETER_EVALUATE_TRUE,
+	            {Expression.toString(exp) + "(fixed = true)"},
+	            {InstNode.info(ComponentRef.node(Expression.toCref(exp))), EvalTarget.getInfo(target)});
+	        end if;
+        else // constant with no binding
+          Error.addMultiSourceMessage(Error.UNBOUND_CONSTANT,
+            {Expression.toString(exp)},
+            {InstNode.info(ComponentRef.node(Expression.toCref(exp))), EvalTarget.getInfo(target)});
+          fail();
+        end if;
+      then
+        ();
+
+  end match;
+end printUnboundError;
+
+function printWrongArgsError
+  input String evalFunc;
+  input list<Expression> args;
+  input SourceInfo info;
+algorithm
+  Error.addInternalError(evalFunc + " got invalid arguments " +
+    List.toString(args, Expression.toString, "", "(", ", ", ")", true), info);
+end printWrongArgsError;
 
 annotation(__OpenModelica_Interface="frontend");
 end NFCeval;

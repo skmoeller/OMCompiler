@@ -95,6 +95,7 @@ AC_SUBST(BOOST_INCLUDE)
 AC_SUBST(LDFLAGS_LIBSTDCXX)
 AC_SUBST(CPP_RUNTIME_ARGS)
 AC_SUBST(OMENCRYPTION)
+AC_SUBST(MINGW_EXTRA_LIBS)
 
 FINAL_MESSAGES="\nConfigured OpenModelica successfully using the following options:"
 
@@ -200,6 +201,14 @@ TRY_FLAGS="-fno-stack-protector"
 # GCC 5.x generates bad code due to detecting some impure functions as pure
 if $CC --version | grep -q gcc && $CC -dumpversion | grep -q "^5"; then
   TRY_FLAGS="$TRY_FLAGS -fno-ipa-pure-const"
+fi
+
+# GCC 7.x issues:
+# - RUNPATH instead of RPATH, disable that via -Wl,--disable-new-dtags
+# - sqrt from libcolamd is not found in -lm if -Wl,--no-as-needed is not specified
+if $CC --version | grep -q gcc && $CC -dumpversion | grep -q "^7"; then
+  TRY_FLAGS="$TRY_FLAGS -Wl,--no-as-needed"
+  RPATH_EXTRA="-Wl,--disable-new-dtags"
 fi
 
 for flag in $TRY_FLAGS; do
@@ -467,7 +476,7 @@ if test "$WANT_STATIC_LPSOLVE" = "no"; then
   LIBDL="$LIBS"
   AC_SEARCH_LIBS(sqrt,m)
   AC_SEARCH_LIBS(colamd,colamd)
-  AC_SEARCH_LIBS(make_lp,[lpsolve55_pic lpsolve55],[LIBLPSOLVE55=$LIBS],[MINGW_EXTRA_LIBS="$MINGW_EXTRA_LIBS lpsolve"; AC_MSG_RESULT([lpsolve linking failed using $LIBS])])
+  AC_SEARCH_LIBS(make_lp,[lpsolve55_pic lpsolve55],[LIBLPSOLVE55=$LIBS],[COMPILE_LPSOLVE=1])
   LIBS=""
 else
   if test "$WANT_STATIC_LPSOLVE" = "yes"; then
@@ -480,18 +489,26 @@ else
   AC_SEARCH_LIBS(sqrt,m)
   LIBS="$LPLIB/liblpsolve55_pic.a $LPLIB/libcolamd.a $LIBS"
   AC_MSG_CHECKING([for static lpsolve55])
-  AC_LINK_IFELSE([AC_LANG_CALL([], [make_lp])], [LIBLPSOLVE55=$LIBS], [MINGW_EXTRA_LIBS="$MINGW_EXTRA_LIBS lpsolve"; AC_MSG_RESULT([failed])])
+  AC_LINK_IFELSE([AC_LANG_CALL([], [make_lp])], [LIBLPSOLVE55=$LIBS], [COMPILE_LPSOLVE="1"])
   AC_MSG_RESULT([$LIBLPSOLVE55])
   LIBS=""
 fi
 AC_CHECK_HEADER([lp_lib.h],[LPSOLVEINC=lp_lib.h],[
   AC_CHECK_HEADER([lpsolve/lp_lib.h],[LPSOLVEINC=lpsolve/lp_lib.h],[
-    if ! ( echo $MINGW_EXTRA_LIBS | grep -q lpsolve ); then
-      MINGW_EXTRA_LIBS="$MINGW_EXTRA_LIBS lpsolve";
-    fi
-    AC_MSG_RESULT([failed to find lpsolve55 headers])
+    COMPILE_LPSOLVE=1
   ])
 ])
+
+if test "$COMPILE_LPSOLVE" = 1; then
+  MINGW_EXTRA_LIBS="$MINGW_EXTRA_LIBS lpsolve";
+  AC_MSG_RESULT([failed to find lpsolve55 headers or library; will compile them ourselves])
+  LPSOLVEINC="$ac_pwd/3rdParty/lpsolve/build/include/lpsolve/lp_lib.h"
+  if test "$WANT_STATIC_LPSOLVE" = "yes"; then
+    LIBLPSOLVE55="-Wl,-Bstatic -llpsolve55 -Wl,-Bdynamic"
+  else
+    LIBLPSOLVE55="-llpsolve55"
+  fi
+fi
 
 fi # NO_LPLIB
 
@@ -719,8 +736,8 @@ else
   LDFLAGS="$LDFLAGS -Wl,-rpath-link,$OMBUILDDIR/lib/$host_short/omc"
   RT_LDFLAGS_SHARED="-Wl,-rpath-link,$OMBUILDDIR/lib/$host_short/omc"
   OMCRUNTIME_SHARED_LDFLAGS="$RT_LDFLAGS $LIBLPSOLVE55 -lzmq $LIBUUID"
-  RPATH="-Wl,-z,origin -Wl,-rpath,'\$\$ORIGIN/../lib/$host_short/omc' -Wl,-rpath,'\$\$ORIGIN'"
-  RPATH_QMAKE="-Wl,-z,origin -Wl,-rpath,\\'\\\$\$ORIGIN/../lib/$host_short/omc\\' -Wl,-rpath,\\'\\\$\$ORIGIN\\'"
+  RPATH="$RPATH_EXTRA -Wl,-z,origin -Wl,-rpath,'\$\$ORIGIN/../lib/$host_short/omc' -Wl,-rpath,'\$\$ORIGIN'"
+  RPATH_QMAKE="$RPATH_EXTRA -Wl,-z,origin -Wl,-rpath,\\'\\\$\$ORIGIN/../lib/$host_short/omc\\' -Wl,-rpath,\\'\\\$\$ORIGIN\\'"
   OS_TARGET="linux"
   AR_SH="$AR -ru"
   BOOTSTRAP_STATIC=""

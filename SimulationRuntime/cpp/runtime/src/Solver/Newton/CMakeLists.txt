@@ -10,7 +10,7 @@ else(NOT BUILD_SHARED_LIBS)
  install(FILES $<TARGET_PDB_FILE:${NewtonName}> DESTINATION ${LIBINSTALLEXT} OPTIONAL)
 endif(NOT BUILD_SHARED_LIBS)
 
-target_link_libraries(${NewtonName} ${ExtensionUtilitiesName} ${Boost_LIBRARIES} ${LAPACK_LIBRARIES}  ${ModelicaName})
+target_link_libraries(${NewtonName}  ${SolverName} ${ExtensionUtilitiesName} ${Boost_LIBRARIES} ${LAPACK_LIBRARIES}  ${ModelicaName})
 add_precompiled_header(${NewtonName} runtime/include/Core/Modelica.h)
 
 

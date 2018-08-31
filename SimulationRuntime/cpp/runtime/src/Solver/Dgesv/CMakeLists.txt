@@ -13,8 +13,7 @@ IF(DGESV_FOUND)
 
   add_library(${DgesvSolverName} STATIC DgesvSolver.cpp DgesvSolverSettings.cpp FactoryExport.cpp)
 
-
-
+  set_target_properties(${DgesvSolverName} PROPERTIES COMPILE_DEFINITIONS "RUNTIME_STATIC_LINKING;ENABLE_SUNDIALS_STATIC")
   install(TARGETS ${DgesvSolverName} DESTINATION ${LIBINSTALLEXT})
   install(FILES
     ${CMAKE_SOURCE_DIR}/runtime/include/Solver/Dgesv/DgesvSolver.h

@@ -12093,7 +12093,7 @@ end expandExpression;
 public function extendArrExp "author: Frenkel TUD 2010-07
   alternative name: vectorizeExp"
   input DAE.Exp inExp;
-  input Boolean inExpanded "True if something was expanded, otherwise false.";
+  input Boolean inExpanded = false "True if something was expanded, otherwise false.";
   output DAE.Exp outExp;
   output Boolean outExpanded;
 algorithm
@@ -13130,6 +13130,24 @@ algorithm
       then fail();
   end match;
 end compare;
+
+function compareSubscripts
+  input DAE.Subscript sub1;
+  input DAE.Subscript sub2;
+  output Integer res;
+algorithm
+  if referenceEq(sub1, sub2) then
+    res := 0;
+  else
+    res := match (sub1, sub2)
+      case (DAE.Subscript.WHOLEDIM(), DAE.Subscript.WHOLEDIM()) then 0;
+      case (DAE.Subscript.SLICE(), DAE.Subscript.SLICE()) then compare(sub1.exp, sub2.exp);
+      case (DAE.Subscript.INDEX(), DAE.Subscript.INDEX()) then compare(sub1.exp, sub2.exp);
+      case (DAE.Subscript.WHOLE_NONEXP(), DAE.Subscript.WHOLE_NONEXP()) then compare(sub1.exp, sub2.exp);
+      else Util.intCompare(valueConstructor(sub1), valueConstructor(sub2));
+    end match;
+  end if;
+end compareSubscripts;
 
 public function isInvariantExpNoTraverse "For use with traverseExp"
   input output DAE.Exp e;

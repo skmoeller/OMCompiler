@@ -530,6 +530,8 @@ constant DebugFlag EXEC_STAT_EXTRA_GC = DEBUG_FLAG(177, "execstatGCcollect", fal
   Util.gettext("When running execstat, also perform an extra full garbage collection."));
 constant DebugFlag DEBUG_DAEMODE = DEBUG_FLAG(178, "debugDAEmode", false,
   Util.gettext("Dump debug output for the DAEmode."));
+constant DebugFlag NF_SCALARIZE = DEBUG_FLAG(179, "nfScalarize", true,
+  Util.gettext("Run scalarization in NF, default true."));
 
 // This is a list of all debug flags, to keep track of which flags are used. A
 // flag can not be used unless it's in this list, and the list is checked at
@@ -714,7 +716,8 @@ constant list<DebugFlag> allDebugFlags = {
   SUSAN_MATCHCONTINUE_DEBUG,
   OLD_FE_UNITCHECK,
   EXEC_STAT_EXTRA_GC,
-  DEBUG_DAEMODE
+  DEBUG_DAEMODE,
+  NF_SCALARIZE
 };
 
 public
@@ -812,7 +815,6 @@ constant ConfigFlag PRE_OPT_MODULES = CONFIG_FLAG(12, "preOptModules",
     ("simplifyAllExpressions", Util.notrans("Does simplifications on all expressions.")),
     ("simplifyIfEquations", Util.gettext("Tries to simplify if equations by use of information from evaluated parameters.")),
     ("sortEqnsVars", Util.notrans("Heuristic sorting for equations and variables.")),
-    ("stateMachineElab", Util.gettext("Does the elaboration of state machines.")),
     ("unitChecking", Util.gettext("Does advanced unit checking which consists of two parts: 1. calculation of unspecified unit information for variables; 2. consistency check for all equations based on unit information. Please note: This module is still experimental.")),
     ("wrapFunctionCalls", Util.gettext("This module introduces variables for each function call and substitutes all these calls with the newly introduced variables."))
     })),
@@ -1452,6 +1454,18 @@ constant ConfigFlag IGNORE_REPLACEABLE = CONFIG_FLAG(117, "ignoreReplaceable",
     }),NONE(),
     Util.gettext("Sets the optimization modules for the DAEmode in the back end. See --help=optmodules for more info."));
 
+  constant ConfigFlag EVAL_LOOP_LIMIT = CONFIG_FLAG(125,
+    "evalLoopLimit", NONE(), EXTERNAL(), INT_FLAG(100000), NONE(),
+    Util.gettext("The loop iteration limit used when evaluating constant function calls."));
+
+  constant ConfigFlag EVAL_RECURSION_LIMIT = CONFIG_FLAG(126,
+    "evalRecursionLimit", NONE(), EXTERNAL(), INT_FLAG(256), NONE(),
+    Util.gettext("The recursion limit used when evaluating constant function calls."));
+
+  constant ConfigFlag SINGLE_INSTANCE_AGLSOLVER = CONFIG_FLAG(127, "singleInstanceAglSolver",
+  NONE(), EXTERNAL(), BOOL_FLAG(false), NONE(),
+  Util.gettext("Sets to instantiate only  one algebraic loop solver all algebraic loops"));
+
 protected
 // This is a list of all configuration flags. A flag can not be used unless it's
 // in this list, and the list is checked at initialization so that all flags are
@@ -1580,7 +1594,10 @@ constant list<ConfigFlag> allConfigFlags = {
   Load_PACKAGE_FILE,
   BUILDING_FMU,
   BUILDING_MODEL,
-  POST_OPT_MODULES_DAE
+  POST_OPT_MODULES_DAE,
+  EVAL_LOOP_LIMIT,
+  EVAL_RECURSION_LIMIT,
+  SINGLE_INSTANCE_AGLSOLVER
 };
 
 public function new

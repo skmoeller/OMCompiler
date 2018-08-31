@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.9)
 
 project(${SolverName})
 
-add_library(${SolverName} SolverDefaultImplementation.cpp SolverSettings.cpp SystemStateSelection.cpp FactoryExport.cpp SimulationMonitor.cpp)
+add_library(${SolverName} SolverDefaultImplementation.cpp AlgLoopSolverDefaultImplementation.cpp SolverSettings.cpp SystemStateSelection.cpp FactoryExport.cpp SimulationMonitor.cpp)
 
 if(NOT BUILD_SHARED_LIBS)
   set_target_properties(${SolverName} PROPERTIES COMPILE_DEFINITIONS "RUNTIME_STATIC_LINKING;ENABLE_SUNDIALS_STATIC")
@@ -17,7 +17,8 @@ add_precompiled_header(${SolverName} runtime/include/Core/Modelica.h)
 
 install(TARGETS ${SolverName} DESTINATION ${LIBINSTALLEXT})
 install(FILES
-  ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/IAlgLoopSolver.h
+  ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/ILinearAlgLoopSolver.h
+  ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/INonLinearAlgLoopSolver.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/ILinSolverSettings.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/INonLinSolverSettings.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/ISolver.h

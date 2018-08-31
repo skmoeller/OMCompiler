@@ -38,6 +38,7 @@ extern "C" {
 
 #if HAVE_MMAP
 
+
 omc_mmap_read_unix omc_mmap_open_read_unix(omsi_string fileName)
 {
   struct stat s;

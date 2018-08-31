@@ -36,11 +36,30 @@ encapsulated uniontype NFEquation
   import NFInstNode.InstNode;
   import DAE;
   import ComponentRef = NFComponentRef;
+  import NFPrefixes.Variability;
 
 protected
   import Equation = NFEquation;
+  import NFComponent.Component;
+  import Util;
+  import ElementSource;
 
 public
+  uniontype Branch
+    record BRANCH
+      Expression condition;
+      Variability conditionVar;
+      list<Equation> body;
+    end BRANCH;
+
+    function toString
+      input Branch branch;
+      output String str;
+    algorithm
+      str := Expression.toString(branch.condition) + " then\n" + toStringList(branch.body);
+    end toString;
+  end Branch;
+
   record EQUALITY
     Expression lhs "The left hand side expression.";
     Expression rhs "The right hand side expression.";
@@ -64,24 +83,24 @@ public
   record CONNECT
     Expression lhs;
     Expression rhs;
+    list<Equation> broken "equations which would replace a broken connect in the overconstrained connection graph";
     DAE.ElementSource source;
   end CONNECT;
 
   record FOR
     InstNode iterator;
+    Option<Expression> range;
     list<Equation> body   "The body of the for loop.";
     DAE.ElementSource source;
   end FOR;
 
   record IF
-    list<tuple<Expression, list<Equation>>> branches
-      "List of branches, where each branch is a tuple of a condition and a body.";
+    list<Branch> branches;
     DAE.ElementSource source;
   end IF;
 
   record WHEN
-    list<tuple<Expression, list<Equation>>> branches
-      "List of branches, where each branch is a tuple of a condition and a body.";
+    list<Branch> branches;
     DAE.ElementSource source;
   end WHEN;
 
@@ -108,28 +127,185 @@ public
     DAE.ElementSource source;
   end NORETCALL;
 
+  function makeBranch
+    input Expression condition;
+    input list<Equation> body;
+    input Variability condVar = Variability.CONTINUOUS;
+    output Branch branch;
+  algorithm
+    branch := Branch.BRANCH(condition, condVar, body);
+    annotation(__OpenModelica_EarlyInline=true);
+  end makeBranch;
+
+  function makeIf
+    input list<Branch> branches;
+    input DAE.ElementSource src;
+    output Equation eq;
+  algorithm
+    eq := IF(branches, src);
+    annotation(__OpenModelica_EarlyInline=true);
+  end makeIf;
+
+  function source
+    input Equation eq;
+    output DAE.ElementSource source;
+  algorithm
+    source := match eq
+      case EQUALITY() then eq.source;
+      case CREF_EQUALITY() then eq.source;
+      case ARRAY_EQUALITY() then eq.source;
+      case CONNECT() then eq.source;
+      case FOR() then eq.source;
+      case IF() then eq.source;
+      case WHEN() then eq.source;
+      case ASSERT() then eq.source;
+      case TERMINATE() then eq.source;
+      case REINIT() then eq.source;
+      case NORETCALL() then eq.source;
+    end match;
+  end source;
+
+  function info
+    input Equation eq;
+    output SourceInfo info = ElementSource.getInfo(source(eq));
+  end info;
+
+  partial function ApplyFn
+    input Equation eq;
+  end ApplyFn;
+
+  function applyList
+    input list<Equation> eql;
+    input ApplyFn func;
+  algorithm
+    for eq in eql loop
+      apply(eq, func);
+    end for;
+  end applyList;
+
+  function apply
+    input Equation eq;
+    input ApplyFn func;
+  algorithm
+    () := match eq
+      case FOR()
+        algorithm
+          for e in eq.body loop
+            apply(e, func);
+          end for;
+        then
+          ();
+
+      case IF()
+        algorithm
+          for b in eq.branches loop
+            () := match b
+              case Branch.BRANCH()
+                algorithm
+                  for e in b.body loop
+                    apply(e, func);
+                  end for;
+                then
+                  ();
+              else ();
+            end match;
+          end for;
+        then
+          ();
+
+      case WHEN()
+        algorithm
+          for b in eq.branches loop
+            () := match b
+              case Branch.BRANCH()
+                algorithm
+                  for e in b.body loop
+                    apply(e, func);
+                  end for;
+                then
+                  ();
+              else ();
+            end match;
+          end for;
+        then
+          ();
+
+      else ();
+    end match;
+
+    func(eq);
+  end apply;
+
+  partial function MapFn
+    input output Equation eq;
+  end MapFn;
+
+  function map
+    input output Equation eq;
+    input MapFn func;
+  algorithm
+    () := match eq
+      case FOR()
+        algorithm
+          eq.body := list(map(e, func) for e in eq.body);
+        then
+          ();
+
+      case IF()
+        algorithm
+          eq.branches := list(
+            match b
+              case Branch.BRANCH()
+                algorithm
+                  b.body := list(map(e, func) for e in b.body);
+                then
+                  b;
+              else b;
+            end match
+          for b in eq.branches);
+        then
+          ();
+
+      case WHEN()
+        algorithm
+          eq.branches := list(
+            match b
+              case Branch.BRANCH()
+                algorithm
+                  b.body := list(map(e, func) for e in b.body);
+                then
+                  b;
+              else b;
+            end match
+          for b in eq.branches);
+        then
+          ();
+
+      else ();
+    end match;
+
+    eq := func(eq);
+  end map;
+
+  partial function MapExpFn
+    input output Expression MapExpFn;
+  end MapExpFn;
+
   function mapExpList
     input output list<Equation> eql;
-    input MapFn func;
-
-    partial function MapFn
-      input output Expression exp;
-    end MapFn;
+    input MapExpFn func;
   algorithm
     eql := list(mapExp(eq, func) for eq in eql);
   end mapExpList;
 
   function mapExp
     input output Equation eq;
-    input MapFn func;
-
-    partial function MapFn
-      input output Expression exp;
-    end MapFn;
+    input MapExpFn func;
   algorithm
     eq := match eq
       local
         Expression e1, e2, e3;
+        list<Equation> eql;
 
       case EQUALITY()
         algorithm
@@ -151,13 +327,15 @@ public
         algorithm
           e1 := func(eq.lhs);
           e2 := func(eq.rhs);
+          eql := mapExpList(eq.broken, func);
         then
           if referenceEq(e1, eq.lhs) and referenceEq(e2, eq.rhs)
-            then eq else CONNECT(e1, e2, eq.source);
+            then eq else CONNECT(e1, e2, eql, eq.source);
 
       case FOR()
         algorithm
           eq.body := list(mapExp(e, func) for e in eq.body);
+          eq.range := Util.applyOption(eq.range, func);
         then
           eq;
 
@@ -207,20 +385,22 @@ public
   end mapExp;
 
   function mapExpBranch
-    input output tuple<Expression, list<Equation>> branch;
-    input MapFn func;
-
-    partial function MapFn
-      input output Expression exp;
-    end MapFn;
+    input output Branch branch;
+    input MapExpFn func;
   protected
     Expression cond;
     list<Equation> eql;
   algorithm
-    (cond, eql) := branch;
-    cond := func(cond);
-    eql := list(mapExp(e, func) for e in eql);
-    branch := (cond, eql);
+    branch := match branch
+      case Branch.BRANCH()
+        algorithm
+          cond := func(branch.condition);
+          eql := list(mapExp(e, func) for e in branch.body);
+        then
+          Branch.BRANCH(cond, branch.conditionVar, eql);
+
+      else branch;
+    end match;
   end mapExpBranch;
 
   function foldExpList<ArgT>
@@ -273,14 +453,26 @@ public
       case Equation.FOR()
         algorithm
           arg := foldExpList(eq.body, func, arg);
+
+          if isSome(eq.range) then
+            arg := func(Util.getOption(eq.range), arg);
+          end if;
         then
           ();
 
       case Equation.IF()
         algorithm
           for b in eq.branches loop
-            arg := func(Util.tuple21(b), arg);
-            arg := foldExpList(Util.tuple22(b), func, arg);
+            () := match b
+              case Branch.BRANCH()
+                algorithm
+                  arg := func(b.condition, arg);
+                  arg := foldExpList(b.body, func, arg);
+                then
+                  ();
+
+              else ();
+            end match;
           end for;
         then
           ();
@@ -288,8 +480,16 @@ public
       case Equation.WHEN()
         algorithm
           for b in eq.branches loop
-            arg := func(Util.tuple21(b), arg);
-            arg := foldExpList(Util.tuple22(b), func, arg);
+            () := match b
+              case Branch.BRANCH()
+                algorithm
+                  arg := func(b.condition, arg);
+                  arg := foldExpList(b.body, func, arg);
+                then
+                  ();
+
+              else ();
+            end match;
           end for;
         then
           ();
@@ -324,6 +524,67 @@ public
       else ();
     end match;
   end foldExp;
+
+  function toString
+    input Equation eq;
+    output String str;
+  algorithm
+    str := match eq
+      local
+        String s1, s2;
+
+      case EQUALITY()
+        then Expression.toString(eq.lhs) + " = " + Expression.toString(eq.rhs);
+
+      case CREF_EQUALITY()
+        then ComponentRef.toString(eq.lhs) + " = " + ComponentRef.toString(eq.rhs);
+
+      case ARRAY_EQUALITY()
+        then Expression.toString(eq.lhs) + " = " + Expression.toString(eq.rhs);
+
+      case CONNECT()
+        then "connect(" + Expression.toString(eq.lhs) + ", " + Expression.toString(eq.rhs) + ")";
+
+      case FOR()
+        algorithm
+          s1 := if isSome(eq.range) then " in " + Expression.toString(Util.getOption(eq.range)) else "";
+          s2 := toStringList(eq.body);
+        then
+          "for " + InstNode.name(eq.iterator) + s1 + " loop\n" + s2 + "end for";
+
+      case IF()
+        then "if " + Branch.toString(listHead(eq.branches)) +
+             List.toString(listRest(eq.branches), Branch.toString, "", "elseif ", "\nelseif ", "", false) +
+             "\nend if";
+
+      case WHEN()
+        then "when " + Branch.toString(listHead(eq.branches)) +
+             List.toString(listRest(eq.branches), Branch.toString, "", "elsewhen ", "\nelsewhen ", "", false) +
+             "\nend when";
+
+      case ASSERT()
+        then "assert(" + Expression.toString(eq.condition) + ", " +
+             Expression.toString(eq.message) + ", " + Expression.toString(eq.level) + ")";
+
+      case TERMINATE()
+        then "terminate( " + Expression.toString(eq.message) + ")";
+
+      case REINIT()
+        then "reinit(" + Expression.toString(eq.cref) + ", " + Expression.toString(eq.reinitExp) + ")";
+
+      case NORETCALL()
+        then Expression.toString(eq.exp);
+
+      else "#UNKNOWN EQUATION#";
+    end match;
+  end toString;
+
+  function toStringList
+    input list<Equation> eql;
+    output String str;
+  algorithm
+    str := List.toString(eql, toString, "", "  ", "\n  ", "", false) + "\n";
+  end toStringList;
 
 annotation(__OpenModelica_Interface="frontend");
 end NFEquation;

@@ -165,7 +165,7 @@ public
       case Op.POW_SCALAR_ARRAY  then DAE.POW_SCALAR_ARRAY(ty);
       case Op.POW_ARRAY_SCALAR  then DAE.POW_ARRAY_SCALAR(ty);
       case Op.POW_MATRIX        then DAE.POW_ARR(ty);
-      case Op.UMINUS            then DAE.UMINUS(ty);
+      case Op.UMINUS            then if Type.isArray(op.ty) then DAE.UMINUS_ARR(ty) else DAE.UMINUS(ty);
       case Op.AND               then DAE.AND(ty);
       case Op.OR                then DAE.OR(ty);
       case Op.NOT               then DAE.NOT(ty);
@@ -194,6 +194,12 @@ public
   algorithm
     op.ty := ty;
   end setType;
+
+  function scalarize
+    input output Operator op;
+  algorithm
+    op.ty := Type.arrayElementType(op.ty);
+  end scalarize;
 
   function symbol
     input Operator op;
@@ -246,12 +252,6 @@ public
 
     symbol := spacing + symbol + spacing;
   end symbol;
-
-  function toString
-    input Operator op;
-  algorithm
-    symbol(op);
-  end toString;
 
   function priority
     input Operator op;
@@ -349,15 +349,50 @@ public
     output Operator op = OPERATOR(ty, Op.UMINUS);
   end makeUMinus;
 
+  function makeAnd
+    input Type ty;
+    output Operator op = OPERATOR(ty, Op.AND);
+  end makeAnd;
+
+  function makeOr
+    input Type ty;
+    output Operator op = OPERATOR(ty, Op.OR);
+  end makeOr;
+
+  function makeNot
+    input Type ty;
+    output Operator op = OPERATOR(ty, Op.NOT);
+  end makeNot;
+
+  function makeLess
+    input Type ty;
+    output Operator op = OPERATOR(ty, Op.LESS);
+  end makeLess;
+
   function makeLessEq
     input Type ty;
     output Operator op = OPERATOR(ty, Op.LESSEQ);
   end makeLessEq;
 
+  function makeGreater
+    input Type ty;
+    output Operator op = OPERATOR(ty, Op.GREATER);
+  end makeGreater;
+
+  function makeGreaterEq
+    input Type ty;
+    output Operator op = OPERATOR(ty, Op.GREATEREQ);
+  end makeGreaterEq;
+
   function makeEqual
     input Type ty;
     output Operator op = OPERATOR(ty, Op.EQUAL);
   end makeEqual;
+
+  function makeNotEqual
+    input Type ty;
+    output Operator op = OPERATOR(ty, Op.NEQUAL);
+  end makeNotEqual;
 
   function makeScalarArray
     input Type ty;

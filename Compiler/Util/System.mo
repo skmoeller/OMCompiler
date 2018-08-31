@@ -482,11 +482,33 @@ public function directoryExists
   external "C" outBool=SystemImpl__directoryExists(inString) annotation(Library = "omcruntime");
 end directoryExists;
 
+public function copyFile
+  input String source;
+  input String destination;
+  output Boolean outBool;
+  external "C" outBool=SystemImpl__copyFile(source, destination) annotation(Library = "omcruntime");
+end copyFile;
+
+
 public function removeDirectory
   input String inString;
   output Boolean outBool;
-  external "C" outBool=SystemImpl__removeDirectory(inString) annotation(Library = "omcruntime");
+algorithm
+  outBool := System.removeDirectory_dispatch(inString);
+  // oh Windows crap: stat fails on very long paths!
+  if (not outBool) then
+    if System.os() == "Windows_NT" then
+      // try rm as that somehow works on long paths
+      outBool := (0 == System.systemCall("rm -r " + inString));
+    end if;
+  end if;
 end removeDirectory;
+
+protected function removeDirectory_dispatch
+  input String inString;
+  output Boolean outBool;
+  external "C" outBool=SystemImpl__removeDirectory(inString) annotation(Library = "omcruntime");
+end removeDirectory_dispatch;
 
 public function platform
   output String outString;
@@ -582,8 +604,24 @@ public function getHasExpandableConnectors
  retrieves the external flag that signals the
  presence of expandable connectors in a model"
   output Boolean hasExpandable;
-  external "C" hasExpandable=System_getHasExpandableConnectors() annotation(Library = "omcruntime");
+  external "C" hasExpandable = System_getHasExpandableConnectors() annotation(Library = "omcruntime");
 end getHasExpandableConnectors;
+
+public function setHasOverconstrainedConnectors
+"@author: adrpo
+ sets the external flag that signals the
+ presence of overconstrained connectors in a model"
+  input Boolean hasOverconstrained;
+  external "C" System_setHasOverconstrainedConnectors(hasOverconstrained) annotation(Library = "omcruntime");
+end setHasOverconstrainedConnectors;
+
+public function getHasOverconstrainedConnectors
+"@author: adrpo
+ retrieves the external flag that signals the
+ presence of overconstrained connectors in a model"
+  output Boolean hasOverconstrained;
+  external "C" hasOverconstrained = System_getHasOverconstrainedConnectors() annotation(Library = "omcruntime");
+end getHasOverconstrainedConnectors;
 
 public function setPartialInstantiation
 "@author: adrpo
@@ -735,6 +773,11 @@ Consider opening a socket and letting anyone run system() commands without authe
   output Boolean isRoot;
   external "C" isRoot=System_userIsRoot() annotation(Library = "omcruntime");
 end userIsRoot;
+
+public function getuid
+  output Integer uid;
+  external "C" uid=System_getuid() annotation(Library = "omcruntime");
+end getuid;
 
 public function configureCommandLine
 "Returns the date and command used to configure OpenModelica.
@@ -1034,6 +1077,20 @@ function snprintff "sprintf format string that takes one double as argument"
   output String str;
 external "C" str=System_snprintff(format,maxlen,val) annotation(Library = {"omcruntime"});
 end snprintff;
+
+function sprintff
+  "sprintf format string that takes one double as argument, but unlike snprintff
+   it takes no buffer size as argument.
+
+   NOTE: This function doesn't actually call sprintf, since that would be unsafe.
+         It instead calls snprintf with a fixed buffer size that should be enough
+         for most cases, and if that fails it resizes the buffer to the size
+         snprintf said it needed and calls snprintf again."
+  input String format;
+  input Real val;
+  output String str;
+external "C" str = System_sprintff(format, val) annotation(Library = {"omcruntime"});
+end sprintff;
 
 public function realRand
   "Returns a value in the intervals (0,1]"

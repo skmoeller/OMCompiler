@@ -22,6 +22,7 @@ void Initialization::initializeSystem()
   shared_ptr<IContinuous> continous_system = dynamic_pointer_cast<IContinuous>(_system);
   shared_ptr<IEvent> event_system = dynamic_pointer_cast<IEvent>(_system);
   shared_ptr<IMixedSystem> mixed_system = dynamic_pointer_cast<IMixedSystem>(_system);
+  shared_ptr<IStepEvent> step_event_system = dynamic_pointer_cast<IStepEvent>(_system);
   int dim = event_system->getDimZeroFunc();
   bool* conditions0 = new bool[dim];
   bool* conditions1 = new bool[dim];
@@ -53,6 +54,8 @@ void Initialization::initializeSystem()
   if( _solver->stateSelection())
   {
     _system->initEquations();
+	step_event_system->stepCompleted(0.0);
+
 
     /* report a warning about strange start values */
     if(_solver->stateSelection())

@@ -69,12 +69,14 @@ typedef long                omsi_long;
 typedef int                 omsi_bool;
 #define omsi_true  1
 #define omsi_false 0
+/* compiler error  : #error :  The C++ Standard Library forbids macroizing keywords. Enable warning C4005 to find the forbidden macro.
 #ifndef true
 #define true 1
 #endif
 #ifndef false
 #define false 0
 #endif
+*/
 typedef char                omsi_char;
 typedef const omsi_char*    omsi_string;
 #endif

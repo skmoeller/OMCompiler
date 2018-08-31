@@ -7,9 +7,11 @@
 
 #include <Core/System/ILinearAlgLoop.h>                // Interface to AlgLoo
 #include <Core/System/INonLinearAlgLoop.h>                // Interface to AlgLoo
-#include <Core/Solver/IAlgLoopSolver.h>        // Export function from dll
+#include <Core/Solver/INonLinearAlgLoopSolver.h>        // Export function from dll
 #include <Core/Solver/INonLinSolverSettings.h>
 #include <Solver/Newton/NewtonSettings.h>
+#include "FactoryExport.h"
+#include <Core/Solver/AlgLoopSolverDefaultImplementation.h>
 
 
 /*****************************************************************************/
@@ -32,24 +34,32 @@
 /*****************************************************************************
  * Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
  *****************************************************************************/
-class Newton : public IAlgLoopSolver
+class Newton : public INonLinearAlgLoopSolver,  public AlgLoopSolverDefaultImplementation
 {
  public:
-  Newton(INonLinearAlgLoop* algLoop,INonLinSolverSettings* settings);
+  Newton(INonLinSolverSettings* settings,shared_ptr<INonLinearAlgLoop> algLoop=shared_ptr<INonLinearAlgLoop>());
 
   virtual ~Newton();
 
   /// (Re-) initialize the solver
   virtual void initialize();
 
-  /// Solution of a (non-)linear system of equations
-  virtual void solve();
+   /// Solution of a (non-)linear system of equations
+   virtual void solve();
+   //solve for a single instance call
+   virtual void solve(shared_ptr<INonLinearAlgLoop> algLoop,bool first_solve = false);
 
   /// Returns the status of iteration
   virtual ITERATIONSTATUS getIterationStatus();
   virtual void stepCompleted(double time);
   virtual void restoreOldValues();
   virtual void restoreNewValues();
+
+  virtual bool* getConditionsWorkArray();
+  virtual bool* getConditions2WorkArray();
+  virtual double* getVariableWorkArray();
+
+
  private:
   /// Encapsulation of determination of residuals to given unknowns
   void calcFunction(const double* y, double* residual);
@@ -62,14 +72,12 @@ class Newton : public IAlgLoopSolver
   INonLinSolverSettings
     *_newtonSettings;           ///< Settings for the solver
 
-  INonLinearAlgLoop
-    *_algLoop;                  ///< Algebraic loop to be solved
+   shared_ptr<INonLinearAlgLoop> _algLoop;                  ///< Algebraic loop to be solved
 
   ITERATIONSTATUS
     _iterationStatus;           ///< Output      - Denotes the status of iteration
 
-  long int
-    _dimSys;                    ///< Temp        - Number of unknowns (=dimension of system of equations)
+
 
   bool
     _firstCall;                 ///< Temp        - Denotes the first call to the solver, init() is called

@@ -48,7 +48,6 @@ public
 
   record RAW_DIM
     Absyn.Subscript dim;
-    InstNode scope;
   end RAW_DIM;
 
   record UNTYPED
@@ -169,6 +168,7 @@ public
     isEqual := match (dim1, dim2)
       case (UNKNOWN(), _) then true;
       case (_, UNKNOWN()) then true;
+      case (EXP(), EXP()) then Expression.isEqual(dim1.exp, dim2.exp);
       case (EXP(), _) then true;
       case (_, EXP()) then true;
       else Dimension.size(dim1) == Dimension.size(dim2);
@@ -209,15 +209,27 @@ public
 
   function isKnown
     input Dimension dim;
+    input Boolean allowExp = false;
     output Boolean known;
   algorithm
     known := match dim
       case INTEGER() then true;
       case BOOLEAN() then true;
       case ENUM() then true;
+      case EXP() then allowExp;
       else false;
     end match;
   end isKnown;
+
+  function isZero
+    input Dimension dim;
+    output Boolean isZero;
+  algorithm
+    isZero := match dim
+      case INTEGER() then dim.size == 0;
+      else false;
+    end match;
+  end isZero;
 
   function subscriptType
     "Returns the expected type of a subscript for the given dimension."
@@ -256,8 +268,8 @@ public
   algorithm
   end toStringList;
 
-  function sizeExp
-    "Returns the size of a dimension as an expression."
+  function endExp
+    "Returns an expression for the last index in a dimension."
     input Dimension dim;
     input ComponentRef cref;
     input Integer index;
@@ -276,18 +288,24 @@ public
         then Expression.SIZE(Expression.CREF(Type.INTEGER(), ComponentRef.stripSubscripts(cref)),
                              SOME(Expression.INTEGER(index)));
     end match;
-  end sizeExp;
+  end endExp;
 
-  function setScope
+  function sizeExp
+    "Returns the size of a dimension as an Expression."
     input Dimension dim;
-    input InstNode scope;
-    output Dimension outDim;
+    output Expression sizeExp;
   algorithm
-    outDim := match dim
-      case RAW_DIM() then RAW_DIM(dim.dim, scope);
-      else dim;
+    sizeExp := match dim
+      local
+        Type ty;
+
+      case INTEGER() then Expression.INTEGER(dim.size);
+      case BOOLEAN() then Expression.INTEGER(2);
+      case ENUM(enumType = ty as Type.ENUMERATION())
+        then Expression.INTEGER(listLength(ty.literals));
+      case EXP() then dim.exp;
     end match;
-  end setScope;
+  end sizeExp;
 
   function variability
     input Dimension dim;

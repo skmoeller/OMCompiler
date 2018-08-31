@@ -3,16 +3,15 @@
  *
  *  @{
  */
-#if defined(__vxworks)
-//#include <klu.h>
-#else
-//#include <Solver/KLU/klu.h>
-#endif
 
-class Kinsol : public IAlgLoopSolver
+#include "FactoryExport.h"
+#include <Core/Solver/AlgLoopSolverDefaultImplementation.h>
+
+
+class Kinsol : public INonLinearAlgLoopSolver,  public AlgLoopSolverDefaultImplementation
 {
 public:
-  Kinsol(INonLinearAlgLoop* algLoop, INonLinSolverSettings* settings);
+  Kinsol(INonLinSolverSettings* settings,shared_ptr<INonLinearAlgLoop> algLoop=shared_ptr<INonLinearAlgLoop>());
   virtual ~Kinsol();
 
   /// (Re-) initialize the solver
@@ -20,12 +19,18 @@ public:
 
   /// Solution of a (non-)linear system of equations
   virtual void solve();
-
+  //solve for a single instance call
+  virtual void solve(shared_ptr<INonLinearAlgLoop> algLoop,bool first_solve = false);
   /// Returns the status of iteration
   virtual ITERATIONSTATUS getIterationStatus();
   virtual void stepCompleted(double time);
   virtual void restoreOldValues();
   virtual void restoreNewValues();
+
+  virtual bool* getConditionsWorkArray();
+  virtual bool* getConditions2WorkArray();
+  virtual double* getVariableWorkArray();
+
   int kin_f(N_Vector y, N_Vector fval, void *user_data);
 
  /*will be used with new sundials version
@@ -47,14 +52,12 @@ private:
   INonLinSolverSettings
     *_kinsolSettings;     ///< Settings for the solver
 
-  INonLinearAlgLoop
-    *_algLoop;            ///< Algebraic loop to be solved
+  shared_ptr<INonLinearAlgLoop> _algLoop;            ///< Algebraic loop to be solved
 
   ITERATIONSTATUS
     _iterationStatus;     ///< Output   - Denotes the status of iteration
 
-  long int
-    _dimSys;              ///< Temp   - Number of unknowns (=dimension of system of equations)
+
   int _dim;
   bool
     _firstCall;           ///< Temp   - Denotes the first call to the solver, init() is called
