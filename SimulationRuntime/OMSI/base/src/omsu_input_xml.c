@@ -117,6 +117,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
         return -1;
     }
 
+    /* read osu_data */
     omsu_read_value_real(omsu_findHashStringString(mi.de,"startTime"), &(osu_data->experiment->start_time), 0);
     omsu_read_value_real(omsu_findHashStringString(mi.de,"stopTime"), &(osu_data->experiment->stop_time), osu_data->experiment->start_time+1);
     omsu_read_value_real(omsu_findHashStringString(mi.de,"stepSize"), &(osu_data->experiment->step_size), (osu_data->experiment->stop_time - osu_data->experiment->start_time) / 500);
@@ -124,7 +125,14 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_real(omsu_findHashStringString(mi.de,"tolerance"), &(osu_data->experiment->tolerance), 1e-5);
     omsu_read_value_string(omsu_findHashStringString(mi.de,"solver"), (omsi_char**) &(osu_data->experiment->solver_name));
 
+
     /* process all model data */
+    osu_data->model_data = functions->allocateMemory(1, sizeof(model_data_t));
+    if (!osu_data->model_data) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+            "fmi2Instantiate: Not enough memory.");
+        return -1;
+    }
     omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), (omsi_char**) &(osu_data->model_data->modelGUID));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data->n_states));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data->n_derivatives));

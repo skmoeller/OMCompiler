@@ -66,5 +66,6 @@ omsi_int main(omsi_int argc, omsi_char* argv[]) {
 
     omsu_process_input_xml(omsi_data, initXMLFilename, guid, instanceName, &callbacks);
 
+    printf("Finished XML test successfully!\n");
     return 0;
 }
