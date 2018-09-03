@@ -35,7 +35,9 @@
 #ifndef OMSU_COMMON_H
 #define OMSU_COMMON_H
 
-#include "omsi.h"
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
 
 
 #define NUMBER_OF_CATEGORIES 11

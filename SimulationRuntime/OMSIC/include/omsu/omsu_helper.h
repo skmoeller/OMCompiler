@@ -31,10 +31,12 @@
 #ifndef OMSU_HELPER_H
 #define OMSU_HELPER_H
 
-#include "omsi.h"
-#include "omsu_common.h"
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
+#include <omsu_common.h>
 
-#include "solver/solver_lapack.h"
+#include <solver_lapack.h>
 
 #include <stdio.h>
 #include <string.h>

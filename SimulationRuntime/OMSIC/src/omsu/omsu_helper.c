@@ -28,14 +28,9 @@
  *
  */
 
-#include "omsu/omsu_helper.h"
+#include <omsu_helper.h>
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
-
-/* forward global functions */
-omsi_callback_allocate_memory   global_allocateMemory;
-omsi_callback_free_memory       global_freeMemory;
-
 
 /*
  * ============================================================================
@@ -136,11 +131,11 @@ void omsu_print_omsi_t (omsi_t*     omsi,
 
     /* compute next indentation */
     omsi_char* nextIndent;
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     /* print content of omsi_data */
-    printf("%sstruct omsi_t:\n", indent);
+    printf("%sstruct omsi_t:\n", indent); fflush(stdout);
 
     /* print model data */
     omsu_print_model_data (omsi->model_data, nextIndent);
@@ -154,7 +149,7 @@ void omsu_print_omsi_t (omsi_t*     omsi,
     omsu_print_experiment(omsi->experiment, nextIndent);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
 }
 
 
@@ -167,7 +162,7 @@ void omsu_print_model_data(model_data_t*    model_data,
 
     /* compute next indentation */
     omsi_char* nextIndent;
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     /* print content */
@@ -200,7 +195,7 @@ void omsu_print_model_data(model_data_t*    model_data,
     omsu_print_equation_info(model_data, nextIndent);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
 }
 
 
@@ -229,7 +224,7 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
     }
 
     /* compute next indentation */
-    nextnextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+4, sizeof(omsi_char));
+    nextnextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+4, sizeof(omsi_char));
     strcat(nextnextIndent, "| | ");
 
     /* print variables */
@@ -267,7 +262,7 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
     }
 
     /* free memory */
-    global_freeMemory(nextnextIndent);
+    global_callback->freeMemory(nextnextIndent);
     return omsi_ok;
 }
 
@@ -290,7 +285,7 @@ omsi_status omsu_print_modelica_attributes (void*               modelica_attribu
     omsi_char* nextIndent;
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     printf("%sattribute:\n", indent);
@@ -315,12 +310,12 @@ omsi_status omsu_print_modelica_attributes (void*               modelica_attribu
         break;
     default:
         /* free memory */
-        global_freeMemory(nextIndent);
+        global_callback->freeMemory(nextIndent);
         return omsi_error;
     }
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -455,7 +450,7 @@ omsi_status omsu_print_sim_data (sim_data_t* sim_data,
     }
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
 
@@ -474,7 +469,7 @@ omsi_status omsu_print_sim_data (sim_data_t* sim_data,
     /* ToDo: print rest of sim_data */
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -497,7 +492,7 @@ omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
     }
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     printf("%sn_algebraic_system:\t%u\n", indent, omsi_function->n_algebraic_system);
@@ -507,7 +502,7 @@ omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
     omsu_print_this_omsi_function (omsi_function, omsi_function_name, indent);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -529,7 +524,7 @@ omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
     }
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     omsu_print_omsi_values(omsi_function->function_vars, "function_vars", indent);
@@ -544,7 +539,7 @@ omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
     printf("%sn_output_vars:\t\t%i\n", indent, omsi_function->n_output_vars);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -597,7 +592,7 @@ omsi_status omsu_print_algebraic_system(omsi_algebraic_system_t*    algebraic_sy
     omsi_char* nextIndent;
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     printf("%sn_iteration_vars %u\n", indent, algebraic_system_t->n_iteration_vars);
@@ -617,7 +612,7 @@ omsi_status omsu_print_algebraic_system(omsi_algebraic_system_t*    algebraic_sy
     omsu_print_solver_data("lapack_solver", algebraic_system_t->solver_data, nextIndent);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
 
     return omsi_ok;
 }
@@ -646,7 +641,7 @@ omsi_status omsu_print_solver_data(omsi_string  solver_name,
                                    omsi_string  indent) {
 
     if (strcmp("lapack_solver", solver_name)==0) {
-        printLapackData(solver_data, indent);
+        /* printLapackData(solver_data, indent); ToDo Uncomment*/
     }
     else {
         printf("WARING in function omsu_print_solver_data: type of solver_data unknown\n");
