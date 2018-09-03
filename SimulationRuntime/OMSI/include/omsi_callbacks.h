@@ -35,11 +35,6 @@ typedef struct omsi_callback_functions{
     const void*                         componentEnvironment;
 }omsi_callback_functions;
 
-/* global callback functions */
-#ifndef OMSI_GLOBAL_CALLBACK
-#define OMSI_GLOBAL_CALLBACK
-const omsi_callback_functions* global_callback;
-#endif
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

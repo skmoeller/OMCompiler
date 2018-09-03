@@ -31,7 +31,10 @@
 #ifndef OMSU_GLOBAl_H
 #define OMSU_GLOBAL_H
 
-omsi_callback_allocate_memory   global_allocateMemory;
-omsi_callback_free_memory       global_freeMemory;
+/* global callback functions */
+#ifndef OMSI_GLOBAL_CALLBACK
+#define OMSI_GLOBAL_CALLBACK
+const omsi_callback_functions* global_callback;
+#endif
 
 #endif
