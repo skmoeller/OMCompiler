@@ -3,13 +3,14 @@
 include ../makefile
 
 # varibales for OMSI tests
-TEST_SRCS = test_xml.c
+TEST_SRCS = test_xml.c ../src/omsu/omsu_helper.c
 
 TEST_OBJS = $(TEST_SRCS:%.c=%.o)
 
 TEST_LIBS = -L. -lOMSIBase
 
-TEST_INCS = -I$(OMSI_INCLUDE)
+TEST_INCS = -I$(OMSI_INCLUDE) -I$(PATH_TO_OMSI)/base/include\
+ -I$(OMSIC_INCLUDE)/omsu -I$(OMSIC_INCLUDE)/solver
 
 ifeq ($(TARGET_OS),mingw32)
 	MAKE_RULE = -f Makefile.omdev.mingw OMSIBase -j
