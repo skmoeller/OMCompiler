@@ -4,16 +4,22 @@
  *
  */
 
+#include <omsi.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-//#include "../fmi2/osi_fmi2_wrapper.h"
-#include "fmi2/fmi2Functions.h"
+/*#include <osi_fmi2_wrapper.h>*/
+#include <fmi2Functions.h>
+
+#ifdef WINDOWS
+    #include <direct.h>
+    #define GetCurrentDir _getcwd
+#else
+    #include <unistd.h>
+    #define GetCurrentDir getcwd
+#endif
 
 typedef struct {
-//    ModelDescription* modelDescription;
-//
-//    HMODULE dllHandle; // fmu.dll handle
     /***************************************************
     Common Functions
     ****************************************************/
@@ -69,7 +75,7 @@ typedef struct {
     fmi2GetNominalsOfContinuousStatesTYPE *getNominalsOfContinuousStates;
 } FMU;
 
-FMU fmu; // the fmu to simulate
+FMU fmu; /* the fmu to simulate */
 
 static const char* fmi2StatusToString(fmi2Status status){
     switch (status){
@@ -89,63 +95,47 @@ static const char* fmi2StatusToString(fmi2Status status){
 void my_fmuLogger(void *componentEnvironment, fmi2String instanceName, fmi2Status status,
                fmi2String category, fmi2String message, ...) {
     char msg[MAX_MSG_SIZE];
-//    char* copy;
     va_list argp;
 
-    // replace C format strings
+    /* replace C format strings */
     va_start(argp, message);
     vsprintf(msg, message, argp);
     va_end(argp);
 
-    // replace e.g. ## and #r12#
-//    copy = strdup(msg);
-//    replaceRefsInMessage(copy, msg, MAX_MSG_SIZE, &fmu);
-//    free(copy);
-
-    // print the final message
+    /* print the final message */
     if (!instanceName) instanceName = "?";
     if (!category) category = "?";
     printf("%s %s (%s): %s\n", fmi2StatusToString(status), instanceName, category, msg);
 }
 
 
-void test_1 (const char* instanceName, const char* guid) {
+void test_instantiate (fmi2String   instanceName,
+                       fmi2String   guid) {
 
-    #include <stdio.h>
-#ifdef WINDOWS
-    #include <direct.h>
-    #define GetCurrentDir _getcwd
-#else
-    #include <unistd.h>
-    #define GetCurrentDir getcwd
-#endif
-
-    char fmuResourceLocation[FILENAME_MAX];
+    fmi2Component componente;
+    fmi2CallbackFunctions callbacks = {my_fmuLogger, calloc, free, NULL, &fmu};
+    fmi2Boolean visible = fmi2False;
+    fmi2Boolean loggingOn = fmi2True;
+    fmi2Char fmuResourceLocation[FILENAME_MAX];
 
     if(!GetCurrentDir(fmuResourceLocation, sizeof(fmuResourceLocation))) {
         return;
     }
     fmuResourceLocation[sizeof(fmuResourceLocation) - 1] = '\0';
 
-    fmi2Component c;
-
-    fmi2CallbackFunctions callbacks = {my_fmuLogger, calloc, free, NULL, &fmu};
-    fmi2Boolean visible = fmi2False;
-    fmi2Boolean loggingOn = fmi2True;
-
-    // import xml
-    printf("Enter FMI2 instantiate\n");
+    /* instantiate FMU */
+    printf("Enter OMSI instantiate\n");
     fflush(stdout);
-    c = fmi2Instantiate(instanceName, fmi2ModelExchange, guid, fmuResourceLocation, &callbacks, visible, loggingOn);
-    if(!c) {
+    componente = omsi_instantiate(instanceName, fmi2ModelExchange, guid, fmuResourceLocation, &callbacks, visible, loggingOn);
+    if(!componente) {
         printf("FMI instantiation failed\n");
         fflush(stdout);
     }
 
-    // free data
-    printf("Free FMI2 instance\n");
+    /* free data */
+    printf("Free OMSI instance\n");
     fflush(stdout);
-    fmi2FreeInstance(c);
+    omsi_free_instance(componente);
 
     printf("\nFinished test run!\n");
 }
@@ -158,7 +148,12 @@ void test_1 (const char* instanceName, const char* guid) {
  */
 int main(int argc, char* argv[]) {
 
-    test_1(argv[1], argv[2]);
+    /* test_instantiate(argv[1], argv[2]); */
+
+    fmi2String instanceName = "SimpleModelLinear_1";
+    fmi2String guid = "{e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}";
+
+    test_instantiate(instanceName, guid);
 
 
 
