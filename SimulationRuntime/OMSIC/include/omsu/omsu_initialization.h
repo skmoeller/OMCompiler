@@ -43,11 +43,14 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_helper.h"
-#include "omsu_common.h"
-#include "omsu_input_xml.h"
-#include "omsu_input_json.h"
-#include "omsu_utils.h"
+
+#include <omsi.h>
+#include <omsu_helper.h>
+#include <omsu_common.h>
+#include <omsu_input_xml.h>
+#include <omsu_input_json.h>
+#include <omsu_input_sim_data.h>
+#include <omsu_utils.h>
 
 /* forward struct */
 typedef struct osu_t osu_t;

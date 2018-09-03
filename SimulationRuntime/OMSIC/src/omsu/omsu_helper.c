@@ -327,22 +327,22 @@ omsi_status omsu_print_modelica_attributes (void*               modelica_attribu
 void omsu_print_real_var_attribute (real_var_attribute_t*   real_var_attribute,
                                     omsi_string             indent) {
 
-    printf("%sunit:\t\t\t%s\n", indent, real_var_attribute->unit);
+    printf("%sunit:\t\t\t\t%s\n", indent, real_var_attribute->unit);
     printf("%sdisplayUnit:\t\t%s\n", indent, real_var_attribute->displayUnit);
     if (real_var_attribute->min <= -OMSI_DBL_MAX) {
-        printf("%smin:\t\t\t-infinity\n", indent);
+        printf("%smin:\t\t\t\t-infinity\n", indent);
     }
     else {
-        printf("%smin:\t\t\t%f\n", indent, real_var_attribute->min);
+        printf("%smin:\t\t\t\t%f\n", indent, real_var_attribute->min);
     }
     if (real_var_attribute->max >= OMSI_DBL_MAX) {
-        printf("%smax:\t\t\tininity\n", indent);
+        printf("%smax:\t\t\t\tinfinity\n", indent);
     }
     else {
-        printf("%smax:\t\t\t%f\n", indent, real_var_attribute->max);
+        printf("%smax:\t\t\t\t%f\n", indent, real_var_attribute->max);
     }
     printf("%sfixed:\t\t\t%s\n", indent, real_var_attribute->fixed ? "true" : "false");
-    printf("%snominal:\t\t%f\n", indent, real_var_attribute->nominal);
+    printf("%snominal:\t\t\t%f\n", indent, real_var_attribute->nominal);
     printf("%sstart:\t\t\t%f\n", indent, real_var_attribute->start);
 }
 
@@ -395,20 +395,20 @@ omsi_status omsu_print_equation_info(model_data_t*  model_data,
     }
 
     for(i=0; i<model_data->n_equations; i++) {
-        printf("%s| id:\t\t\t%i\n", indent, model_data->equation_info_t[i].id);
-        printf("%s| ProfileBlockIndex:\t%i\n", indent, model_data->equation_info_t[i].profileBlockIndex);
+        printf("%s| id:\t\t\t\t%i\n", indent, model_data->equation_info_t[i].id);
+        printf("%s| ProfileBlockIndex:\t\t\t%i\n", indent, model_data->equation_info_t[i].profileBlockIndex);
         printf("%s| parent: \t\t\t%i\n", indent, model_data->equation_info_t[i].parent);
         printf("%s| numVar:\t\t\t%i\n", indent, model_data->equation_info_t[i].numVar);
-        printf("%s| variables:\t\t", indent);
+        printf("%s| variables:\t\t\t", indent);
         for (j=0; j<model_data->equation_info_t[i].numVar; j++) {
-            printf("%s%s ", indent, model_data->equation_info_t[i].variables[j]);
+            printf("%s ", model_data->equation_info_t[i].variables[j]);
         }
         printf("\n");
         printf("%s| file info:\n", indent);
-        printf("%s| | filename:\t\t%s\n", indent, model_data->equation_info_t[i].info.filename);
+        printf("%s| | filename:\t\t\t%s\n", indent, model_data->equation_info_t[i].info.filename);
         printf("%s| | lineStart:\t\t%i\n", indent, model_data->equation_info_t[i].info.lineStart);
-        printf("%s| | colStart:\t\t%i\n", indent, model_data->equation_info_t[i].info.colStart);
-        printf("%s| | lineEnd:\t\t%i\n", indent, model_data->equation_info_t[i].info.lineEnd);
+        printf("%s| | colStart:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.colStart);
+        printf("%s| | lineEnd:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.lineEnd);
         printf("%s| | colEnd:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.colEnd);
         printf("%s| | fileWritable:\t\t%s\n", indent, model_data->equation_info_t[i].info.fileWritable ? "true" : "false");
         printf("%s\n", indent);

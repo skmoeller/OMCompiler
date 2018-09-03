@@ -32,21 +32,26 @@
 #define OMSU_INPUT_SIM_DATA_H
 
 #include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 
 /* function prototypes */
 
-omsi_status omsu_setup_sim_data(sim_data_t*                     sim_data,
-                                omsi_functions_t                osu_functions,
-                                const omsi_callback_functions*  callback_functions);
+omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
+                                omsi_template_callback_functions_t* template_function,
+                                const omsi_callback_functions*      callback_functions);
 
 omsi_status omsu_allocate_sim_data(omsi_t* omsi_data);
 
 omsi_status omsu_instantiate_omsi_function (omsi_function_t* omsi_function);
 
 omsi_algebraic_system_t* omsu_initialize_alg_system_array (omsi_unsigned_int n_algebraic_system);
+
+omsi_status omsu_set_model_vars_and_params_start (omsi_values*     model_vars_and_params,
+                                                  model_data_t*    model_data);
 
 omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,
                                       omsi_unsigned_int   n_ints,

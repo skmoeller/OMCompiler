@@ -44,16 +44,8 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_utils.h"
-#include "fmi2/fmi2Functions.h"
-
-/*! \fn omsi_enter_event_mode
- *
- *  This function updates the events.
- *
- *  \param [ref] [data]
- */
-//fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo);
+#include <omsu_utils.h>
+#include <fmi2Functions.h>
 
 /*! \fn omsi_enter_event_mode
  *
@@ -70,8 +62,6 @@ fmi2Status omsi_enter_event_mode(fmi2Component c);
  *  \param [ref] [data]
  */
 fmi2Status omsi_get_event_indicators(fmi2Component c, fmi2Real eventIndicators[], size_t ni);
-
-//fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo);
 
 #ifdef __cplusplus
 }

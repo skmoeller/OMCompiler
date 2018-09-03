@@ -44,10 +44,10 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_helper.h"
-#include "omsu_utils.h"
-#include "omsu_me.h"
-#include "fmi2/fmi2Functions.h"
+#include <omsu_helper.h>
+#include <omsu_utils.h>
+#include <omsu_me.h>
+#include <fmi2Functions.h>
 
 /*! \fn  omsi_new_discrete_state
  *

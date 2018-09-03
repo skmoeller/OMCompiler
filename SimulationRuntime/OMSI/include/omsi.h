@@ -43,7 +43,7 @@ extern "C" {
  * type definitions of variables
  */
 #ifdef OSI_FMI2_WRAPPER_H
-#include "fmi2/fmi2Functions.h"     /* ToDo: delete, is duplicate but silences warnings in my eclipse :-P */
+#include <fmi2Functions.h>     /* ToDo: delete, is duplicate but silences warnings in my eclipse :-P */
 
 typedef fmi2ValueReference  omsi_unsigned_int;
 typedef fmi2Real            omsi_real;
@@ -60,7 +60,6 @@ typedef fmi2Boolean         omsi_bool;
 #endif
 typedef fmi2Char            omsi_char;
 typedef fmi2String          omsi_string;
-typedef fmi2Byte            omsi_char;
 #else
 typedef unsigned int        omsi_unsigned_int;
 typedef double              omsi_real;
@@ -69,14 +68,6 @@ typedef long                omsi_long;
 typedef int                 omsi_bool;
 #define omsi_true  1
 #define omsi_false 0
-/* compiler error  : #error :  The C++ Standard Library forbids macroizing keywords. Enable warning C4005 to find the forbidden macro.
-#ifndef true
-#define true 1
-#endif
-#ifndef false
-#define false 0
-#endif
-*/
 typedef char                omsi_char;
 typedef const omsi_char*    omsi_string;
 #endif

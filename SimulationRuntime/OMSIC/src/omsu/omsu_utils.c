@@ -29,7 +29,7 @@
  */
 
 
-#include "omsu/omsu_utils.h"
+#include <omsu_utils.h>
 
 omsi_bool isCategoryLogged(void*        component,
                            omsi_int     categoryIndex) {
