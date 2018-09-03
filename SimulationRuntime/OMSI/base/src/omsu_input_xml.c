@@ -29,7 +29,7 @@
  */
 #include <uthash.h>
 #include <omsu_input_xml.h>
-#include <omsi_global.h">
+#include <omsi_global.h>
 
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
