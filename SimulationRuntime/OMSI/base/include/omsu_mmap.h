@@ -31,7 +31,9 @@
 #if !defined(OMC_MMAP_H_) && !defined(OMC_NO_FILESYSTEM)
 #define OMC_MMAP_H_
 
-#include "omsi.h"
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
 
 #include <stdio.h>
 #include <string.h>

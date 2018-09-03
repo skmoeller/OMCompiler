@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 #include <float.h>
-#include "omsi_callbacks.h"
+#include <omsi_callbacks.h>
 
 /* typedefs for structures */
 typedef struct hash_string_string {

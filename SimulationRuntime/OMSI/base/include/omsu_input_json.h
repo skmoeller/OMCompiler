@@ -35,9 +35,9 @@
 
 
 
-#include "omsi.h"
-#include "omsu_mmap.h"
-#include "omsi_callbacks.h"
+#include <omsi.h>
+#include <omsu_mmap.h>
+#include <omsi_callbacks.h>
 #include <stdio.h>
 #include <stdlib.h>
 

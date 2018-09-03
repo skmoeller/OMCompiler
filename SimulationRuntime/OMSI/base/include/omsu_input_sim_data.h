@@ -31,7 +31,7 @@
 #ifndef OMSU_INPUT_SIM_DATA_H
 #define OMSU_INPUT_SIM_DATA_H
 
-#include "omsi.h"
+#include <omsi.h>
 
 #include <stdio.h>
 #include <stdlib.h>
