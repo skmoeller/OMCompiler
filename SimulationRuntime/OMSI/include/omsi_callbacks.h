@@ -16,10 +16,15 @@ int evaluate_intial_system(omsi_t);
 /*
  * OMSI callback functions
  */
-typedef void      (*omsi_callback_logger)           (const void*, omsi_string, omsi_status, omsi_string, omsi_string, ...);
+typedef void      (*omsi_callback_logger)           (const void*,       /* component environment */
+                                                     omsi_string,       /* instance name */
+                                                     omsi_status,       /* status */
+                                                     omsi_string,       /* category */
+                                                     omsi_string, ...); /* message, ... */
 typedef void*     (*omsi_callback_allocate_memory)  (omsi_unsigned_int, omsi_unsigned_int);
 typedef void      (*omsi_callback_free_memory)      (void*);
 typedef void      (*omsi_step_finished)             (void*, omsi_status);
+
 
 
 typedef struct omsi_callback_functions{
@@ -30,7 +35,11 @@ typedef struct omsi_callback_functions{
     const void*                         componentEnvironment;
 }omsi_callback_functions;
 
-
+/* global callback functions */
+#ifndef OMSI_GLOBAL_CALLBACK
+#define OMSI_GLOBAL_CALLBACK
+const omsi_callback_functions* global_callback;
+#endif
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */
