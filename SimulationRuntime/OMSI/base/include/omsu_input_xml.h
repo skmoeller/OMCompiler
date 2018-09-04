@@ -32,20 +32,20 @@
 #define OMSU_INPUT_XML_H
 
 
-
 #include <expat.h>          /* use expat XML parser */
-#include <uthash.h>
-#include <omsi.h>
+#include <uthash.h>         /* use uthash as hash table for C*/
 
 #include <stdio.h>
 #include <float.h>
+
+#include <omsi.h>
 #include <omsi_callbacks.h>
 
 /* typedefs for structures */
 typedef struct hash_string_string {
-  omsi_string id;
-  omsi_string val;
-  UT_hash_handle hh;
+  omsi_string id;       /* key */
+  omsi_string val;      /* value */
+  UT_hash_handle hh;    /* makes this structure hashable */
 } hash_string_string;
 
 typedef hash_string_string omc_ModelDescription;
@@ -53,17 +53,17 @@ typedef hash_string_string omc_DefaultExperiment;
 typedef hash_string_string omc_ScalarVariable;
 
 typedef struct hash_long_var {
-  omsi_long id;
-  omc_ScalarVariable *val;
-  UT_hash_handle hh;
+  omsi_long id;             /* key */
+  omc_ScalarVariable *val;  /* value */
+  UT_hash_handle hh;        /* makes this structure hashable */
 } hash_long_var;
 
 typedef hash_long_var omc_ModelVariables;
 
 typedef struct hash_string_long {
-  omsi_string id;
-  omsi_long val;
-  UT_hash_handle hh;
+  omsi_string id;           /* key */
+  omsi_long val;            /* value */
+  UT_hash_handle hh;        /* makes this structure hashable */
 } hash_string_long;
 
 /* structure used to collect data from the xml input file */
@@ -109,27 +109,76 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
                                 omsi_string                     instanceName,
                                 const omsi_callback_functions*  functions);
 
+
 /*private function prototypes */
-omsi_int omsu_find_alias_index(omsi_int alias_valueReference, omsi_int n_variables);
-void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var_info, omsi_data_type type, omsi_unsigned_int* variable_index, omsi_int number_of_prev_variables);
-void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi);
-void XMLCALL startElement(void *userData, omsi_string name, omsi_string *attr);
-void XMLCALL endElement(void *userData, omsi_string name);
-omsi_string omsu_findHashStringStringNull(hash_string_string *ht, omsi_string key);
-omsi_string omsu_findHashStringStringEmpty(hash_string_string *ht, omsi_string key);
-omsi_string omsu_findHashStringString(hash_string_string *ht, omsi_string key);
-void omsu_addHashLongVar(hash_long_var **ht, omsi_long key, omc_ScalarVariable *val);
-void omsu_addHashStringString(hash_string_string **ht, omsi_string key, omsi_string val);
-void omsu_read_value_int(omsi_string s, omsi_int* res, omsi_int default_value);
-void omsu_read_value_uint(omsi_string s, omsi_unsigned_int* res);
-omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht, omsi_long key);
-void omsu_read_value_real(omsi_string s, omsi_real* res, omsi_real default_value);
-void omsu_read_value_bool(omsi_string s, omsi_bool* res);
-void omsu_read_value_bool_default (omsi_string s, omsi_bool* res, omsi_bool default_bool);
-void omsu_read_value_string(omsi_string s, omsi_char** str);
-void omsu_free_ModelInput(omc_ModelInput mi, omsi_t* omsi_data, const omsi_callback_free_memory freeMemory);
+omsi_int omsu_find_alias_index(omsi_int alias_valueReference,
+                               omsi_int n_variables);
 
+void omsu_read_var_info (omc_ScalarVariable*    v,
+                         model_variable_info_t* model_var_info,
+                         omsi_data_type         type,
+                         omsi_unsigned_int*     variable_index,
+                         omsi_int               number_of_prev_variables);
 
+void omsu_read_var_infos(model_data_t*      model_data,
+                         omc_ModelInput*    mi);
+
+omsi_string omsu_findHashStringStringNull(hash_string_string*   ht,
+                                          omsi_string           key);
+
+omsi_string omsu_findHashStringStringEmpty(hash_string_string*  ht,
+                                           omsi_string          key);
+
+omsi_string omsu_findHashStringString(hash_string_string*   ht,
+                                      omsi_string           key);
+
+void omsu_addHashLongVar(hash_long_var**        ht,
+                         omsi_long              key,
+                         omc_ScalarVariable*    val);
+
+void omsu_addHashStringString(hash_string_string**  ht,
+                              omsi_string           key,
+                              omsi_string           val);
+
+void omsu_read_value_int(omsi_string    s,
+                         omsi_int*      res,
+                         omsi_int       default_value);
+
+void omsu_read_value_uint(omsi_string           s,
+                          omsi_unsigned_int*    res);
+
+omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht,
+                                          omsi_long     key);
+
+void omsu_read_value_real(omsi_string   s,
+                          omsi_real*    res,
+                          omsi_real     default_value);
+
+void omsu_read_value_bool(omsi_string   s,
+                          omsi_bool*    res);
+
+void omsu_read_value_bool_default (omsi_string  s,
+                                   omsi_bool*   res,
+                                   omsi_bool    default_bool);
+
+void omsu_read_value_string(omsi_string s,
+                            omsi_char** str);
+
+void XMLCALL startElement(void*         userData,
+                          omsi_string   name,
+                          omsi_string*  attr);
+
+void XMLCALL endElement(void*       userData,
+                        omsi_string name);
+
+void omsu_free_ModelInput(omc_ModelInput                    mi,
+                          omsi_t*                           omsi_data);
+
+void free_hash_string_string (hash_string_string* data);
+
+void free_hash_long_var (hash_long_var* data);
+
+void free_hash_string_long (hash_string_long* data);
 
 
 #ifdef __cplusplus
