@@ -41,62 +41,120 @@
 /*
  * frees memory for omsi_t struct and all its components
  */
-void omsu_free_osu_data(omsi_t*                         omsi_data,
-                        const omsi_callback_free_memory freeMemory) {
-
-    omsi_unsigned_int i, j=0;
-    omsi_unsigned_int size;
-
-    real_var_attribute_t* attribute;
+void omsu_free_osu_data(omsi_t* omsi_data) {
 
     /* free memory for model data */
-    freeMemory((omsi_string)omsi_data->model_data->modelGUID);
-
-    size = omsi_data->model_data->n_states + omsi_data->model_data->n_derivatives
-         + omsi_data->model_data->n_real_vars+omsi_data->model_data->n_real_parameters
-         + omsi_data->model_data->n_real_aliases;
-    for (i=0; i<size; i++, j++) {
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].name);
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].comment);
-        attribute = omsi_data->model_data->model_vars_info_t[j].modelica_attributes;
-        freeMemory (attribute->unit);
-        freeMemory (attribute->displayUnit);
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].modelica_attributes);
-        /*freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
-    }
-    size += omsi_data->model_data->n_int_vars + omsi_data->model_data->n_int_parameters + omsi_data->model_data->n_int_aliases
-            + omsi_data->model_data->n_bool_vars + omsi_data->model_data->n_bool_parameters + omsi_data->model_data->n_bool_aliases
-            + omsi_data->model_data->n_string_vars + omsi_data->model_data->n_string_parameters + omsi_data->model_data->n_string_aliases;
-    for (i=j; i<size; i++, j++) {
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].name);
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].comment);
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].modelica_attributes);
-        /*freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
-    }
-    freeMemory (omsi_data->model_data->model_vars_info_t);
-
-/*    for (i=0; i<omsi_data->model_data.n_equations; i++) {
-        freeMemory (omsi_data->model_data.equation_info_t[i].variables);
-    }
-    //freeMemory (omsi_data->model_data.equation_info_t);     // ToDo: something's wrong here
-*/
+    omsu_free_model_data(omsi_data->model_data);
 
     /* free memory for simulation data */
-    /* ToDo: free inner stuff of initialization */
-    freeMemory (omsi_data->sim_data->initialization);
-    /* ToDo: free inner stuff of initialization */
-    freeMemory (omsi_data->sim_data->simulation);
-
-    freeMemory (omsi_data->sim_data->model_vars_and_params->reals);
-    freeMemory (omsi_data->sim_data->model_vars_and_params->ints);
-    freeMemory (omsi_data->sim_data->model_vars_and_params->bools);
-
-    freeMemory (omsi_data->sim_data->zerocrossings_vars);
-    freeMemory (omsi_data->sim_data->pre_zerocrossings_vars);
+    omsu_free_sim_data(omsi_data->sim_data);
 
     /* free memory for experiment data */
-    freeMemory ((omsi_char *)omsi_data->experiment->solver_name);        /* type-cast to shut of warning when compiling */
-    freeMemory (omsi_data->experiment);
+    global_callback->freeMemory((omsi_char *)omsi_data->experiment->solver_name);        /* type-cast to shut of warning when compiling */
+    global_callback->freeMemory(omsi_data->experiment);
+}
+
+
+/*
+ * Frees memory for model_data_t structure and all its components.
+ */
+void omsu_free_model_data (model_data_t* model_data) {
+
+    /* Variables */
+    omsi_unsigned_int i, j;
+    omsi_unsigned_int size;
+    real_var_attribute_t* attribute;
+
+    if (model_data==NULL) {
+        return;
+    }
+
+    global_callback->freeMemory((omsi_char *)model_data->modelGUID);
+
+    size = model_data->n_states + model_data->n_derivatives
+         + model_data->n_real_vars+model_data->n_real_parameters
+         + model_data->n_real_aliases;
+    for (i=0, j=0; i<size; i++, j++) {
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].name);
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].comment);
+        attribute = model_data->model_vars_info_t[j].modelica_attributes;
+        global_callback->freeMemory ((omsi_char *)attribute->unit);
+        global_callback->freeMemory ((omsi_char *)attribute->displayUnit);
+        global_callback->freeMemory (attribute);
+        /*global_callback->freeMemory(model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
+    }
+    size += model_data->n_int_vars + model_data->n_int_parameters + model_data->n_int_aliases
+            + model_data->n_bool_vars + model_data->n_bool_parameters + model_data->n_bool_aliases
+            + model_data->n_string_vars + model_data->n_string_parameters + model_data->n_string_aliases;
+    for (i=j; i<size; i++, j++) {
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].name);
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].comment);
+        global_callback->freeMemory (model_data->model_vars_info_t[j].modelica_attributes);
+        /*global_callback->freeMemory(model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
+    }
+    global_callback->freeMemory (model_data->model_vars_info_t);
+
+    /*for (i=0; i<omsi_data->model_data.n_equations; i++) {
+            global_callback->freeMemory (omsi_data->model_data.equation_info_t[i].variables);
+        }
+        //global_callback->freeMemory (omsi_data->model_data.equation_info_t);     // ToDo: something's wrong here
+    */
+
+    global_callback->freeMemory (model_data);
+}
+
+
+/*
+ * Frees memory for sim_data_t structure and all its components.
+ */
+void omsu_free_sim_data (sim_data_t* sim_data) {
+
+    if (sim_data==NULL) {
+        return;
+    }
+
+    omsu_free_omsi_function (sim_data->initialization);
+    omsu_free_omsi_function (sim_data->simulation);
+
+    omsu_free_omsi_values(sim_data->model_vars_and_params);
+    omsu_free_omsi_values(sim_data->pre_vars);
+
+    /* ToDo: free pre_vars_mapping */
+
+    global_callback->freeMemory(sim_data->zerocrossings_vars);      /* ToDo: free inner stuff */
+    global_callback->freeMemory(sim_data->pre_zerocrossings_vars);
+
+    global_callback->freeMemory(sim_data);
+}
+
+
+/*
+ * frees memory for omsi_function struct and all its components
+ */
+void omsu_free_omsi_function(omsi_function_t* omsi_function) {
+
+    if (omsi_function==NULL) {
+        return;
+    }
+
+    global_callback->freeMemory(omsi_function);
+}
+
+
+/*
+ * frees memory for omsi_values struct and all its components
+ */
+void omsu_free_omsi_values(omsi_values* values) {
+
+    if (values==NULL) {
+        return;
+    }
+
+    global_callback->freeMemory(values->reals);
+    global_callback->freeMemory(values->ints);
+    global_callback->freeMemory(values->bools);
+
+    global_callback->freeMemory(values);
 }
 
 
@@ -623,6 +681,7 @@ omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
                                    omsi_unsigned_int    size,
                                    omsi_string          indent) {
 
+    UNUSED(vars_indices); UNUSED(size); UNUSED(indent);
     return omsi_ok;
 }
 
@@ -630,6 +689,8 @@ omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
 /* ToDo: finish function */
 omsi_status omsu_print_externs(void*                externs,
                                omsi_unsigned_int    n_externs) {
+
+    UNUSED(externs); UNUSED(n_externs);
 
     printf("ERROR: omsu_print_externs not implemented yet\n");
     return omsi_error;
@@ -639,6 +700,8 @@ omsi_status omsu_print_externs(void*                externs,
 omsi_status omsu_print_solver_data(omsi_string  solver_name,
                                    void*        solver_data,
                                    omsi_string  indent) {
+
+    UNUSED(solver_data); UNUSED(indent);
 
     if (strcmp("lapack_solver", solver_name)==0) {
         /* printLapackData(solver_data, indent); ToDo Uncomment*/

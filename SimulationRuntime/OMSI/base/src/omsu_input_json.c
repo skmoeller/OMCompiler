@@ -33,14 +33,30 @@
 
 /* prototypes for static functions */
 static omsi_string skipSpace(omsi_string str);
-static omsi_string assertStringValue(omsi_string str, omsi_string value);
-static omsi_string assertChar (omsi_string str, omsi_char c);
-static omsi_string omsu_assertCharOrEnd (omsi_string str, omsi_char expected_char, omsi_bool* endNotFound);
-static omsi_string assertNumber(omsi_string str, omsi_real expected);
-static omsi_string skipObjectRest(omsi_string str, omsi_int first);
+
+static omsi_string assertStringValue(omsi_string str,
+                                     omsi_string value);
+
+static omsi_string assertChar (omsi_string  str,
+                               omsi_char    c);
+
+static omsi_string omsu_assertCharOrEnd (omsi_string    str,
+                                         omsi_char      expected_char,
+                                         omsi_bool*     endNotFound);
+
+static omsi_string assertNumber(omsi_string str,
+                                omsi_real   expected);
+
+static omsi_string skipObjectRest(omsi_string   str,
+                                  omsi_int      first);
+
 static omsi_string skipValue(omsi_string str);
-static omsi_string skipFieldIfExist(omsi_string str,omsi_string name);
-static void readInfoJson(omsi_string str, model_data_t* model_data);
+
+static omsi_string skipFieldIfExist(omsi_string str,
+                                    omsi_string name);
+
+static void readInfoJson(omsi_string    str,
+                         model_data_t*  model_data);
 
 
 /* Entry point.
