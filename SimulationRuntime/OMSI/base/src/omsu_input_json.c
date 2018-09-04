@@ -27,9 +27,9 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
-#include <uthash.h>
+
 #include <omsu_input_json.h>
-#include "omsi_global.h"
+
 
 /* prototypes for static functions */
 static omsi_string skipSpace(omsi_string str);
@@ -47,7 +47,11 @@ static void readInfoJson(omsi_string str, model_data_t* model_data);
  * Processes all informations from input.json file.
  * Reads values, allocates memory and writes everything in model_data->equation_info.
  */
-omsi_status omsu_process_input_json(omsi_t* osu_data, omsi_string fileName, omsi_string fmuGUID, omsi_string instanceName, const omsi_callback_functions* functions) {
+omsi_status omsu_process_input_json(omsi_t*                         osu_data,
+                                    omsi_string                     fileName,
+                                    omsi_string                     fmuGUID,
+                                    omsi_string                     instanceName,
+                                    const omsi_callback_functions*  functions) {
 
     /* Variables */
     omc_mmap_read mmap_reader;
@@ -83,7 +87,8 @@ static omsi_string skipSpace(omsi_string str) {
 
 
 /* Does not work for escaped strings. Returns the rest of the string to parse. */
-static omsi_string assertStringValue(omsi_string str, omsi_string value) {
+static omsi_string assertStringValue(omsi_string str,
+                                     omsi_string value) {
   int len = strlen(value);
   str = skipSpace(str);
   if ('\"' != *str || strncmp(str+1,value,len) || str[len+1] != '\"') {
@@ -94,7 +99,8 @@ static omsi_string assertStringValue(omsi_string str, omsi_string value) {
 }
 
 
-static omsi_string assertChar (omsi_string str, omsi_char expected_char) {
+static omsi_string assertChar (omsi_string  str,
+                               omsi_char    expected_char) {
     str = skipSpace(str);
     if (expected_char != *str) {
         fprintf(stderr, "Expected '%c', got: %.20s\n", expected_char, str);
@@ -108,7 +114,9 @@ static omsi_string assertChar (omsi_string str, omsi_char expected_char) {
  * of array ']' is reached.
  * Otherwise aborts.
  */
-static omsi_string omsu_assertCharOrEnd (omsi_string str, omsi_char expected_char, omsi_bool* endNotFound) {
+static omsi_string omsu_assertCharOrEnd (omsi_string    str,
+                                         omsi_char      expected_char,
+                                         omsi_bool*     endNotFound) {
     str = skipSpace(str);
 
     if (*str == ']') {
@@ -124,7 +132,8 @@ static omsi_string omsu_assertCharOrEnd (omsi_string str, omsi_char expected_cha
 }
 
 
-static omsi_string assertNumber(omsi_string str, omsi_real expected) {
+static omsi_string assertNumber(omsi_string str,
+                                omsi_real   expected) {
     omsi_char* endptr = NULL;
     omsi_real d;
     str = skipSpace(str);
@@ -134,14 +143,14 @@ static omsi_string assertNumber(omsi_string str, omsi_real expected) {
         abort();
     }
     if (d != expected) {
-        fprintf(stderr, "Got number %f, expected: %f\n", d, expected);
-        abort();
+        fprintf(stderr, "Warning: Got number %f, expected: %f\nProceeding any way.\n", d, expected);
     }
     return endptr;
 }
 
 
-static omsi_string skipObjectRest(omsi_string str, omsi_int first) {
+static omsi_string skipObjectRest(omsi_string   str,
+                                  omsi_int      first) {
     str=skipSpace(str);
     while (*str != '}') {
         if (!first) {
@@ -238,7 +247,8 @@ static omsi_string skipValue(omsi_string str) {
 }
 
 
-static omsi_string skipFieldIfExist(omsi_string str,omsi_string name) {
+static omsi_string skipFieldIfExist(omsi_string str,
+                                    omsi_string name) {
     omsi_string s = str;
     omsi_int len = strlen(name);
 
@@ -265,7 +275,12 @@ static omsi_string skipFieldIfExist(omsi_string str,omsi_string name) {
 /* Reads single equation from string created from JSON file.
  * Save detailed informations about equation in equation_info_t.
  */
-omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_unsigned_int expected_id, omsi_unsigned_int* count_init_eq, omsi_unsigned_int* count_regular_eq, omsi_unsigned_int* count_alias_eq) {
+omsi_string readEquation(omsi_string        str,
+                         equation_info_t*   equation_info,
+                         omsi_unsigned_int  expected_id,
+                         omsi_unsigned_int* count_init_eq,
+                         omsi_unsigned_int* count_regular_eq,
+                         omsi_unsigned_int* count_alias_eq) {
 
     /* variables */
     omsi_int n = 0;
@@ -396,7 +411,8 @@ omsi_string readEquation(omsi_string str, equation_info_t* equation_info, omsi_u
 /* Reads equations part from string created from JSON file.
  * For every equation a sub function is called to save detailed informations in equation_info_t.
  */
-omsi_string readEquations(omsi_string str, model_data_t* model_data) {
+omsi_string readEquations(omsi_string       str,
+                          model_data_t*     model_data) {
 
     omsi_int i = 0;
     omsi_bool endNotFound = omsi_true;
@@ -459,7 +475,8 @@ omsi_string readEquations(omsi_string str, model_data_t* model_data) {
 /* Reads all Informations from JSON file
  * Actually skips everything except for equations, but checks if format of JSON is correct.
  */
-static void readInfoJson(omsi_string str, model_data_t* model_data) {
+static void readInfoJson(omsi_string    str,
+                         model_data_t*  model_data) {
     /* check and skip content until begin of equations */
     str=assertChar(str,'{');
     str=assertStringValue(str,"format");
