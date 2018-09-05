@@ -36,12 +36,16 @@ SET(OMSI_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../OMSI)
 
 include_directories ("${OMSI_SOURCE_DIR}/include")
 include_directories ("${OMSI_SOURCE_DIR}/base/include")
-include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # omsic simulation runtime
 ADD_SUBDIRECTORY(src/solver)
-#ADD_SUBDIRECTORY(omsu)
+ADD_SUBDIRECTORY(src/omsu)
 
-#target_link_libraries(${OSUCName}  ${CMAKE_DL_LIBS} )
 
-#install(TARGETS ${OSUCName} DESTINATION ${LIBINSTALLEXT})
+install(FILES
+  ${OMSI_SOURCE_DIR}/include/omsi.h
+  ${OMSI_SOURCE_DIR}/include/omsi_callbacks.h
+  ${OMSI_SOURCE_DIR}/include/omsi_cs.h
+  ${OMSI_SOURCE_DIR}/include/omsi_jacobian.h
+  ${OMSI_SOURCE_DIR}/include/omsi_me.h
+DESTINATION include/OMSI)

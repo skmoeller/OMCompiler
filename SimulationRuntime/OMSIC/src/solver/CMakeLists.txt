@@ -5,12 +5,15 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(OMSISolverName ${LIBPREFIX}OMSISolver${LIBSUFFIX})
 
-#set LAPACK lib
+#set LAPACK and BLAS lib
+find_library(liblapack LAPACK)
+find_library(libblas BLAS)
 
 include_directories ("${CMAKE_SOURCE_DIR}/include/solver")
 
-SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/src/solver/lapack)
+add_library(${OMSISolverName} lapack/solver_lapack.c solver_helper.c)
 
-add_library(solver_lapack SHARED lapack/solver_lapack.c solver_helper.c)
 
-target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} lapack blas)
+target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} ${liblapack} ${libblas})
+
+install(TARGETS ${OMSISolverName} DESTINATION ${LIBINSTALLEXT})
