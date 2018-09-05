@@ -31,7 +31,9 @@
 #ifndef _SOLVERHELPER_H_
 #define _SOLVERHELPER_H_
 
-#include "omsi.h"
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
 
 #include <stdio.h>
 #include <stdlib.h>
