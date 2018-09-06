@@ -789,7 +789,7 @@ algorithm
         SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
         SerializeModelInfo.serialize(simCode, Flags.isSet(Flags.INFO_XML_OPERATIONS));
         runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file="modelDescription.xml");
-        runTplWriteFile(func = function CodegenOMSIC.createMakefile(), file=fileprefix+"_FMU.makefile");
+        runTplWriteFile(func = function CodegenOMSIC.createMakefile(in_a_simCode=simCode, in_a_FileNamePrefix=fileprefix), file=fileprefix+"_FMU.makefile");
 
         runTplWriteFile(func = function CodegenOMSIC.generateOMSICHeader(a_simCode=simCode), file=fileprefix+"_omsic.h");
         runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(in_a_simCode=simCode), file=fileprefix+"_omsic.c");
