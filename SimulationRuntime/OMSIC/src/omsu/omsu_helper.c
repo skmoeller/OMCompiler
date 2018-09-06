@@ -28,14 +28,9 @@
  *
  */
 
-#include "omsu/omsu_helper.h"
+#include <omsu_helper.h>
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
-
-/* forward global functions */
-omsi_callback_allocate_memory   global_allocateMemory;
-omsi_callback_free_memory       global_freeMemory;
-
 
 /*
  * ============================================================================
@@ -46,62 +41,120 @@ omsi_callback_free_memory       global_freeMemory;
 /*
  * frees memory for omsi_t struct and all its components
  */
-void omsu_free_osu_data(omsi_t*                         omsi_data,
-                        const omsi_callback_free_memory freeMemory) {
-
-    omsi_unsigned_int i, j=0;
-    omsi_unsigned_int size;
-
-    real_var_attribute_t* attribute;
+void omsu_free_osu_data(omsi_t* omsi_data) {
 
     /* free memory for model data */
-    freeMemory((omsi_string)omsi_data->model_data->modelGUID);
-
-    size = omsi_data->model_data->n_states + omsi_data->model_data->n_derivatives
-         + omsi_data->model_data->n_real_vars+omsi_data->model_data->n_real_parameters
-         + omsi_data->model_data->n_real_aliases;
-    for (i=0; i<size; i++, j++) {
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].name);
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].comment);
-        attribute = omsi_data->model_data->model_vars_info_t[j].modelica_attributes;
-        freeMemory (attribute->unit);
-        freeMemory (attribute->displayUnit);
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].modelica_attributes);
-        /*freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
-    }
-    size += omsi_data->model_data->n_int_vars + omsi_data->model_data->n_int_parameters + omsi_data->model_data->n_int_aliases
-            + omsi_data->model_data->n_bool_vars + omsi_data->model_data->n_bool_parameters + omsi_data->model_data->n_bool_aliases
-            + omsi_data->model_data->n_string_vars + omsi_data->model_data->n_string_parameters + omsi_data->model_data->n_string_aliases;
-    for (i=j; i<size; i++, j++) {
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].name);
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].comment);
-        freeMemory (omsi_data->model_data->model_vars_info_t[j].modelica_attributes);
-        /*freeMemory(omsi_data->model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
-    }
-    freeMemory (omsi_data->model_data->model_vars_info_t);
-
-/*    for (i=0; i<omsi_data->model_data.n_equations; i++) {
-        freeMemory (omsi_data->model_data.equation_info_t[i].variables);
-    }
-    //freeMemory (omsi_data->model_data.equation_info_t);     // ToDo: something's wrong here
-*/
+    omsu_free_model_data(omsi_data->model_data);
 
     /* free memory for simulation data */
-    /* ToDo: free inner stuff of initialization */
-    freeMemory (omsi_data->sim_data->initialization);
-    /* ToDo: free inner stuff of initialization */
-    freeMemory (omsi_data->sim_data->simulation);
-
-    freeMemory (omsi_data->sim_data->model_vars_and_params->reals);
-    freeMemory (omsi_data->sim_data->model_vars_and_params->ints);
-    freeMemory (omsi_data->sim_data->model_vars_and_params->bools);
-
-    freeMemory (omsi_data->sim_data->zerocrossings_vars);
-    freeMemory (omsi_data->sim_data->pre_zerocrossings_vars);
+    omsu_free_sim_data(omsi_data->sim_data);
 
     /* free memory for experiment data */
-    freeMemory ((omsi_char *)omsi_data->experiment->solver_name);        /* type-cast to shut of warning when compiling */
-    freeMemory (omsi_data->experiment);
+    global_callback->freeMemory((omsi_char *)omsi_data->experiment->solver_name);        /* type-cast to shut of warning when compiling */
+    global_callback->freeMemory(omsi_data->experiment);
+}
+
+
+/*
+ * Frees memory for model_data_t structure and all its components.
+ */
+void omsu_free_model_data (model_data_t* model_data) {
+
+    /* Variables */
+    omsi_unsigned_int i, j;
+    omsi_unsigned_int size;
+    real_var_attribute_t* attribute;
+
+    if (model_data==NULL) {
+        return;
+    }
+
+    global_callback->freeMemory((omsi_char *)model_data->modelGUID);
+
+    size = model_data->n_states + model_data->n_derivatives
+         + model_data->n_real_vars+model_data->n_real_parameters
+         + model_data->n_real_aliases;
+    for (i=0, j=0; i<size; i++, j++) {
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].name);
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].comment);
+        attribute = model_data->model_vars_info_t[j].modelica_attributes;
+        global_callback->freeMemory ((omsi_char *)attribute->unit);
+        global_callback->freeMemory ((omsi_char *)attribute->displayUnit);
+        global_callback->freeMemory (attribute);
+        /*global_callback->freeMemory(model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
+    }
+    size += model_data->n_int_vars + model_data->n_int_parameters + model_data->n_int_aliases
+            + model_data->n_bool_vars + model_data->n_bool_parameters + model_data->n_bool_aliases
+            + model_data->n_string_vars + model_data->n_string_parameters + model_data->n_string_aliases;
+    for (i=j; i<size; i++, j++) {
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].name);
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].comment);
+        global_callback->freeMemory (model_data->model_vars_info_t[j].modelica_attributes);
+        /*global_callback->freeMemory(model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
+    }
+    global_callback->freeMemory (model_data->model_vars_info_t);
+
+    /*for (i=0; i<omsi_data->model_data.n_equations; i++) {
+            global_callback->freeMemory (omsi_data->model_data.equation_info_t[i].variables);
+        }
+        //global_callback->freeMemory (omsi_data->model_data.equation_info_t);     // ToDo: something's wrong here
+    */
+
+    global_callback->freeMemory (model_data);
+}
+
+
+/*
+ * Frees memory for sim_data_t structure and all its components.
+ */
+void omsu_free_sim_data (sim_data_t* sim_data) {
+
+    if (sim_data==NULL) {
+        return;
+    }
+
+    omsu_free_omsi_function (sim_data->initialization);
+    omsu_free_omsi_function (sim_data->simulation);
+
+    omsu_free_omsi_values(sim_data->model_vars_and_params);
+    omsu_free_omsi_values(sim_data->pre_vars);
+
+    /* ToDo: free pre_vars_mapping */
+
+    global_callback->freeMemory(sim_data->zerocrossings_vars);      /* ToDo: free inner stuff */
+    global_callback->freeMemory(sim_data->pre_zerocrossings_vars);
+
+    global_callback->freeMemory(sim_data);
+}
+
+
+/*
+ * frees memory for omsi_function struct and all its components
+ */
+void omsu_free_omsi_function(omsi_function_t* omsi_function) {
+
+    if (omsi_function==NULL) {
+        return;
+    }
+
+    global_callback->freeMemory(omsi_function);
+}
+
+
+/*
+ * frees memory for omsi_values struct and all its components
+ */
+void omsu_free_omsi_values(omsi_values* values) {
+
+    if (values==NULL) {
+        return;
+    }
+
+    global_callback->freeMemory(values->reals);
+    global_callback->freeMemory(values->ints);
+    global_callback->freeMemory(values->bools);
+
+    global_callback->freeMemory(values);
 }
 
 
@@ -136,11 +189,11 @@ void omsu_print_omsi_t (omsi_t*     omsi,
 
     /* compute next indentation */
     omsi_char* nextIndent;
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     /* print content of omsi_data */
-    printf("%sstruct omsi_t:\n", indent);
+    printf("%sstruct omsi_t:\n", indent); fflush(stdout);
 
     /* print model data */
     omsu_print_model_data (omsi->model_data, nextIndent);
@@ -154,7 +207,7 @@ void omsu_print_omsi_t (omsi_t*     omsi,
     omsu_print_experiment(omsi->experiment, nextIndent);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
 }
 
 
@@ -167,7 +220,7 @@ void omsu_print_model_data(model_data_t*    model_data,
 
     /* compute next indentation */
     omsi_char* nextIndent;
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     /* print content */
@@ -200,7 +253,7 @@ void omsu_print_model_data(model_data_t*    model_data,
     omsu_print_equation_info(model_data, nextIndent);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
 }
 
 
@@ -229,7 +282,7 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
     }
 
     /* compute next indentation */
-    nextnextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+4, sizeof(omsi_char));
+    nextnextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+4, sizeof(omsi_char));
     strcat(nextnextIndent, "| | ");
 
     /* print variables */
@@ -267,7 +320,7 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
     }
 
     /* free memory */
-    global_freeMemory(nextnextIndent);
+    global_callback->freeMemory(nextnextIndent);
     return omsi_ok;
 }
 
@@ -290,7 +343,7 @@ omsi_status omsu_print_modelica_attributes (void*               modelica_attribu
     omsi_char* nextIndent;
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     printf("%sattribute:\n", indent);
@@ -315,12 +368,12 @@ omsi_status omsu_print_modelica_attributes (void*               modelica_attribu
         break;
     default:
         /* free memory */
-        global_freeMemory(nextIndent);
+        global_callback->freeMemory(nextIndent);
         return omsi_error;
     }
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -332,22 +385,22 @@ omsi_status omsu_print_modelica_attributes (void*               modelica_attribu
 void omsu_print_real_var_attribute (real_var_attribute_t*   real_var_attribute,
                                     omsi_string             indent) {
 
-    printf("%sunit:\t\t\t%s\n", indent, real_var_attribute->unit);
+    printf("%sunit:\t\t\t\t%s\n", indent, real_var_attribute->unit);
     printf("%sdisplayUnit:\t\t%s\n", indent, real_var_attribute->displayUnit);
     if (real_var_attribute->min <= -OMSI_DBL_MAX) {
-        printf("%smin:\t\t\t-infinity\n", indent);
+        printf("%smin:\t\t\t\t-infinity\n", indent);
     }
     else {
-        printf("%smin:\t\t\t%f\n", indent, real_var_attribute->min);
+        printf("%smin:\t\t\t\t%f\n", indent, real_var_attribute->min);
     }
     if (real_var_attribute->max >= OMSI_DBL_MAX) {
-        printf("%smax:\t\t\tininity\n", indent);
+        printf("%smax:\t\t\t\tinfinity\n", indent);
     }
     else {
-        printf("%smax:\t\t\t%f\n", indent, real_var_attribute->max);
+        printf("%smax:\t\t\t\t%f\n", indent, real_var_attribute->max);
     }
     printf("%sfixed:\t\t\t%s\n", indent, real_var_attribute->fixed ? "true" : "false");
-    printf("%snominal:\t\t%f\n", indent, real_var_attribute->nominal);
+    printf("%snominal:\t\t\t%f\n", indent, real_var_attribute->nominal);
     printf("%sstart:\t\t\t%f\n", indent, real_var_attribute->start);
 }
 
@@ -400,20 +453,20 @@ omsi_status omsu_print_equation_info(model_data_t*  model_data,
     }
 
     for(i=0; i<model_data->n_equations; i++) {
-        printf("%s| id:\t\t\t%i\n", indent, model_data->equation_info_t[i].id);
-        printf("%s| ProfileBlockIndex:\t%i\n", indent, model_data->equation_info_t[i].profileBlockIndex);
+        printf("%s| id:\t\t\t\t%i\n", indent, model_data->equation_info_t[i].id);
+        printf("%s| ProfileBlockIndex:\t\t\t%i\n", indent, model_data->equation_info_t[i].profileBlockIndex);
         printf("%s| parent: \t\t\t%i\n", indent, model_data->equation_info_t[i].parent);
         printf("%s| numVar:\t\t\t%i\n", indent, model_data->equation_info_t[i].numVar);
-        printf("%s| variables:\t\t", indent);
+        printf("%s| variables:\t\t\t", indent);
         for (j=0; j<model_data->equation_info_t[i].numVar; j++) {
-            printf("%s%s ", indent, model_data->equation_info_t[i].variables[j]);
+            printf("%s ", model_data->equation_info_t[i].variables[j]);
         }
         printf("\n");
         printf("%s| file info:\n", indent);
-        printf("%s| | filename:\t\t%s\n", indent, model_data->equation_info_t[i].info.filename);
+        printf("%s| | filename:\t\t\t%s\n", indent, model_data->equation_info_t[i].info.filename);
         printf("%s| | lineStart:\t\t%i\n", indent, model_data->equation_info_t[i].info.lineStart);
-        printf("%s| | colStart:\t\t%i\n", indent, model_data->equation_info_t[i].info.colStart);
-        printf("%s| | lineEnd:\t\t%i\n", indent, model_data->equation_info_t[i].info.lineEnd);
+        printf("%s| | colStart:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.colStart);
+        printf("%s| | lineEnd:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.lineEnd);
         printf("%s| | colEnd:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.colEnd);
         printf("%s| | fileWritable:\t\t%s\n", indent, model_data->equation_info_t[i].info.fileWritable ? "true" : "false");
         printf("%s\n", indent);
@@ -455,7 +508,7 @@ omsi_status omsu_print_sim_data (sim_data_t* sim_data,
     }
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
 
@@ -474,7 +527,7 @@ omsi_status omsu_print_sim_data (sim_data_t* sim_data,
     /* ToDo: print rest of sim_data */
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -497,7 +550,7 @@ omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
     }
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     printf("%sn_algebraic_system:\t%u\n", indent, omsi_function->n_algebraic_system);
@@ -507,7 +560,7 @@ omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
     omsu_print_this_omsi_function (omsi_function, omsi_function_name, indent);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -529,7 +582,7 @@ omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
     }
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     omsu_print_omsi_values(omsi_function->function_vars, "function_vars", indent);
@@ -544,7 +597,7 @@ omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
     printf("%sn_output_vars:\t\t%i\n", indent, omsi_function->n_output_vars);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
     return omsi_ok;
 }
 
@@ -597,7 +650,7 @@ omsi_status omsu_print_algebraic_system(omsi_algebraic_system_t*    algebraic_sy
     omsi_char* nextIndent;
 
     /* compute next indentation */
-    nextIndent = (omsi_char*) global_allocateMemory(strlen(indent)+2, sizeof(omsi_char));
+    nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
     printf("%sn_iteration_vars %u\n", indent, algebraic_system_t->n_iteration_vars);
@@ -617,7 +670,7 @@ omsi_status omsu_print_algebraic_system(omsi_algebraic_system_t*    algebraic_sy
     omsu_print_solver_data("lapack_solver", algebraic_system_t->solver_data, nextIndent);
 
     /* free memory */
-    global_freeMemory(nextIndent);
+    global_callback->freeMemory(nextIndent);
 
     return omsi_ok;
 }
@@ -628,6 +681,7 @@ omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
                                    omsi_unsigned_int    size,
                                    omsi_string          indent) {
 
+    UNUSED(vars_indices); UNUSED(size); UNUSED(indent);
     return omsi_ok;
 }
 
@@ -635,6 +689,8 @@ omsi_status omsu_print_index_type (omsi_index_type*     vars_indices,
 /* ToDo: finish function */
 omsi_status omsu_print_externs(void*                externs,
                                omsi_unsigned_int    n_externs) {
+
+    UNUSED(externs); UNUSED(n_externs);
 
     printf("ERROR: omsu_print_externs not implemented yet\n");
     return omsi_error;
@@ -645,8 +701,10 @@ omsi_status omsu_print_solver_data(omsi_string  solver_name,
                                    void*        solver_data,
                                    omsi_string  indent) {
 
+    UNUSED(solver_data); UNUSED(indent);
+
     if (strcmp("lapack_solver", solver_name)==0) {
-        printLapackData(solver_data, indent);
+        /* printLapackData(solver_data, indent); ToDo Uncomment*/
     }
     else {
         printf("WARING in function omsu_print_solver_data: type of solver_data unknown\n");

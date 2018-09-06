@@ -129,7 +129,6 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_real(omsu_findHashStringString(mi.de,"tolerance"), &(osu_data->experiment->tolerance), 1e-5);
     omsu_read_value_string(omsu_findHashStringString(mi.de,"solver"), (omsi_char**) &(osu_data->experiment->solver_name));
 
-
     /* process all model data */
     osu_data->model_data = functions->allocateMemory(1, sizeof(model_data_t));
     if (!osu_data->model_data) {
@@ -169,12 +168,12 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
             "fmi2Instantiate: Not enough memory.");
         return -1;
     }
+
     /*read model_vars_info_t inner stuff */
     omsu_read_var_infos(osu_data->model_data, &mi);
 
     /* now all data from init_xml should be utilized */
-    omsu_free_ModelInput(mi, osu_data, functions->freeMemory);
-
+    omsu_free_ModelInput(mi, osu_data);
 
     /* ToDo: read equation_info_t from JSON file */
     osu_data->model_data->equation_info_t = (equation_info_t*) functions->allocateMemory(osu_data->model_data->n_equations, sizeof(equation_info_t));
@@ -190,11 +189,11 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
 }
 
 
-
 /*
  * Compute corresponding index for alias variable.
  */
-omsi_int omsu_find_alias_index(omsi_int alias_valueReference, omsi_int n_variables) {
+omsi_int omsu_find_alias_index(omsi_int alias_valueReference,
+                               omsi_int n_variables) {
     /*
      *  Solution 1: read name of alias, search variables and parameters for that name,
      *  save index and id. Write in model_vars_info
@@ -223,7 +222,11 @@ omsi_int omsu_find_alias_index(omsi_int alias_valueReference, omsi_int n_variabl
  * Reads variables info and attributes and writes in model_vars_info_t.
  * If one attribute is not found a default value is used.
  */
-void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var_info, omsi_data_type type, omsi_unsigned_int* variable_index, omsi_int number_of_prev_variables) {
+void omsu_read_var_info (omc_ScalarVariable*    v,
+                         model_variable_info_t* model_var_info,
+                         omsi_data_type         type,
+                         omsi_unsigned_int*     variable_index,
+                         omsi_int               number_of_prev_variables) {
 
     /* Variables */
     omsi_string aliasTmp;
@@ -273,6 +276,7 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
             omsu_read_value_bool_default(omsu_findHashStringString(v,"start"), &attribute_bool->start, 0);
             model_var_info->modelica_attributes = attribute_bool;
         break;
+
         case OMSI_TYPE_STRING:
             attribute_string = (string_var_attribute_t *) global_callback->allocateMemory(1, sizeof(string_var_attribute_t));
             omsu_read_value_string(omsu_findHashStringStringEmpty(v,"start"), &attribute_string->start);
@@ -317,7 +321,8 @@ void omsu_read_var_info (omc_ScalarVariable *v, model_variable_info_t* model_var
  * Fill model_vars_info_t for all states, derivatives, variables and parameters.
  * Allocates memory for strings.
  */
-void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi) {
+void omsu_read_var_infos(model_data_t*      model_data,
+                         omc_ModelInput*    mi) {
 
     /* Variables */
     omsi_unsigned_int i, j=0;
@@ -402,19 +407,21 @@ void omsu_read_var_infos(model_data_t* model_data, omc_ModelInput* mi) {
 /*
  *
  */
-omsi_string omsu_findHashStringStringNull(hash_string_string *ht, omsi_string key) {
+omsi_string omsu_findHashStringStringNull(hash_string_string*   ht,
+                                          omsi_string           key) {
   hash_string_string *res;
   HASH_FIND_STR( ht, key, res );
   return res ? res->val : NULL;
 }
 
-omsi_string omsu_findHashStringStringEmpty(hash_string_string *ht, omsi_string key)
-{
+omsi_string omsu_findHashStringStringEmpty(hash_string_string*  ht,
+                                           omsi_string          key) {
   omsi_string res = omsu_findHashStringStringNull(ht,key);
   return res ? res : "";
 }
 
-omsi_string omsu_findHashStringString(hash_string_string *ht, omsi_string key) {
+omsi_string omsu_findHashStringString(hash_string_string*   ht,
+                                      omsi_string           key) {
   omsi_string res = omsu_findHashStringStringNull(ht,key);
   if (0==res) {
     hash_string_string *c, *tmp;
@@ -429,7 +436,9 @@ omsi_string omsu_findHashStringString(hash_string_string *ht, omsi_string key) {
 /*
  *
  */
-void omsu_addHashLongVar(hash_long_var **ht, omsi_long key, omc_ScalarVariable *val) {
+void omsu_addHashLongVar(hash_long_var**        ht,
+                         omsi_long              key,
+                         omc_ScalarVariable*    val) {
   hash_long_var *v = (hash_long_var*) global_callback->allocateMemory(1, sizeof(hash_long_var));      /* ToDo: where is this memory freed? */
   v->id=key;
   v->val=val;
@@ -439,7 +448,9 @@ void omsu_addHashLongVar(hash_long_var **ht, omsi_long key, omc_ScalarVariable *
 /*
  *
  */
-void omsu_addHashStringString(hash_string_string **ht, omsi_string key, omsi_string val) {
+void omsu_addHashStringString(hash_string_string**  ht,
+                              omsi_string           key,
+                              omsi_string           val) {
   hash_string_string *v = (hash_string_string*) global_callback->allocateMemory(1, sizeof(hash_string_string));
   v->id=strdup(key);
   v->val=strdup(val);
@@ -447,7 +458,9 @@ void omsu_addHashStringString(hash_string_string **ht, omsi_string key, omsi_str
 }
 
 /* reads integer value from a string */
-void omsu_read_value_int(omsi_string s, omsi_int* res, omsi_int default_value) {
+void omsu_read_value_int(omsi_string    s,
+                         omsi_int*      res,
+                         omsi_int       default_value) {
     if (s==NULL || *s == '\0') {
         *res = default_value;
     } else if (0 == strcmp(s, "true")) {
@@ -460,7 +473,8 @@ void omsu_read_value_int(omsi_string s, omsi_int* res, omsi_int default_value) {
 }
 
 /* reads integer value from a string */
-void omsu_read_value_uint(omsi_string s, omsi_unsigned_int* res) {
+void omsu_read_value_uint(omsi_string           s,
+                          omsi_unsigned_int*    res) {
     if (s==NULL) {
         *res = 0;       /*default value, if no string was found */
         return;
@@ -476,7 +490,8 @@ void omsu_read_value_uint(omsi_string s, omsi_unsigned_int* res) {
 
 
 /* ToDo: comment me  */
-omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht, omsi_long key) {
+omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht,
+                                          omsi_long     key) {
   hash_long_var *res;
   HASH_FIND_INT( ht, &key, res );
   if (0==res) {
@@ -491,7 +506,9 @@ omc_ScalarVariable** omsu_findHashLongVar(hash_long_var *ht, omsi_long key) {
 
 
 /* reads double value from a string */
-void omsu_read_value_real(omsi_string s, omsi_real* res, omsi_real default_value) {
+void omsu_read_value_real(omsi_string   s,
+                          omsi_real*    res,
+                          omsi_real     default_value) {
     if (s== NULL || *s == '\0') {
         *res = default_value;
     } else if (0 == strcmp(s, "true")) {
@@ -505,11 +522,14 @@ void omsu_read_value_real(omsi_string s, omsi_real* res, omsi_real default_value
 
 
 /* reads boolean value from a string */
-void omsu_read_value_bool(omsi_string s, omsi_bool* res) {
+void omsu_read_value_bool(omsi_string   s,
+                          omsi_bool*    res) {
     *res = 0 == strcmp(s, "true");
 }
 
-void omsu_read_value_bool_default (omsi_string s, omsi_bool* res, omsi_bool default_bool) {
+void omsu_read_value_bool_default (omsi_string  s,
+                                   omsi_bool*   res,
+                                   omsi_bool    default_bool) {
     if (s == NULL || *s == '\0') {
         *res = default_bool;
 
@@ -523,7 +543,8 @@ void omsu_read_value_bool_default (omsi_string s, omsi_bool* res, omsi_bool defa
  *  Reads modelica_string value from a string.
  *  Allocates memory for string and copies string s into str.
  */
-void omsu_read_value_string(omsi_string s, omsi_char** str) {
+void omsu_read_value_string(omsi_string s,
+                            omsi_char** str) {
     if(str == NULL) {
         /*warningStreamPrint(LOG_SIMULATION, 0, "error read_value, no data allocated for storing string");    // ToDo: Use same log everywhere */
         return;
@@ -536,7 +557,9 @@ void omsu_read_value_string(omsi_string s, omsi_char** str) {
 }
 
 
-void XMLCALL startElement(void *userData, omsi_string name, omsi_string *attr) {
+void XMLCALL startElement(void*         userData,
+                          omsi_string   name,
+                          omsi_string*  attr) {
   omc_ModelInput* mi = (omc_ModelInput*)userData;
   omsi_long i = 0;
 
@@ -649,56 +672,86 @@ void XMLCALL startElement(void *userData, omsi_string name, omsi_string *attr) {
   /* anything else, we don't handle! */
 }
 
-void XMLCALL endElement(void *userData, omsi_string name) {
+
+void XMLCALL endElement(void*       userData,
+                        omsi_string name) {
   /* do nothing! */
     UNUSED(userData); UNUSED(name);
 }
 
-/* deallocates memory for oms_ModelInput struct */
-void omsu_free_ModelInput(omc_ModelInput mi, omsi_t* omsi_data, const omsi_callback_free_memory freeMemory) {
 
-    omsi_unsigned_int i;
+/* deallocates memory for omc_ModelInput struct */
+/* ToDo: is full of bugs */
+void omsu_free_ModelInput(omc_ModelInput                    mi,
+                          omsi_t*                           omsi_data) {
 
-    freeMemory((omsi_char *)mi.md->id);
-    freeMemory((omsi_char *)mi.md->val);
-    freeMemory(mi.md);
+    free_hash_string_string(mi.md);
+    free_hash_string_string(mi.de);
 
-    freeMemory((omsi_char *)mi.de->id);
-    freeMemory((omsi_char *)mi.de->val);
-    freeMemory(mi.de);
+    free_hash_long_var(mi.rSta);
+    free_hash_long_var(mi.rDer);
+    free_hash_long_var(mi.rAlg);
+    free_hash_long_var(mi.rPar);
+    free_hash_long_var(mi.rAli);
+    free_hash_long_var(mi.rSen);
 
-    for (i=0; i<omsi_data->model_data->n_states ; i++) {
-        freeMemory((omsi_char *)mi.rSta[i].val->id);
-        freeMemory((omsi_char *)mi.rSta[i].val->val);
-        freeMemory(mi.rSta[i].val);
-    }
-    freeMemory(mi.rSta);
-    for (i=0; i<omsi_data->model_data->n_derivatives ; i++) {
-        freeMemory((omsi_char *)mi.rDer[i].val->id);
-        freeMemory((omsi_char *)mi.rDer[i].val->val);
-        freeMemory(mi.rDer[i].val);
-    }
-    freeMemory(mi.rDer);
+    free_hash_long_var(mi.iAlg);
+    free_hash_long_var(mi.iPar);
+    free_hash_long_var(mi.iAli);
 
-    /* ToDo: getting segmentation fault when freeing inner memory */
-    /* ToDo: free inner stuff also for integer, boolean and string */
-    freeMemory(mi.rAlg);
-    freeMemory(mi.rPar);
-    freeMemory(mi.rAli);
-    freeMemory(mi.rSen);        /* ToDo: What are sensitives? */
+    free_hash_long_var(mi.bAlg);
+    free_hash_long_var(mi.bPar);
+    free_hash_long_var(mi.bAli);
 
-    freeMemory(mi.iAlg);
-    freeMemory(mi.iPar);
-    freeMemory(mi.iAli);
-
-    freeMemory(mi.bAlg);
-    freeMemory(mi.bPar);
-    freeMemory(mi.bAli);
-
-    freeMemory(mi.sAlg);
-    freeMemory(mi.sPar);
-    freeMemory(mi.sAli);
-
-    /* ToDo: What to free for lastCT??? */
+    free_hash_long_var(mi.sAlg);
+    free_hash_long_var(mi.sPar);
+    free_hash_long_var(mi.sAli);
 
 }
+
+
+/* delete all items from hash and frees memory for hash table hash_string_string*/
+void free_hash_string_string (hash_string_string* data) {
+
+    hash_string_string* current, *tmp;
+
+    HASH_ITER(hh, data, current, tmp) {
+        HASH_DEL(data, current);             /* delete; current advances to next */
+        global_callback->freeMemory((omsi_char *)current->id);
+        global_callback->freeMemory((omsi_char *)current->val);
+        free(current);
+    }
+}
+
+
+/* delete all items from hash and frees memory for hash table hash_long_var*/
+void free_hash_long_var (hash_long_var* data) {
+
+    hash_long_var* current, *tmp;
+
+    HASH_ITER(hh, data, current, tmp) {
+        HASH_DEL(data, current);             /* delete; current advances to next */
+        global_callback->freeMemory((omsi_char *)current->val);
+        free(current);            /* optional- if you want to free  */
+    }
+}
+
+
+/* delete all items from hash and frees memory for hash table hash_long_var*/
+void free_hash_string_long (hash_string_long* data) {
+
+    hash_string_long* current, *tmp;
+
+    HASH_ITER(hh, data, current, tmp) {
+        HASH_DEL(data, current);             /* delete; current advances to next */
+        global_callback->freeMemory((omsi_char *)current->id);
+        free(current);            /* optional- if you want to free  */
+    }
+}
+
+
+
+
+
+
+

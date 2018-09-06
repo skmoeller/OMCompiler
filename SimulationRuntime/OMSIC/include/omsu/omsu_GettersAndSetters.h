@@ -40,8 +40,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_utils.h"
-#include "fmi2/fmi2Functions.h"
+#include <omsu_utils.h>
+#include <fmi2Functions.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +49,7 @@ extern "C" {
 
 typedef struct osu_t osu_t;
 
-//getter and setter functions for the omsu struct
+/* getter and setter functions for the omsu struct */
 
 /*! \fn omsi_get_boolean
  *
@@ -124,7 +124,7 @@ fmi2Status omsi_set_string(fmi2Component c, const fmi2ValueReference vr[], size_
 fmi2Status omsi_set_time(fmi2Component c, fmi2Real time);
 
 
-//unsupported functions
+/* unsupported functions */
 /*! \fn omsi_get_fmu_state
  *
  *  This function is not supported.

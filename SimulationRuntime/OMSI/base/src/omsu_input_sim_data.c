@@ -34,12 +34,18 @@
 /*
  * Allocates memory and initializes sim_data_t struct with functions from generated code.
  */
-omsi_status omsu_setup_sim_data(omsi_t*                         omsi_data,
-                                omsi_functions_t                template_function,
-                                const omsi_callback_functions*  callback_functions) {
+omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
+                                omsi_template_callback_functions_t* template_function,
+                                const omsi_callback_functions*      callback_functions) {
 
     /* set global function pointer */
     global_callback = callback_functions;
+
+    /* check if template callback functions are set */
+    if (!template_function->isSet) {
+        /* ToDo: Log error */
+        return omsi_error;
+    }
 
     /* allocate memory for sim_data */
     if (omsu_allocate_sim_data(omsi_data)) {
@@ -81,7 +87,6 @@ omsi_status omsu_setup_sim_data(omsi_t*                         omsi_data,
  */
 omsi_status omsu_allocate_sim_data(omsi_t* omsi_data) {
 
-    omsi_int n_model_vars_and_params;
     omsi_unsigned_int n_reals, n_ints, n_bools, n_externs;
 
     omsi_data->sim_data->initialization = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
@@ -116,6 +121,15 @@ omsi_status omsu_allocate_sim_data(omsi_t* omsi_data) {
 }
 
 
+/*
+ * Instantiate omsi_function_t structure.
+ */
+omsi_status omsu_instantiate_omsi_function (omsi_function_t* omsi_function) {
+
+
+    return omsi_error;
+}
+
 
 /*
  * Allocates memory for omsi_algebraic_system_t struct.
@@ -142,15 +156,16 @@ omsi_algebraic_system_t* omsu_initialize_alg_system_array (omsi_unsigned_int n_a
  * Set start values for model_vars_and_params from model_data.
  * If no start value was specified in original modelica model it defaults to zero.
  */
-omsi_status* omsu_set_model_vars_and_params_start (omsi_values* model_vars_and_params, model_data_t model_data) {
+omsi_status omsu_set_model_vars_and_params_start (omsi_values*     model_vars_and_params,
+                                                  model_data_t*    model_data) {
 
     /* Variables */
     omsi_unsigned_int i;
     omsi_unsigned_int length;
 
-    real_var_attribute_t real_attribute;
-    int_var_attribute_t int_attribute;
-    bool_var_attribute_t bool_attribute;
+    real_var_attribute_t* real_attribute;
+    int_var_attribute_t* int_attribute;
+    bool_var_attribute_t* bool_attribute;
 
     length = model_data->n_states + model_data->n_derivatives
            + model_data->n_real_vars + model_data->n_real_parameters
@@ -164,21 +179,21 @@ omsi_status* omsu_set_model_vars_and_params_start (omsi_values* model_vars_and_p
 
     /* Read start values from model_vars_info_t and write them into model_vars_and_params */
     for (i=0; i<length; i++) {
-        if (!model_data->model_vars_info_t[i]->isAlias) {
-            switch (model_data->model_vars_info_t[i]->type_index.type) {
+        if (!model_data->model_vars_info_t[i].isAlias) {
+            switch (model_data->model_vars_info_t[i].type_index.type) {
             case OMSI_TYPE_REAL:
-                real_attribute = (real_var_attribute_t) model_data->model_vars_info_t[i]->modelica_attributes;
-                model_vars_and_params->reals[model_data->model_vars_info_t[i]->type_index.index]
+                real_attribute = (real_var_attribute_t*) model_data->model_vars_info_t[i].modelica_attributes;
+                model_vars_and_params->reals[model_data->model_vars_info_t[i].type_index.index]
                          = real_attribute->start;
                 break;
             case OMSI_TYPE_INTEGER:
-                int_attribute = (int_var_attribute_t) model_data->model_vars_info_t[i]->modelica_attributes;
-                model_vars_and_params->ints[model_data->model_vars_info_t[i]->type_index.index]
+                int_attribute = (int_var_attribute_t*) model_data->model_vars_info_t[i].modelica_attributes;
+                model_vars_and_params->ints[model_data->model_vars_info_t[i].type_index.index]
                          = int_attribute->start;
                 break;
             case OMSI_TYPE_BOOLEAN:
-                bool_attribute = (bool_var_attribute_t) model_data->model_vars_info_t[i]->modelica_attributes;
-                model_vars_and_params->bools[model_data->model_vars_info_t[i]->type_index.index]
+                bool_attribute = (bool_var_attribute_t*) model_data->model_vars_info_t[i].modelica_attributes;
+                model_vars_and_params->bools[model_data->model_vars_info_t[i].type_index.index]
                          = bool_attribute->start;
                 break;
             case OMSI_TYPE_STRING:

@@ -31,10 +31,12 @@
 #ifndef OMSU_HELPER_H
 #define OMSU_HELPER_H
 
-#include "omsi.h"
-#include "omsu_common.h"
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
+#include <omsu_common.h>
 
-#include "solver/solver_lapack.h"
+#include <solver_lapack.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -52,8 +54,15 @@ extern void printLapackData(DATA_LAPACK*    lapack_data,
 
 
 /* function prototypes */
-void omsu_free_osu_data(omsi_t*                         omsi_data,
-                        const omsi_callback_free_memory freeMemory);
+void omsu_free_osu_data(omsi_t* omsi_data);
+
+void omsu_free_model_data (model_data_t* model_data);
+
+void omsu_free_sim_data (sim_data_t* sim_data);
+
+void omsu_free_omsi_function(omsi_function_t* omsi_function);
+
+void omsu_free_omsi_values(omsi_values* values);
 
 void omsu_print_osu (osu_t* OSU);
 

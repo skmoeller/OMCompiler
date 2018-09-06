@@ -36,17 +36,18 @@
 #ifndef OSI_FMI2_WRAPPER_H
 #define OSI_FMI2_WRAPPER_H
 
-//FMI2 interface
-#include <omsu/omsu_initialization.h>
+/* FMI2 interface */
+#include <omsu_initialization.h>
 #include "fmi2Functions.h"
 #include "fmi2FunctionTypes.h"
 #include "fmi2TypesPlatform.h"
 
-//OpenModelica Simulation Interface
-#include "omsu/omsu_common.h"
-#include "omsu/omsu_utils.h"
-#include "omsu/omsu_me.h"
-#include "omsi.h"
+/* OpenModelica Simulation Interface */
+#include <omsi.h>
+#include <omsu_common.h>
+#include <omsu_utils.h>
+#include <omsu_me.h>
+
 
 
 #ifdef __cplusplus

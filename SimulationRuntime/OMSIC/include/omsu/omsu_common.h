@@ -35,7 +35,9 @@
 #ifndef OMSU_COMMON_H
 #define OMSU_COMMON_H
 
-#include "omsi.h"
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
 
 
 #define NUMBER_OF_CATEGORIES 11
@@ -43,14 +45,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-typedef omsi_status (*omsu_initialize_omsi_function) (omsi_function_t* omsi_function);
-
-typedef struct omsi_functions_t {
-    const omsu_initialize_omsi_function initialize_initialization_problem;  /* function pointer to initialize the initialization problem */
-    const omsu_initialize_omsi_function initialize_simulation_problem;      /* function pointer to initialize the simulation problem */
-}omsi_functions_t;
 
 
 typedef enum {
@@ -76,7 +70,7 @@ typedef struct {
 typedef struct osu_t {
     /* open modelica simulation interface data */
     omsi_t*             osu_data;           /* pointer to omsi_data struct, contains all data for simulation */
-    omsi_functions_t*   osu_functions;
+    omsi_template_callback_functions_t*   osu_functions;
 
     omsi_int            _need_update;
     omsi_int            _has_jacobian;

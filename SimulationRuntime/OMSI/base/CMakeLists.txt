@@ -20,7 +20,7 @@ ELSE(MSVC)
 ENDIF(MSVC)
 
 include_directories ("${CMAKE_SOURCE_DIR}/base/include")
-add_library(${OSUBaseName} STATIC src/omsu_input_json.c src/omsu_input_xml.c src/omsu_mmap.c)
+add_library(${OSUBaseName} STATIC src/omsu_input_json.c src/omsu_input_xml.c src/omsu_mmap.c src/omsu_input_sim_data.c)
 IF(WIN32)
     target_link_libraries(${OSUBaseName}  ${CMAKE_DL_LIBS} wsock32 ws2_32 ${expat_lib})
 ELSE(WIN32)
