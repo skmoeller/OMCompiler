@@ -28,7 +28,7 @@
  *
  */
 
-#include <omsu_input_json.h>
+#include <omsi_input_json.h>
 
 
 /* prototypes for static functions */

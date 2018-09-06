@@ -3,8 +3,8 @@
 #include <Core/ModelicaDefine.h>
 #include <Core/Modelica.h>
 #include "omsi_data.h"
-#include <omsu_input_xml.h>
-#include <omsu_input_json.h>
+#include <omsi_input_xml.h>
+#include <omsi_input_json.h>
 
 
 

@@ -28,7 +28,7 @@
  *
  */
 
-#include <omsu_input_sim_data.h>
+#include <omsi_input_sim_data.h>
 
 
 /*

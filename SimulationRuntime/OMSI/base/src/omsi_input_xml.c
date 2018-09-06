@@ -28,7 +28,7 @@
  *
  */
 #include <uthash.h>
-#include <omsu_input_xml.h>
+#include <omsi_input_xml.h>
 #include <omsi_global.h>
 
 
@@ -532,8 +532,11 @@ void omsu_read_value_bool_default (omsi_string  s,
                                    omsi_bool    default_bool) {
     if (s == NULL || *s == '\0') {
         *res = default_bool;
+
     }
-    *res = 0 == strcmp(s, "true");
+	else{
+		*res = 0 == strcmp(s, "true");
+	}
 }
 
 /*

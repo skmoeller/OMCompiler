@@ -84,7 +84,7 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _simTime(0.0)
 
 {
-
+	cout << "test in omsu wrapper" << std::endl;
 
 	_global_settings = shared_ptr<OMSIGlobalSettings>(new OMSIGlobalSettings());
   _instanceName = instanceName;
@@ -98,11 +98,11 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _logger = Logger::getInstance();
 
   // setup model
- /*Todo: only load if type is omsu, not for fmi
+ /*Todo: only load if type is omsu, not for fmi*/
  fs::path p(_instanceName);
   string omsu_name = p.stem().string();
  omsi_t* omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
- */
+
   _model = createOSUSystem(_global_settings, _instanceName);
   _initialize_model = dynamic_pointer_cast<ISystemInitialization>(_model);
   _continuous_model  = dynamic_pointer_cast<IContinuous>(_model);
@@ -213,6 +213,7 @@ fmi2Status OSU::enterInitializationMode()
 {
   _initialize_model->setInitial(true);
   _need_update = true;
+
   return fmi2OK;
 }
 
