@@ -39,7 +39,7 @@
 #include <omsi_global.h>
 
 #include <uthash.h>
-#include <omsu_mmap.h>
+#include <omsi_mmap.h>
 
 
 

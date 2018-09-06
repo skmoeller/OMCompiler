@@ -30,7 +30,7 @@
 
 #if !defined(OMS_NO_FILESYSTEM)
 
-#include <omsu_mmap.h>
+#include <omsi_mmap.h>
 
 #ifdef __cplusplus
 extern "C" {

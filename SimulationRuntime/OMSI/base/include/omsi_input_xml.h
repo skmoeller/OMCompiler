@@ -110,6 +110,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
                                 const omsi_callback_functions*  functions);
 
 
+
 /*private function prototypes */
 omsi_int omsu_find_alias_index(omsi_int alias_valueReference,
                                omsi_int n_variables);

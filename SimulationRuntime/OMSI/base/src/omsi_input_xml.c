@@ -28,7 +28,7 @@
  *
  */
 #include <uthash.h>
-#include <omsu_input_xml.h>
+#include <omsi_input_xml.h>
 #include <omsi_global.h>
 
 
