@@ -173,7 +173,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_var_infos(osu_data->model_data, &mi);
 
     /* now all data from init_xml should be utilized */
-    omsu_free_ModelInput(mi, osu_data);
+    omsu_free_ModelInput(mi);
 
     /* ToDo: read equation_info_t from JSON file */
     osu_data->model_data->equation_info_t = (equation_info_t*) functions->allocateMemory(osu_data->model_data->n_equations, sizeof(equation_info_t));
@@ -682,8 +682,7 @@ void XMLCALL endElement(void*       userData,
 
 /* deallocates memory for omc_ModelInput struct */
 /* ToDo: is full of bugs */
-void omsu_free_ModelInput(omc_ModelInput                    mi,
-                          omsi_t*                           omsi_data) {
+void omsu_free_ModelInput(omc_ModelInput mi) {
 
     free_hash_string_string(mi.md);
     free_hash_string_string(mi.de);

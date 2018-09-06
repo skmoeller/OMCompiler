@@ -30,10 +30,6 @@
 
 #include "solver/solver_lapack.h"
 
-/* forward global functions */
-omsi_callback_allocate_memory   global_allocateMemory;
-omsi_callback_free_memory       global_freeMemory;
-
 
 /*
  * Get an equation system A*x=b in omsi_function_t format.
@@ -53,8 +49,7 @@ omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
     omsi_status status;
 
     /* set global functions */
-    global_allocateMemory = callback_functions->allocateMemory;
-    global_freeMemory = callback_functions->freeMemory;
+    global_callback = callback_functions;
 
     /* allocate memory and copy informations into lapack_data */
     lapack_data = set_lapack_data((const omsi_algebraic_system_t*) linearSystem, read_only_vars_and_params);
@@ -116,7 +111,7 @@ omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
 DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system,
                              const omsi_values*             read_only_vars_and_params) {
 
-    DATA_LAPACK* lapack_data = (DATA_LAPACK*) global_allocateMemory(1, sizeof(DATA_LAPACK));
+    DATA_LAPACK* lapack_data = (DATA_LAPACK*) global_callback->allocateMemory(1, sizeof(DATA_LAPACK));
     if (!lapack_data) {
         /* ToDo: log error out of memory */
         return NULL;
@@ -128,9 +123,9 @@ DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system,
     lapack_data->ldb = lapack_data->n;
 
     /* allocate memory */
-    lapack_data->A = (omsi_real*) global_allocateMemory(lapack_data->lda*lapack_data->n, sizeof(omsi_real));
-    lapack_data->ipiv = (omsi_int*) global_allocateMemory(lapack_data->n, sizeof(omsi_int));
-    lapack_data->b = (omsi_real*) global_allocateMemory(lapack_data->ldb*lapack_data->nrhs, sizeof(omsi_real));
+    lapack_data->A = (omsi_real*) global_callback->allocateMemory(lapack_data->lda*lapack_data->n, sizeof(omsi_real));
+    lapack_data->ipiv = (omsi_int*) global_callback->allocateMemory(lapack_data->n, sizeof(omsi_int));
+    lapack_data->b = (omsi_real*) global_callback->allocateMemory(lapack_data->ldb*lapack_data->nrhs, sizeof(omsi_real));
     if (!lapack_data->A || !lapack_data->ipiv || !lapack_data->b) {
         /* ToDo: log error out of memory */
         return NULL;
@@ -206,7 +201,7 @@ omsi_status eval_residual(DATA_LAPACK*              lapack_data,
     omsi_real dotProduct;
 
     /* allocate memory */
-    res = (omsi_real*) global_allocateMemory(lapack_data->n, sizeof(omsi_real));
+    res = (omsi_real*) global_callback->allocateMemory(lapack_data->n, sizeof(omsi_real));
 
     /* compute residuum A*x-b using generated function and save result in residuum */
     /* ToDo: function call */
@@ -216,7 +211,7 @@ omsi_status eval_residual(DATA_LAPACK*              lapack_data,
     dotProduct = ddot_(&lapack_data->n, res, &increment, res, &increment);
 
     /* free memory */
-    global_freeMemory(res);
+    global_callback->freeMemory(res);
 
     if (dotProduct < 1e-4) {  /* ToDo: use some accuracy */
         return omsi_ok;
@@ -250,11 +245,11 @@ void get_result(omsi_function_t*    equationSystemFunc,
  *  Frees lapack_data
  */
 void freeLapackData(DATA_LAPACK* lapack_data) {
-    global_freeMemory(lapack_data->A);
-    global_freeMemory(lapack_data->ipiv);
-    global_freeMemory(lapack_data->b);
+    global_callback->freeMemory(lapack_data->A);
+    global_callback->freeMemory(lapack_data->ipiv);
+    global_callback->freeMemory(lapack_data->b);
 
-    global_freeMemory(lapack_data);
+    global_callback->freeMemory(lapack_data);
 }
 
 

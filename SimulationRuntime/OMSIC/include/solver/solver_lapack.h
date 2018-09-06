@@ -34,10 +34,14 @@
 #ifndef _LINEARSOLVERLAPACK_H_
 #define _LINEARSOLVERLAPACK_H_
 
-#include "omsi.h"
-#include "solver_helper.h"
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
+
+#include <solver_helper.h>
 
 #include <stdio.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {

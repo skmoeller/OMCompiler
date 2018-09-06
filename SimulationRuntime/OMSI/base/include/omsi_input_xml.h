@@ -172,8 +172,7 @@ void XMLCALL startElement(void*         userData,
 void XMLCALL endElement(void*       userData,
                         omsi_string name);
 
-void omsu_free_ModelInput(omc_ModelInput                    mi,
-                          omsi_t*                           omsi_data);
+void omsu_free_ModelInput(omc_ModelInput mi);
 
 void free_hash_string_string (hash_string_string* data);
 
