@@ -77,7 +77,7 @@ case SIMCODE(modelInfo=modelInfo as MODELINFO(__)) then
 
   let cpp = CodegenCpp.translateModel(simCode)
   let()= textFile(osuModelCppFile(simCode, extraFuncs, extraFuncsDecl, "",guid, FMUVersion), 'OMCpp<%fileNamePrefix%>OMSU.cpp')
-  let()= textFile( CodegenFMU2.fmiModelDescription(simCode, guid, FMUType), 'modelDescription.xml')
+
   let()= textFile(fmudeffile(simCode, FMUVersion), '<%fileNamePrefix%>.def')
   let()= textFile(osuMakefile(target,simCode, extraFuncs, extraFuncsDecl, "", FMUVersion, "", "", "", "",false), '<%fileNamePrefix%>.makefile')
   let()= textFile(fmuCalcHelperMainfile(simCode), 'OMCpp<%fileNamePrefix%>CalcHelperMain.cpp')

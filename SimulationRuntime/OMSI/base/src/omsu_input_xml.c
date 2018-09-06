@@ -512,8 +512,11 @@ void omsu_read_value_bool(omsi_string s, omsi_bool* res) {
 void omsu_read_value_bool_default (omsi_string s, omsi_bool* res, omsi_bool default_bool) {
     if (s == NULL || *s == '\0') {
         *res = default_bool;
+
     }
-    *res = 0 == strcmp(s, "true");
+	else{
+		*res = 0 == strcmp(s, "true");
+	}
 }
 
 /*

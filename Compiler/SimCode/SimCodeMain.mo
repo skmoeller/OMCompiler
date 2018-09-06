@@ -65,6 +65,7 @@ import ClockIndexes;
 import CevalScriptBackend;
 import CodegenC;
 import CodegenEmbeddedC;
+import CodegenFMU2;
 import CodegenFMU;
 import CodegenFMUCpp;
 import CodegenOMSICpp;
@@ -713,9 +714,13 @@ protected function callTargetTemplatesOMSICpp
   protected
   String fmuVersion;
   String fmuType;
+  String guid;
 algorithm
-	fmuVersion:="2.0";
-	fmuType:="me";
+    fmuVersion:="2.0";
+    fmuType:="me";
+    guid := System.getUUIDStr();
+    SerializeInitXML.simulationInitFileReturnBool(simCode=iSimCode, guid=guid);
+    runTplWriteFile(func = function CodegenFMU2.fmiModelDescription(in_a_simCode=iSimCode, in_a_guid=guid,in_a_FMUType=fmuType), file="modelDescription.xml");
   Tpl.tplNoret3(CodegenOMSICpp.translateModel, iSimCode, fmuVersion, fmuType);
 end callTargetTemplatesOMSICpp;
 
