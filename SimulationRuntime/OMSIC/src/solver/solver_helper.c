@@ -28,7 +28,7 @@
  *
  */
 
-#include "solver/solver_helper.h"
+#include <solver_helper.h>
 
 
 omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_function,

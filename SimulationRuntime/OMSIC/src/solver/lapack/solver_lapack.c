@@ -28,7 +28,7 @@
  *
  */
 
-#include "solver/solver_lapack.h"
+#include <solver_lapack.h>
 
 
 /*

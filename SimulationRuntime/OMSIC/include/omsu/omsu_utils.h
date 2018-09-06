@@ -40,7 +40,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "omsu_common.h"
+#include <string.h>
+
+#include <omsu_common.h>
 
 
 #ifdef __cplusplus
