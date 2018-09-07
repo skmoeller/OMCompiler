@@ -52,10 +52,6 @@ extern "C" {
 #include <omsi_input_sim_data.h>
 #include <omsu_utils.h>
 
-/* forward struct */
-typedef struct osu_t osu_t;
-typedef struct omsi_t omsi_t;
-typedef struct omsi_callback_functions omsi_callback_functions;
 
 /* extern functions */
 extern void omsic_model_setup_data(osu_t* OSU);
