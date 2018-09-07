@@ -88,6 +88,7 @@ SimulationRuntime/cpp/Makefile
 SimulationRuntime/cpp/Makefile.env
 SimulationRuntime/cpp/Build_*/
 SimulationRuntime/OMSI/Build_*/
+SimulationRuntime/OMSIC/Build_*/
 SimulationRuntime/cpp/Debug/
 SimulationRuntime/cpp/.cproject
 SimulationRuntime/cpp/confdefs.h
@@ -159,4 +160,6 @@ SimulationRuntime/cpp/build_msvc/
 # Visual Studio 2015/2017 cache/options directory
 SimulationRuntime/cpp/.vs/
 SimulationRuntime/cpp/CMakeSettings.json
+SimulationRuntime/OMSI/.vs/
+SimulationRuntime/OMSI/CMakeSettings.json
 tags
