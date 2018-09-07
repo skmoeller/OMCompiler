@@ -126,11 +126,14 @@ void test_instantiate (fmi2String   instanceName,
     /* instantiate FMU */
     printf("Enter OMSI instantiate\n");
     fflush(stdout);
-    componente = omsi_instantiate(instanceName, fmi2ModelExchange, guid, fmuResourceLocation, &callbacks, visible, loggingOn);
+    componente = (fmi2Component) omsi_instantiate(instanceName, fmi2ModelExchange, guid, fmuResourceLocation, &callbacks, visible, loggingOn);
     if(!componente) {
         printf("FMI instantiation failed\n");
         fflush(stdout);
     }
+
+    /* print data */
+    omsu_print_osu(componente);
 
     /* free data */
     printf("Free OMSI instance\n");
@@ -150,8 +153,8 @@ int main(int argc, char* argv[]) {
 
     /* test_instantiate(argv[1], argv[2]); */
 
-    fmi2String instanceName = "SimpleModelLinear_1";
-    fmi2String guid = "{e9e50f74-bbe4-4c28-8bd2-9894ad8c8c54}";
+    fmi2String instanceName = "problem2";
+    fmi2String guid = "{7bf047d4-4435-41e2-ae47-cc7ffcf75437}";
 
     test_instantiate(instanceName, guid);
 

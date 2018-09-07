@@ -1,28 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription
   fmiVersion="2.0"
-  modelName="SimpleModelLinear_1"
-  guid="{44e1517e-131e-4485-8eeb-65047a151ea2}"
-  description=""
-  generationTool="OpenModelica Compiler v1.13.0-dev-612-g65d57a519 (64-bit)"
-  generationDateAndTime="2018-06-04T14:33:57Z"
+  modelName="problem2"
+  guid="{7bf047d4-4435-41e2-ae47-cc7ffcf75437}"
+  description="simple linear torn system"
+  generationTool="OpenModelica Compiler v1.13.0-dev-1077-g835b78ba4 (64-bit)"
+  generationDateAndTime="2018-09-07T16:08:33Z"
   variableNamingConvention="structured"
-  numberOfEventIndicators="1">
+  numberOfEventIndicators="0">
   <ModelExchange
-    modelIdentifier="SimpleModelLinear_1">
+    modelIdentifier="problem2">
   </ModelExchange>
-  <CoSimulation
-    modelIdentifier="SimpleModelLinear_1"
-    needsExecutionTool="false"
-    canHandleVariableCommunicationStepSize="true"
-    canInterpolateInputs="false"
-    maxOutputDerivativeOrder="1"
-    canRunAsynchronuously = "false"
-    canBeInstantiatedOnlyOncePerProcess="false"
-    canNotUseMemoryManagementFunctions="false"
-    canGetAndSetFMUstate="false"
-    canSerializeFMUstate="false"
-     />
   <LogCategories>
     <Category name="logEvents" />
     <Category name="logSingularLinearSystems" />
@@ -40,698 +28,90 @@
   <ModelVariables>
   <!-- Index of variable = "1" -->
   <ScalarVariable
-    name="capacitor1.v"
+    name="v1"
     valueReference="0"
-    description="Voltage drop between the two pins (= p.v - n.v)"
     variability="continuous"
     causality="local"
     initial="exact">
-    <Real start="0.0" unit="V"/>
+    <Real start="-0.1"   />
   </ScalarVariable>
   <!-- Index of variable = "2" -->
   <ScalarVariable
-    name="der(capacitor1.v)"
+    name="w1"
     valueReference="1"
-    description="der(Voltage drop between the two pins (= p.v - n.v))"
     variability="continuous"
     causality="local"
-    initial="calculated">
-    <Real derivative="1" unit="km2.s-4.A-1.g"/>
+    initial="exact">
+    <Real start="0.1"   />
   </ScalarVariable>
   <!-- Index of variable = "3" -->
   <ScalarVariable
-    name="capacitor1.i"
+    name="der(v1)"
     valueReference="2"
-    description="Current flowing from pin p to pin n"
     variability="continuous"
     causality="local"
     initial="calculated">
-    <Real unit="A"/>
+    <Real derivative="1"   />
   </ScalarVariable>
   <!-- Index of variable = "4" -->
   <ScalarVariable
-    name="ground1.p.i"
+    name="der(w1)"
     valueReference="3"
-    description="Current flowing into the pin"
     variability="continuous"
     causality="local"
     initial="calculated">
-    <Real unit="A"/>
+    <Real derivative="2"   />
   </ScalarVariable>
   <!-- Index of variable = "5" -->
   <ScalarVariable
-    name="ground1.p.v"
+    name="_D_cse1"
     valueReference="4"
-    description="Potential at the pin"
     variability="continuous"
     causality="local"
     initial="calculated">
-    <Real unit="V"/>
+    <Real   />
   </ScalarVariable>
   <!-- Index of variable = "6" -->
   <ScalarVariable
-    name="resistor1.LossPower"
+    name="p1"
     valueReference="5"
-    description="Loss power leaving component via heatPort"
     variability="continuous"
     causality="local"
     initial="calculated">
-    <Real unit="W"/>
+    <Real   />
   </ScalarVariable>
   <!-- Index of variable = "7" -->
   <ScalarVariable
-    name="resistor1.R_actual"
+    name="u1"
     valueReference="6"
-    description="Actual resistance = R*(1 + alpha*(T_heatPort - T_ref))"
     variability="continuous"
     causality="local"
-    initial="calculated">
-    <Real unit="Ohm"/>
+    initial="exact">
+    <Real start="1.0"   />
   </ScalarVariable>
   <!-- Index of variable = "8" -->
   <ScalarVariable
-    name="resistor1.i"
+    name="u2"
     valueReference="7"
-    description="Current flowing from pin p to pin n"
     variability="continuous"
     causality="local"
-    initial="calculated">
-    <Real unit="A"/>
+    initial="exact">
+    <Real start="1.0"   />
   </ScalarVariable>
   <!-- Index of variable = "9" -->
   <ScalarVariable
-    name="resistor1.v"
+    name="u3"
     valueReference="8"
-    description="Voltage drop between the two pins (= p.v - n.v)"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "10" -->
-  <ScalarVariable
-    name="resistor2.LossPower"
-    valueReference="9"
-    description="Loss power leaving component via heatPort"
     variability="continuous"
     causality="local"
     initial="exact">
-    <Real start="0.0" unit="W"/>
-  </ScalarVariable>
-  <!-- Index of variable = "11" -->
-  <ScalarVariable
-    name="resistor2.R_actual"
-    valueReference="10"
-    description="Actual resistance = R*(1 + alpha*(T_heatPort - T_ref))"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="Ohm"/>
-  </ScalarVariable>
-  <!-- Index of variable = "12" -->
-  <ScalarVariable
-    name="resistor2.i"
-    valueReference="11"
-    description="Current flowing from pin p to pin n"
-    variability="continuous"
-    causality="local"
-    initial="exact">
-    <Real start="0.0" unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "13" -->
-  <ScalarVariable
-    name="resistor3.LossPower"
-    valueReference="12"
-    description="Loss power leaving component via heatPort"
-    variability="continuous"
-    causality="local"
-    initial="exact">
-    <Real start="0.0" unit="W"/>
-  </ScalarVariable>
-  <!-- Index of variable = "14" -->
-  <ScalarVariable
-    name="resistor3.R_actual"
-    valueReference="13"
-    description="Actual resistance = R*(1 + alpha*(T_heatPort - T_ref))"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="Ohm"/>
-  </ScalarVariable>
-  <!-- Index of variable = "15" -->
-  <ScalarVariable
-    name="resistor3.i"
-    valueReference="14"
-    description="Current flowing from pin p to pin n"
-    variability="continuous"
-    causality="local"
-    initial="exact">
-    <Real start="0.0" unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "16" -->
-  <ScalarVariable
-    name="sineVoltage1.v"
-    valueReference="15"
-    description="Voltage drop between the two pins (= p.v - n.v)"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "17" -->
-  <ScalarVariable
-    name="capacitor1.C"
-    valueReference="16"
-    description="Capacitance"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="0.1" min="0.0" unit="F"/>
-  </ScalarVariable>
-  <!-- Index of variable = "18" -->
-  <ScalarVariable
-    name="resistor1.R"
-    valueReference="17"
-    description="Resistance at temperature T_ref"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="10.0" unit="Ohm"/>
-  </ScalarVariable>
-  <!-- Index of variable = "19" -->
-  <ScalarVariable
-    name="resistor1.T"
-    valueReference="18"
-    description="Fixed device temperature if useHeatPort = false"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Real min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "20" -->
-  <ScalarVariable
-    name="resistor1.T_ref"
-    valueReference="19"
-    description="Reference temperature"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="300.15" min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "21" -->
-  <ScalarVariable
-    name="resistor1.alpha"
-    valueReference="20"
-    description="Temperature coefficient of resistance (R_actual = R*(1 + alpha*(T_heatPort - T_ref))"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="0.0" unit="1/K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "22" -->
-  <ScalarVariable
-    name="resistor2.R"
-    valueReference="21"
-    description="Resistance at temperature T_ref"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="10.0" unit="Ohm"/>
-  </ScalarVariable>
-  <!-- Index of variable = "23" -->
-  <ScalarVariable
-    name="resistor2.T"
-    valueReference="22"
-    description="Fixed device temperature if useHeatPort = false"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Real min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "24" -->
-  <ScalarVariable
-    name="resistor2.T_ref"
-    valueReference="23"
-    description="Reference temperature"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="300.15" min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "25" -->
-  <ScalarVariable
-    name="resistor2.alpha"
-    valueReference="24"
-    description="Temperature coefficient of resistance (R_actual = R*(1 + alpha*(T_heatPort - T_ref))"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="0.0" unit="1/K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "26" -->
-  <ScalarVariable
-    name="resistor3.R"
-    valueReference="25"
-    description="Resistance at temperature T_ref"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="10.0" unit="Ohm"/>
-  </ScalarVariable>
-  <!-- Index of variable = "27" -->
-  <ScalarVariable
-    name="resistor3.T"
-    valueReference="26"
-    description="Fixed device temperature if useHeatPort = false"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Real min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "28" -->
-  <ScalarVariable
-    name="resistor3.T_ref"
-    valueReference="27"
-    description="Reference temperature"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="300.15" min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "29" -->
-  <ScalarVariable
-    name="resistor3.alpha"
-    valueReference="28"
-    description="Temperature coefficient of resistance (R_actual = R*(1 + alpha*(T_heatPort - T_ref))"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="0.0" unit="1/K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "30" -->
-  <ScalarVariable
-    name="sineVoltage1.V"
-    valueReference="29"
-    description="Amplitude of sine wave"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="1.0" unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "31" -->
-  <ScalarVariable
-    name="sineVoltage1.freqHz"
-    valueReference="30"
-    description="Frequency of sine wave"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="1.0" unit="Hz"/>
-  </ScalarVariable>
-  <!-- Index of variable = "32" -->
-  <ScalarVariable
-    name="sineVoltage1.offset"
-    valueReference="31"
-    description="Voltage offset"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="0.0" unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "33" -->
-  <ScalarVariable
-    name="sineVoltage1.phase"
-    valueReference="32"
-    description="Phase of sine wave"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="0.0" unit="rad"/>
-  </ScalarVariable>
-  <!-- Index of variable = "34" -->
-  <ScalarVariable
-    name="sineVoltage1.signalSource.amplitude"
-    valueReference="33"
-    description="Amplitude of sine wave"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Real/>
-  </ScalarVariable>
-  <!-- Index of variable = "35" -->
-  <ScalarVariable
-    name="sineVoltage1.signalSource.freqHz"
-    valueReference="34"
-    description="Frequency of sine wave"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Real unit="Hz"/>
-  </ScalarVariable>
-  <!-- Index of variable = "36" -->
-  <ScalarVariable
-    name="sineVoltage1.signalSource.offset"
-    valueReference="35"
-    description="Offset of output signal"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Real/>
-  </ScalarVariable>
-  <!-- Index of variable = "37" -->
-  <ScalarVariable
-    name="sineVoltage1.signalSource.phase"
-    valueReference="36"
-    description="Phase of sine wave"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Real unit="rad"/>
-  </ScalarVariable>
-  <!-- Index of variable = "38" -->
-  <ScalarVariable
-    name="sineVoltage1.signalSource.startTime"
-    valueReference="37"
-    description="Output = offset for time &lt; startTime"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Real unit="s"/>
-  </ScalarVariable>
-  <!-- Index of variable = "39" -->
-  <ScalarVariable
-    name="sineVoltage1.startTime"
-    valueReference="38"
-    description="Time offset"
-    variability="fixed"
-    causality="parameter"
-    initial="exact">
-    <Real start="0.0" unit="s"/>
-  </ScalarVariable>
-  <!-- Index of variable = "40" -->
-  <ScalarVariable
-    name="capacitor1.n.i"
-    valueReference="39"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "41" -->
-  <ScalarVariable
-    name="capacitor1.n.v"
-    valueReference="4"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "42" -->
-  <ScalarVariable
-    name="capacitor1.p.i"
-    valueReference="2"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "43" -->
-  <ScalarVariable
-    name="capacitor1.p.v"
-    valueReference="0"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "44" -->
-  <ScalarVariable
-    name="resistor1.T_heatPort"
-    valueReference="18"
-    description="Temperature of heatPort"
-    variability="continuous"
-    causality="local"
-    >
-    <Real min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "45" -->
-  <ScalarVariable
-    name="resistor1.n.i"
-    valueReference="44"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "46" -->
-  <ScalarVariable
-    name="resistor1.n.v"
-    valueReference="0"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "47" -->
-  <ScalarVariable
-    name="resistor1.p.i"
-    valueReference="7"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "48" -->
-  <ScalarVariable
-    name="resistor1.p.v"
-    valueReference="47"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "49" -->
-  <ScalarVariable
-    name="resistor2.T_heatPort"
-    valueReference="22"
-    description="Temperature of heatPort"
-    variability="continuous"
-    causality="local"
-    >
-    <Real min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "50" -->
-  <ScalarVariable
-    name="resistor2.n.i"
-    valueReference="49"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "51" -->
-  <ScalarVariable
-    name="resistor2.n.v"
-    valueReference="4"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "52" -->
-  <ScalarVariable
-    name="resistor2.p.i"
-    valueReference="11"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "53" -->
-  <ScalarVariable
-    name="resistor2.p.v"
-    valueReference="0"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "54" -->
-  <ScalarVariable
-    name="resistor2.v"
-    valueReference="0"
-    description="Voltage drop between the two pins (= p.v - n.v)"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "55" -->
-  <ScalarVariable
-    name="resistor3.T_heatPort"
-    valueReference="26"
-    description="Temperature of heatPort"
-    variability="continuous"
-    causality="local"
-    >
-    <Real min="0.0" nominal="300.0" unit="K"/>
-  </ScalarVariable>
-  <!-- Index of variable = "56" -->
-  <ScalarVariable
-    name="resistor3.n.i"
-    valueReference="55"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "57" -->
-  <ScalarVariable
-    name="resistor3.n.v"
-    valueReference="4"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "58" -->
-  <ScalarVariable
-    name="resistor3.p.i"
-    valueReference="14"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "59" -->
-  <ScalarVariable
-    name="resistor3.p.v"
-    valueReference="0"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "60" -->
-  <ScalarVariable
-    name="resistor3.v"
-    valueReference="0"
-    description="Voltage drop between the two pins (= p.v - n.v)"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "61" -->
-  <ScalarVariable
-    name="sineVoltage1.i"
-    valueReference="7"
-    description="Current flowing from pin p to pin n"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "62" -->
-  <ScalarVariable
-    name="sineVoltage1.n.i"
-    valueReference="61"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "63" -->
-  <ScalarVariable
-    name="sineVoltage1.n.v"
-    valueReference="62"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    initial="calculated">
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "64" -->
-  <ScalarVariable
-    name="sineVoltage1.p.i"
-    valueReference="7"
-    description="Current flowing into the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="A"/>
-  </ScalarVariable>
-  <!-- Index of variable = "65" -->
-  <ScalarVariable
-    name="sineVoltage1.p.v"
-    valueReference="4"
-    description="Potential at the pin"
-    variability="continuous"
-    causality="local"
-    >
-    <Real unit="V"/>
-  </ScalarVariable>
-  <!-- Index of variable = "66" -->
-  <ScalarVariable
-    name="sineVoltage1.signalSource.y"
-    valueReference="15"
-    description="Connector of Real output signal"
-    variability="continuous"
-    causality="local"
-    >
-    <Real/>
-  </ScalarVariable>
-  <!-- Index of variable = "67" -->
-  <ScalarVariable
-    name="resistor1.useHeatPort"
-    valueReference="0"
-    description="=true, if heatPort is enabled"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Boolean/>
-  </ScalarVariable>
-  <!-- Index of variable = "68" -->
-  <ScalarVariable
-    name="resistor2.useHeatPort"
-    valueReference="1"
-    description="=true, if heatPort is enabled"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Boolean/>
-  </ScalarVariable>
-  <!-- Index of variable = "69" -->
-  <ScalarVariable
-    name="resistor3.useHeatPort"
-    valueReference="2"
-    description="=true, if heatPort is enabled"
-    variability="fixed"
-    causality="calculatedParameter"
-    initial="calculated">
-    <Boolean/>
+    <Real start="1.0"   />
   </ScalarVariable>
   </ModelVariables>
   <ModelStructure>
     <Derivatives>
-      <Unknown index="2" dependencies="1" dependenciesKind="dependent" />
+      <Unknown index="3" dependencies="1" dependenciesKind="dependent" />
+      <Unknown index="4" dependencies="2" dependenciesKind="dependent" />
     </Derivatives>
   </ModelStructure>
 </fmiModelDescription>
