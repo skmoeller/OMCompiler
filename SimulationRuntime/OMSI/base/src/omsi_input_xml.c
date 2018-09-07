@@ -236,7 +236,6 @@ void omsu_read_var_info (omc_ScalarVariable*    v,
     string_var_attribute_t * attribute_string;
 
     omsu_read_value_int(omsu_findHashStringString(v,"valueReference"), &model_var_info->id, 0);
-    model_var_info->id -= 1000;
     omsu_read_value_string(omsu_findHashStringString(v,"name"), (omsi_char**) &model_var_info->name);
     omsu_read_value_string(omsu_findHashStringStringEmpty(v,"description"), (omsi_char**) &model_var_info->comment);
 
