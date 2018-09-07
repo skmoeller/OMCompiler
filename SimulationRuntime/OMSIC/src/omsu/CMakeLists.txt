@@ -16,6 +16,7 @@ endif()
 
 include_directories ("${CMAKE_SOURCE_DIR}/include/solver")
 include_directories ("${CMAKE_SOURCE_DIR}/include/omsu")
+include_directories ("${OMSI_SOURCE_DIR}/base/include")
 
 add_library(${OMSUName} omsu_helper.c omsu_utils.c omsu_initialization.c)
 
