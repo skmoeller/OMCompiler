@@ -13,18 +13,18 @@
 
 /* public function prototypes */
 
-omsi_int omsi_allocate_model_variables(omsi_t* omsu,
-	omsi_string                      filename,
-	omsi_string                     fmuGUID,
-	omsi_string                     instanceName,
-	const omsi_callback_functions*  functions);
+omsi_status omsi_allocate_model_variables(omsi_t*                           omsu,
+                                          omsi_string                       filename,
+                                          omsi_string                       fmuGUID,
+                                          omsi_string                       instanceName,
+                                          const omsi_callback_functions*    functions);
 
 
-omsi_int omsi_free_model_variables(omsi_t* omsu,
-	omsi_string                      filename,
-	omsi_string                     fmuGUID,
-	omsi_string                     instanceName,
-	const omsi_callback_functions*  functions);
+omsi_status omsi_free_model_variables(omsi_t*                           omsu,
+                                      omsi_string                       filename,
+                                      omsi_string                       fmuGUID,
+                                      omsi_string                       instanceName,
+                                      const omsi_callback_functions*    functions);
 
 
 

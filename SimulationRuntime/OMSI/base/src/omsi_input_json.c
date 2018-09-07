@@ -30,6 +30,7 @@
 
 #include <omsi_input_json.h>
 
+#define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
 /* prototypes for static functions */
 static omsi_string skipSpace(omsi_string str);
@@ -72,9 +73,10 @@ omsi_status omsu_process_input_json(omsi_t*                         osu_data,
     /* Variables */
     omc_mmap_read mmap_reader;
 
+    UNUSED(fmuGUID); UNUSED(instanceName);      /* ToDo: delete or change function */
+
     /* set global function pointer */
     global_callback = functions;
-
 
     /* read JSON file */
     mmap_reader = omc_mmap_open_read (fileName);
@@ -237,6 +239,7 @@ static omsi_string skipValue(omsi_string str) {
                 }
             } while (1);
             abort();
+            break;
         case '-':
         case '0':
         case '1':

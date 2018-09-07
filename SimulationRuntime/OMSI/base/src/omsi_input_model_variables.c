@@ -36,98 +36,104 @@
 
 
 
+omsi_status omsi_allocate_model_variables(omsi_t*                           omsu,
+                                          omsi_string                       filename,
+                                          omsi_string                       fmuGUID,
+                                          omsi_string                       instanceName,
+                                          const omsi_callback_functions*    functions) {
 
+    /* Variables */
+    omsi_unsigned_int n_bools, n_ints, n_reals;
 
+    UNUSED(filename); UNUSED(fmuGUID); UNUSED(instanceName);    /* ToDo: delete or change function */
 
+    /* set global function pointer */
+    global_callback = functions;
 
+    /*Todo: Allocate memory for all string model variables*/
 
-omsi_int omsi_allocate_model_variables(omsi_t*   omsu,
-	omsi_string                      filename,
-	omsi_string                     fmuGUID,
-	omsi_string                     instanceName,
-	const omsi_callback_functions*  functions)
-{
+    /*Allocate memory for all boolean model variables*/
+    n_bools = omsu->model_data->n_bool_vars+ omsu->model_data->n_bool_parameters;
+    if (n_bools > 0) {
+        omsu->sim_data->model_vars_and_params->bools = (omsi_bool*)alignedMalloc(sizeof(omsi_bool) * n_bools, 64);
+        omsu->sim_data->pre_vars->bools = (omsi_bool*)alignedMalloc(sizeof(omsi_bool) * n_bools, 64);
+        omsu->sim_data->model_vars_and_params->n_bools = n_bools;
+        omsu->sim_data->pre_vars->n_bools = n_bools;
+    }
+    else {
+        omsu->sim_data->model_vars_and_params->bools = NULL;
+        omsu->sim_data->pre_vars->bools = NULL;
+        omsu->sim_data->model_vars_and_params->n_bools = 0;
+        omsu->sim_data->pre_vars->n_bools = 0;
+    }
 
-	/*Todo: Allocate memory for all string model variables*/
+    /*Allocate memory for all integer model variables*/
+    n_ints = omsu->model_data->n_int_vars+ omsu->model_data->n_int_parameters;
+    if (n_ints > 0) {
+        omsu->sim_data->model_vars_and_params->ints = (omsi_int*)alignedMalloc(sizeof(omsi_int) * n_ints, 64);
+        omsu->sim_data->pre_vars->ints =  (omsi_int*)alignedMalloc(sizeof(omsi_int) * n_ints, 64);
+        omsu->sim_data->model_vars_and_params->n_ints = n_ints;
+        omsu->sim_data->pre_vars->n_ints = n_ints;
+    }
+    else {
+        omsu->sim_data->model_vars_and_params->ints = NULL;
+        omsu->sim_data->pre_vars->ints = NULL;
+        omsu->sim_data->model_vars_and_params->n_ints = 0;
+        omsu->sim_data->pre_vars->n_ints = 0;
+    }
 
-	/*Allocate memory for all boolean model variables*/
-	omsi_unsigned_int n_bools = omsu->model_data->n_bool_vars+ omsu->model_data->n_bool_parameters;
-	if (n_bools > 0) {
-		omsu->sim_data->model_vars_and_params->bools = (omsi_bool*)alignedMalloc(sizeof(omsi_bool) * n_bools, 64);
-		omsu->sim_data->pre_vars->bools = (omsi_bool*)alignedMalloc(sizeof(omsi_bool) * n_bools, 64);
-		omsu->sim_data->model_vars_and_params->n_bools = n_bools;
-		omsu->sim_data->pre_vars->n_bools = n_bools;
-	}
-	else {
-		omsu->sim_data->model_vars_and_params->bools = NULL;
-		omsu->sim_data->pre_vars->bools = NULL;
-		omsu->sim_data->model_vars_and_params->n_bools = 0;
-		omsu->sim_data->pre_vars->n_bools = 0;
-	}
+    /*Allocate memory for all real model variables*/
+    n_reals = omsu->model_data->n_real_vars + omsu->model_data->n_real_parameters;
+    if (n_reals > 0) {
+        omsu->sim_data->model_vars_and_params->reals = (omsi_real*)alignedMalloc(sizeof(omsi_real) * n_reals, 64);
+        omsu->sim_data->pre_vars->reals = (omsi_real*)alignedMalloc(sizeof(omsi_real) * n_reals, 64);
+        omsu->sim_data->model_vars_and_params->n_reals = n_reals;
+        omsu->sim_data->pre_vars->n_reals = n_reals;
+    }
+    else {
+        omsu->sim_data->model_vars_and_params->reals = NULL;
+        omsu->sim_data->model_vars_and_params->n_reals = 0;
+        omsu->sim_data->pre_vars->reals = NULL;
+        omsu->sim_data->pre_vars->n_reals = 0;
+    }
 
-	/*Allocate memory for all integer model variables*/
-	omsi_unsigned_int n_ints = omsu->model_data->n_int_vars+ omsu->model_data->n_int_parameters;
-	if (n_ints > 0) {
-		omsu->sim_data->model_vars_and_params->ints = (omsi_int*)alignedMalloc(sizeof(omsi_int) * n_ints, 64);
-		omsu->sim_data->pre_vars->ints =  (omsi_int*)alignedMalloc(sizeof(omsi_int) * n_ints, 64);
-		omsu->sim_data->model_vars_and_params->n_ints = n_ints;
-		omsu->sim_data->pre_vars->n_ints = n_ints;
-	}
-	else {
-		omsu->sim_data->model_vars_and_params->ints = NULL;
-		omsu->sim_data->pre_vars->ints = NULL;
-		omsu->sim_data->model_vars_and_params->n_ints = 0;
-		omsu->sim_data->pre_vars->n_ints = 0;
-
-	}
-	/*Allocate memory for all real model variables*/
-	omsi_unsigned_int n_reals = omsu->model_data->n_real_vars + omsu->model_data->n_real_parameters;
-	if (n_reals > 0) {
-		omsu->sim_data->model_vars_and_params->reals = (omsi_real*)alignedMalloc(sizeof(omsi_real) * n_reals, 64);
-		omsu->sim_data->pre_vars->reals = (omsi_real*)alignedMalloc(sizeof(omsi_real) * n_reals, 64);
-		omsu->sim_data->model_vars_and_params->n_reals = n_reals;
-		omsu->sim_data->pre_vars->n_reals = n_reals;
-	}
-	else {
-		omsu->sim_data->model_vars_and_params->reals = NULL;
-		omsu->sim_data->model_vars_and_params->n_reals = 0;
-		omsu->sim_data->pre_vars->reals = NULL;
-		omsu->sim_data->pre_vars->n_reals = 0;
-	}
-
+    return omsi_ok;
 }
 
 
-omsi_int omsi_free_model_variables(omsi_t* omsu,
-	omsi_string                      filename,
-	omsi_string                     fmuGUID,
-	omsi_string                     instanceName,
-	const omsi_callback_functions*  functions) {
+omsi_status omsi_free_model_variables(omsi_t*                           omsu,
+                                      omsi_string                       filename,
+                                      omsi_string                       fmuGUID,
+                                      omsi_string                       instanceName,
+                                      const omsi_callback_functions*    functions) {
 
-	alignedFree(omsu->sim_data->model_vars_and_params->bools);
-	alignedFree(omsu->sim_data->pre_vars->bools);
-	alignedFree(omsu->sim_data->model_vars_and_params->ints);
-	alignedFree(omsu->sim_data->pre_vars->ints);
-	alignedFree(omsu->sim_data->model_vars_and_params->reals);
-	alignedFree(omsu->sim_data->pre_vars->reals);
+    UNUSED(filename); UNUSED(fmuGUID); UNUSED(instanceName); UNUSED(functions);     /* ToDo: delete or change function */
 
+    alignedFree(omsu->sim_data->model_vars_and_params->bools);
+    alignedFree(omsu->sim_data->pre_vars->bools);
+    alignedFree(omsu->sim_data->model_vars_and_params->ints);
+    alignedFree(omsu->sim_data->pre_vars->ints);
+    alignedFree(omsu->sim_data->model_vars_and_params->reals);
+    alignedFree(omsu->sim_data->pre_vars->reals);
+
+    return omsi_ok;
 }
 
 
-void* alignedMalloc(size_t required_bytes, size_t alignment)
+void* alignedMalloc(size_t required_bytes, size_t alignment)		/* ToDo: change size_t to some omsi type */
 {
-	void *p1;
-	void **p2;
+    void *p1;
+    void **p2;
 
-	int offset = alignment - 1 + sizeof(void*);
-	p1 = malloc(required_bytes + offset);
-	p2 = (void**)(((size_t)(p1)+offset)&~(alignment - 1));
-	p2[-1] = p1;
-	return p2;
+    int offset = alignment - 1 + sizeof(void*);
+    p1 = global_callback->allocateMemory(1,required_bytes + offset);
+    p2 = (void**)(((size_t)(p1)+offset)&~(alignment - 1));
+    p2[-1] = p1;
+    return p2;
 }
 
 void alignedFree(void* p)
 {
-	void* p1 = ((void**)p)[-1];         // get the pointer to the buffer we allocated
-	free(p1);
+    void* p1 = ((void**)p)[-1];         /* get the pointer to the buffer we allocated */
+    global_callback->freeMemory(p1);
 }

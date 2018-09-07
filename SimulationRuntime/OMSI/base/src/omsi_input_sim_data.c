@@ -30,6 +30,7 @@
 
 #include <omsi_input_sim_data.h>
 
+#define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
 /*
  * Allocates memory and initializes sim_data_t struct with functions from generated code.
@@ -126,7 +127,7 @@ omsi_status omsu_allocate_sim_data(omsi_t* omsi_data) {
  */
 omsi_status omsu_instantiate_omsi_function (omsi_function_t* omsi_function) {
 
-
+    UNUSED(omsi_function);
     return omsi_error;
 }
 
