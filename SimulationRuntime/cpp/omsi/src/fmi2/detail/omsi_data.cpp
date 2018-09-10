@@ -5,8 +5,8 @@
 #include "omsi_data.h"
 #include <omsi_input_xml.h>
 #include <omsi_input_json.h>
-
-
+#include <omsi_input_model_variables.h>
+#include <omsi_input_sim_data.h>
 
 
 #include <boost/filesystem/operations.hpp>
@@ -32,6 +32,17 @@ omsi_t* instantiate_omsi(omsi_string                    instanceName,
 		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename);
 		return NULL;
 	}
+
+	if ((omsu_allocate_sim_data(omsu, functions, instanceName))) {     // ToDo: needs some information beforehand
+		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename);
+		return NULL;
+	}
+
+	if ((omsi_allocate_model_variables(omsu, functions))){     // ToDo: needs some information beforehand
+		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename);
+		return NULL;
+	}
+
 	return omsu;
 }
 

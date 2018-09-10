@@ -39,13 +39,19 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* function prototypes */
 
 omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
                                 omsi_template_callback_functions_t* template_function,
                                 const omsi_callback_functions*      callback_functions);
 
-omsi_status omsu_allocate_sim_data(omsi_t* omsi_data);
+omsi_status omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_functions*      callback_functions, omsi_string                     instanceName);
 
 omsi_status omsu_instantiate_omsi_function (omsi_function_t* omsi_function);
 
@@ -61,6 +67,8 @@ omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,
 
 
 
-
+#ifdef __cplusplus
+}  /* end of extern "C" { */
+#endif
 
 #endif

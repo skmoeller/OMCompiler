@@ -28,7 +28,7 @@
  *
  */
 
-#include <omis_input_model_variables.h>
+#include <omsi_input_model_variables.h>
 #include <omsi_global.h>
 
 
@@ -36,16 +36,13 @@
 
 
 
-omsi_status omsi_allocate_model_variables(omsi_t*                           omsu,
-                                          omsi_string                       filename,
-                                          omsi_string                       fmuGUID,
-                                          omsi_string                       instanceName,
-                                          const omsi_callback_functions*    functions) {
+omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
+                                       const omsi_callback_functions*    functions) {
 
     /* Variables */
     omsi_unsigned_int n_bools, n_ints, n_reals;
 
-    UNUSED(filename); UNUSED(fmuGUID); UNUSED(instanceName);    /* ToDo: delete or change function */
+
 
     /* set global function pointer */
     global_callback = functions;
@@ -83,7 +80,7 @@ omsi_status omsi_allocate_model_variables(omsi_t*                           omsu
     }
 
     /*Allocate memory for all real model variables*/
-    n_reals = omsu->model_data->n_real_vars + omsu->model_data->n_real_parameters;
+    n_reals =  omsu->model_data->n_states + omsu->model_data->n_derivatives + omsu->model_data->n_real_vars + omsu->model_data->n_real_parameters;
     if (n_reals > 0) {
         omsu->sim_data->model_vars_and_params->reals = (omsi_real*)alignedMalloc(sizeof(omsi_real) * n_reals, 64);
         omsu->sim_data->pre_vars->reals = (omsi_real*)alignedMalloc(sizeof(omsi_real) * n_reals, 64);
@@ -101,13 +98,10 @@ omsi_status omsi_allocate_model_variables(omsi_t*                           omsu
 }
 
 
-omsi_status omsi_free_model_variables(omsi_t*                           omsu,
-                                      omsi_string                       filename,
-                                      omsi_string                       fmuGUID,
-                                      omsi_string                       instanceName,
-                                      const omsi_callback_functions*    functions) {
+omsi_int omsi_free_model_variables(omsi_t*                           omsu,
+									const omsi_callback_functions*    functions) {
 
-    UNUSED(filename); UNUSED(fmuGUID); UNUSED(instanceName); UNUSED(functions);     /* ToDo: delete or change function */
+
 
     alignedFree(omsu->sim_data->model_vars_and_params->bools);
     alignedFree(omsu->sim_data->pre_vars->bools);
