@@ -122,6 +122,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     /* ToDo: actually set pointers */
 
     /* Instantiate and initialize sim_data */
+    omsu_allocate_sim_data(OSU->osu_data, OSU->osu_functions, instanceName);
     omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, OSU->fmiCallbackFunctions);
     /*DEBUG_PRINT(omsu_print_sim_data (OSU->osu_data->sim_data, ""))*/
 

@@ -43,7 +43,6 @@ omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
     omsi_unsigned_int n_bools, n_ints, n_reals;
 
 
-
     /* set global function pointer */
     global_callback = functions;
 
@@ -99,7 +98,7 @@ omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
 
 
 omsi_int omsi_free_model_variables(omsi_t*                           omsu,
-									const omsi_callback_functions*    functions) {
+                                   const omsi_callback_functions*    functions) {
 
 
 

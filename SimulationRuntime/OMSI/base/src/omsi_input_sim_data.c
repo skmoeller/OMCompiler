@@ -34,6 +34,7 @@
 
 /*
  * Allocates memory and initializes sim_data_t struct with functions from generated code.
+ * Assumes memory is already allocated for omsi_data->sim_data.
  */
 omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
                                 omsi_template_callback_functions_t* template_function,
@@ -47,12 +48,6 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
         /* ToDo: Log error */
         return omsi_error;
     }
-	//allocate sim_data is already called
-    ///* allocate memory for sim_data */
-    //if (omsu_allocate_sim_data(omsi_data, callback_functions)) {
-    //    /* ToDo: Log error */
-    //    return omsi_error;
-    //}
 
     /* Call generated initialization function for initialization problem */
     /* osu_functions->initialize_initialization_problem(omsi_data->sim_data->initialization); */ /* ToDo: not implemented yet */
@@ -86,34 +81,34 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
  * Allocates memory for sim_data_t struct.
  * Gets called from function omsu_setup_sim_data.
  */
-omsi_status omsu_allocate_sim_data(omsi_t* omsu,
-			const omsi_callback_functions*      callback_functions,
-			omsi_string                     instanceName ) {
+omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
+                                   const omsi_callback_functions*   callback_functions,
+                                   omsi_string                      instanceName ) {
 
-	/* set global function pointer */
-	global_callback = callback_functions;
-
-
-	omsu->sim_data = (sim_data_t*)global_callback->allocateMemory(1, sizeof(sim_data_t));
-	if (!omsu->sim_data) {
-		callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, "error",
-			"omsu_allocate_sim_data: Not enough memory.");
-		return -1;
-	}
-	omsu->sim_data->model_vars_and_params = (omsi_values*)global_callback->allocateMemory(1, sizeof(omsi_values));
-	if (!omsu->sim_data->model_vars_and_params) {
-		callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, "error",
-			"omsu_allocate_sim_data: Not enough memory.");
-		return -1;
-	}
+    /* set global function pointer */
+    global_callback = callback_functions;
 
 
-	omsu->sim_data->pre_vars = (omsi_values*)global_callback->allocateMemory(1, sizeof(omsi_values));
-	if (!omsu->sim_data->pre_vars) {
-		callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, "error",
-			"omsu_allocate_sim_data: Not enough memory.");
-		return -1;
-	}
+    omsu->sim_data = (sim_data_t*)global_callback->allocateMemory(1, sizeof(sim_data_t));
+    if (!omsu->sim_data) {
+        callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, "error",
+            "omsu_allocate_sim_data: Not enough memory.");
+        return -1;
+    }
+
+    omsu->sim_data->model_vars_and_params = (omsi_values*)global_callback->allocateMemory(1, sizeof(omsi_values));
+    if (!omsu->sim_data->model_vars_and_params) {
+        callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, "error",
+            "omsu_allocate_sim_data: Not enough memory.");
+        return -1;
+    }
+
+    omsu->sim_data->pre_vars = (omsi_values*)global_callback->allocateMemory(1, sizeof(omsi_values));
+    if (!omsu->sim_data->pre_vars) {
+        callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, "error",
+            "omsu_allocate_sim_data: Not enough memory.");
+        return -1;
+    }
 
 
 

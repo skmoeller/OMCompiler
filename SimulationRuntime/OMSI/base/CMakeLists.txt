@@ -6,7 +6,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 # enable warnings and use ANSI C compatible compiler
 if(CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "GCC detected, adding compile flags")
-	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -ansi -pedantic")
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -ansi -pedantic")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 #set exapat lib for visual studio compiler
