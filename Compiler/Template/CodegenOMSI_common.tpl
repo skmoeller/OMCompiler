@@ -73,6 +73,8 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "allEqns", FileNamePrefix)
 
   <<
+  <%insertCopyrightOpenModelica()%>
+
   /* All Equations Code */
   <%includes%>
 
@@ -120,7 +122,7 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '<%funcCallArgName%>, model_vars_and_params, res[i++]') +"\n"
         <<>>
       case algSystem as SES_ALGEBRAIC_SYSTEM(__) then
-        let &includes += "#include \""+ FileNamePrefix + "_algSyst_" + index + ".h\"\n"
+        let &includes += "#include \""+ FileNamePrefix + "_algSyst_" + algSysIndex + ".h\"\n"
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '<%funcCallArgName%>->algebraic_system_t[<%algSysIndex%>], model_vars_and_params, simulation->function_vars') +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
@@ -138,7 +140,7 @@ end generateOmsiFunctionCode_inner;
 
 
 template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNamePrefix)
-""
+"Returns Code for an algebraic system and creates associated derMat file and header files."
 ::=
   let &includes = buffer ""
   let &evaluationCode = buffer ""
@@ -153,12 +155,20 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
 
+    // generate jacobian matrix file
     let derivativeMatrix = generateDerivativeFile(matrix, FileNamePrefix, algSystem.index)
     let () = textFile(derivativeMatrix, FileNamePrefix+"_sim_derMat_"+algSystem.algSysIndex+".c")
 
+    // generate header file
+    let headerFileContent = generateOmsiAlgSystemCodeHeader(FileNamePrefix, &includes, algSystem.algSysIndex)
+    let headerFileName = FileNamePrefix+"_sim_algSyst_"+algSystem.algSysIndex+".h"
+    let () = textFile(headerFileContent, headerFileName)
+
   <<
+  <%insertCopyrightOpenModelica()%>
+
   /* Algebraic system code */
-  <%includes%>
+  #include <<%headerFileName%>>
 
   #if defined(__cplusplus)
   extern "C" {
@@ -201,6 +211,36 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   >>
   /* leave a newline at the end of file to get rid of the warning */
 end generateOmsiAlgSystemCode;
+
+
+template generateOmsiAlgSystemCodeHeader(String FileNamePrefix, Text &includes, String index)
+"Generates Header for omsi algebraic system C files"
+::=
+
+
+  <<
+  <%insertCopyrightOpenModelica()%>
+
+  #if !defined(<%FileNamePrefix%>__ALG_SYST_<%index%>_MODEL_H)
+  #define <%FileNamePrefix%>__ALG_SYST_<%index%>_MODEL_H
+
+  #include <omsi.h>
+  <%includes%>
+
+  #if defined(__cplusplus)
+  extern "C" {
+  #endif
+
+  /* function prototypes */
+  /* ToDo: add */
+
+  #if defined(__cplusplus)
+  }
+  #endif
+
+  #endif
+  >>
+end generateOmsiAlgSystemCodeHeader;
 
 
 template generateDerivativeFile (Option<DerivativeMatrix> matrix, String modelName, String index)
