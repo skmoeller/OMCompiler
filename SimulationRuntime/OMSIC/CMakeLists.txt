@@ -25,9 +25,9 @@ ENDIF(BUILD_SHARED_LIBS)
 
  IF(MSVC)
   MESSAGE(STATUS "MSVC")
-  SET(LIBINSTALLEXT "lib/omc/omsi/msvc" CACHE STRING "library directory")
+  SET(LIBINSTALLEXT "$ENV{OPENMODELICAHOME}/lib/omc/omsi/msvc" CACHE STRING "library directory")
 ELSE(MSVC)
-  SET(LIBINSTALLEXT "lib/omc/omsi" CACHE STRING "library directory")
+  SET(LIBINSTALLEXT "$ENV{OPENMODELICAHOME}/lib/omc/omsi" CACHE STRING "library directory")
  ENDIF(MSVC)
 
 SET(OSUCName ${LIBPREFIX}OMSIC${LIBSUFFIX})
@@ -48,4 +48,14 @@ install(FILES
   ${OMSI_SOURCE_DIR}/include/omsi_cs.h
   ${OMSI_SOURCE_DIR}/include/omsi_jacobian.h
   ${OMSI_SOURCE_DIR}/include/omsi_me.h
-DESTINATION include/OMSI)
+DESTINATION $ENV{OPENMODELICAHOME}/include/omc/omsi)
+
+install(FILES
+  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_initialization.h
+  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_helper.h
+DESTINATION $ENV{OPENMODELICAHOME}/include/omc/omsic)
+
+install(FILES
+  ${CMAKE_SOURCE_DIR}/include/solver/solver_helper.h
+  ${CMAKE_SOURCE_DIR}/include/solver/solver_lapack.h
+DESTINATION $ENV{OPENMODELICAHOME}/include/omc/omsi/solver)
