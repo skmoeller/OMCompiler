@@ -802,8 +802,7 @@ algorithm
           end if;
         end if;
 
-        runTplWriteFile(func = function CodegenOMSIC.generateOMSICHeader(a_simCode=simCode), file=fileprefix+"_omsic.h");
-        runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(in_a_simCode=simCode), file=fileprefix+"_omsic.c");
+        runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(a_simCode=simCode), file=fileprefix+"_omsic.c");
         
         //runTplWriteFile(func = function CodegenOMSIC_Equations.generateEquationFiles(a_simCode=simCode, a_fileNamePrefix=fileprefix, a_name="allEqns"), file=fileprefix+"_eqns.c");
 
