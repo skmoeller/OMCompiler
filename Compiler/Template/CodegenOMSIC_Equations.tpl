@@ -144,9 +144,9 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr, String input)
     <%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%ix%>(<%input%>);
     >>
   else
-    // ToDo: generate Warning
+    /* ToDo: generate Warning */
     <<
-    //equationCall not implemented yet
+    /* equationCall not implemented yet */
     >>
 end equationCall;
 

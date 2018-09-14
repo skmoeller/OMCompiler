@@ -30,6 +30,10 @@ ENDIF(WIN32)
 
 install(TARGETS ${OSUBaseName} DESTINATION ${LIBINSTALLEXT})
 
+install(FILES
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_sim_data.h
+DESTINATION $ENV{OPENMODELICAHOME}/include/omc/omsi/base)
 
 
 

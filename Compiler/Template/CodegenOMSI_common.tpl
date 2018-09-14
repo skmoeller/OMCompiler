@@ -52,12 +52,12 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
   match simCode
   case SIMCODE(omsiData=omsiData as SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__)))) then
 
-    // generate file for algebraic systems in simulation problem
+    /* generate file for algebraic systems in simulation problem */
     let content = generateOmsiFunctionCode(simulation, FileNamePrefix)
     let () = textFile(content, FileNamePrefix+"_sim_equations.c")
 
-    // generate file for initialization problem
-    // ToDo: add
+    /* generate file for initialization problem */
+    /* ToDo: add */
   <<>>
 end generateEquationsCode;
 
@@ -130,7 +130,7 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '<%funcCallArgName%>, model_vars_and_params, res[i++]') +"\n"
         <<>>
       case algSystem as SES_ALGEBRAIC_SYSTEM(__) then
-        let &includes += "#include <"+ FileNamePrefix + "_algSyst_" + algSysIndex + ".h>\n"
+        let &includes += "#include <"+ FileNamePrefix + "_sim_algSyst_" + algSysIndex + ".h>\n"
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '<%funcCallArgName%>->algebraic_system_t[<%algSysIndex%>], model_vars_and_params, simulation->function_vars') +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
@@ -239,6 +239,8 @@ template generateCodeHeader(String FileNamePrefix, Text &includes, String header
   #include <omsi.h>
   #include <omsi_callbacks.h>
   #include <omsi_global.h>
+
+  #include <stdlib.h>
 
   <%includes%>
 
@@ -349,7 +351,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
         /* ToDo: Log error */
         return omsi_error;
       }
-      if (!problem2_initialize_resFunction<%algSysIndex%>_OMSIFunc(algSystem->functions)){
+      if (!problem2_initialize_resFunction_<%algSysIndex%>_OMSIFunc(algSystem->functions)){
         return omsi_error;
       }
       /* initialize omsi_function_t function */
@@ -405,8 +407,8 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
     )
 
     <<
-    <%omsiFuncName%>[<%i0%>]->type = <%stringType%>;
-    <%omsiFuncName%>[<%i0%>]->index = <%stringIndex%>;    /* <%stringName%> <%stringVarKind%>*/
+    <%omsiFuncName%>[<%i0%>].type = <%stringType%>;
+    <%omsiFuncName%>[<%i0%>].index = <%stringIndex%>;    /* <%stringName%> <%stringVarKind%>*/
     >>
   ;separator="\n")
 
@@ -441,7 +443,7 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
       <%if nAlgebraicSystems then
         <<
         /* Initialize algebraic system */
-        omsi_function->algebraic_system_t = initialize_alg_system_array(<%nAlgebraicSystems%>);
+        omsi_function->algebraic_system_t = omsu_initialize_alg_system_array(<%nAlgebraicSystems%>);
         if (!omsi_function->algebraic_system_t) {
           /* ToDo: Log error */
           return omsi_error;
