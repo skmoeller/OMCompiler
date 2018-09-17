@@ -76,7 +76,7 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, Sim
 
   let funcArguments = (match eq
     case SES_RESIDUAL(__) then
-      "omsi_function_t* this_function, const omsi_values* model_vars_and_params, void* res"
+      "omsi_function_t* this_function, const omsi_values* model_vars_and_params, omsi_real* res"
     case SES_ALGEBRAIC_SYSTEM(__) then
       "omsi_function_t* this_function, const omsi_values* model_vars_and_params"
     else
@@ -90,7 +90,6 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, Sim
   <%equationInfos%>
   */
   void <%CodegenUtil.symbolName(modelNamePrefixStr,funcName)%>_<%ix%>(<%funcArguments%>){
-    const omsi_int equationIndexes[2] = {1,<%ix%>};
     <%varDecls%>
     <%auxFunction%>
     <%equationCode%>
@@ -129,19 +128,18 @@ end equationCStr;
 template equationCall(SimEqSystem eq, String modelNamePrefixStr, String input)
  "Generates call function for evaluating functions"
 ::=
-  let ix = CodegenUtilSimulation.equationIndex(eq)
   match eq
   case SES_SIMPLE_ASSIGN(__) then
     <<
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%ix%>(<%input%>);
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%index%>(<%input%>);
     >>
   case SES_RESIDUAL(__) then
     <<
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"resFunction")%>_<%ix%>(<%input%>);
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"resFunction")%>_<%index%>(<%input%>);
     >>
   case SES_ALGEBRAIC_SYSTEM(__) then
     <<
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%ix%>(<%input%>);
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%algSysIndex%>(<%input%>);
     >>
   else
     /* ToDo: generate Warning */
@@ -248,19 +246,21 @@ template generateDereivativeMatrixColumnCall(OMSIFunction column, String modelNa
   case OMSI_FUNCTION() then
     let bodyBuffer = ( equations |> eq =>
       <<
-      <%equationCall(eq, modelName, "this_function")%>
+      <%equationCall(eq, modelName, "this_function, seed")%>
       >>
     ;separator="\n")
 
-  let &functionPrototypes += <<void <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative);<%\n%>>>
+  let &functionPrototypes += <<omsi_status <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative);<%\n%>>>
 
   <<
   /*
   Description something
   */
-  void <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative){
+  omsi_status <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative){
 
-  <%bodyBuffer%>
+    <%bodyBuffer%>
+
+    return omsi_ok;
   }
   >>
 end generateDereivativeMatrixColumnCall;

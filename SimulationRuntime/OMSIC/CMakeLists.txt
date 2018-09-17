@@ -53,6 +53,7 @@ DESTINATION $ENV{OPENMODELICAHOME}/include/omc/omsi)
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_initialization.h
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_helper.h
+  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_common.h
 DESTINATION $ENV{OPENMODELICAHOME}/include/omc/omsic)
 
 install(FILES
