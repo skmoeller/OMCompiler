@@ -102,9 +102,9 @@ case SIMCODE(modelInfo=MODELINFO()) then
   #include <Core/DataExchange/SimData.h>
   #include <Core/System/SimVars.h>
 
-    shared_ptr<IMixedSystem> createOSU(shared_ptr<IGlobalSettings> globalSettings)
+    shared_ptr<IMixedSystem> createOSU(shared_ptr<IGlobalSettings> globalSettings,omsi_t* omsu)
     {
-       shared_ptr<IMixedSystem> osu =shared_ptr<IMixedSystem>(new <%lastIdentOfPath(modelInfo.name)%>Initialize(globalSettings) );
+       shared_ptr<IMixedSystem> osu =shared_ptr<IMixedSystem>(new <%lastIdentOfPath(modelInfo.name)%>Initialize(globalSettings,omsu) );
        return osu;
     }
   #else
@@ -137,7 +137,8 @@ template fmuCalcHelperMainfile(SimCode simCode)
     /*Modelica precompiled header*/
     #include <Core/ModelicaDefine.h>
     #include <Core/Modelica.h>
-
+    //OpenModelcia Simulation Interface Header
+    #include <omsi.h>
     #include <Core/System/FactoryExport.h>
     #include <Core/DataExchange/SimData.h>
     #include <Core/System/SimVars.h>

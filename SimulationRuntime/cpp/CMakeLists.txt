@@ -917,6 +917,8 @@ endif(UNIX AND Boost_INCLUDE_DIR STREQUAL "/usr/include")
 
 #include path for cpp simulation kernel
 include_directories ("runtime/include")
+#include path for OpenModelica Simulation Interface (OMSI)
+include_directories ("../OMSI/include")
 
 
 

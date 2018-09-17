@@ -64,8 +64,21 @@ public:
     {
       throw ModelicaSimulationError(MODEL_FACTORY,"No simvars found");
     }
-    shared_ptr<ISimVars> simVars(simvars_iter->second.create(dim_real,dim_int,dim_bool,dim_string,dim_pre_vars,dim_z,z_i));
+	shared_ptr<ISimVars> simVars(simvars_iter->second.create(dim_real, dim_int, dim_bool, dim_string, dim_pre_vars, dim_z, z_i));
     return simVars;
+
+  }
+  virtual shared_ptr<ISimVars> createSimVars(omsi_t* omsu)
+  {
+	  std::map<std::string, factory<ISimVars, omsi_t*> >::iterator simvars_iter;
+	  std::map<std::string, factory<ISimVars, omsi_t* > >& simvars_factory(_simobject_type_map->get());
+	  simvars_iter = simvars_factory.find("SimVars2");
+	  if (simvars_iter == simvars_factory.end())
+	  {
+		  throw ModelicaSimulationError(MODEL_FACTORY, "No simvars found");
+	  }
+	  shared_ptr<ISimVars> simVars(simvars_iter->second.create(omsu));
+	  return simVars;
 
   }
   shared_ptr<IHistory> createMatFileWriter(shared_ptr<IGlobalSettings> settings,size_t dim)

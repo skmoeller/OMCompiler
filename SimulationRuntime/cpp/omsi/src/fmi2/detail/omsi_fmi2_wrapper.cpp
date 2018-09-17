@@ -103,7 +103,7 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   string omsu_name = p.stem().string();
  omsi_t* omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
 
-  _model = createOSUSystem(_global_settings, _instanceName);
+  _model = createOSUSystem(_global_settings, _instanceName,omsu);
   _initialize_model = dynamic_pointer_cast<ISystemInitialization>(_model);
   _continuous_model  = dynamic_pointer_cast<IContinuous>(_model);
   _time_event_model =  dynamic_pointer_cast<ITime>(_model);

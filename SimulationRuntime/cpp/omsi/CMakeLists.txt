@@ -3,8 +3,6 @@ PROJECT(OMSICPP)
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-#include path for OpenModelica Simulation Interface (OMSI)
-include_directories ("../../OMSI/include")
 include_directories ("${CMAKE_SOURCE_DIR}/omsi/include")
 include_directories ("${CMAKE_SOURCE_DIR}/omsi/src")
 # FMI 2.0 Header

@@ -21,8 +21,14 @@
 * @param state_index start index of state vector in real_vars list
 */
 SimVars::SimVars(size_t dim_real, size_t dim_int, size_t dim_bool, size_t dim_string, size_t dim_pre_vars, size_t dim_state_vars, size_t state_index)
+:_use_omsu(false)
 {
 	create(dim_real, dim_int, dim_bool, dim_string, dim_pre_vars, dim_state_vars, state_index);
+}
+SimVars::SimVars(omsi_t* omsu)
+: _use_omsu(true)
+{
+	create(omsu);
 }
 
 SimVars::SimVars(SimVars& instance)
@@ -88,23 +94,82 @@ void SimVars::create(size_t dim_real, size_t dim_int, size_t dim_bool, size_t di
 	if (dim_real > 0)
 		std::fill(_real_vars, _real_vars + dim_real, 0.0);
 }
+void SimVars::create(omsi_t* omsu)
+{
+	_dim_real = omsu->sim_data->model_vars_and_params->n_reals;
+	_dim_int = omsu->sim_data->model_vars_and_params->n_ints;
+	_dim_bool = omsu->sim_data->model_vars_and_params->n_bools;
+	_dim_z = omsu->model_data->n_states;
+	_dim_pre_vars = _dim_real + _dim_int + _dim_bool;
 
+
+	/*Todo:
+	if (dim_string > 0) {
+		_string_vars = new string[dim_string];
+	}
+	else {
+		_string_vars = NULL;
+	}
+	*/
+	if (_dim_bool > 0) {
+		if (!omsu->sim_data->model_vars_and_params->bools)
+			throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsu integer model variables are not allocated");
+		if (!omsu->sim_data->pre_vars->bools)
+			throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsu integer model variables are not allocated");
+		_omsi_bool_vars = omsu->sim_data->model_vars_and_params->bools;
+		_pre_omsi_bool_vars = omsu->sim_data->pre_vars->bools;
+	}
+	else {
+		_omsi_bool_vars = NULL;
+		_pre_omsi_bool_vars = NULL;
+	}
+	if (_dim_int > 0) {
+		 if(!omsu->sim_data->model_vars_and_params->ints)
+			 throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsu integer model variables are not allocated");
+		 if (!omsu->sim_data->pre_vars->ints)
+			 throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsu integer model variables are not allocated");
+		 _int_vars = omsu->sim_data->model_vars_and_params->ints;
+		_pre_int_vars = omsu->sim_data->pre_vars->ints;
+	}
+	else {
+		_int_vars = NULL;
+		_pre_int_vars = NULL;
+	}
+	if (_dim_real > 0) {
+		if (!omsu->sim_data->model_vars_and_params->reals)
+			throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsu real model variables are not allocated");
+		if (!omsu->sim_data->pre_vars->reals)
+			throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsu real model variables are not allocated");
+		_real_vars = omsu->sim_data->model_vars_and_params->reals;
+		_pre_real_vars = omsu->sim_data->pre_vars->reals;
+	}
+
+	/*ToDo:
+	_dim_string = dim_string;
+	_dim_pre_vars = omsu->sim_data->;
+
+	_dim_z = dim_state_vars;
+	_z_i = 0;
+*/
+}
 SimVars::~SimVars()
 {
-	if(_pre_real_vars)
-		alignedFree(_pre_real_vars);
-	if(_real_vars)
-		alignedFree(_real_vars);
-	if(_pre_int_vars)
-		alignedFree(_pre_int_vars);
-	if(_int_vars)
-		alignedFree(_int_vars);
-	if(_pre_bool_vars)
-		alignedFree(_pre_bool_vars);
-	if(_bool_vars)
-		alignedFree(_bool_vars);
-	if(_string_vars)
-		delete [] _string_vars;
+	if (!_use_omsu) {
+		if (_pre_real_vars)
+			alignedFree(_pre_real_vars);
+		if (_real_vars)
+			alignedFree(_real_vars);
+		if (_pre_int_vars)
+			alignedFree(_pre_int_vars);
+		if (_int_vars)
+			alignedFree(_int_vars);
+		if (_pre_bool_vars)
+			alignedFree(_pre_bool_vars);
+		if (_bool_vars)
+			alignedFree(_bool_vars);
+		if (_string_vars)
+			delete[] _string_vars;
+	}
 }
 
 ISimVars* SimVars::clone()
@@ -162,11 +227,30 @@ int& SimVars::initIntVar(size_t i)
 */
 bool& SimVars::initBoolVar(size_t i)
 {
+	if (_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "for omsu systems, boolean variables are not supported");
 	if (i < _dim_bool)
 		return _bool_vars[i];
 	else
 		throw std::runtime_error("Wrong variable index");
 }
+
+/**
+*  \brief Initialize scalar boolean model variables in simvars memory
+*  \param [in] i index in simvars memory
+*  \return simvar variable
+*/
+int& SimVars::initOMSIBoolVar(size_t i)
+{
+	if (!_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsi boolean variables are not supported for this system");
+	if (i < _dim_bool)
+		return _omsi_bool_vars[i];
+	else
+		throw std::runtime_error("Wrong variable index");
+}
+
+
 /**
 *  \brief read scalar real model variables from simvars memory
 *  \param [in] i index in simvars memory
@@ -198,11 +282,30 @@ const int& SimVars::getIntVar(size_t i)
 */
 const bool& SimVars::getBoolVar(size_t i)
 {
+	if (_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "for omsu systems, boolean variables are not supported");
 	if (i < _dim_bool)
 		return _bool_vars[i];
 	else
 		throw std::runtime_error("Wrong variable index");
 }
+
+/**
+*  \brief Read scalar boolean model variables from simvars memory
+*  \param [in] i index in simvars memory
+*  \return simvar variable
+*/
+const int& SimVars::getOMSIBoolVar(size_t i)
+{
+	if (!_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsi boolean variables are not supported for this system");
+	if (i < _dim_bool)
+		return _omsi_bool_vars[i];
+	else
+		throw std::runtime_error("Wrong variable index");
+}
+
+
 
 string& SimVars::initStringVar(size_t i)
 {
@@ -265,13 +368,24 @@ int* SimVars::getIntVarsVector() const
 */
 bool* SimVars::getBoolVarsVector() const
 {
+
+	if (_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "for omsu systems, boolean variables are not supported");
 	if(!_bool_vars)
 		return NULL;
 	return _bool_vars;
 }
-
+ int* SimVars::getOMSIBoolVarsVector() const
+{
+	if (!_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsi boolean variables are not supported for this system");
+	if (!_omsi_bool_vars)
+		return NULL;
+	return _omsi_bool_vars;
+}
 string* SimVars::getStringVarsVector() const
 {
+
 	if(!_string_vars)
 		return NULL;
 	return _string_vars;
@@ -302,6 +416,8 @@ void SimVars::setIntVarsVector(const int* vars)
 */
 void SimVars::setBoolVarsVector(const bool* vars)
 {
+	if (_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "for omsu boolean variables are not supported");
 	std::copy(vars, vars + _dim_bool, _bool_vars);
 }
 
@@ -353,10 +469,25 @@ int* SimVars::initIntArrayVar(size_t size, size_t start_index)
 */
 bool* SimVars::initBoolArrayVar(size_t size, size_t start_index)
 {
+	if (_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "for omsu systems, boolean variables are not supported");
 	size_t length = start_index + (size - 1);
 	if (length <= _dim_bool)
 	{
 		bool* data = &_bool_vars[start_index];
+		return data;
+	}
+	else
+		throw std::runtime_error("Wrong array size");
+}
+int* SimVars::initOMSIBoolArrayVar(size_t size, size_t start_index)
+{
+	if (!_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsi boolean variables are not supported for this system");
+	size_t length = start_index + (size - 1);
+	if (length <= _dim_bool)
+	{
+		int* data = &_omsi_bool_vars[start_index];
 		return data;
 	}
 	else
@@ -415,12 +546,36 @@ void SimVars::initIntAliasArray(std::vector<int> indices, int* ref_data[])
 */
 void SimVars::initBoolAliasArray(int indices[], size_t n, bool* ref_data[])
 {
+	if (_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "for omsu boolean variables are not supported");
 	std::transform(indices,indices+n,ref_data,boost::lambda::bind(&SimVars::getBoolVarPtr,this,boost::lambda::_1));
+}
+
+
+/**\brief initializes bool model alias array variable in simvars memory
+*  \param [in] indices indices of original variables in simvars memory
+*  \param [in] n size of alias array
+*  \param [out] ref_data pointer array to original array elements in simvars memory
+*  \details Details
+*/
+void SimVars::initOMSIBoolAliasArray(int indices[], size_t n, int* ref_data[])
+{
+	if (!_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsi boolean variables are not supported for this system");
+	std::transform(indices, indices + n, ref_data, boost::lambda::bind(&SimVars::getOMSIBoolVarPtr, this, boost::lambda::_1));
 }
 
 void SimVars::initBoolAliasArray(std::vector<int> indices, bool* ref_data[])
 {
+	if (_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "for omsu boolean variables are not supported");
 	initBoolAliasArray(&indices[0], indices.size(), ref_data);
+}
+void SimVars::initOMSIBoolAliasArray(std::vector<int> indices, int* ref_data[])
+{
+	if (!_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsi boolean variables are not supported for this system");
+	initOMSIBoolAliasArray(&indices[0], indices.size(), ref_data);
 }
 
 void SimVars::initStringAliasArray(int indices[], size_t n, string* ref_data[])
@@ -444,7 +599,12 @@ void SimVars::savePreVariables()
 	if(_dim_int>0)
 		std::copy(_int_vars, _int_vars + _dim_int, _pre_int_vars);
 	if (_dim_bool > 0)
-		std::copy(_bool_vars, _bool_vars + _dim_bool, _pre_bool_vars);
+		if (_use_omsu){
+			std::copy(_bool_vars, _bool_vars + _dim_bool, _pre_bool_vars);
+		}
+		else {
+			std::copy(_omsi_bool_vars, _omsi_bool_vars + _dim_bool, _pre_omsi_bool_vars);
+		}
 }
 /**
 *  \brief Initializes access to pre variables
@@ -464,7 +624,17 @@ double& SimVars::getPreVar(const double& var)
 int& SimVars::getPreVar(const int& var)
 {
 	size_t i = &var - _int_vars;
-	return _pre_int_vars[i];
+	if ((_use_omsu) && ((i >= _dim_int) || (i < 0) )) {
+		//int variable is from omsi bool variables array, calculate index from omsi_bool_vars array
+		size_t j = &var - _omsi_bool_vars;
+		if((j<0)||(j>_dim_bool))
+		  throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "no pre-variable");
+		return _omsi_bool_vars[j];
+	}
+	else {
+
+		return _pre_int_vars[i];
+	}
 }
 
 bool& SimVars::getPreVar(const bool& var)
@@ -505,11 +675,25 @@ int* SimVars::getIntVarPtr(size_t i)
 */
 bool* SimVars::getBoolVarPtr(size_t i)
 {
+
+	if (_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "for omsu systems, boolean variables are not supported");
 	if(i<_dim_bool)
 		return &_bool_vars[i];
 	else
 		throw std::runtime_error("Wrong variable index");
 }
+int* SimVars::getOMSIBoolVarPtr(size_t i)
+{
+	if (!_use_omsu)
+		throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "omsi boolean variables are not supported for this system");
+	if (i<_dim_bool)
+		return &_omsi_bool_vars[i];
+	else
+		throw std::runtime_error("Wrong variable index");
+}
+
+
 
 string* SimVars::getStringVarPtr(size_t i)
 {
