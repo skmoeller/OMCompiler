@@ -34,7 +34,7 @@
  * of the FMU.
  */
 
-#define DEBUG omsi_true
+#define DEBUG omsi_false
 #define DEBUG_PRINT(function) if (DEBUG) {                                     \
     printf("\nDEBUG PRINT\n");                                                 \
     printf("=====================================================\n");         \
@@ -44,8 +44,8 @@
 
 
 
-
 #include <omsu_initialization.h>
+
 
 /*
  * Allocates memory for the Openmodelica Simulation Unit and initializes it.
@@ -58,11 +58,14 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
                         omsi_bool                      __attribute__((unused)) visible,
                         omsi_bool                      loggingOn)
 {
+    functions->logger(functions->componentEnvironment, instanceName, omsi_ok, "info", "Instantiate OSU.");
+
     /* Variables */
     osu_t *OSU;
     omsi_char* initXMLFilename;
     omsi_char* infoJsonFilename;
     omsi_int i;
+
 
     /* set global callback functions */
     global_callback = functions;
@@ -98,13 +101,14 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
     initXMLFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(initXMLFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
-    if (omsu_process_input_xml(OSU->osu_data, initXMLFilename, fmuGUID, instanceName, functions)) {     /* ToDo: needs some information beforehand */
+    if (omsu_process_input_xml(OSU->osu_data, initXMLFilename, fmuGUID, instanceName, functions)) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename);
         omsu_free_osu_data(OSU->osu_data);
+        functions->freeMemory(OSU);
         return NULL;
     }
     functions->freeMemory(initXMLFilename);
-    /*DEBUG_PRINT(omsu_print_model_data (OSU->osu_data->model_data, ""))*/
+    DEBUG_PRINT(omsu_print_model_data (OSU->osu_data->model_data, ""))
 
     /* process JSON file and read missing parts of model_data in osu_data */
     infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
@@ -112,10 +116,11 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", infoJsonFilename);
         omsu_free_osu_data(OSU->osu_data);
+        functions->freeMemory(OSU);
         return NULL;
     }
     functions->freeMemory(infoJsonFilename);
-    /*DEBUG_PRINT(omsu_print_omsi_t (OSU->osu_data, ""))*/
+    DEBUG_PRINT(omsu_print_omsi_t (OSU->osu_data, ""))
 
     /* Set template function pointers */
     OSU->osu_functions = (omsi_template_callback_functions_t *) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
@@ -124,7 +129,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     /* Instantiate and initialize sim_data */
     omsu_allocate_sim_data(OSU->osu_data, OSU->osu_functions, instanceName);
     omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, OSU->fmiCallbackFunctions);
-    /*DEBUG_PRINT(omsu_print_sim_data (OSU->osu_data->sim_data, ""))*/
+    DEBUG_PRINT(omsu_print_sim_data (OSU->osu_data->sim_data, ""))
 
     OSU->instanceName = (omsi_char*) functions->allocateMemory(1 + strlen(instanceName), sizeof(omsi_char));
     OSU->vrStates = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
@@ -158,7 +163,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     OSU->state = modelInstantiated;
     FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "fmi2Instantiate: GUID=%s", fmuGUID)
 
-    /*DEBUG_PRINT(omsu_print_osu(OSU))*/
+    DEBUG_PRINT(omsu_print_osu(OSU))
     return OSU;
 }
 

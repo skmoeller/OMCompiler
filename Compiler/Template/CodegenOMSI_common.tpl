@@ -215,7 +215,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
                             omsi_values* out_function_vars){
 
     /* call API function something */
-    solveLapack(this_alg_system, model_vars_and_params, global_callback);
+    solveLapack(this_alg_system, model_vars_and_params, NULL);
 
       /* ToDo: Add crazy stuff here */
 

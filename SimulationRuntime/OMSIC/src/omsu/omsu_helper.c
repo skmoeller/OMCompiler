@@ -43,6 +43,10 @@
  */
 void omsu_free_osu_data(omsi_t* omsi_data) {
 
+    if (omsi_data==NULL) {
+        return;
+    }
+
     /* free memory for model data */
     omsu_free_model_data(omsi_data->model_data);
 
@@ -50,8 +54,11 @@ void omsu_free_osu_data(omsi_t* omsi_data) {
     omsu_free_sim_data(omsi_data->sim_data);
 
     /* free memory for experiment data */
-    global_callback->freeMemory((omsi_char *)omsi_data->experiment->solver_name);        /* type-cast to shut of warning when compiling */
-    global_callback->freeMemory(omsi_data->experiment);
+    if (omsi_data->experiment != NULL) {
+        global_callback->freeMemory((omsi_char *)omsi_data->experiment->solver_name);        /* type-cast to shut of warning when compiling */
+        global_callback->freeMemory(omsi_data->experiment);
+    }
+
 }
 
 

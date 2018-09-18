@@ -41,10 +41,12 @@
  * Entry point for all other functions in this file
  */
 omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
-                                omsi_string                     filename,
-                                omsi_string                     fmuGUID,
-                                omsi_string                     instanceName,
-                                const omsi_callback_functions*  functions) {
+                                   omsi_string                     filename,
+                                   omsi_string                     fmuGUID,
+                                   omsi_string                     instanceName,
+                                   const omsi_callback_functions*  functions) {
+
+    functions->logger(functions->componentEnvironment, instanceName, omsi_ok, "info", "Process XML file %s.", filename);
 
     /* Variables */
     omsi_int done;
@@ -192,8 +194,8 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
 /*
  * Compute corresponding index for alias variable.
  */
-omsi_status omsu_find_alias_index(omsi_int alias_valueReference,
-                                  omsi_int n_variables) {
+omsi_int omsu_find_alias_index(omsi_int alias_valueReference,
+                               omsi_int n_variables) {
     /*
      *  Solution 1: read name of alias, search variables and parameters for that name,
      *  save index and id. Write in model_vars_info
@@ -209,7 +211,6 @@ omsi_status omsu_find_alias_index(omsi_int alias_valueReference,
      * ToDo: Solution 3: Edit generation of ..._init.xml and add aliasVariableValueReference
      */
     if (alias_valueReference <= n_variables) {
-
         return alias_valueReference;
     }
     else {

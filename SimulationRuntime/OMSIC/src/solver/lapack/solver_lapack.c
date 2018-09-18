@@ -32,7 +32,7 @@
 
 
 /*
- * Get an equation system A*x=b in omsi_function_t format.
+ * Get an equation system A*x=b in omsi_algebraic_system_t format.
  * Compute the solution using LAPACK DGESV.
  * If a correct solution is found omsi_ok is returned and equationSystemFunc
  * was updated.
@@ -49,7 +49,9 @@ omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
     omsi_status status;
 
     /* set global functions */
-    global_callback = callback_functions;
+    if (callback_functions != NULL) {
+        global_callback = callback_functions;
+    }
 
     /* allocate memory and copy informations into lapack_data */
     lapack_data = set_lapack_data((const omsi_algebraic_system_t*) linearSystem, read_only_vars_and_params);

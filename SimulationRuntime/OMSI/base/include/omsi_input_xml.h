@@ -103,11 +103,11 @@ extern "C" {
 #endif
 
 /* public function prototypes */
-omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
-                                omsi_string                      filename,
-                                omsi_string                     fmuGUID,
-                                omsi_string                     instanceName,
-                                const omsi_callback_functions*  functions);
+omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
+                                   omsi_string                     filename,
+                                   omsi_string                     fmuGUID,
+                                   omsi_string                     instanceName,
+                                   const omsi_callback_functions*  functions);
 
 
 
