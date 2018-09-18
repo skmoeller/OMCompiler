@@ -90,50 +90,26 @@ else
 	USE_KLU_COMMAND=-DUSE_KLU:BOOL=OFF
 endif
 
-getMSVCversion:
-	echo "Check for given VSVERSION (2010|2012|2013|2015) version: [VSVERSION=$(VSVERSION)]"
-ifeq ("$(VSVERSION)","")
-ifeq ("$(VS140COMNTOOLS)", "") #check VS 2015
-ifeq ("$(VS120COMNTOOLS)", "") #check VS 2013
-ifeq ("$(VS110COMNTOOLS)", "") #check VS 2012
-ifeq ("$(VS100COMNTOOLS)", "") #check VS 2010
-	echo "Could not identify Visual Studio version, setting it to VSVERSION=2010"
-	VSVERSION=2010
-	$(eval VSCOMNTOOLS=$(VS100COMNTOOLS))
-else
-	$(eval VSCOMNTOOLS=$(VS100COMNTOOLS))
-endif
-else
-	$(eval VSCOMNTOOLS=$(VS110COMNTOOLS))
-endif
-else
-	$(eval VSCOMNTOOLS=$(VS120COMNTOOLS))
-endif
-else
-	$(eval VSCOMNTOOLS=$(VS140COMNTOOLS))
-	$(eval VCVARS_PARAMS='x86 8.1')
-endif
-else
-ifeq ($(VSVERSION),2010)
-	$(eval VSCOMNTOOLS=$(VS100COMNTOOLS))
-else
-ifeq ($(VSVERSION),2012)
-	$(eval VSCOMNTOOLS=$(VS110COMNTOOLS))
-else
-ifeq ($(VSVERSION),2013)
-	$(eval VSCOMNTOOLS=$(VS120COMNTOOLS))
-else
-ifeq ($(VSVERSION),2015)
-	$(eval VSCOMNTOOLS=$(VS140COMNTOOLS))
-	$(eval VCVARS_PARAMS='x86 8.1')
-endif
-endif
-endif
-endif
-endif
 
 CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=$(BUILDTYPE) $(BOOST_STATIC_LINKING_COMMAND) $(BOOST_REALPATHS_COMMAND) $(RUNTIME_PROFILING_COMMAND) $(USE_SCOREP_COMMAND) $(SCOREP_HOME_COMMAND) $(FMU_SUNDIALS_COMMAND) $(PARALLEL_OUTPUT_COMMAND) $(USE_LOGGER_COMMAND) $(USE_TRILINOS_COMMAND) $(USE_KLU_COMMAND)
 
+.PHONY: OMSIclean OMSIBaseClean OMSICClean
+
+
+#############################
+# Rules for OMSI
+#############################
+
+OMSI: OMSIBaseInstall OMSICInstall
+
+
+
+OMSIclean: OMSIBaseClean OMSICClean
+
+
+#############################
+# Rules for OMSIBase library
+#############################
 
 OMSIBase:
 	cd SimulationRuntime/OMSI; \
@@ -186,5 +162,29 @@ OMSIBaseInstall: OMSIBase
 
 OMSIBaseClean:
 	cd SimulationRuntime/OMSI; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  rm -R -f Build_$(PLATFORM);)
+
+
+
+#############################
+# Rules for OMSIC libraries
+#############################
+
+OMSIC:
+	cd SimulationRuntime/OMSIC; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  mkdir -p Build_$(PLATFORM); \
+	  (cd ./Build_$(PLATFORM); echo "change to Build_$(PLATFORM)"; \
+	   cmake -G $(CMAKE_TARGET) --build . -DPLATFORM=$(PLATFORM) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" -DMAKE_CXX_COMPILER=$(CXX) ..; \
+	   $(MAKE) );)
+
+OMSICInstall: OMSIC
+	cd SimulationRuntime/OMSIC; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  (cd Build_$(PLATFORM); $(MAKE) DESTDIR=$(OMBUILDDIR) install);)
+
+OMSICClean:
+	cd SimulationRuntime/OMSIC; \
 	$(foreach PLATFORM, $(PLATFORMS), \
 	  rm -R -f Build_$(PLATFORM);)
