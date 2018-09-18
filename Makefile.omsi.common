@@ -3,12 +3,6 @@
 # specify a list of target platforms, including dynamic, static
 PLATFORMS=static dynamic
 
-#use this call to use precompiled headers
-#use this call if you want to debug the cpp runtime
-CMAKE=$(OMDEVMSYS)/bin/cmake/bin/cmake -DCMAKE_VERBOSE_MAKEFILE:Bool=ON
-
-OMDEVMSYS=$(shell cygpath $$OMDEV)
-
 ifeq ($(BUILDTYPE),)
 BUILDTYPE=$(BuildType)
 endif
