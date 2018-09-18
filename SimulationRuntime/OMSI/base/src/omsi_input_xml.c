@@ -40,7 +40,7 @@
  * Reads input values from a xml file and allocates memory for osu_data struct.
  * Entry point for all other functions in this file
  */
-omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
+omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
                                 omsi_string                     filename,
                                 omsi_string                     fmuGUID,
                                 omsi_string                     instanceName,
@@ -64,7 +64,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     if(!file) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
                         "fmi2Instantiate: Can not read input file %s.", filename);
-        return -1;
+        return omsi_error;
     }
 
     /* create the XML parser */
@@ -73,7 +73,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
         fclose(file);
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
                                 "fmi2Instantiate: Out of memory.");
-        return -1;
+        return omsi_error;
     }
     /* set our user data */
     XML_SetUserData(parser, &mi);
@@ -91,7 +91,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
                 XML_ErrorString(XML_GetErrorCode(parser)),
                 XML_GetCurrentLineNumber(parser));
             XML_ParserFree(parser);
-            return -1;
+            return omsi_error;
         }
     } while(!done);
 
@@ -104,13 +104,13 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Model GUID %s is not set in model description %s.",
             fmuGUID, filename);
-        return -1;
+        return omsi_error;
     }
     else if (strcmp(fmuGUID, guid)) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Wrong GUID %s in file %s. Expected %s.",
             guid, filename, fmuGUID);
-        return -1;
+        return omsi_error;
     }
 
     /* process experiment data */
@@ -118,7 +118,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     if (!osu_data->experiment) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
-        return -1;
+        return omsi_error;
     }
 
     /* read osu_data */
@@ -134,7 +134,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     if (!osu_data->model_data) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
-        return -1;
+        return omsi_error;
     }
     omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), (omsi_char**) &(osu_data->model_data->modelGUID));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfContinuousStates"), &(osu_data->model_data->n_states));
@@ -166,7 +166,7 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     if (!osu_data->model_data->model_vars_info_t) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
-        return -1;
+        return omsi_error;
     }
 
     /*read model_vars_info_t inner stuff */
@@ -180,20 +180,20 @@ omsi_int omsu_process_input_xml(omsi_t*                         osu_data,
     if (!osu_data->model_data->equation_info_t) {
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
             "fmi2Instantiate: Not enough memory.");
-        return -1;
+        return omsi_error;
     }
 
     /* ToDo: add error case */
 
-    return 0;
+    return omsi_ok;
 }
 
 
 /*
  * Compute corresponding index for alias variable.
  */
-omsi_int omsu_find_alias_index(omsi_int alias_valueReference,
-                               omsi_int n_variables) {
+omsi_status omsu_find_alias_index(omsi_int alias_valueReference,
+                                  omsi_int n_variables) {
     /*
      *  Solution 1: read name of alias, search variables and parameters for that name,
      *  save index and id. Write in model_vars_info
@@ -296,7 +296,6 @@ void omsu_read_var_info (omc_ScalarVariable*    v,
         model_var_info->negate = -1;
         /* ToDo: find alias id */
         omsu_read_value_int(omsu_findHashStringString(v,"aliasVariableId"), &model_var_info->aliasID, -1);
-        model_var_info->aliasID -= 1000;
         model_var_info->type_index.index = omsu_find_alias_index(model_var_info->aliasID, number_of_prev_variables);
     }
     else {
@@ -304,7 +303,6 @@ void omsu_read_var_info (omc_ScalarVariable*    v,
         model_var_info->negate = 1;
         /* ToDo: find alias id */
         omsu_read_value_int(omsu_findHashStringString(v,"aliasVariableId"), &model_var_info->aliasID, -1);
-        model_var_info->aliasID -= 1000;
         model_var_info->type_index.index = omsu_find_alias_index(model_var_info->aliasID, number_of_prev_variables);
     }
 
