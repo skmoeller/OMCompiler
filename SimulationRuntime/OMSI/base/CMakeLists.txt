@@ -37,7 +37,7 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_xml.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_mmap.h
   ${CMAKE_SOURCE_DIR}/base/include/uthash.h
-DESTINATION $ENV{OPENMODELICAHOME}/include/omc/omsi/base)
+DESTINATION /include/omc/omsi/base)
 
 
 
