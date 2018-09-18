@@ -19,7 +19,8 @@ endif
 ifeq (MINGW32,$(findstring MINGW32,$(shell uname)))
 	IS_MINGW32 = -DIS_MINGW32=ON
 	IS_MINGW64 = -DIS_MINGW64=OFF
-else
+endif
+ifeq (MINGW32,$(findstring MINGW64,$(shell uname)))
 	IS_MINGW32 = -DIS_MINGW32=OFF
 	IS_MINGW64 = -DIS_MINGW64=ON
 endif
@@ -93,6 +94,8 @@ endif
 
 CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=$(BUILDTYPE) $(BOOST_STATIC_LINKING_COMMAND) $(BOOST_REALPATHS_COMMAND) $(RUNTIME_PROFILING_COMMAND) $(USE_SCOREP_COMMAND) $(SCOREP_HOME_COMMAND) $(FMU_SUNDIALS_COMMAND) $(PARALLEL_OUTPUT_COMMAND) $(USE_LOGGER_COMMAND) $(USE_TRILINOS_COMMAND) $(USE_KLU_COMMAND)
 
+CMAKE_CALL=cmake -G $(CMAKE_TARGET) --build . -DPLATFORM=$(PLATFORM) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" -DMAKE_CXX_COMPILER=$(CXX) -DSHREXT=$(SHREXT) ..
+
 .PHONY: OMSIclean OMSIBaseClean OMSICClean
 
 
@@ -116,7 +119,7 @@ OMSIBase:
 	$(foreach PLATFORM, $(PLATFORMS), \
 	  mkdir -p Build_$(PLATFORM); \
 	  (cd ./Build_$(PLATFORM); echo "change to Build_$(PLATFORM)"; \
-	   cmake -G $(CMAKE_TARGET) --build . -DPLATFORM=$(PLATFORM) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" -DSHREXT=$(SHREXT) -DMAKE_CXX_COMPILER=$(CXX) ..; \
+		 $(CMAKE_CALL); \
 	   $(MAKE) );)
 
 OMSIBaseMSVC: getMSVCversion
@@ -171,13 +174,13 @@ OMSIBaseClean:
 # Rules for OMSIC libraries
 #############################
 
-OMSIC:
+OMSIC: OMSIBaseInstall
 	cd SimulationRuntime/OMSIC; \
 	$(foreach PLATFORM, $(PLATFORMS), \
 	  mkdir -p Build_$(PLATFORM); \
 	  (cd ./Build_$(PLATFORM); echo "change to Build_$(PLATFORM)"; \
-	   cmake -G $(CMAKE_TARGET) --build . -DPLATFORM=$(PLATFORM) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" -DSHREXT=$(SHREXT) -DMAKE_CXX_COMPILER=$(CXX) ..; \
-	   $(MAKE) );)
+		 $(CMAKE_CALL); \
+		 $(MAKE) ); )
 
 OMSICInstall: OMSIC
 	cd SimulationRuntime/OMSIC; \
