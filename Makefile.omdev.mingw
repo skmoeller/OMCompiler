@@ -82,6 +82,8 @@ defaultMakefileTarget = Makefile.omdev.mingw
 MAKEFILE_BOOT = LinkMain.makefile.mingw
 
 include Makefile.common
+include Makefile.omsi.common
+
 # For Windows build static FMI lib!
 FMILIB_SHARED = OFF
 # For Windows build static CMinpack lib!
