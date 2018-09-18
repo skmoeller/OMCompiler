@@ -228,11 +228,11 @@ runtimeCPPinstall: CMinpack $(MINGW_EXTRA_LIBS) copycppheader
 	test ! `uname` = Darwin || install_name_tool -change libOMCppSolver.dylib @rpath/cpp/libOMCppSolver.dylib $(OMBUILDDIR)/$(LIB_OMC)/cpp/libOMCppEuler.dylib
 
 runtimeOMSIBaseInstall:
-	cmake -E chdir SimulationRuntime/OMSI/ cmake .
+	cmake -E chdir SimulationRuntime/OMSI/ cmake -G $(CMAKE_TARGET) .
 	$(MAKE) -C SimulationRuntime/OMSI/ -f $(defaultMakefileTarget) CC="$(CC)" CXX="$(CXX)" install ANALYZATION_MODE="$(ANALYZATION_MODE)" $(CMAKE_ARGS) DESTDIR=$(OMBUILDDIR) OMBUILDDIR=$(OMBUILDDIR)
 
 runtimeOMSICInstall:
-	cmake -E chdir SimulationRuntime/OMSIC/ cmake .
+	cmake -E chdir SimulationRuntime/OMSIC/ cmake -G $(CMAKE_TARGET) .
 	$(MAKE) -C SimulationRuntime/OMSIC/ -f $(defaultMakefileTarget) CC="$(CC)" CXX="$(CXX)" install ANALYZATION_MODE="$(ANALYZATION_MODE)" $(CMAKE_ARGS) DESTDIR=$(OMBUILDDIR) OMBUILDDIR=$(OMBUILDDIR)
 
 testlibrariemsl31cpp:
