@@ -228,10 +228,12 @@ runtimeCPPinstall: CMinpack $(MINGW_EXTRA_LIBS) copycppheader
 	test ! `uname` = Darwin || install_name_tool -change libOMCppSolver.dylib @rpath/cpp/libOMCppSolver.dylib $(OMBUILDDIR)/$(LIB_OMC)/cpp/libOMCppEuler.dylib
 
 runtimeOMSIBaseInstall:
-	$(MAKE) -C SimulationRuntime/OMSI/ -f $(defaultMakefileTarget) CC="$(CC)" CXX="$(CXX)" install ANALYZATION_MODE="$(ANALYZATION_MODE)" $(CMAKE_ARGS) OMBUILDDIR=$(OMBUILDDIR)
+	cmake -E chdir SimulationRuntime/OMSI/ cmake .
+	$(MAKE) -C SimulationRuntime/OMSI/ -f $(defaultMakefileTarget) CC="$(CC)" CXX="$(CXX)" install ANALYZATION_MODE="$(ANALYZATION_MODE)" $(CMAKE_ARGS) DESTDIR=$(OMBUILDDIR) OMBUILDDIR=$(OMBUILDDIR)
 
 runtimeOMSICInstall:
-	$(MAKE) -C SimulationRuntime/OMSIC/ -f $(defaultMakefileTarget) CC="$(CC)" CXX="$(CXX)" install ANALYZATION_MODE="$(ANALYZATION_MODE)" $(CMAKE_ARGS) OMBUILDDIR=$(OMBUILDDIR)
+	cmake -E chdir SimulationRuntime/OMSIC/ cmake .
+	$(MAKE) -C SimulationRuntime/OMSIC/ -f $(defaultMakefileTarget) CC="$(CC)" CXX="$(CXX)" install ANALYZATION_MODE="$(ANALYZATION_MODE)" $(CMAKE_ARGS) DESTDIR=$(OMBUILDDIR) OMBUILDDIR=$(OMBUILDDIR)
 
 testlibrariemsl31cpp:
 	(cd testsuite/openmodelica/cppruntime/libraries/msl31 && time $(MAKE) -f Makefile > testsuite-msl31-cpp-trace.txt 2>&1)
