@@ -7,18 +7,27 @@ set(OMSUName ${LIBPREFIX}OMSU${LIBSUFFIX})
 
 #set OMSIBase lib
 if(NOT PLATFORM OR PLATFORM STREQUAL "dynamic")
-  set (libOMSIBase ${LIBINSTALLEXT})libOMSIBase${SHREXT})
+  set (libOMSIBase ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}/libOMSIBase${SHREXT})
 elseif(PLATFORM STREQUAL "static")
-  set (libOMSIBase ${OMSI_SOURCE_DIR}/Build_${PLATFORM}/base/libOMSIBase_static.a)
+  set (libOMSIBase ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}/libOMSIBase${LIBSUFFIX}.a)
 else()
 endif()
+
+#set OMSIBase lib
+#if(NOT PLATFORM OR PLATFORM STREQUAL "dynamic")
+#  set (libOMSIBase ${LIBINSTALLEXT}/libOMSIBase${SHREXT})
+#elseif(PLATFORM STREQUAL "static")
+#  set (libOMSIBase ${LIBINSTALLEXT}/libOMSIBase${LIBSUFFIX}.a)
+#else()
+#endif()
+
 
 
 include_directories ("${CMAKE_SOURCE_DIR}/include/solver")
 include_directories ("${CMAKE_SOURCE_DIR}/include/omsu")
 include_directories ("${OMSI_SOURCE_DIR}/base/include")
 
-add_library(${OMSUName} omsu_helper.c omsu_utils.c omsu_initialization.c omsu_GettersAndSetters.c)
+add_library(${OMSUName} omsu_helper.c omsu_utils.c omsu_initialization.c)
 
 target_link_libraries(${OMSUName} ${CMAKE_DL_LIBS} ${libOMSIBase})
 
