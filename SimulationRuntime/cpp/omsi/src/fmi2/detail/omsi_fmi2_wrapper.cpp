@@ -84,8 +84,6 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _simTime(0.0)
 
 {
-	cout << "test in omsu wrapper" << std::endl;
-
 	_global_settings = shared_ptr<OMSIGlobalSettings>(new OMSIGlobalSettings());
   _instanceName = instanceName;
   _GUID = GUID;

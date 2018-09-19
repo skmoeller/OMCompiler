@@ -5835,7 +5835,6 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
 
       <%match  Config.simCodeTarget()
          case "Cpp"
-         case "omsicpp"
          then
          <<
           <%if (boolNot(Flags.isSet(Flags.HARDCODED_START_VALUES))) then
@@ -5848,15 +5847,18 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
              else
              <<
               _reader  =  shared_ptr<IPropertyReader>(new XmlPropertyReader(_global_settings,init_file_path));
-             //  omsi_t* omsu = instantiate_omsi(init_file_path.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
+
              >>
             %>
           _reader->readInitialValues(*this, getSimVars());'
           %>
          >>
-       %>
-
-
+         case "omsicpp"
+         then
+         <<
+         //init omsu variables
+         >>
+     %>
       _simTime = 0.0;
       _state_var_reinitialized = false;
 

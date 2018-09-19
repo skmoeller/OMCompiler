@@ -101,7 +101,7 @@ void SimVars::create(omsi_t* omsu)
 	_dim_bool = omsu->sim_data->model_vars_and_params->n_bools;
 	_dim_z = omsu->model_data->n_states;
 	_dim_pre_vars = _dim_real + _dim_int + _dim_bool;
-
+	_z_i = 0;
 
 	/*Todo:
 	if (dim_string > 0) {
@@ -598,13 +598,14 @@ void SimVars::savePreVariables()
 		std::copy(_real_vars, _real_vars + _dim_real, _pre_real_vars);
 	if(_dim_int>0)
 		std::copy(_int_vars, _int_vars + _dim_int, _pre_int_vars);
-	if (_dim_bool > 0)
-		if (_use_omsu){
-			std::copy(_bool_vars, _bool_vars + _dim_bool, _pre_bool_vars);
-		}
-		else {
+	if (_dim_bool > 0) {
+		if (_use_omsu) {
 			std::copy(_omsi_bool_vars, _omsi_bool_vars + _dim_bool, _pre_omsi_bool_vars);
 		}
+		else {
+			std::copy(_bool_vars, _bool_vars + _dim_bool, _pre_bool_vars);
+		}
+	}
 }
 /**
 *  \brief Initializes access to pre variables
