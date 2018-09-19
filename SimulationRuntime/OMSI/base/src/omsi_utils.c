@@ -31,10 +31,14 @@
 #include <omsi_utils.h>
 
 /*
- * Returns true, if categoryIndex should be logged.
+ * Returns true, if categoryIndex should be logged or OSU was not set.
  */
 omsi_bool isCategoryLogged(osu_t*       OSU,
                            omsi_int     categoryIndex) {
+
+    if (!OSU) {
+        return omsi_true;
+    }
 
     if (categoryIndex < NUMBER_OF_CATEGORIES && (OSU->logCategories[categoryIndex] || OSU->logCategories[LOG_ALL])) {
         return omsi_true;
