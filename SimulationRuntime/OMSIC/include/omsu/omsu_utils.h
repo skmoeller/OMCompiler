@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
 /* used for filtered_log */
-/*#define LOG_EVENTS                      0     ToDo: is already defined */
+#define LOG_EVENTS                      0
 #define LOG_SINGULARLINEARSYSTEMS       1
 #define LOG_NONLINEARSYSTEMS            2
 #define LOG_DYNAMICSTATESELECTION       3
@@ -65,21 +65,48 @@ extern "C" {
 static omsi_string logCategoriesNames[] = {"logEvents", "logSingularLinearSystems", "logNonlinearSystems", "logDynamicStateSelection",
     "logStatusWarning", "logStatusDiscard", "logStatusError", "logStatusFatal", "logStatusPending", "logAll", "logFmi2Call"};
 
-#define FILTERED_LOG(instance, status, categoryIndex, message, ...) if (isCategoryLogged(instance, categoryIndex)) \
+/*#define FILTERED_LOG(instance, status, categoryIndex, message, ...) if (isCategoryLogged(instance, categoryIndex)) \
     instance->fmiCallbackFunctions->logger(instance->fmiCallbackFunctions->componentEnvironment, instance->instanceName, status, \
-        logCategoriesNames[categoryIndex], message, ##__VA_ARGS__);
+        logCategoriesNames[categoryIndex], message, ##__VA_ARGS__);*/
+
+#define LOG_FILTER(instance, categoryIndex, log_call) if(isCategoryLogged(instance, categoryIndex)) \
+        log_call;
 
 /* function prototypes */
-omsi_bool isCategoryLogged(void* c, omsi_int categoryIndex);
-omsi_string stateToString(void* c);
-omsi_bool invalidState(void* c, omsi_string f, omsi_int meStates, omsi_int csStates);
-omsi_bool nullPointer(void* c, omsi_string f, omsi_string arg, const void *p);
-omsi_bool vrOutOfRange(void* c, omsi_string f, omsi_unsigned_int vr, omsi_int end);
-omsi_status unsupportedFunction(void* c, omsi_string fName, omsi_int statesExpected);
-omsi_bool invalidNumber(void* c, omsi_string f, omsi_string arg, omsi_int n, omsi_int nExpected);
+omsi_bool isCategoryLogged(osu_t*       OSU,
+                           omsi_int     categoryIndex);
 
-omsi_status omsi_set_debug_logging(void* c, omsi_bool loggingOn, omsi_unsigned_int nCategories, const omsi_string categories[]);
+omsi_string stateToString(osu_t* OSU);
 
+omsi_bool invalidState(osu_t*       OSU,
+                       omsi_string  function_name,
+                       omsi_int     meStates,
+                       omsi_int     csStates);
+
+omsi_bool nullPointer(osu_t*        OSU,
+                      omsi_string   function_name,
+                      omsi_string   arg,
+                      const void *  pointer);
+
+omsi_bool vrOutOfRange(osu_t*               OSU,
+                       omsi_string          function_name,
+                       omsi_unsigned_int    vr,
+                       omsi_int             end);
+
+omsi_status unsupportedFunction(osu_t*      OSU,
+                                omsi_string function_name,
+                                omsi_int    statesExpected);
+
+omsi_bool invalidNumber(osu_t*          OSU,
+                        omsi_string     function_name,
+                        omsi_string     arg,
+                        omsi_int        n,
+                        omsi_int        nExpected);
+
+omsi_status omsi_set_debug_logging(osu_t*               OSU,
+                                   omsi_bool            loggingOn,
+                                   omsi_unsigned_int    nCategories,
+                                   const omsi_string    categories[]);
 
 #ifdef __cplusplus
 }

@@ -98,16 +98,6 @@ extern omsi_status setExternalFunction(osu_t* OSU, const omsi_unsigned_int vr, c
 extern void mmc_catch_dummy_fn(void);
 
 
-/* function prototypes */
-omsi_real getReal(osu_t* OSU, const omsi_unsigned_int vr);
-omsi_status setReal(osu_t* OSU, const omsi_unsigned_int vr, const omsi_real value);
-omsi_int getInteger(osu_t* OSU, const omsi_unsigned_int vr);
-omsi_status setInteger(osu_t* OSU, const omsi_unsigned_int vr, const omsi_int value);
-omsi_bool getBoolean(osu_t* OSU, const omsi_unsigned_int vr);
-omsi_status setBoolean(osu_t* OSU, const omsi_unsigned_int vr, const omsi_bool value);
-omsi_string getString(osu_t* OSU, const omsi_unsigned_int vr);
-omsi_status setString(osu_t* OSU, const omsi_unsigned_int vr, omsi_string value);
-
 #ifdef __cplusplus
 extern } /* end of extern "C" */
 #endif

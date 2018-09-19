@@ -40,138 +40,102 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
+
+#include <omsu_common.h>
 #include <omsu_utils.h>
-#include <fmi2Functions.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct osu_t osu_t;
-
-/* getter and setter functions for the omsu struct */
-
-/*! \fn omsi_get_boolean
- *
- *  This function obtains booleans of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_boolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Boolean value[]);
-
-/*! \fn omsi_get_integer
- *
- *  This function obtains integers of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_integer(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Integer value[]);
-
-/*! \fn omsi_get_real
- *
- *  This function obtains reals of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_real(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Real value[]);
-
-/*! \fn omsi_get_string
- *
- *  This function obtains strings of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_string(fmi2Component c, const fmi2ValueReference vr[],size_t nvr, fmi2String value[]);
-
-/*! \fn omsi_set_boolean
- *
- *  This function sets booleans of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_boolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Boolean value[]);
-
-/*! \fn omsi_set_integer
- *
- *  This function sets integers of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_integer(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Integer value[]);
-
-/*! \fn omsi_set_real
- *
- *  This function sets reals of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_real(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Real value[]);
-
-/*! \fn omsi_set_string
- *
- *  This function sets strings of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_string(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2String value[]);
-
-/*! \fn  omsi_set_time
- *
- *  This function sets the time of an instance.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_time(fmi2Component c, fmi2Real time);
 
 
-/* unsupported functions */
-/*! \fn omsi_get_fmu_state
- *
- *  This function is not supported.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_fmu_state(fmi2Component c, fmi2FMUstate* FMUstate);
+/* function prototypes */
+omsi_status omsi_get_boolean(osu_t*                     OSU,
+                             const omsi_unsigned_int    vr[],
+                             omsi_unsigned_int          nvr,
+                             omsi_bool                  value[]);
 
-/*! \fn omsi_set_fmu_state
- *
- *  This function is not supported.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_fmu_state(fmi2Component c, fmi2FMUstate FMUstate);
+omsi_status omsi_get_integer(osu_t*                     OSU,
+                             const omsi_unsigned_int    vr[],
+                             omsi_unsigned_int          nvr,
+                             omsi_int                   value[]);
 
-/*! \fn omsi_get_clock
- *
- *  This function sets the clock of the model.
- *
- *  \param [ref] [data]C
- */
-fmi2Status omsi_get_clock(fmi2Component c,const fmi2Integer clockIndex[],size_t nClockIndex, fmi2Boolean tick[]);
+omsi_status omsi_get_real(osu_t*                    OSU,
+                          const omsi_unsigned_int   vr[],
+                          omsi_unsigned_int         nvr,
+                          omsi_real                 value[]);
 
-/*! \fn omsi_get_interval
- *
- *  This function gets the interval of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_interval(fmi2Component c, const fmi2Integer clockIndex[],size_t nClockIndex, fmi2Real interval[]);
+omsi_status omsi_get_string(osu_t*                  OSU,
+                            const omsi_unsigned_int vr[],
+                            omsi_unsigned_int       nvr,
+                            omsi_string             value[]);
 
-/*! \fn omsi_set_clock
- *
- *  This function sets the clock of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_clock(fmi2Component c, const fmi2Integer clockIndex[], size_t nClockIndex, const fmi2Boolean tick[],const fmi2Boolean subactive[]);
+omsi_status omsi_get_fmu_state(osu_t*        OSU,
+                               void **      FMUstate);
 
-/*! \fn omsi_set_interval
- *
- *  This function sets the interval of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_interval(fmi2Component c,const fmi2Integer clockIndex[],size_t nClockIndex, const fmi2Real interval[]);
+omsi_status omsi_get_clock(osu_t*               OSU,
+                           const omsi_int       clockIndex[],
+                           omsi_unsigned_int    nClockIndex,
+                           omsi_bool            tick[]);
+
+omsi_status omsi_get_interval(osu_t*            OSU,
+                              const omsi_int    clockIndex[],
+                              omsi_unsigned_int nClockIndex,
+                              omsi_real         interval[]);
+
+omsi_status omsi_set_boolean(osu_t*                     OSU,
+                             const omsi_unsigned_int    vr[],
+                             omsi_unsigned_int          nvr,
+                             const omsi_bool            value[]);
+
+omsi_status omsi_set_integer(osu_t*                     OSU,
+                             const omsi_unsigned_int    vr[],
+                             omsi_unsigned_int          nvr,
+                             const omsi_int             value[]);
+
+omsi_status omsi_set_real(osu_t*                    OSU,
+                          const omsi_unsigned_int   vr[],
+                          omsi_unsigned_int         nvr,
+                          const omsi_real           value[]);
+
+omsi_status omsi_set_string(osu_t*                  OSU,
+                            const omsi_unsigned_int vr[],
+                            omsi_unsigned_int       nvr,
+                            const omsi_string       value[]);
+
+omsi_status omsi_set_time(osu_t*    OSU,
+                          omsi_real time);
+
+omsi_status omsi_set_fmu_state(osu_t*   OSU,
+                               void *   FMUstate);
+
+omsi_status omsi_set_clock(osu_t*               OSU,
+                           const omsi_int       clockIndex[],
+                           omsi_unsigned_int    nClockIndex,
+                           const omsi_bool      tick[],
+                           const omsi_bool      subactive[]);
+
+omsi_status omsi_set_interval(osu_t*            OSU,
+                              const omsi_int    clockIndex[],
+                              omsi_unsigned_int nClockIndex,
+                              const omsi_real   interval[]);
+
+
+omsi_real getReal(osu_t* OSU, const omsi_unsigned_int vr);
+omsi_status setReal(osu_t* OSU, const omsi_unsigned_int vr, const omsi_real value);
+omsi_int getInteger(osu_t* OSU, const omsi_unsigned_int vr);
+omsi_status setInteger(osu_t* OSU, const omsi_unsigned_int vr, const omsi_int value);
+omsi_bool getBoolean(osu_t* OSU, const omsi_unsigned_int vr);
+omsi_status setBoolean(osu_t* OSU, const omsi_unsigned_int vr, const omsi_bool value);
+omsi_string getString(osu_t* OSU, const omsi_unsigned_int vr);
+omsi_status setString(osu_t* OSU, const omsi_unsigned_int vr, omsi_string value);
+
+
 
 #ifdef __cplusplus
 }

@@ -78,7 +78,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
  *
  *  \param [ref] [data]
  */
-omsi_status omsi_enter_initialization_mode(void* c);
+omsi_status omsi_enter_initialization_mode(osu_t* OSU);
 
 /*! \fn omsi_exit_initialization_mode
  *
@@ -86,7 +86,7 @@ omsi_status omsi_enter_initialization_mode(void* c);
  *
  *  \param [ref] [data]
  */
-omsi_status omsi_exit_initialization_mode(void* c);
+omsi_status omsi_exit_initialization_mode(osu_t* OSU);
 
 /*! \fn omsi_setup_experiment
  *
@@ -94,7 +94,7 @@ omsi_status omsi_exit_initialization_mode(void* c);
  *
  *  \param [ref] [data]
  */
-omsi_status omsi_setup_experiment(void*      c,
+omsi_status omsi_setup_experiment(osu_t*     OSU,
                                   omsi_bool  toleranceDefined,
                                   omsi_real  tolerance,
                                   omsi_real  startTime,
@@ -107,7 +107,7 @@ omsi_status omsi_setup_experiment(void*      c,
  *
  *  \param [ref] [data]
  */
-void omsi_free_instance(void* c);
+void omsi_free_instance(osu_t* OSU);
 
 /*! \fn omsi_reset
  *
@@ -115,7 +115,7 @@ void omsi_free_instance(void* c);
  *
  *  \param [ref] [data]
  */
-omsi_status omsi_reset(void* c);
+omsi_status omsi_reset(osu_t* OSU);
 
 /*! \fn omsi_terminate
  *
@@ -123,7 +123,7 @@ omsi_status omsi_reset(void* c);
  *
  *  \param [ref] [data]
  */
-omsi_status omsi_terminate(void* c);
+omsi_status omsi_terminate(osu_t* OSU);
 
 #ifdef __cplusplus
 }

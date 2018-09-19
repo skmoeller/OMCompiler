@@ -35,6 +35,12 @@
 #ifndef OMSI_GLOBAL_CALLBACK
 #define OMSI_GLOBAL_CALLBACK
 const omsi_callback_functions* global_callback;
+
+omsi_string global_instance_name;
+
 #endif
+
+
+
 
 #endif
