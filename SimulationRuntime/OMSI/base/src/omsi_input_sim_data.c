@@ -47,12 +47,11 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
         /* ToDo: Log error */
         return omsi_error;
     }
-	//allocate sim_data is already called
-    ///* allocate memory for sim_data */
-    //if (omsu_allocate_sim_data(omsi_data, callback_functions)) {
-    //    /* ToDo: Log error */
-    //    return omsi_error;
-    //}
+	/*allocate sim_data is already called*/
+    /* allocate memory for sim_data */
+    /*if (omsu_allocate_sim_data(omsi_data, callback_functions)) {
+          return omsi_error;
+    }*/
 
     /* Call generated initialization function for initialization problem */
     /* osu_functions->initialize_initialization_problem(omsi_data->sim_data->initialization); */ /* ToDo: not implemented yet */
@@ -117,33 +116,28 @@ omsi_status omsu_allocate_sim_data(omsi_t* omsu,
 
 
 
-    //omsi_unsigned_int n_reals, n_ints, n_bools, n_externs;
 
-    //omsi_data->sim_data->initialization = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
-    //if (!omsi_data->sim_data->initialization) {
-    //    return omsi_error;      /* Error: Out of memory */
-    //}
+	omsu->sim_data->initialization = NULL;
+    /*omsi_data->sim_data->initialization = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
+    if (!omsi_data->sim_data->initialization) {
+        return omsi_error;
+    }*/
+	omsu->sim_data->simulation = NULL;
+    /*omsi_data->sim_data->simulation = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
+    if (!omsi_data->sim_data->initialization) {
+        return omsi_error;
+    }*/
 
-    //omsi_data->sim_data->simulation = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
-    //if (!omsi_data->sim_data->initialization) {
-    //    return omsi_error;      /* Error: Out of memory */
-    //}
+    /* Allocate memory for model_vars_and_params */
+    /*This is done in omsi_allocate_model_variables in omsi_input_model_variables.c*/
 
-    ///* Allocate memory for model_vars_and_params */
-    //n_reals = omsi_data->model_data->n_real_vars + omsi_data->model_data->n_real_parameters;
-    //n_ints = omsi_data->model_data->n_int_vars + omsi_data->model_data->n_int_parameters;
-    //n_bools = omsi_data->model_data->n_bool_vars + omsi_data->model_data->n_bool_parameters;
-    //n_externs = 0;
 
-    //omsi_data->sim_data->model_vars_and_params = instantiate_omsi_values (n_reals, n_ints, n_bools, n_externs);
-    //if (!omsi_data->sim_data->model_vars_and_params) {
-    //    return omsi_error;      /* Error: Out of memory */
-    //}
 
-    ///* ToDo: allocate memory for some pre-values */
-
-    //omsi_data->sim_data->zerocrossings_vars = (omsi_bool *) global_callback->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));
-    //omsi_data->sim_data->pre_zerocrossings_vars = (omsi_bool *) global_callback->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));
+    /* ToDo: allocate memory for some pre-values */
+	omsu->sim_data->zerocrossings_vars = NULL;
+    /*omsi_data->sim_data->zerocrossings_vars = (omsi_bool *) global_callback->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));*/
+	omsu->sim_data->pre_zerocrossings_vars = NULL;
+    /*omsi_data->sim_data->pre_zerocrossings_vars = (omsi_bool *) global_callback->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));*/
 
     /* ToDo: Add error cases */
 
