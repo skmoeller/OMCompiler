@@ -43,7 +43,8 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
     /* set global function pointer */
     global_callback = callback_functions;
 
-    global_callback->logger(global_callback->componentEnvironment, "instanceName", omsi_ok, "info", "Process sim data.");    /* ToDo: add instance name */
+    LOG_FILTER(NULL, LOG_ALL,
+        global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "Process sim data."))
 
     /* check if template callback functions are set */
     if (!template_function->isSet) {

@@ -31,6 +31,8 @@
 #ifndef OMSI_CALLBACKS_H
 #define OMSI_CALLBACKS_H
 
+#include <omsi.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

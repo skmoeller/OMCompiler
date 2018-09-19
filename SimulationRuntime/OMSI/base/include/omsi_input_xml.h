@@ -40,6 +40,7 @@
 
 #include <omsi.h>
 #include <omsi_callbacks.h>
+#include <omsi_global.h>
 
 /* typedefs for structures */
 typedef struct hash_string_string {

@@ -44,9 +44,9 @@
 #include <omsi.h>
 #include <omsi_callbacks.h>
 #include <omsi_global.h>
+#include <omsi_utils.h>
 
 #include <omsu_common.h>
-#include <omsu_utils.h>
 
 #ifdef __cplusplus
 extern "C" {

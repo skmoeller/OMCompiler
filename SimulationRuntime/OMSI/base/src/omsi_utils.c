@@ -28,9 +28,11 @@
  *
  */
 
+#include <omsi_utils.h>
 
-#include <omsu_utils.h>
-
+/*
+ * Returns true, if categoryIndex should be logged.
+ */
 omsi_bool isCategoryLogged(osu_t*       OSU,
                            omsi_int     categoryIndex) {
 
@@ -39,6 +41,7 @@ omsi_bool isCategoryLogged(osu_t*       OSU,
     }
     return omsi_false;
 }
+
 
 /*
  * Returns current state of component as string.
@@ -83,7 +86,7 @@ omsi_bool invalidState(osu_t*       OSU,            /* OSU component */
         OSU->state = statesExpected;
 
         LOG_FILTER(OSU, LOG_STATUSERROR,
-                    global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "%s: Illegal call sequence. %s is not allowed in %s state.", function_name, function_name, stateToString(OSU)))
+            global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "%s: Illegal call sequence. %s is not allowed in %s state.", function_name, function_name, stateToString(OSU)))
 
         OSU->state = modelError;
         return omsi_true;
@@ -92,6 +95,11 @@ omsi_bool invalidState(osu_t*       OSU,            /* OSU component */
     return omsi_false;
 }
 
+/*
+ * Returns true if pointer is NULL pointer, emits error message and sets
+ * model state to modelError.
+ * Otherwise it returns false.
+ */
 omsi_bool nullPointer(osu_t*        OSU,
                       omsi_string   function_name,
                       omsi_string   arg,
@@ -107,6 +115,11 @@ omsi_bool nullPointer(osu_t*        OSU,
     return omsi_false;
 }
 
+/*
+ * Returns true if vr is out of range of end, emits error message and sets
+ * model state to modelError.
+ * Otherwise it returns false.
+ */
 omsi_bool vrOutOfRange(osu_t*               OSU,
                        omsi_string          function_name,
                        omsi_unsigned_int    vr,
@@ -115,12 +128,15 @@ omsi_bool vrOutOfRange(osu_t*               OSU,
     if ((omsi_int)vr >= end) {
         OSU->state = modelError;
         LOG_FILTER(OSU, LOG_STATUSERROR,
-                    global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "%s: Illegal value reference %u.", function_name, vr))
+            global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "%s: Illegal value reference %u.", function_name, vr))
         return omsi_true;
     }
     return omsi_false;
 }
 
+/*
+ * Logs error for call of unsupported function.
+ */
 omsi_status unsupportedFunction(osu_t*      OSU,
                                 omsi_string function_name,
                                 omsi_int    statesExpected) {
@@ -133,6 +149,11 @@ omsi_status unsupportedFunction(osu_t*      OSU,
     return omsi_error;
 }
 
+/*
+ * Returns true if n is not equal to nExpected, emits error message and sets
+ * model state to modelError.
+ * Otherwise it returns false.
+ */
 omsi_bool invalidNumber(osu_t*          OSU,
                         omsi_string     function_name,
                         omsi_string     arg,

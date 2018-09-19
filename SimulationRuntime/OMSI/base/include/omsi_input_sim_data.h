@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+#include <omsi_utils.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -45,12 +45,16 @@ extern "C" {
 #include <stdarg.h>
 
 #include <omsi.h>
-#include <omsu_helper.h>
-#include <omsu_common.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
+
 #include <omsi_input_xml.h>
 #include <omsi_input_json.h>
 #include <omsi_input_sim_data.h>
-#include <omsu_utils.h>
+#include <omsi_utils.h>
+
+#include <omsu_helper.h>
+#include <omsu_common.h>
 
 
 /* extern functions */

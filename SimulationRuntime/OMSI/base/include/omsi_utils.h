@@ -42,7 +42,9 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <omsu_common.h>
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
 
 
 #ifdef __cplusplus

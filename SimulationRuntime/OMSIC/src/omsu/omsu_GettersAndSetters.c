@@ -261,8 +261,9 @@ omsi_status omsi_set_real(osu_t*                    OSU,
     if (nvr > 0 && nullPointer(OSU, "fmi2SetReal", "value[]", value))
         return omsi_error;
 
-    LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetReal: nvr = %d", nvr))
-    /* ToDo: no check whether setting the value is allowed in the current state */
+    LOG_FILTER(OSU, LOG_ALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetReal: nvr = %d", nvr))
+
     for (i = 0; i < nvr; i++) {
         if (vrOutOfRange(OSU, "fmi2SetReal", vr[i], OSU->osu_data->model_data->n_real_vars+OSU->osu_data->model_data->n_states))
             return omsi_error;

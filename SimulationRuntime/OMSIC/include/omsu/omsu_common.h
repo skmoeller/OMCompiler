@@ -39,58 +39,9 @@
 #include <omsi_callbacks.h>
 #include <omsi_global.h>
 
-
-#define NUMBER_OF_CATEGORIES 11
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-typedef enum {
-  modelInstantiated       = 1<<0, /* ME and CS */
-  modelInitializationMode = 1<<1, /* ME and CS */
-  modelContinuousTimeMode = 1<<2, /* ME only */
-  modelEventMode          = 1<<3, /* ME only */
-  modelSlaveInitialized   = 1<<4, /* CS only */
-  modelTerminated         = 1<<5, /* ME and CS */
-  modelError              = 1<<6  /* ME and CS */
-} ModelState;
-
-
-typedef struct {
-   omsi_bool newDiscreteStatesNeeded;
-   omsi_bool terminateSimulation;
-   omsi_bool nominalsOfContinuousStatesChanged;
-   omsi_bool valuesOfContinuousStatesChanged;
-   omsi_bool nextEventTimeDefined;
-   omsi_real nextEventTime;
-} omsi_event_info;
-
-typedef struct osu_t {
-    /* open modelica simulation interface data */
-    omsi_t*             osu_data;           /* pointer to omsi_data struct, contains all data for simulation */
-    omsi_template_callback_functions_t*   osu_functions;
-
-    omsi_int            _need_update;
-    omsi_int            _has_jacobian;
-    ModelState          state;
-    omsi_bool           logCategories[NUMBER_OF_CATEGORIES];
-    omsi_bool           loggingOn;
-    omsi_char*          GUID;
-    omsi_string         instanceName;
-    omsi_event_info     eventInfo;
-    omsi_bool           toleranceDefined;   /* ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info */
-    omsi_real           tolerance;
-    omsi_real           startTime;
-    omsi_bool           stopTimeDefined;
-    omsi_real           stopTime;
-    omsu_type           type;
-    omsi_unsigned_int*  vrStates;
-    omsi_unsigned_int*  vrStatesDerivatives;
-
-    const omsi_callback_functions*  fmiCallbackFunctions;
-} osu_t;
 
 /* extern functions */
 extern void omsic_model_setup_data(osu_t* OSU);

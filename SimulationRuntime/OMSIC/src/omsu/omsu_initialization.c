@@ -64,7 +64,8 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     omsi_char* infoJsonFilename;
     omsi_int i;
 
-    LOG_FILTER(NULL, LOG_ALL, functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "Instantiate OSU."))
+    LOG_FILTER(NULL, LOG_ALL,
+        functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "Instantiate OSU."))
 
     /* set global callback functions */
     global_callback = functions;
@@ -92,7 +93,8 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     /* allocate memory for Openmodelica Simulation Unit */
     OSU = functions->allocateMemory(1, sizeof(osu_t));
     if (!OSU) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory.");
+        LOG_FILTER(NULL, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
         return NULL;
     }
 
@@ -101,7 +103,8 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     initXMLFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(initXMLFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
     if (omsu_process_input_xml(OSU->osu_data, initXMLFilename, fmuGUID, instanceName, functions)) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", initXMLFilename);
+        LOG_FILTER(NULL, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", initXMLFilename))
         omsu_free_osu_data(OSU->osu_data);
         functions->freeMemory(OSU);
         return NULL;
@@ -113,7 +116,8 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, instanceName);
     if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", infoJsonFilename);
+        LOG_FILTER(NULL, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", infoJsonFilename))
         omsu_free_osu_data(OSU->osu_data);
         functions->freeMemory(OSU);
         return NULL;
