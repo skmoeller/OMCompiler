@@ -46,8 +46,7 @@
 #include "omsi_fmi2_wrapper.h"
 #include "omsi_factory.h"
 #include "omsi_data.h"
-//omsi header
-#include <omsi.h>
+
 //3rdparty includes
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -99,9 +98,9 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
  /*Todo: only load if type is omsu, not for fmi*/
  fs::path p(_instanceName);
   string omsu_name = p.stem().string();
- omsi_t* omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
+  _omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
 
-  _model = createOSUSystem(_global_settings, _instanceName,omsu);
+  _model = createOSUSystem(_global_settings, _instanceName,_omsu);
   _initialize_model = dynamic_pointer_cast<ISystemInitialization>(_model);
   _continuous_model  = dynamic_pointer_cast<IContinuous>(_model);
   _time_event_model =  dynamic_pointer_cast<ITime>(_model);
@@ -146,6 +145,7 @@ OSU::~OSU()
     delete [] _zero_funcs;
  if(_events)
     delete [] _events;
+ free_omsi(_omsu);
 }
 
 fmi2Status OSU::setDebugLogging(fmi2Boolean loggingOn,

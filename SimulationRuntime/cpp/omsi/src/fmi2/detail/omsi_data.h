@@ -16,6 +16,7 @@ omsi_t* instantiate_omsi(omsi_string                    instanceName,
 						 omsi_bool                      loggingOn);
 
 
+void free_omsi(omsi_t* omsu);
 
 
 
