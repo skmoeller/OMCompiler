@@ -64,8 +64,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     omsi_char* infoJsonFilename;
     omsi_int i;
 
-    LOG_FILTER(NULL, LOG_ALL,
-        functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "Instantiate OSU."))
+
 
     /* set global callback functions */
     global_callback = functions;
@@ -77,33 +76,42 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
         /* ToDo: Add error message, even if no logger is available */
         return NULL;
     }
+    else {
+        LOG_FILTER(NULL, LOG_ALL,
+            functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "Instantiate OSU."))
+    }
+
     if (!functions->allocateMemory || !functions->freeMemory) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing callback function.");
+        LOG_FILTER(NULL, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing callback function."))
         return NULL;
     }
     if (!instanceName || strlen(instanceName) == 0) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing instance name.");
+        LOG_FILTER(NULL, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing instance name."))
         return NULL;
     }
     if (!fmuGUID || strlen(fmuGUID) == 0) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing GUID.");
+        LOG_FILTER(NULL, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing GUID."))
         return NULL;
     }
 
     /* allocate memory for Openmodelica Simulation Unit */
     OSU = functions->allocateMemory(1, sizeof(osu_t));
     if (!OSU) {
-        LOG_FILTER(NULL, LOG_STATUSERROR,
+        LOG_FILTER(OSU, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
         return NULL;
     }
 
     /* process XML file and read experiment_data and parts of model_data in osu_data*/
     OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
+    /* ToDo Check error memory */
     initXMLFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(initXMLFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
     if (omsu_process_input_xml(OSU->osu_data, initXMLFilename, fmuGUID, instanceName, functions)) {
-        LOG_FILTER(NULL, LOG_STATUSERROR,
+        LOG_FILTER(OSU, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", initXMLFilename))
         omsu_free_osu_data(OSU->osu_data);
         functions->freeMemory(OSU);
@@ -116,7 +124,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, instanceName);
     if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {
-        LOG_FILTER(NULL, LOG_STATUSERROR,
+        LOG_FILTER(OSU, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", infoJsonFilename))
         omsu_free_osu_data(OSU->osu_data);
         functions->freeMemory(OSU);
