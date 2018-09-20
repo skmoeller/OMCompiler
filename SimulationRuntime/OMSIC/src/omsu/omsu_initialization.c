@@ -68,6 +68,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
 
     /* set global callback functions */
     global_callback = (omsi_callback_functions*) functions;
+    global_instance_name = instanceName;
 
 
     /* check all input arguments */
@@ -78,7 +79,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     }
     else {
         LOG_FILTER(NULL, LOG_ALL,
-            functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "Instantiate OSU."))
+            functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Instantiate OSU."))
     }
 
     if (!functions->allocateMemory || !functions->freeMemory) {

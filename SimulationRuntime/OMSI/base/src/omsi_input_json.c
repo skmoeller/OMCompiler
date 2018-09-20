@@ -77,9 +77,10 @@ omsi_status omsu_process_input_json(omsi_t*                         osu_data,
 
     /* set global function pointer */
     global_callback = (omsi_callback_functions*) functions;
+    global_instance_name = instanceName;
 
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "Process JSON file %s.", fileName))
+        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process JSON file %s.", fileName))
 
 
     /* read JSON file */
@@ -111,13 +112,15 @@ static omsi_string skipSpace(omsi_string str) {
 /* Does not work for escaped strings. Returns the rest of the string to parse. */
 static omsi_string assertStringValue(omsi_string str,
                                      omsi_string value) {
-  int len = strlen(value);
-  str = skipSpace(str);
-  if ('\"' != *str || strncmp(str+1,value,len) || str[len+1] != '\"') {
-    fprintf(stderr, "JSON string value %s expected, got: %.20s\n", value, str);
-    abort();
-  }
-  return str + len + 2;
+    int len = strlen(value);
+    str = skipSpace(str);
+    if ('\"' != *str || strncmp(str+1,value,len) || str[len+1] != '\"') {
+      LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+          global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+          omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: JSON string value %s expected, got: %.20s\n", value, str))
+      abort();
+    }
+    return str + len + 2;
 }
 
 
@@ -125,7 +128,9 @@ static omsi_string assertChar (omsi_string  str,
                                omsi_char    expected_char) {
     str = skipSpace(str);
     if (expected_char != *str) {
-        fprintf(stderr, "Expected '%c', got: %.20s\n", expected_char, str);
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Expected '%c', got: %.20s\n", expected_char, str))
         abort();
     }
     return str + 1;
@@ -147,7 +152,9 @@ static omsi_string omsu_assertCharOrEnd (omsi_string    str,
     }
 
     if (*str != expected_char) {
-        fprintf(stderr, "Expected '%c', got: %.20s\n", expected_char, str);
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Expected '%c', got: %.20s\n", expected_char, str))
         abort();
     }
     return str + 1;
@@ -161,11 +168,15 @@ static omsi_string assertNumber(omsi_string str,
     str = skipSpace(str);
     d = strtod(str, &endptr);
     if (str == endptr) {
-        fprintf(stderr, "Expected number, got: %.20s\n", str);
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Expected number, got: %.20s\n", str))
         abort();
     }
     if (d != expected) {
-        fprintf(stderr, "Warning: Got number %f, expected: %f\nProceeding any way.\n", d, expected);
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+            omsi_error, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Got number %f, expected: %f\nProceeding any way.\n", d, expected))
     }
     return endptr;
 }
@@ -177,8 +188,10 @@ static omsi_string skipObjectRest(omsi_string   str,
     while (*str != '}') {
         if (!first) {
             if (*str != ',') {
-            fprintf(stderr, "JSON object expected ',' or '}', got: %.20s\n", str);
-            abort();
+                LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+                    global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+                    omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: JSON object expected ',' or '}', got: %.20s\n", str))
+                abort();
             }
             str++;
         } else {
@@ -187,7 +200,9 @@ static omsi_string skipObjectRest(omsi_string   str,
         str = skipValue(str);
         str = skipSpace(str);
         if (*str++ != ':') {
-            fprintf(stderr, "JSON object expected ':', got: %.20s\n", str);
+            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+                global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+                omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: JSON object expected ':', got: %.20s\n", str))
             abort();
         }
         str = skipValue(str);
@@ -216,23 +231,32 @@ static omsi_string skipValue(omsi_string str) {
             first = 1;
             str = skipSpace(str+1);
             while (*str != ']') {
-              if (!first && *str++ != ',') {
-                fprintf(stderr, "JSON array expected ',' or ']', got: %.20s\n", str);
-                abort();
-              }
-              first = 0;
-              str = skipValue(str);
-              str = skipSpace(str);
+                if (!first && *str++ != ',') {
+                    LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+                        global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+                        omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: JSON array expected ',' or ']', got: %.20s\n", str))
+                    abort();
+                }
+                first = 0;
+                str = skipValue(str);
+                str = skipSpace(str);
             }
             return str+1;
         case '"':
             str++;
             do {
                 switch (*str) {
-                    case '\0': fprintf(stderr, "Found end of file, expected end of string"); abort();
+                    case '\0':
+                        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+                            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+                            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Found end of file, expected end of string"))
+                        abort();
                     case '\\':
                         if (str+1 == '\0') {
-                        fprintf(stderr, "Found end of file, expected end of string"); abort();
+                            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+                                global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+                                omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Found end of file, expected end of string"))
+                            abort();
                         }
                         str+=2;
                         break;
@@ -258,14 +282,22 @@ static omsi_string skipValue(omsi_string str) {
             endptr = NULL;
             strtod(str,&endptr);
             if (str == endptr) {
-              fprintf(stderr, "Not a number, got %.20s\n", str);
-               abort();
+                LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+                    global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+                    omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not a number, got %.20s\n", str))
+                abort();
             }
             return endptr;
         default:
-            fprintf(stderr, "JSON value expected, got: %.20s\n", str);
+            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+                global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+                omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: JSON value expected, got: %.20s\n", str))
             abort();
     }
+
+    LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+        global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+        omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Function should not be able to reach this point. Report a bug and get a cooky!"))
     return str;     /* function should never reach this point */
 }
 

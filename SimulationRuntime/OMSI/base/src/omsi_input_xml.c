@@ -44,9 +44,6 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
                                    omsi_string                     instanceName,
                                    const omsi_callback_functions*  functions) {
 
-    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "Process XML file %s.", filename))
-
     /* Variables */
     omsi_int done;
     omsi_int n_model_vars_and_params;
@@ -58,7 +55,11 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     XML_Parser parser = NULL;
 
     /* set global function pointer */
-    global_callback = functions;
+    global_callback = (omsi_callback_functions*) functions;
+    global_instance_name = instanceName;
+
+    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
+        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process XML file %s.", filename))
 
     /* open xml file */
     file = fopen(filename, "r");
@@ -335,7 +336,7 @@ void omsu_read_var_infos(model_data_t*      model_data,
     /* Log function call */
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
         global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-        omsi_ok, logCategoriesNames[LOG_ALL], "Read variable informations from XML file."))
+        omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Read variable informations from XML file."))
 
 
     /* Variables */
@@ -445,13 +446,14 @@ omsi_string omsu_findHashStringString(hash_string_string*   ht,
   if (0==res) {
       hash_string_string *c, *tmp;
       HASH_ITER(hh, ht, c, tmp) {
-          LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+          /* ToDo: To much noise */
+          /* LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
               global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-              omsi_ok, logCategoriesNames[LOG_STATUSERROR], "HashMap contained: %s->%s\n", c->id, c->val))
+              omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "HashMap contained: %s->%s\n", c->id, c->val)) */
       }
-      LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+      LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
           global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-          omsi_ok, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Failed to lookup %s in hashmap %p", key, ht))
+          omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup %s in hashmap %p", key, ht))
   }
   return res;
 }
@@ -527,13 +529,14 @@ omc_ScalarVariable** omsu_findHashLongVar(hash_long_var*    ht,
     if (0==res) {
         hash_long_var *c, *tmp;
         HASH_ITER(hh, ht, c, tmp) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            /* ToDo: to much noise */
+            /* LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
                 global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-                omsi_ok, logCategoriesNames[LOG_STATUSERROR], "HashMap contained: %ld->*map*\n", c->id))
+                omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "HashMap contained: %ld->*map*\n", c->id)) */
         }
-    LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+    LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
         global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-        omsi_ok, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Failed to lookup %s in hashmap %p", key, ht))
+        omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup %s in hashmap %p", key, ht))
     }
     return &res->val;
 }
