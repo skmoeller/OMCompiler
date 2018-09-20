@@ -34,12 +34,12 @@
 #include <omsi.h>
 #include <omsi_callbacks.h>
 #include <omsi_global.h>
+#include <omsi_utils.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 
-#include <omsi_utils.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,7 +54,8 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
 
 omsi_status omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_functions*      callback_functions, omsi_string                     instanceName);
 
-omsi_status omsu_instantiate_omsi_function (omsi_function_t* omsi_function);
+omsi_status omsu_instantiate_omsi_function (omsi_function_t*    omsi_function,
+                                            omsi_values*        function_vars);
 
 omsi_algebraic_system_t* omsu_initialize_alg_system_array (omsi_unsigned_int n_algebraic_system);
 
@@ -66,6 +67,9 @@ omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,
                                       omsi_unsigned_int   n_bools,
                                       omsi_unsigned_int   n_externs);
 
+
+/* extern function prototypes */
+extern omsi_bool initialize_start_function (omsi_template_callback_functions_t* template_callbacks);
 
 
 #ifdef __cplusplus

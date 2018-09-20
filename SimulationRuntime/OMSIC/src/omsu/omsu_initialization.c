@@ -34,7 +34,7 @@
  * of the FMU.
  */
 
-#define DEBUG omsi_false
+#define DEBUG omsi_true
 #define DEBUG_PRINT(function) if (DEBUG) {                                     \
     printf("\nDEBUG PRINT\n");                                                 \
     printf("=====================================================\n");         \
@@ -101,10 +101,26 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     /* allocate memory for Openmodelica Simulation Unit */
     OSU = functions->allocateMemory(1, sizeof(osu_t));
     if (!OSU) {
-        LOG_FILTER(OSU, LOG_STATUSERROR,
+        LOG_FILTER(NULL, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
         return NULL;
     }
+    global_callback->componentEnvironment = OSU;
+
+    /* set general OSU data */
+    for (i = 0; i < NUMBER_OF_CATEGORIES; i++) { /* set all categories to on or off */
+        OSU->logCategories[i] = loggingOn;
+    }
+    OSU->loggingOn = loggingOn;
+    OSU->GUID = (omsi_char*) functions->allocateMemory(1, strlen(fmuGUID) + 1);
+    if (!OSU->GUID) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory.");
+        return NULL;
+    }
+    strcpy(OSU->GUID, fmuGUID);
+    OSU->instanceName = strdup(instanceName);
+    OSU->type = fmuType;
+    OSU->fmiCallbackFunctions = functions;
 
     /* process XML file and read experiment_data and parts of model_data in osu_data*/
     OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
@@ -137,10 +153,11 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     /* Set template function pointers */
     OSU->osu_functions = (omsi_template_callback_functions_t *) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
     /* ToDo: actually set pointers */
+    OSU->osu_functions->isSet = omsu_set_template_functions(OSU->osu_functions);
 
     /* Instantiate and initialize sim_data */
     omsu_allocate_sim_data(OSU->osu_data, functions, instanceName);
-    omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, OSU->fmiCallbackFunctions);
+    omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, functions);
     DEBUG_PRINT(omsu_print_sim_data (OSU->osu_data->sim_data, ""))
 
     OSU->instanceName = (omsi_char*) functions->allocateMemory(1 + strlen(instanceName), sizeof(omsi_char));
@@ -151,23 +168,6 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
         functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory.");
         return NULL;
     }
-
-
-    /* set all categories to on or off
-     * fmi2SetDebugLogging should be called to choose specific categories. */
-    for (i = 0; i < NUMBER_OF_CATEGORIES; i++) {
-        OSU->logCategories[i] = loggingOn;
-    }
-    OSU->loggingOn = loggingOn;
-    OSU->GUID = (omsi_char*) functions->allocateMemory(1, strlen(fmuGUID) + 1);
-    if (!OSU->GUID) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory.");
-        return NULL;
-    }
-    strcpy(OSU->GUID, fmuGUID);
-    OSU->instanceName = strdup(instanceName);
-    OSU->type = fmuType;
-    OSU->fmiCallbackFunctions = functions;
 
     /* setup simulation data with default start values */
     /*OSU->osu_functions->setupStartValues(OSU->osu_data);*/       /* ToDo: implement. Probably pointer to generated function to set up default start data */

@@ -80,7 +80,7 @@ omsi_status omsu_process_input_json(omsi_t*                         osu_data,
     global_instance_name = instanceName;
 
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process JSON file %s.", fileName))
+            global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process JSON file %s.", fileName))
 
 
     /* read JSON file */
