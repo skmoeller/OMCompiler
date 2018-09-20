@@ -45,6 +45,11 @@ omsi_t* instantiate_omsi(omsi_string                    instanceName,
 
 	return omsu;
 }
+void free_omsi(omsi_t* omsu)
+{
+
+	omsi_free_model_variables(omsu);
+}
 
 string get_init_file_name(omsi_string instanceName, omsi_string fmuResourceLocation)
 {

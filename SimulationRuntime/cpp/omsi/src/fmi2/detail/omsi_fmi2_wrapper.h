@@ -47,6 +47,8 @@
 
 
 #include "omsi_fmi2_settings.h"
+ //omsi header
+#include <omsi.h>
 
 #include "fmi2Functions.h"
 
@@ -167,6 +169,8 @@ class OSU
   fmi2CallbackFunctions _functions;
   ModelState _state;
   double _simTime;
+  //OMSU include, arrays for variables memory real,int bool and prevariables
+  omsi_t* _omsu;
 };
 
 /** @} */ // end of fmu2

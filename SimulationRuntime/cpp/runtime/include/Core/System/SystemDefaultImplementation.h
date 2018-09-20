@@ -24,6 +24,9 @@ for Open Modelica", September, 10 th, 2008
 Copyright (c) 2008, OSMC
 *****************************************************************************/
 
+//omsi header
+#include <omsi.h>
+
 #define MODELICA_TERMINATE(msg) Terminate(msg)
 
 //typedef unordered_map<std::string, boost::any> SValuesMap;
@@ -44,6 +47,7 @@ class BOOST_EXTENSION_SYSTEM_DECL SystemDefaultImplementation
 public:
   SystemDefaultImplementation(shared_ptr<IGlobalSettings> globalSettings,  string modelName,
 							 size_t dim_real, size_t dim_int, size_t dim_bool, size_t dim_string, size_t dim_pre_vars, size_t dim_z, size_t z_i);
+  SystemDefaultImplementation(shared_ptr<IGlobalSettings> globalSettings, string modelName, omsi_t* omsu);
   SystemDefaultImplementation(shared_ptr<IGlobalSettings> globalSettings);
   SystemDefaultImplementation(SystemDefaultImplementation &instance);
   virtual ~SystemDefaultImplementation();
@@ -166,6 +170,8 @@ protected:
     bool isConsistent();
 
     shared_ptr<ISimObjects> _simObjects;
+	//optional OMSI instance
+	omsi_t* _omsu;
 
     double
         _simTime;             ///< current simulation time (given by the solver)

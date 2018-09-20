@@ -63,6 +63,21 @@ weak_ptr<ISimVars> SimObjects::LoadSimVars(string modelKey, size_t dim_real, siz
     _sim_vars[modelKey] = sim_vars;
     return sim_vars;
 }
+weak_ptr<ISimVars> SimObjects::LoadSimVars(string modelKey, omsi_t* omsu)
+{
+	//if the simdata is already loaded
+	std::map<string, shared_ptr<ISimVars> > ::iterator iter = _sim_vars.find(modelKey);
+	if (iter != _sim_vars.end())
+	{
+		//destroy system
+		_sim_vars.erase(iter);
+	}
+	//create system
+	shared_ptr<ISimVars> sim_vars = createSimVars(omsu);
+	_sim_vars[modelKey] = sim_vars;
+	return sim_vars;
+
+}
 
 shared_ptr<ISimData> SimObjects::getSimData(string modelname)
 {

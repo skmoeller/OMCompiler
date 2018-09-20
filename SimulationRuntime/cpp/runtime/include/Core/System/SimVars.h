@@ -72,6 +72,7 @@ class BOOST_EXTENSION_SIMVARS_DECL SimVars: public ISimVars
 {
   public:
     SimVars(size_t dim_real, size_t dim_int, size_t dim_bool, size_t dim_string, size_t dim_pre_vars, size_t dim_state_vars, size_t state_index);
+	SimVars(omsi_t* omsu);
     SimVars(SimVars& instance);
 
     ISimVars* clone();
@@ -79,12 +80,14 @@ class BOOST_EXTENSION_SIMVARS_DECL SimVars: public ISimVars
     virtual double& initRealVar(size_t i);
     virtual int& initIntVar(size_t i);
     virtual bool& initBoolVar(size_t i);
+	virtual int& initOMSIBoolVar(size_t i);
     virtual string& initStringVar(size_t i);
     virtual double* getStateVector();
     virtual double* getDerStateVector();
     virtual double* getRealVarsVector() const;
     virtual int* getIntVarsVector() const;
     virtual bool* getBoolVarsVector() const;
+	virtual int* getOMSIBoolVarsVector() const;
     virtual string* getStringVarsVector() const;
     virtual void setRealVarsVector(const double* vars);
     virtual void setIntVarsVector(const int* vars);
@@ -93,17 +96,22 @@ class BOOST_EXTENSION_SIMVARS_DECL SimVars: public ISimVars
     virtual const double& getRealVar(size_t i);
     virtual const int& getIntVar(size_t i);
     virtual const bool& getBoolVar(size_t i);
+	virtual const int& getOMSIBoolVar(size_t i);
     virtual double* initRealArrayVar(size_t size, size_t start_index);
     virtual int* initIntArrayVar(size_t size, size_t start_index);
     virtual bool* initBoolArrayVar(size_t size, size_t start_index);
+	virtual int* initOMSIBoolArrayVar(size_t size, size_t start_index);
     virtual string* initStringArrayVar(size_t size, size_t start_index);
     virtual void initRealAliasArray(int indices[], size_t n, double* ref_data[]);
     virtual void initIntAliasArray(int indices[], size_t n, int* ref_data[]);
     virtual void initBoolAliasArray(int indices[], size_t n, bool* ref_data[]);
+	virtual void initOMSIBoolAliasArray(int indices[], size_t n, int* ref_data[]);
+
     virtual void initStringAliasArray(int indices[], size_t n, string* ref_data[]);
     virtual void initRealAliasArray(std::vector<int> indices, double* ref_data[]);
     virtual void initIntAliasArray(std::vector<int> indices, int* ref_data[]);
     virtual void initBoolAliasArray(std::vector<int> indices, bool* ref_data[]);
+	virtual void initOMSIBoolAliasArray(std::vector<int> indices, int* ref_data[]);
     virtual void initStringAliasArray(std::vector<int> indices, string* ref_data[]);
     virtual void savePreVariables();
     virtual void initPreVariables();
@@ -113,7 +121,7 @@ class BOOST_EXTENSION_SIMVARS_DECL SimVars: public ISimVars
 
   protected:
     void create(size_t dim_real, size_t dim_int, size_t dim_bool, size_t dim_string, size_t dim_pre_vars, size_t dim_state_vars, size_t state_index);
-
+	void create(omsi_t* omsu);
     virtual size_t getDimString() const;
     virtual size_t getDimBool() const;
     virtual size_t getDimInt() const;
@@ -129,6 +137,7 @@ class BOOST_EXTENSION_SIMVARS_DECL SimVars: public ISimVars
     double* getRealVarPtr(size_t i);
     int* getIntVarPtr(size_t i);
     bool* getBoolVarPtr(size_t i);
+	int* getOMSIBoolVarPtr(size_t i);
     string* getStringVarPtr(size_t i);
     size_t _dim_real;  //number of all real variables (real algebraic vars,discrete algebraic vars, state vars, der state vars)
     size_t _dim_int;  // number of all integer variables (integer algebraic vars)
@@ -139,12 +148,18 @@ class BOOST_EXTENSION_SIMVARS_DECL SimVars: public ISimVars
     size_t _z_i;  //start index of state vector in real_vars list
     double *_real_vars;  //array for all model real variables of size dim_real
     int* _int_vars;    //array for all model int variables of size dim_int
-    bool* _bool_vars;  //array for all model bool variables of size dim_bool
-    string* _string_vars;  //array for all model string variables of size dim_string
+
+	bool* _bool_vars;  //array for all model bool variables of size dim_bool
+	int* _omsi_bool_vars;  //The OpenModelica Simulation Interface uses int for boolean variables
+
+	string* _string_vars;  //array for all model string variables of size dim_string
     //Stores all variables occurred before an event
     double* _pre_real_vars;
     int* _pre_int_vars;
     bool* _pre_bool_vars;
+	int* _pre_omsi_bool_vars; //The OpenModelica Simulation Interface uses int for boolean variables
+
+	bool _use_omsu;
 };
 
 /** @} */ // end of coreSystem

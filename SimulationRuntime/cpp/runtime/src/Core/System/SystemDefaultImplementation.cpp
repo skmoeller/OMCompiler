@@ -5,6 +5,7 @@
 #include <Core/ModelicaDefine.h>
 #include <Core/Modelica.h>
 
+
 #include <Core/System/FactoryExport.h>
 #include <Core/Utils/extension/logger.hpp>
 #include <Core/System/EventHandling.h>
@@ -70,6 +71,7 @@ SystemDefaultImplementation::SystemDefaultImplementation(shared_ptr<IGlobalSetti
   , _event_system(NULL)
   , _modelName(modelName)
   , _freeVariablesLock(false)
+, _omsu(NULL)
 {
 
        _simObjects = shared_ptr<ISimObjects>(new SimObjects(globalSettings->getRuntimeLibrarypath(),globalSettings->getRuntimeLibrarypath(),globalSettings));
@@ -77,6 +79,52 @@ SystemDefaultImplementation::SystemDefaultImplementation(shared_ptr<IGlobalSetti
 	  __z   = _simObjects->getSimVars(modelName)->getStateVector();
      __zDot = _simObjects->getSimVars(modelName)->getDerStateVector();
 }
+
+
+
+SystemDefaultImplementation::SystemDefaultImplementation(shared_ptr<IGlobalSettings> globalSettings, string modelName, omsi_t* omsu)
+	: _simTime(0.0)
+	, __daeResidual(NULL)
+	, _conditions(NULL)
+	, _time_conditions(NULL)
+	, _dimContinuousStates(0)
+	, _dimRHS(0)
+	, _dimReal(0)
+	, _dimInteger(0)
+	, _dimBoolean(0)
+	, _dimString(0)
+	, _dimZeroFunc(0)
+	, _dimTimeEvent(0)
+	, _dimClock(0)
+	, _dimAE(0)
+	, _timeEventData(NULL)
+	, _currTimeEvents(NULL)
+	, _clockInterval(NULL)
+	, _clockShift(NULL)
+	, _clockTime(NULL)
+	, _clockCondition(NULL)
+	, _clockStart(NULL)
+	, _clockSubactive(NULL)
+	, _outputStream(NULL)
+	, _callType(IContinuous::UNDEF_UPDATE)
+	, _initial(false)
+	, _delay_max(0.0)
+	, _start_time(0.0)
+	, _terminal(false)
+	, _terminate(false)
+	, _global_settings(globalSettings)
+	, _conditions0(NULL)
+	, _event_system(NULL)
+	, _modelName(modelName)
+	, _freeVariablesLock(false)
+	, _omsu(omsu)
+{
+	_simObjects = shared_ptr<ISimObjects>(new SimObjects(globalSettings->getRuntimeLibrarypath(), globalSettings->getRuntimeLibrarypath(), globalSettings));
+	_simObjects->LoadSimVars(_modelName, _omsu);
+	__z = _simObjects->getSimVars(modelName)->getStateVector();
+	__zDot = _simObjects->getSimVars(modelName)->getDerStateVector();
+}
+
 SystemDefaultImplementation::SystemDefaultImplementation(shared_ptr<IGlobalSettings> globalSettings)
 : _simTime        (0.0)
   , __daeResidual(NULL)

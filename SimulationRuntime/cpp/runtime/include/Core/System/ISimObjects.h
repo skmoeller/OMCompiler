@@ -3,8 +3,8 @@
  *
  *  @{
  */
-
-
+//OpenModelcia Simulation Interface Header
+#include <omsi.h>
 
 /**
  *
@@ -27,6 +27,7 @@ public:
      @param z_i start index of state vector in real_vars list
      */
   virtual weak_ptr<ISimVars> LoadSimVars(string modelKey,size_t dim_real,size_t dim_int,size_t dim_bool,size_t dim_string,size_t dim_pre_vars,size_t dim_z,size_t z_i) = 0;
+  virtual weak_ptr<ISimVars> LoadSimVars(string modelKey, omsi_t* omsu) = 0;
   virtual weak_ptr<IHistory> LoadWriter(size_t) = 0;
 
   virtual shared_ptr<ISimData> getSimData(string modelname) = 0;

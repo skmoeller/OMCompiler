@@ -97,10 +97,7 @@ omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
 }
 
 
-omsi_int omsi_free_model_variables(omsi_t*                           omsu,
-                                   const omsi_callback_functions*    functions) {
-
-
+omsi_int omsi_free_model_variables(omsi_t* omsu) {
 
     alignedFree(omsu->sim_data->model_vars_and_params->bools);
     alignedFree(omsu->sim_data->pre_vars->bools);
