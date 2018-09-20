@@ -77,6 +77,12 @@ template generateOMSIC(SimCode simCode)
       return 0;
     }
 
+
+    void initialize_start_function (omsi_template_callback_functions_t callback) {
+
+      callback->initialize_initialization_problem = <%fileNamePrefix%>_initialize_allEqns_OMSIFunc;
+    }
+
     <%\n%>
     >>
     /* leave new line at end of file */
