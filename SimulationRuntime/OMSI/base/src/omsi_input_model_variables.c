@@ -44,7 +44,7 @@ omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
 
 
     /* set global function pointer */
-    global_callback = functions;
+    global_callback = (omsi_callback_functions*) functions;
 
     /*Todo: Allocate memory for all string model variables*/
 

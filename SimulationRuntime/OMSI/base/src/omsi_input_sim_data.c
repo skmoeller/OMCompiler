@@ -41,7 +41,7 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
                                 const omsi_callback_functions*      callback_functions) {
 
     /* set global function pointer */
-    global_callback = callback_functions;
+    global_callback = (omsi_callback_functions*) callback_functions;
 
     LOG_FILTER(NULL, LOG_ALL,
         global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "Process sim data."))
@@ -96,7 +96,7 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
                                    omsi_string                      instanceName ) {
 
     /* set global function pointer */
-    global_callback = callback_functions;
+    global_callback = (omsi_callback_functions*) callback_functions;
 
 
     omsu->sim_data = (sim_data_t*)global_callback->allocateMemory(1, sizeof(sim_data_t));

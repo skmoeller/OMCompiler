@@ -70,15 +70,17 @@ omsi_status omsu_process_input_json(omsi_t*                         osu_data,
                                     omsi_string                     instanceName,
                                     const omsi_callback_functions*  functions) {
 
-    functions->logger(functions->componentEnvironment, instanceName, omsi_ok, "info", "Process JSON file %s.", fileName);
-
     /* Variables */
     omc_mmap_read mmap_reader;
 
     UNUSED(fmuGUID); UNUSED(instanceName);      /* ToDo: delete or change function */
 
     /* set global function pointer */
-    global_callback = functions;
+    global_callback = (omsi_callback_functions*) functions;
+
+    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
+        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "Process JSON file %s.", fileName))
+
 
     /* read JSON file */
     mmap_reader = omc_mmap_open_read (fileName);

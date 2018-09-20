@@ -62,7 +62,7 @@ typedef struct omsi_callback_functions{
     const omsi_callback_allocate_memory allocateMemory;
     const omsi_callback_free_memory     freeMemory;
     const omsi_step_finished            stepFinished;
-    const void*                         componentEnvironment;
+    void*                               componentEnvironment;
 }omsi_callback_functions;
 
 

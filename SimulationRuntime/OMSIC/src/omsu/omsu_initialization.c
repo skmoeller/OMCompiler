@@ -67,7 +67,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
 
 
     /* set global callback functions */
-    global_callback = functions;
+    global_callback = (omsi_callback_functions*) functions;
 
 
     /* check all input arguments */
