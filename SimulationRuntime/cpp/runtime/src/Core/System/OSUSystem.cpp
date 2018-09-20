@@ -205,6 +205,7 @@ void  OSUSystem::initialize()
 
   initializeMemory();
   initializeFreeVariables();
+
   initializeBoundVariables();
 
   status = fmi2_import_exit_initialization_mode(_osu_me->instance);

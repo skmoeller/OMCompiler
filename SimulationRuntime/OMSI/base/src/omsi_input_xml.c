@@ -162,7 +162,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data->n_zerocrossings));       /* ToDo: Is numberOfTimeEvents also part of n_zerocrossings???? */
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEquations"), &(osu_data->model_data->n_equations));      /* ToDo: Is numberOfEquations in XML??? */
 
-    /* read model_vars_info_t */
+    /* read model_vars_info */
     n_model_vars_and_params = osu_data->model_data->n_states + osu_data->model_data->n_derivatives
                             + osu_data->model_data->n_real_vars + osu_data->model_data->n_int_vars
                             + osu_data->model_data->n_bool_vars + osu_data->model_data->n_string_vars
@@ -170,27 +170,31 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
                             + osu_data->model_data->n_bool_parameters + osu_data->model_data->n_string_parameters
                             + osu_data->model_data->n_real_aliases + osu_data->model_data->n_int_aliases
                             + osu_data->model_data->n_bool_aliases + osu_data->model_data->n_string_aliases;
-    osu_data->model_data->model_vars_info_t = (model_variable_info_t*) functions->allocateMemory(n_model_vars_and_params, sizeof(model_variable_info_t));
-    if (!osu_data->model_data->model_vars_info_t) {
+
+    osu_data->model_data->model_vars_info = (model_variable_info_t*) functions->allocateMemory(n_model_vars_and_params, sizeof(model_variable_info_t));
+    if (!osu_data->model_data->model_vars_info) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
             "fmi2Instantiate: Not enough memory."))
         return omsi_error;
+
     }
 
-    /*read model_vars_info_t inner stuff */
+    /*read model_vars_info inner stuff */
     omsu_read_var_infos(osu_data->model_data, &mi);
 
     /* now all data from init_xml should be utilized */
     omsu_free_ModelInput(mi);
 
+
     /* ToDo: read equation_info_t from JSON file */
-    osu_data->model_data->equation_info_t = (equation_info_t*) functions->allocateMemory(osu_data->model_data->n_equations, sizeof(equation_info_t));
-    if (!osu_data->model_data->equation_info_t) {
+    osu_data->model_data->equation_info = (equation_info_t*) functions->allocateMemory(osu_data->model_data->n_equations, sizeof(equation_info_t));
+    if (!osu_data->model_data->equation_info) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
             "fmi2Instantiate: Not enough memory."))
         return omsi_error;
+
     }
 
     /* ToDo: add error case */
@@ -228,7 +232,7 @@ omsi_int omsu_find_alias_index(omsi_int alias_valueReference,
 
 
 /*
- * Reads variables info and attributes and writes in model_vars_info_t.
+ * Reads variables info and attributes and writes in model_vars_info.
  * If one attribute is not found a default value is used.
  */
 void omsu_read_var_info (omc_ScalarVariable*    v,
@@ -327,7 +331,7 @@ void omsu_read_var_info (omc_ScalarVariable*    v,
 }
 
 /*
- * Fill model_vars_info_t for all states, derivatives, variables and parameters.
+ * Fill model_vars_info for all states, derivatives, variables and parameters.
  * Allocates memory for strings.
  */
 void omsu_read_var_infos(model_data_t*      model_data,
@@ -347,25 +351,25 @@ void omsu_read_var_infos(model_data_t*      model_data,
     /* model vars info for states and derivatives */
     for (i=0; i<model_data->n_states; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rSta ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_REAL, &variable_index, -1);
     }
     for (i=0; i<model_data->n_states; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rDer ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_REAL, &variable_index, -1);
     }
 
     /* model vars info for reals */
     for (i=0; i<model_data->n_real_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rAlg ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_REAL, &variable_index, -1);
     }
     for (i=0; i<model_data->n_real_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rPar ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_REAL, &variable_index, -1);
     }
     for (i=0; i<model_data->n_real_aliases; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rAli ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_REAL, NULL, 0);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_REAL, NULL, 0);
     }
     /* ToDo: add sensitives? */
 
@@ -374,15 +378,15 @@ void omsu_read_var_infos(model_data_t*      model_data,
     prev_variables = model_data->n_real_vars+model_data->n_real_parameters;
     for (i=0; i<model_data->n_int_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->iAlg ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_INTEGER, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_INTEGER, &variable_index, -1);
     }
     for (i=0; i<model_data->n_int_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->iPar ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_INTEGER, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_INTEGER, &variable_index, -1);
     }
     for (i=0; i<model_data->n_int_aliases; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->iAli ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_INTEGER, NULL, prev_variables);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_INTEGER, NULL, prev_variables);
     }
 
     /* model vars info for booleans */
@@ -390,15 +394,15 @@ void omsu_read_var_infos(model_data_t*      model_data,
     prev_variables += model_data->n_int_vars+model_data->n_int_parameters;
     for (i=0; i<model_data->n_bool_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->bAlg ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_BOOLEAN, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_BOOLEAN, &variable_index, -1);
     }
     for (i=0; i<model_data->n_bool_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->bPar ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_BOOLEAN, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_BOOLEAN, &variable_index, -1);
     }
     for (i=0; i<model_data->n_bool_aliases; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->bAli ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_BOOLEAN, NULL, prev_variables);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_BOOLEAN, NULL, prev_variables);
     }
 
     /* model vars info for strings */
@@ -406,15 +410,15 @@ void omsu_read_var_infos(model_data_t*      model_data,
     prev_variables += model_data->n_bool_vars+model_data->n_bool_parameters;
     for (i=0; i<model_data->n_string_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->sAlg ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_STRING, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_STRING, &variable_index, -1);
     }
     for (i=0; i<model_data->n_string_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->sPar ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_STRING, &variable_index, -1);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_STRING, &variable_index, -1);
     }
     for (i=0; i<model_data->n_string_aliases; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->sAli ,i);
-        omsu_read_var_info(v, &model_data->model_vars_info_t[j], OMSI_TYPE_STRING, NULL, prev_variables);
+        omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_STRING, NULL, prev_variables);
     }
 }
 

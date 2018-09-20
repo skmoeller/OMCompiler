@@ -328,7 +328,7 @@ static omsi_string skipFieldIfExist(omsi_string str,
 
 
 /* Reads single equation from string created from JSON file.
- * Save detailed informations about equation in equation_info_t.
+ * Save detailed informations about equation in equation_info.
  */
 omsi_string readEquation(omsi_string        str,
                          equation_info_t*   equation_info,
@@ -464,7 +464,7 @@ omsi_string readEquation(omsi_string        str,
 }
 
 /* Reads equations part from string created from JSON file.
- * For every equation a sub function is called to save detailed informations in equation_info_t.
+ * For every equation a sub function is called to save detailed informations in equation_info.
  */
 omsi_string readEquations(omsi_string       str,
                           model_data_t*     model_data) {
@@ -505,7 +505,7 @@ omsi_string readEquations(omsi_string       str,
     }while (omsi_true);
 
     model_data->n_equations = i;
-    model_data->equation_info_t = (equation_info_t*) global_callback->allocateMemory(model_data->n_equations, sizeof(equation_info_t));
+    model_data->equation_info = (equation_info_t*) global_callback->allocateMemory(model_data->n_equations, sizeof(equation_info_t));
 
     str = str_start;    /* reset str to start of equations */
     endNotFound = omsi_true;
@@ -517,7 +517,7 @@ omsi_string readEquations(omsi_string       str,
         }
         i++;
         str = skipSpace(str);
-        str = readEquation(str, &(model_data->equation_info_t[i-1]), i, &model_data->n_init_equations, &model_data->n_regular_equations, &model_data->n_alias_equations);
+        str = readEquation(str, &(model_data->equation_info[i-1]), i, &model_data->n_init_equations, &model_data->n_regular_equations, &model_data->n_alias_equations);
     }while (omsi_true);
 
 

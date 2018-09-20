@@ -5856,7 +5856,7 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
          case "omsicpp"
          then
          <<
-         //init omsu variables
+         //intialisation with start values is called from omsi base lib in function omsi_initialize_model_variables
          >>
      %>
       _simTime = 0.0;

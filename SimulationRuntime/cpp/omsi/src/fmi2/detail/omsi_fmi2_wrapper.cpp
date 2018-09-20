@@ -42,6 +42,8 @@
 #include <Core/Utils/extension/logger.hpp>
 //omsi cpp inlcudes
 #include <omsi_global_settings.h>
+
+
 #include "omsi_fmi2_log.h"
 #include "omsi_fmi2_wrapper.h"
 #include "omsi_factory.h"
@@ -114,6 +116,10 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
 
   _initialize_model->initializeMemory();
   _initialize_model->initializeFreeVariables();
+
+
+  initialize_omsi(_omsu, (omsi_callback_functions *)functions, omsu_name.c_str());
+
    _string_buffer.resize(_continuous_model->getDimString());
   _clockTick = new bool[_event_model->getDimClock()];
   _clockSubactive = new bool[_event_model->getDimClock()];

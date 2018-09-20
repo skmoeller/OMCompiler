@@ -243,23 +243,23 @@ omsi_status omsu_set_model_vars_and_params_start (omsi_values*     model_vars_an
            + model_data->n_string_vars + model_data->n_string_parameters
            + model_data->n_string_aliases;
 
-    /* Read start values from model_vars_info_t and write them into model_vars_and_params */
+    /* Read start values from model_vars_info and write them into model_vars_and_params */
     for (i=0; i<length; i++) {
-        if (!model_data->model_vars_info_t[i].isAlias) {
-            switch (model_data->model_vars_info_t[i].type_index.type) {
+        if (!model_data->model_vars_info[i].isAlias) {
+            switch (model_data->model_vars_info[i].type_index.type) {
             case OMSI_TYPE_REAL:
-                real_attribute = (real_var_attribute_t*) model_data->model_vars_info_t[i].modelica_attributes;
-                model_vars_and_params->reals[model_data->model_vars_info_t[i].type_index.index]
+                real_attribute = (real_var_attribute_t*) model_data->model_vars_info[i].modelica_attributes;
+                model_vars_and_params->reals[model_data->model_vars_info[i].type_index.index]
                          = real_attribute->start;
                 break;
             case OMSI_TYPE_INTEGER:
-                int_attribute = (int_var_attribute_t*) model_data->model_vars_info_t[i].modelica_attributes;
-                model_vars_and_params->ints[model_data->model_vars_info_t[i].type_index.index]
+                int_attribute = (int_var_attribute_t*) model_data->model_vars_info[i].modelica_attributes;
+                model_vars_and_params->ints[model_data->model_vars_info[i].type_index.index]
                          = int_attribute->start;
                 break;
             case OMSI_TYPE_BOOLEAN:
-                bool_attribute = (bool_var_attribute_t*) model_data->model_vars_info_t[i].modelica_attributes;
-                model_vars_and_params->bools[model_data->model_vars_info_t[i].type_index.index]
+                bool_attribute = (bool_var_attribute_t*) model_data->model_vars_info[i].modelica_attributes;
+                model_vars_and_params->bools[model_data->model_vars_info[i].type_index.index]
                          = bool_attribute->start;
                 break;
             case OMSI_TYPE_STRING:
