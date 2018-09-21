@@ -82,29 +82,29 @@ void omsu_free_model_data (model_data_t* model_data) {
          + model_data->n_real_vars+model_data->n_real_parameters
          + model_data->n_real_aliases;
     for (i=0, j=0; i<size; i++, j++) {
-        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].name);
-        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].comment);
-        attribute = model_data->model_vars_info_t[j].modelica_attributes;
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info[j].name);
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info[j].comment);
+        attribute = model_data->model_vars_info[j].modelica_attributes;
         global_callback->freeMemory ((omsi_char *)attribute->unit);
         global_callback->freeMemory ((omsi_char *)attribute->displayUnit);
         global_callback->freeMemory (attribute);
-        /*global_callback->freeMemory(model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
+        /*global_callback->freeMemory(model_data.model_vars_info[j].info.filename);     // ToDo: something is wrong here */
     }
     size += model_data->n_int_vars + model_data->n_int_parameters + model_data->n_int_aliases
             + model_data->n_bool_vars + model_data->n_bool_parameters + model_data->n_bool_aliases
             + model_data->n_string_vars + model_data->n_string_parameters + model_data->n_string_aliases;
     for (i=j; i<size; i++, j++) {
-        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].name);
-        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info_t[j].comment);
-        global_callback->freeMemory (model_data->model_vars_info_t[j].modelica_attributes);
-        /*global_callback->freeMemory(model_data.model_vars_info_t[j].info.filename);     // ToDo: something is wrong here */
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info[j].name);
+        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info[j].comment);
+        global_callback->freeMemory (model_data->model_vars_info[j].modelica_attributes);
+        /*global_callback->freeMemory(model_data.model_vars_info[j].info.filename);     // ToDo: something is wrong here */
     }
-    global_callback->freeMemory (model_data->model_vars_info_t);
+    global_callback->freeMemory (model_data->model_vars_info);
 
     /*for (i=0; i<omsi_data->model_data.n_equations; i++) {
-            global_callback->freeMemory (omsi_data->model_data.equation_info_t[i].variables);
+            global_callback->freeMemory (omsi_data->model_data.equation_info[i].variables);
         }
-        //global_callback->freeMemory (omsi_data->model_data.equation_info_t);     // ToDo: something's wrong here
+        //global_callback->freeMemory (omsi_data->model_data.equation_info);     // ToDo: something's wrong here
     */
 
     global_callback->freeMemory (model_data);
@@ -253,10 +253,10 @@ void omsu_print_model_data(model_data_t*    model_data,
     printf("%s| n_alias_equations:\t\t%d\n", indent, model_data->n_alias_equations);
     printf("%s| n_equations:\t\t%d\n", indent, model_data->n_equations);
 
-    /* print model_vars_info_t */
+    /* print model_vars_info */
     omsu_print_model_variable_info(model_data, nextIndent);
 
-    /* print equation_info_t */
+    /* print equation_info */
     omsu_print_equation_info(model_data, nextIndent);
 
     /* free memory */
@@ -265,7 +265,7 @@ void omsu_print_model_data(model_data_t*    model_data,
 
 
 /*
- * Prints all model variables informations of array model_data->model_vars_info_t.
+ * Prints all model variables informations of array model_data->model_vars_info.
  * Indent is string with indentation in form of "| " strings or "".
  * Returns with omsi_warning if model_data is NULL pointer.
  */
@@ -276,15 +276,15 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
     omsi_unsigned_int i, size;
     omsi_char* nextnextIndent;
 
-    printf("%smodel_vars_info_t:\n", indent);
+    printf("%smodel_vars_info:\n", indent);
 
     if (model_data==NULL) {
         printf("%s| No model_data\n", indent);
         return omsi_error;
     }
 
-    if (model_data->model_vars_info_t==NULL) {
-        printf("%s| No model_vars_info_t\n", indent);
+    if (model_data->model_vars_info==NULL) {
+        printf("%s| No model_vars_info\n", indent);
         return omsi_warning;
     }
 
@@ -304,25 +304,25 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
            + model_data->n_string_aliases;
 
     for (i=0; i<size; i++) {
-        printf("%s| id:\t\t\t%i\n", indent, model_data->model_vars_info_t[i].id);
-        printf("%s| name:\t\t\t%s\n", indent, model_data->model_vars_info_t[i].name);
-        printf("%s| comment:\t\t\t%s\n", indent, model_data->model_vars_info_t[i].comment);
-        printf("%s| variable type:\t\t%i\n", indent, (omsi_int)model_data->model_vars_info_t[i].type_index.type);
-        printf("%s| variable index:\t\t%i\n", indent, model_data->model_vars_info_t[i].type_index.index);
+        printf("%s| id:\t\t\t%i\n", indent, model_data->model_vars_info[i].id);
+        printf("%s| name:\t\t\t%s\n", indent, model_data->model_vars_info[i].name);
+        printf("%s| comment:\t\t\t%s\n", indent, model_data->model_vars_info[i].comment);
+        printf("%s| variable type:\t\t%i\n", indent, (omsi_int)model_data->model_vars_info[i].type_index.type);
+        printf("%s| variable index:\t\t%i\n", indent, model_data->model_vars_info[i].type_index.index);
 
-        omsu_print_modelica_attributes(model_data->model_vars_info_t[i].modelica_attributes, &model_data->model_vars_info_t[i].type_index, nextnextIndent);
+        omsu_print_modelica_attributes(model_data->model_vars_info[i].modelica_attributes, &model_data->model_vars_info[i].type_index, nextnextIndent);
 
-        printf("%s| alias:\t\t\t%s\n",  indent, model_data->model_vars_info_t[i].isAlias ? "true" : "false");
-        printf("%s| negate:\t\t\t%i\n",  indent, model_data->model_vars_info_t[i].negate);
-        printf("%s| aliasID:\t\t\t%i\n",  indent, model_data->model_vars_info_t[i].aliasID);
+        printf("%s| alias:\t\t\t%s\n",  indent, model_data->model_vars_info[i].isAlias ? "true" : "false");
+        printf("%s| negate:\t\t\t%i\n",  indent, model_data->model_vars_info[i].negate);
+        printf("%s| aliasID:\t\t\t%i\n",  indent, model_data->model_vars_info[i].aliasID);
 
         printf("%s| file info:\n", indent);
-        printf("| | %sfilename:\t\t%s\n", indent, model_data->model_vars_info_t[i].info.filename);
-        printf("| | %slineStart:\t\t%i\n", indent, model_data->model_vars_info_t[i].info.lineStart);
-        printf("| | %scolStart:\t\t%i\n", indent, model_data->model_vars_info_t[i].info.colStart);
-        printf("| | %slineEnd:\t\t%i\n", indent, model_data->model_vars_info_t[i].info.lineEnd);
-        printf("| | %scolEnd:\t\t\t%i\n", indent, model_data->model_vars_info_t[i].info.colEnd);
-        printf("| | %sfileWritable:\t\t%s\n", indent, model_data->model_vars_info_t[i].info.fileWritable ? "true" : "false");
+        printf("| | %sfilename:\t\t%s\n", indent, model_data->model_vars_info[i].info.filename);
+        printf("| | %slineStart:\t\t%i\n", indent, model_data->model_vars_info[i].info.lineStart);
+        printf("| | %scolStart:\t\t%i\n", indent, model_data->model_vars_info[i].info.colStart);
+        printf("| | %slineEnd:\t\t%i\n", indent, model_data->model_vars_info[i].info.lineEnd);
+        printf("| | %scolEnd:\t\t\t%i\n", indent, model_data->model_vars_info[i].info.colEnd);
+        printf("| | %sfileWritable:\t\t%s\n", indent, model_data->model_vars_info[i].info.fileWritable ? "true" : "false");
         printf("| %s\n", indent);
     }
 
@@ -437,9 +437,9 @@ void omsu_printf_int_var_attribute(int_var_attribute_t* int_var_attribute,
 
 
 /*
- * Prints all equation informations of model_data->equation_info_t.
+ * Prints all equation informations of model_data->equation_info.
  * Indent is string with indentation in form of "| " strings or "".
- * Returns with omsi_warning if equation_info_t is NULL pointer.
+ * Returns with omsi_warning if equation_info is NULL pointer.
  */
 omsi_status omsu_print_equation_info(model_data_t*  model_data,
                                      omsi_string    indent) {
@@ -452,30 +452,30 @@ omsi_status omsu_print_equation_info(model_data_t*  model_data,
         return omsi_error;
     }
 
-    printf("%sequation_info_t:\n", indent);
+    printf("%sequation_info:\n", indent);
 
-    if (model_data->equation_info_t==NULL) {
+    if (model_data->equation_info==NULL) {
         printf("%s| No data\n", indent);
         return omsi_warning;
     }
 
     for(i=0; i<model_data->n_equations; i++) {
-        printf("%s| id:\t\t\t\t%i\n", indent, model_data->equation_info_t[i].id);
-        printf("%s| ProfileBlockIndex:\t\t\t%i\n", indent, model_data->equation_info_t[i].profileBlockIndex);
-        printf("%s| parent: \t\t\t%i\n", indent, model_data->equation_info_t[i].parent);
-        printf("%s| numVar:\t\t\t%i\n", indent, model_data->equation_info_t[i].numVar);
+        printf("%s| id:\t\t\t\t%i\n", indent, model_data->equation_info[i].id);
+        printf("%s| ProfileBlockIndex:\t\t\t%i\n", indent, model_data->equation_info[i].profileBlockIndex);
+        printf("%s| parent: \t\t\t%i\n", indent, model_data->equation_info[i].parent);
+        printf("%s| numVar:\t\t\t%i\n", indent, model_data->equation_info[i].numVar);
         printf("%s| variables:\t\t\t", indent);
-        for (j=0; j<model_data->equation_info_t[i].numVar; j++) {
-            printf("%s ", model_data->equation_info_t[i].variables[j]);
+        for (j=0; j<model_data->equation_info[i].numVar; j++) {
+            printf("%s ", model_data->equation_info[i].variables[j]);
         }
         printf("\n");
         printf("%s| file info:\n", indent);
-        printf("%s| | filename:\t\t\t%s\n", indent, model_data->equation_info_t[i].info.filename);
-        printf("%s| | lineStart:\t\t%i\n", indent, model_data->equation_info_t[i].info.lineStart);
-        printf("%s| | colStart:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.colStart);
-        printf("%s| | lineEnd:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.lineEnd);
-        printf("%s| | colEnd:\t\t\t%i\n", indent, model_data->equation_info_t[i].info.colEnd);
-        printf("%s| | fileWritable:\t\t%s\n", indent, model_data->equation_info_t[i].info.fileWritable ? "true" : "false");
+        printf("%s| | filename:\t\t\t%s\n", indent, model_data->equation_info[i].info.filename);
+        printf("%s| | lineStart:\t\t%i\n", indent, model_data->equation_info[i].info.lineStart);
+        printf("%s| | colStart:\t\t\t%i\n", indent, model_data->equation_info[i].info.colStart);
+        printf("%s| | lineEnd:\t\t\t%i\n", indent, model_data->equation_info[i].info.lineEnd);
+        printf("%s| | colEnd:\t\t\t%i\n", indent, model_data->equation_info[i].info.colEnd);
+        printf("%s| | fileWritable:\t\t%s\n", indent, model_data->equation_info[i].info.fileWritable ? "true" : "false");
         printf("%s\n", indent);
     }
 
