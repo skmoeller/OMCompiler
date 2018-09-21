@@ -132,7 +132,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_real(omsu_findHashStringString(mi.de,"startTime"), &(osu_data->experiment->start_time), 0);
     omsu_read_value_real(omsu_findHashStringString(mi.de,"stopTime"), &(osu_data->experiment->stop_time), osu_data->experiment->start_time+1);
     omsu_read_value_real(omsu_findHashStringString(mi.de,"stepSize"), &(osu_data->experiment->step_size), (osu_data->experiment->stop_time - osu_data->experiment->start_time) / 500);
-    omsu_read_value_uint(omsu_findHashStringString(mi.de,"numberOfOutputVariables"), &(osu_data->experiment->num_outputs));
+    omsu_read_value_uint(omsu_findHashLongVar(mi.de,"numberOfOutputVariables"), &(osu_data->experiment->num_outputs));
     omsu_read_value_real(omsu_findHashStringString(mi.de,"tolerance"), &(osu_data->experiment->tolerance), 1e-5);
     omsu_read_value_string(omsu_findHashStringString(mi.de,"solver"), (omsi_char**) &(osu_data->experiment->solver_name));
 
@@ -457,7 +457,7 @@ omsi_string omsu_findHashStringString(hash_string_string*   ht,
       }
       LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
           global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-          omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup %s in hashmap %p", key, ht))
+          omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup string %s in hashmap %p", key, ht))
   }
   return res;
 }
@@ -540,7 +540,7 @@ omc_ScalarVariable** omsu_findHashLongVar(hash_long_var*    ht,
         }
     LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
         global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-        omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup %s in hashmap %p", key, ht))
+        omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup long %s in hashmap %p", key, ht))
     }
     return &res->val;
 }
