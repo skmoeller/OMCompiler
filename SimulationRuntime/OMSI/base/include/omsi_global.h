@@ -31,16 +31,24 @@
 #ifndef OMSU_GLOBAl_H
 #define OMSU_GLOBAL_H
 
-/* global callback functions */
-#ifndef OMSI_GLOBAL_CALLBACK
-#define OMSI_GLOBAL_CALLBACK
-omsi_callback_functions* global_callback;
+#include <omsi.h>
+#include <omsi_callbacks.h>
 
-omsi_string global_instance_name;
-
+#ifdef __cplusplus
+extern "C" {
 #endif
 
+/* global callback functions */
+omsi_callback_functions* global_callback;
 
+/* global instance name, used for logger function */
+omsi_string global_instance_name;
 
+/* global pointers to functions from generated code */
+omsi_template_callback_functions_t* global_template_callback;
+
+#ifdef __cplusplus
+}  /* end of extern "C" { */
+#endif
 
 #endif
