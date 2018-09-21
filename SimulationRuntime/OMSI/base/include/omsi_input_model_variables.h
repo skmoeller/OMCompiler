@@ -19,6 +19,9 @@ extern "C" {
 omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
                                        const omsi_callback_functions*    functions);
 
+omsi_int omsi_initialize_model_variables(omsi_t* omsu, const omsi_callback_functions*  functions, omsi_string instanceName);
+
+
 
 omsi_int omsi_free_model_variables(omsi_t* omsu);
 

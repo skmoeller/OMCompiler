@@ -15,6 +15,7 @@ omsi_t* instantiate_omsi(omsi_string                    instanceName,
 						 omsi_bool                      visible,
 						 omsi_bool                      loggingOn);
 
+omsi_int initialize_omsi(omsi_t* omsu, const omsi_callback_functions*  functions, omsi_string instanceName);
 
 void free_omsi(omsi_t* omsu);
 

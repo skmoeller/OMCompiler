@@ -45,6 +45,14 @@ omsi_t* instantiate_omsi(omsi_string                    instanceName,
 
 	return omsu;
 }
+
+
+omsi_int initialize_omsi(omsi_t* omsu, const omsi_callback_functions*  functions, omsi_string instanceName)
+{
+	//initialize start values for real,int and bool variables
+	omsi_int status = omsi_initialize_model_variables(omsu,functions, instanceName);
+	return status;
+}
 void free_omsi(omsi_t* omsu)
 {
 
