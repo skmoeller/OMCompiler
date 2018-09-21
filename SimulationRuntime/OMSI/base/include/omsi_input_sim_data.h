@@ -67,10 +67,7 @@ omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,
                                       omsi_unsigned_int   n_bools,
                                       omsi_unsigned_int   n_externs);
 
-
-/* extern function prototypes */
-extern omsi_bool initialize_start_function (omsi_template_callback_functions_t* template_callbacks);
-
+omsi_status omsu_set_template_functions (omsi_template_callback_functions_t*  template_callback);
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

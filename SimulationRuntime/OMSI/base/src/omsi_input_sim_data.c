@@ -47,21 +47,21 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
         global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok,
         logCategoriesNames[LOG_ALL], "fmi2Instantiate: Set up sim_data structure."))
 
+    /* Check if memory is already allocated */
+    if (!omsi_data->sim_data) {
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: sim_data struct not allocated."))
+        return omsi_error;
+    }
+
     /* check if template callback functions are set */
     if (!template_function->isSet) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_ok, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Generated functions not set."))
-
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Generated functions not set."))
         return omsi_error;
     }
-
-    /*allocate sim_data is already called*/
-    /* allocate memory for sim_data */
-    /*if (omsu_allocate_sim_data(omsi_data, callback_functions)) {
-          return omsi_error;
-    }*/
-
 
     /* Call generated initialization function for initialization problem */
     /* osu_functions->initialize_initialization_problem(omsi_data->sim_data->initialization); */ /* ToDo: not implemented yet */
@@ -70,21 +70,17 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
     if (!template_function->initialize_simulation_problem(omsi_data->sim_data->simulation)) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_ok, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating initialization problem with generated code."))
-
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating initialization problem with generated code."))
         return omsi_error;
     }
+
 
     if (!omsu_instantiate_omsi_function(omsi_data->sim_data->simulation, omsi_data->sim_data->model_vars_and_params)) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_ok, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating sim_data."))
-
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating sim_data."))
         return omsi_error;
     }
-
-    /* Set local function_vars to global model_vars_and_params */
-    omsi_data->sim_data->simulation->function_vars = omsi_data->sim_data->model_vars_and_params;
 
 
     /* Set model_vars_and_params */
@@ -177,7 +173,6 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
  */
 omsi_status omsu_instantiate_omsi_function (omsi_function_t*    omsi_function,
                                             omsi_values*        function_vars) {
-
 
     /* Allocate memory */
 
@@ -311,11 +306,30 @@ omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,    /* length 
     return values;
 }
 
+/*
+ * Sets template_callback functions with function pointers to generated code.
+ */
+omsi_status omsu_set_template_functions (omsi_template_callback_functions_t*  template_callback) {
 
-omsi_bool omsu_set_template_functions (omsi_template_callback_functions_t* template_callbacks) {
+    if (global_template_callback==NULL) {
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Global template callback does not exist."))
+        return omsi_error;
+    }
+    else if (!global_template_callback->isSet) {
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Global template callback struct not set."))
+        return omsi_error;
+    }
 
-    /* call generated initialization function */
-    /* initialize_start_function(template_callbacks); ToDo: Compiler doesn't like this line... */
+    template_callback->initialize_initialization_problem = global_template_callback->initialize_initialization_problem;
+    template_callback->initialize_simulation_problem= global_template_callback->initialize_simulation_problem;
 
-    return omsi_true;
+    template_callback->isSet = global_template_callback->isSet;
+
+
+    printf("global_template_callback set: %s",global_template_callback->isSet ? "true" : "false" );
+
+
+    return omsi_ok;
 }

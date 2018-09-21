@@ -29,7 +29,6 @@
  */
 
 #include <omsi_input_model_variables.h>
-#include <omsi_global.h>
 
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
@@ -45,6 +44,10 @@ omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
 
     /* set global function pointer */
     global_callback = (omsi_callback_functions*) functions;
+
+    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
+        global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok,
+        logCategoriesNames[LOG_ALL], "fmi2Instantiate: Allocate memory for model_variables.."))
 
     /*Todo: Allocate memory for all string model variables*/
 

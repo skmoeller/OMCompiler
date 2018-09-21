@@ -152,8 +152,10 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
 
     /* Set template function pointers */
     OSU->osu_functions = (omsi_template_callback_functions_t *) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
-    /* ToDo: actually set pointers */
-    OSU->osu_functions->isSet = omsu_set_template_functions(OSU->osu_functions);
+    if (!omsu_set_template_functions(OSU->osu_functions)) {
+        printf("Fail\n");
+        return NULL;
+    }
 
     /* Instantiate and initialize sim_data */
     omsu_allocate_sim_data(OSU->osu_data, functions, instanceName);
@@ -165,15 +167,14 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     OSU->vrStatesDerivatives = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
 
     if (!OSU->osu_functions || !OSU->instanceName || !OSU->vrStates || !OSU->vrStatesDerivatives) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory.");
+        LOG_FILTER(OSU, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
         return NULL;
     }
 
-    /* setup simulation data with default start values */
-    /*OSU->osu_functions->setupStartValues(OSU->osu_data);*/       /* ToDo: implement. Probably pointer to generated function to set up default start data */
-
     OSU->state = modelInstantiated;
-    LOG_FILTER(OSU, LOG_ALL, functions->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: GUID=%s", fmuGUID))
+    LOG_FILTER(OSU, LOG_ALL,
+        functions->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: GUID=%s", fmuGUID))
 
     DEBUG_PRINT(omsu_print_osu(OSU))
     return OSU;
