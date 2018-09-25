@@ -16,17 +16,19 @@ extern "C" {
 
 /* public function prototypes */
 
-omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
-                                       const omsi_callback_functions*    functions);
+omsi_status omsi_allocate_model_variables(omsi_t*                           omsu,
+                                          const omsi_callback_functions*    functions);
 
-omsi_int omsi_initialize_model_variables(omsi_t* omsu, const omsi_callback_functions*  functions, omsi_string instanceName);
+omsi_status omsi_initialize_model_variables(omsi_t*                         omsu,
+                                            const omsi_callback_functions*  functions,
+                                            omsi_string                     instanceName);
+
+omsi_status omsi_free_model_variables(omsi_t* omsu);
 
 
+void *alignedMalloc(size_t required_bytes,
+                    size_t alignment);
 
-omsi_int omsi_free_model_variables(omsi_t* omsu);
-
-
-void *alignedMalloc(size_t required_bytes, size_t alignment);
 void alignedFree(void* p);
 
 #ifdef __cplusplus

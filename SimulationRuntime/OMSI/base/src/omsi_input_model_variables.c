@@ -35,8 +35,8 @@
 
 
 
-omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
-                                       const omsi_callback_functions*    functions) {
+omsi_status omsi_allocate_model_variables(omsi_t*                           omsu,
+                                          const omsi_callback_functions*    functions) {
 
     /* Variables */
     omsi_unsigned_int n_bools, n_ints, n_reals;
@@ -99,149 +99,151 @@ omsi_int omsi_allocate_model_variables(omsi_t*                           omsu,
     return omsi_ok;
 }
 
-omsi_int omsi_initialize_model_variables(omsi_t* omsu, const omsi_callback_functions*  functions, omsi_string instanceName) {
+omsi_status omsi_initialize_model_variables(omsi_t* omsu, const omsi_callback_functions*  functions, omsi_string instanceName) {
 
-	if (!omsu->model_data) {
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-			"no model data available");
-		return omsi_error;
-	}
-	if (!omsu->model_data->model_vars_info) {
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-			"no model vars info available");
-		return omsi_error;
-	}
-	if (!omsu->sim_data->model_vars_and_params) {
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-			"no model vars and parameter structure is not yet allocated");
-		return omsi_error;
-	}
-	if (!omsu->sim_data->model_vars_and_params->reals) {
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-			"real variables are not yet allocated");
-		return omsi_error;
-	}
-	if (!omsu->sim_data->model_vars_and_params->ints) {
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-			"int variables are not yet allocated");
-		return omsi_error;
-	}
-	if (!omsu->sim_data->model_vars_and_params->bools) {
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-			"bool variables are not yet allocated");
-		return omsi_error;
-	}
-	/*Initialize state variables from init xml file values*/
-	int state;
-	int n = omsu->model_data->n_states;
-	for (state = 0; state <n; ++state) {
-		real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[state].modelica_attributes);
-		if (!attr) {
-			functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-				"could not read start value attribute");
-			return omsi_error;
-		}
-		omsu->sim_data->model_vars_and_params->reals[state] = attr->start;
-	}
-	/*Initialize derivatives variables from init xml file values*/
-	int derstate;
-	n = n + omsu->model_data->n_derivatives;
-	for (derstate = state; derstate <n; ++derstate) {
-		real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[derstate].modelica_attributes);
-		if (!attr) {
-			functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-				"could not read start value attribute");
-			return omsi_error;
-		}
-		omsu->sim_data->model_vars_and_params->reals[derstate] = attr->start;
-	}
-	/*Initialize real algebraic variables from init xml file values*/
-	int real_algebraic;
-	n = n + omsu->model_data->n_real_vars;
-	for (real_algebraic = derstate; real_algebraic < n; ++real_algebraic) {
-		real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[real_algebraic].modelica_attributes);
-		if (!attr) {
-			functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-				"could not read start value attribute");
-			return omsi_error;
-		}
-		omsu->sim_data->model_vars_and_params->reals[real_algebraic] = attr->start;
-	}
+    if (!omsu->model_data) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+            "no model data available");
+        return omsi_error;
+    }
+    if (!omsu->model_data->model_vars_info) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+            "no model vars info available");
+        return omsi_error;
+    }
+    if (!omsu->sim_data->model_vars_and_params) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+            "no model vars and parameter structure is not yet allocated");
+        return omsi_error;
+    }
+    if (!omsu->sim_data->model_vars_and_params->reals) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+            "real variables are not yet allocated");
+        return omsi_error;
+    }
+    if (!omsu->sim_data->model_vars_and_params->ints) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+            "int variables are not yet allocated");
+        return omsi_error;
+    }
+    if (!omsu->sim_data->model_vars_and_params->bools) {
+        functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+            "bool variables are not yet allocated");
+        return omsi_error;
+    }
+    /*Initialize state variables from init xml file values*/
+    int state;
+    int n = omsu->model_data->n_states;
+    for (state = 0; state <n; ++state) {
+        real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[state].modelica_attributes);
+        if (!attr) {
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+                "could not read start value attribute");
+            return omsi_error;
+        }
+        omsu->sim_data->model_vars_and_params->reals[state] = attr->start;
+    }
+    /*Initialize derivatives variables from init xml file values*/
+    int derstate;
+    n = n + omsu->model_data->n_derivatives;
+    for (derstate = state; derstate <n; ++derstate) {
+        real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[derstate].modelica_attributes);
+        if (!attr) {
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+                "could not read start value attribute");
+            return omsi_error;
+        }
+        omsu->sim_data->model_vars_and_params->reals[derstate] = attr->start;
+    }
+    /*Initialize real algebraic variables from init xml file values*/
+    int real_algebraic;
+    n = n + omsu->model_data->n_real_vars;
+    for (real_algebraic = derstate; real_algebraic < n; ++real_algebraic) {
+        real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[real_algebraic].modelica_attributes);
+        if (!attr) {
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+                "could not read start value attribute");
+            return omsi_error;
+        }
+        omsu->sim_data->model_vars_and_params->reals[real_algebraic] = attr->start;
+    }
 
-	/*Initialize real parameter variables from init xml file values*/
-	int real_parameter;
-	n = n + omsu->model_data->n_real_parameters;
-	for (real_parameter = real_algebraic; real_parameter < n; ++real_parameter) {
-		real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[real_parameter].modelica_attributes);
-		if (!attr) {
-			functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-				"could not read start value attribute");
-			return omsi_error;
-		}
-		omsu->sim_data->model_vars_and_params->reals[real_parameter] = attr->start;
-	}
-	/*real alias variables are not extra included in real vars memory,therefore they are skipped*/
-	int real_alias = omsu->model_data->n_real_aliases;
-	n = n + real_alias;
-	/*Initialize int algebraic variables from init xml file values*/
-	int int_algebraic;
-	int int_algebraic_2;
-	n = n + omsu->model_data->n_int_vars;
-	for (int_algebraic = real_parameter+ real_alias, int_algebraic_2=0; int_algebraic < n; ++int_algebraic, ++int_algebraic_2) {
-		int_var_attribute_t* attr = (int_var_attribute_t*)(omsu->model_data->model_vars_info[int_algebraic].modelica_attributes);
-		if (!attr) {
-			functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-				"could not read start value attribute");
-			return omsi_error;
-		}
-		omsu->sim_data->model_vars_and_params->ints[int_algebraic_2] = attr->start;
-	}
-	/*Initialize int parameter from init xml file values*/
-	int int_parameter;
-	int int_parameter_2;
-	n = n + omsu->model_data->n_int_parameters;
-	for (int_parameter = int_algebraic, int_parameter_2 = int_algebraic_2; int_parameter < n; ++int_parameter, ++int_parameter_2) {
-		int_var_attribute_t* attr = (int_var_attribute_t*)(omsu->model_data->model_vars_info[int_parameter].modelica_attributes);
-		if (!attr) {
-			functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-				"could not read start value attribute");
-			return omsi_error;
-		}
-		omsu->sim_data->model_vars_and_params->ints[int_parameter_2] = attr->start;
-	}
-	/*int alias variables are not extra included in int vars memory,therefore they are skipped*/
-	int int_alias = omsu->model_data->n_int_aliases;
-	n = n + int_alias;
-	/*Initialize bool algebraic variables from init xml file values*/
-	int bool_algebraic;
-	int bool_algebraic_2;
-	n = n + omsu->model_data->n_bool_vars;
-	for (bool_algebraic = int_parameter+ int_alias, bool_algebraic_2 = 0; bool_algebraic < n; ++bool_algebraic, ++bool_algebraic_2) {
-		bool_var_attribute_t* attr = (bool_var_attribute_t*)(omsu->model_data->model_vars_info[bool_algebraic].modelica_attributes);
-		if (!attr) {
-			functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-				"could not read start value attribute");
-			return omsi_error;
-		}
-		omsu->sim_data->model_vars_and_params->bools[bool_algebraic_2] = attr->start;
-	}
-	/*Initialize bool parameter  from init xml file values*/
-	int bool_parameter;
-	int bool_parameter_2;
-	n = n + omsu->model_data->n_bool_parameters;
-	for (bool_parameter = bool_algebraic, bool_parameter_2 = bool_algebraic_2; bool_parameter < n; ++bool_parameter, ++bool_parameter_2) {
-		bool_var_attribute_t* attr = (bool_var_attribute_t*)(omsu->model_data->model_vars_info[bool_parameter].modelica_attributes);
-		if (!attr) {
-			functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
-				"could not read start value attribute");
-			return omsi_error;
-		}
-		omsu->sim_data->model_vars_and_params->bools[bool_parameter_2] = attr->start;
-	}
-	/*Todo: Initialize string algebraic variables  from init xml file values*/
+    /*Initialize real parameter variables from init xml file values*/
+    int real_parameter;
+    n = n + omsu->model_data->n_real_parameters;
+    for (real_parameter = real_algebraic; real_parameter < n; ++real_parameter) {
+        real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[real_parameter].modelica_attributes);
+        if (!attr) {
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+                "could not read start value attribute");
+            return omsi_error;
+        }
+        omsu->sim_data->model_vars_and_params->reals[real_parameter] = attr->start;
+    }
+    /*real alias variables are not extra included in real vars memory,therefore they are skipped*/
+    int real_alias = omsu->model_data->n_real_aliases;
+    n = n + real_alias;
+    /*Initialize int algebraic variables from init xml file values*/
+    int int_algebraic;
+    int int_algebraic_2;
+    n = n + omsu->model_data->n_int_vars;
+    for (int_algebraic = real_parameter+ real_alias, int_algebraic_2=0; int_algebraic < n; ++int_algebraic, ++int_algebraic_2) {
+        int_var_attribute_t* attr = (int_var_attribute_t*)(omsu->model_data->model_vars_info[int_algebraic].modelica_attributes);
+        if (!attr) {
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+                "could not read start value attribute");
+            return omsi_error;
+        }
+        omsu->sim_data->model_vars_and_params->ints[int_algebraic_2] = attr->start;
+    }
+    /*Initialize int parameter from init xml file values*/
+    int int_parameter;
+    int int_parameter_2;
+    n = n + omsu->model_data->n_int_parameters;
+    for (int_parameter = int_algebraic, int_parameter_2 = int_algebraic_2; int_parameter < n; ++int_parameter, ++int_parameter_2) {
+        int_var_attribute_t* attr = (int_var_attribute_t*)(omsu->model_data->model_vars_info[int_parameter].modelica_attributes);
+        if (!attr) {
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+                "could not read start value attribute");
+            return omsi_error;
+        }
+        omsu->sim_data->model_vars_and_params->ints[int_parameter_2] = attr->start;
+    }
+    /*int alias variables are not extra included in int vars memory,therefore they are skipped*/
+    int int_alias = omsu->model_data->n_int_aliases;
+    n = n + int_alias;
+    /*Initialize bool algebraic variables from init xml file values*/
+    int bool_algebraic;
+    int bool_algebraic_2;
+    n = n + omsu->model_data->n_bool_vars;
+    for (bool_algebraic = int_parameter+ int_alias, bool_algebraic_2 = 0; bool_algebraic < n; ++bool_algebraic, ++bool_algebraic_2) {
+        bool_var_attribute_t* attr = (bool_var_attribute_t*)(omsu->model_data->model_vars_info[bool_algebraic].modelica_attributes);
+        if (!attr) {
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+                "could not read start value attribute");
+            return omsi_error;
+        }
+        omsu->sim_data->model_vars_and_params->bools[bool_algebraic_2] = attr->start;
+    }
+    /*Initialize bool parameter  from init xml file values*/
+    int bool_parameter;
+    int bool_parameter_2;
+    n = n + omsu->model_data->n_bool_parameters;
+    for (bool_parameter = bool_algebraic, bool_parameter_2 = bool_algebraic_2; bool_parameter < n; ++bool_parameter, ++bool_parameter_2) {
+        bool_var_attribute_t* attr = (bool_var_attribute_t*)(omsu->model_data->model_vars_info[bool_parameter].modelica_attributes);
+        if (!attr) {
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error",
+                "could not read start value attribute");
+            return omsi_error;
+        }
+        omsu->sim_data->model_vars_and_params->bools[bool_parameter_2] = attr->start;
+    }
+    /*Todo: Initialize string algebraic variables  from init xml file values*/
+
+    return omsi_ok;
 }
 
-omsi_int omsi_free_model_variables(omsi_t* omsu) {
+omsi_status omsi_free_model_variables(omsi_t* omsu) {
 
     alignedFree(omsu->sim_data->model_vars_and_params->bools);
     alignedFree(omsu->sim_data->pre_vars->bools);
@@ -254,7 +256,7 @@ omsi_int omsi_free_model_variables(omsi_t* omsu) {
 }
 
 
-void* alignedMalloc(size_t required_bytes, size_t alignment)		/* ToDo: change size_t to some omsi type */
+void* alignedMalloc(size_t required_bytes, size_t alignment)        /* ToDo: change size_t to some omsi type */
 {
     void *p1;
     void **p2;
