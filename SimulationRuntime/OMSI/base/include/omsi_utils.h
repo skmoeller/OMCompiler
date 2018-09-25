@@ -71,7 +71,11 @@ static omsi_string logCategoriesNames[] = {"logEvents", "logSingularLinearSystem
     instance->fmiCallbackFunctions->logger(instance->fmiCallbackFunctions->componentEnvironment, instance->instanceName, status, \
         logCategoriesNames[categoryIndex], message, ##__VA_ARGS__);*/
 
-#define LOG_FILTER(instance, categoryIndex, log_call) if(isCategoryLogged(instance, categoryIndex)) \
+#define LOG_FILTER(instance, categoryIndex, log_call) if(!global_callback) {        \
+        printf("Error in LOG_FILTER: Global callback not set!\n"); fflush(stdout);  \
+        abort();                                                                    \
+      }                                                                             \
+      if(isCategoryLogged(instance, categoryIndex))                                 \
         log_call;
 
 /* function prototypes */

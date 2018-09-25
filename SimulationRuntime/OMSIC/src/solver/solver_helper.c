@@ -30,20 +30,7 @@
 
 #include <solver_helper.h>
 
-
-omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_function,
-                                                    omsi_unsigned_int   n_input_vars,
-                                                    omsi_unsigned_int   n_output_vars) {
-
-
-    omsi_function->input_vars_indices = (omsi_index_type*) global_callback->allocateMemory(n_input_vars, sizeof(omsi_index_type));
-    CHECK_MEMORY_ERROR(omsi_function->input_vars_indices)
-
-    omsi_function->output_vars_indices = (omsi_index_type*) global_callback->allocateMemory(n_output_vars, sizeof(omsi_index_type));
-    CHECK_MEMORY_ERROR(omsi_function->output_vars_indices)
-
-    return omsi_ok;
-}
+/* ToDo Check if global_callbacks struct is already set!!!!! */
 
 
 /*

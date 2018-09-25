@@ -555,6 +555,9 @@ omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
         printf("%sNo omsi_function_t %s\n",indent, omsi_function_name);
         return omsi_warning;
     }
+    else {
+        printf("%somsi_function_t %s\n",indent, omsi_function_name);
+    }
 
     /* compute next indentation */
     nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));

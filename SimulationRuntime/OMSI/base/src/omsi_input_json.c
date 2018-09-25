@@ -80,7 +80,7 @@ omsi_status omsu_process_input_json(omsi_t*                         osu_data,
     global_instance_name = instanceName;
 
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-            global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process JSON file %s.", fileName))
+        global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process JSON file %s.", fileName))
 
 
     /* read JSON file */
@@ -89,6 +89,7 @@ omsi_status omsu_process_input_json(omsi_t*                         osu_data,
 
     /* free memory */
     omc_mmap_close_read(mmap_reader);
+
 
     return omsi_ok;
 }
@@ -469,9 +470,18 @@ omsi_string readEquation(omsi_string        str,
 omsi_string readEquations(omsi_string       str,
                           model_data_t*     model_data) {
 
+    /* Variables */
     omsi_int i = 0;
     omsi_bool endNotFound = omsi_true;
     omsi_string str_start;
+
+    /* Check model_data */
+    if (!model_data) {
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: In function readEquations: Memory for model_data not allocated.\n"))
+        abort();
+    }
 
     /* Initialize counter for regular and initial equations*/
     model_data->n_regular_equations = 0;
@@ -519,8 +529,6 @@ omsi_string readEquations(omsi_string       str,
         str = skipSpace(str);
         str = readEquation(str, &(model_data->equation_info[i-1]), i, &model_data->n_init_equations, &model_data->n_regular_equations, &model_data->n_alias_equations);
     }while (omsi_true);
-
-
 
     str=assertChar(str,']');
     return str;

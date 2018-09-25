@@ -124,7 +124,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     if (!osu_data->experiment) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Not enough memory."))
+            "fmi2Instantiate: Not enough memory to allocate osu_data->experiment."))
         return omsi_error;
     }
 
@@ -141,7 +141,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     if (!osu_data->model_data) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Not enough memory."))
+            "fmi2Instantiate: Not enough memory to allocate osu_data->model_data."))
         return omsi_error;
     }
     omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), (omsi_char**) &(osu_data->model_data->modelGUID));
@@ -175,7 +175,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     if (!osu_data->model_data->model_vars_info) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Not enough memory."))
+            "fmi2Instantiate: Not enough memory to allocate osu_data->model_data->model_vars_info."))
         return omsi_error;
 
     }
@@ -185,19 +185,6 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
 
     /* now all data from init_xml should be utilized */
     omsu_free_ModelInput(mi);
-
-
-    /* ToDo: read equation_info_t from JSON file */
-    osu_data->model_data->equation_info = (equation_info_t*) functions->allocateMemory(osu_data->model_data->n_equations, sizeof(equation_info_t));
-    if (!osu_data->model_data->equation_info) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Not enough memory."))
-        return omsi_error;
-
-    }
-
-    /* ToDo: add error case */
 
     return omsi_ok;
 }
@@ -455,9 +442,10 @@ omsi_string omsu_findHashStringString(hash_string_string*   ht,
               global_callback->logger(global_callback->componentEnvironment, global_instance_name,
               omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "HashMap contained: %s->%s\n", c->id, c->val)) */
       }
-      LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
+      /* ToDo: Log error for non optional keys */
+      /*LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
           global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-          omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup string %s in hashmap %p", key, ht))
+          omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup string %s in hashmap %p", key, ht))*/
   }
   return res;
 }

@@ -75,20 +75,15 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
     }
 
 
-    if (!omsu_instantiate_omsi_function(omsi_data->sim_data->simulation, omsi_data->sim_data->model_vars_and_params)) {
+    if (omsu_instantiate_omsi_function_func_vars(omsi_data->sim_data->simulation, omsi_data->sim_data->model_vars_and_params)==omsi_error) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating sim_data."))
+            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating function variables of sim_data->simulation."))
         return omsi_error;
     }
 
 
     /* Set model_vars_and_params */
-    if (!omsu_set_model_vars_and_params_start(omsi_data->sim_data->model_vars_and_params, omsi_data->model_data)) {
-        /* ToDo: Log error */
-        return omsi_error;
-    }
-
 
     return omsi_ok;
 }
@@ -148,7 +143,7 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
         return omsi_error;
     }
 
-    if (!omsu_instantiate_omsi_function(omsu->sim_data->simulation, omsu->sim_data->model_vars_and_params)) {
+    if (!omsu_instantiate_omsi_function_func_vars(omsu->sim_data->simulation, omsu->sim_data->model_vars_and_params)) {
         return omsi_error;
     }
 
@@ -169,10 +164,10 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
 
 
 /*
- * Instantiate omsi_function_t structure.
+ * Instantiate omsi_function_t function_vars..
  */
-omsi_status omsu_instantiate_omsi_function (omsi_function_t*    omsi_function,
-                                            omsi_values*        function_vars) {
+omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_function,
+                                                      omsi_values*        function_vars) {
 
     /* Allocate memory */
 
@@ -189,6 +184,27 @@ omsi_status omsu_instantiate_omsi_function (omsi_function_t*    omsi_function,
     }
 
     return omsi_ok;
+}
+
+/*
+ * Allocates memory for omsi_function_t struct without inner algebraic system.
+ * Called from generated code.
+ */
+omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars) {
+
+    omsi_function_t* function;
+
+    function = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
+    if (!function) {
+        /* Log Error */
+        return NULL;
+    }
+
+    function->algebraic_system_t = NULL;
+
+    omsu_instantiate_omsi_function_func_vars(function, function_vars);
+
+    return function;
 }
 
 
@@ -211,65 +227,6 @@ omsi_algebraic_system_t* omsu_initialize_alg_system_array (omsi_unsigned_int n_a
 
     return algebraic_system;
 }
-
-
-/*
- * Set start values for model_vars_and_params from model_data.
- * If no start value was specified in original modelica model it defaults to zero.
- */
-omsi_status omsu_set_model_vars_and_params_start (omsi_values*     model_vars_and_params,
-                                                  model_data_t*    model_data) {
-
-    /* Variables */
-    omsi_unsigned_int i;
-    omsi_unsigned_int length;
-
-    real_var_attribute_t* real_attribute;
-    int_var_attribute_t* int_attribute;
-    bool_var_attribute_t* bool_attribute;
-
-    length = model_data->n_states + model_data->n_derivatives
-           + model_data->n_real_vars + model_data->n_real_parameters
-           + model_data->n_real_aliases
-           + model_data->n_int_vars + model_data->n_int_parameters
-           + model_data->n_int_aliases
-           + model_data->n_bool_vars + model_data->n_bool_parameters
-           + model_data->n_bool_aliases
-           + model_data->n_string_vars + model_data->n_string_parameters
-           + model_data->n_string_aliases;
-
-    /* Read start values from model_vars_info and write them into model_vars_and_params */
-    for (i=0; i<length; i++) {
-        if (!model_data->model_vars_info[i].isAlias) {
-            switch (model_data->model_vars_info[i].type_index.type) {
-            case OMSI_TYPE_REAL:
-                real_attribute = (real_var_attribute_t*) model_data->model_vars_info[i].modelica_attributes;
-                model_vars_and_params->reals[model_data->model_vars_info[i].type_index.index]
-                         = real_attribute->start;
-                break;
-            case OMSI_TYPE_INTEGER:
-                int_attribute = (int_var_attribute_t*) model_data->model_vars_info[i].modelica_attributes;
-                model_vars_and_params->ints[model_data->model_vars_info[i].type_index.index]
-                         = int_attribute->start;
-                break;
-            case OMSI_TYPE_BOOLEAN:
-                bool_attribute = (bool_var_attribute_t*) model_data->model_vars_info[i].modelica_attributes;
-                model_vars_and_params->bools[model_data->model_vars_info[i].type_index.index]
-                         = bool_attribute->start;
-                break;
-            case OMSI_TYPE_STRING:
-            default:
-                /*ToDo: Log error */
-                return omsi_error;
-            }
-        }
-    }
-
-    return omsi_ok;
-}
-
-
-
 
 
 /*
@@ -306,30 +263,25 @@ omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,    /* length 
     return values;
 }
 
-/*
- * Sets template_callback functions with function pointers to generated code.
- */
-omsi_status omsu_set_template_functions (omsi_template_callback_functions_t*  template_callback) {
 
-    if (global_template_callback==NULL) {
+omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_function,
+                                                    omsi_unsigned_int   n_input_vars,
+                                                    omsi_unsigned_int   n_output_vars) {
+
+    /* Check omsi_function */
+    if (!omsi_function) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Global template callback does not exist."))
-        return omsi_error;
-    }
-    else if (!global_template_callback->isSet) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Global template callback struct not set."))
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error,
+            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Memory for omsi_function not allocated."))
         return omsi_error;
     }
 
-    template_callback->initialize_initialization_problem = global_template_callback->initialize_initialization_problem;
-    template_callback->initialize_simulation_problem= global_template_callback->initialize_simulation_problem;
+    omsi_function->input_vars_indices = (omsi_index_type*) global_callback->allocateMemory(n_input_vars, sizeof(omsi_index_type));
+    /* CHECK_MEMORY_ERROR(omsi_function->input_vars_indices) */
 
-    template_callback->isSet = global_template_callback->isSet;
-
-
-    printf("global_template_callback set: %s",global_template_callback->isSet ? "true" : "false" );
-
+    omsi_function->output_vars_indices = (omsi_index_type*) global_callback->allocateMemory(n_output_vars, sizeof(omsi_index_type));
+    /* CHECK_MEMORY_ERROR(omsi_function->output_vars_indices) */
 
     return omsi_ok;
 }
+

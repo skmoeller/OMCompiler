@@ -331,14 +331,14 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
   match equationSystem
   case SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__)) then
 
-    let &functionPrototypes += <<omsi_status <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem);<%\n%>>>
+    let &functionPrototypes += <<omsi_status <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars);<%\n%>>>
 
     let zeroCrossingIndices = (zeroCrossingConditions |> cond =>
       '<%cond%>'
     ;separator=", ")
     <<
     /* function initialize omsi_algebraic_system_t struct */
-    omsi_status <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem) {
+    omsi_status <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars) {
       algSystem->n_iteration_vars = <%listLength(residual.outputVars)%>;
 
       algSystem->n_conditions = <%listLength(zeroCrossingConditions)%>;
@@ -350,16 +350,23 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
 
       algSystem->isLinear = <% if linearSystem then 'omsi_true' else 'omsi_false'%>;
 
-      /* initialize omsi_function_t jacobian */
-      algSystem->functions = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
+      /* Instantiate and initialize omsi_function_t jacobian */
+      algSystem->jacobian = omsu_instantiate_omsi_function (function_vars);
+      if (!algSystem->jacobian) {
+        return omsi_error;
+      }
+      if (!problem2_initialize_derivativeMatFunc_<%algSysIndex%>_OMSIFunc(algSystem->jacobian)){
+        return omsi_error;
+      }
+
+      /* Instantiate and initialize omsi_function_t function */
+      algSystem->functions = omsu_instantiate_omsi_function (function_vars);
       if (!algSystem->functions) {
-        /* ToDo: Log error */
         return omsi_error;
       }
       if (!problem2_initialize_resFunction_<%algSysIndex%>_OMSIFunc(algSystem->functions)){
         return omsi_error;
       }
-      /* initialize omsi_function_t function */
 
       /* ToDo: put into init functions */
       algSystem->functions->evaluate = <%FileNamePrefix%>_resFunction_<%algSysIndex%>;
@@ -446,6 +453,11 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
 
     <<
     omsi_status <%FileNamePrefix%>_initialize_<%functionName%>_OMSIFunc (omsi_function_t* omsi_function) {
+
+      LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
+        global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok,
+        logCategoriesNames[LOG_ALL], "fmi2Instantiate: Initialize omsi_function <%functionName%>.")) /* ToDo: delte */
+
       omsi_function->n_algebraic_system = <%nAlgebraicSystems%>;
 
       omsi_function->n_input_vars = <%listLength(inputVars)%>;
@@ -457,7 +469,9 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
         /* Initialize algebraic system */
         omsi_function->algebraic_system_t = omsu_initialize_alg_system_array(<%nAlgebraicSystems%>);
         if (!omsi_function->algebraic_system_t) {
-          /* ToDo: Log error */
+          LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error,
+            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
           return omsi_error;
         }
         <%algSystemInit%>
@@ -466,7 +480,6 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
       %>
 
       if (!instantiate_input_inner_output_indices (omsi_function, <%listLength(inputVars)%>, <%listLength(outputVars)%>)) {
-        /* ToDo: Log error */
         return omsi_error;
       }
 
@@ -491,9 +504,11 @@ template generateAlgebraicSystemInstantiation (String FileNamePrefix, Integer nA
     match equation
       case SES_ALGEBRAIC_SYSTEM(__) then
       <<
-      <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%>(&(omsi_function->algebraic_system_t[<%i0%>]));
+      <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%>(&(omsi_function->algebraic_system_t[<%i0%>]), omsi_function->function_vars);
       if (!&omsi_function->algebraic_system_t[<%i0%>]) {
-        /* ToDo: Log error */
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error,
+            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Function <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%> failed."))
         return omsi_error;
       }
       >>

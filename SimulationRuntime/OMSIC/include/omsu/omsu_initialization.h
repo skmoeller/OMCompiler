@@ -129,6 +129,11 @@ omsi_status omsi_reset(osu_t* OSU);
  */
 omsi_status omsi_terminate(osu_t* OSU);
 
+/* Extern function prototypes */
+
+
+extern void initialize_start_function (omsi_template_callback_functions_t* callback);
+
 #ifdef __cplusplus
 }
 #endif

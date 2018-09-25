@@ -57,7 +57,7 @@ template generateOMSIC(SimCode simCode)
     case SIMCODE(modelInfo=MODELINFO(functions=functions, varInfo=varInfo as VARINFO(__))) then
     let modelNamePrefixStr = CodegenUtilSimulation.modelNamePrefix(simCode)
 
-    let &functionPrototypes += <<void initialize_start_function (void);<%\n%>>>
+    let &functionPrototypes += <<void initialize_start_function (omsi_template_callback_functions_t* callback);<%\n%>>>
 
     // generate header file
     let &includes += <<#include <<%fileNamePrefix%>_sim_equations.h><%\n%>>>
@@ -75,12 +75,14 @@ template generateOMSIC(SimCode simCode)
     /* Translated model <%fileNamePrefix%> to OMSIC */
 
     /* Set function pointers for initialization in global struct. */
-    void initialize_start_function (void) {
+    void initialize_start_function (omsi_template_callback_functions_t* callback) {
 
-      global_template_callback->initialize_initialization_problem = NULL;
-      global_template_callback->initialize_simulation_problem = <%fileNamePrefix%>_initialize_allEqns_OMSIFunc;
+      callback->initialize_initialization_problem = NULL;
+      callback->initialize_simulation_problem = <%fileNamePrefix%>_initialize_allEqns_OMSIFunc;
 
-      global_template_callback->isSet = omsi_true;
+      callback->functionODE = <%fileNamePrefix%>_allEqns;
+
+      callback->isSet = omsi_true;
     }
 
     <%\n%>

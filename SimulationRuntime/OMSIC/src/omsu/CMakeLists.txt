@@ -12,15 +12,7 @@ elseif(PLATFORM STREQUAL "static")
   set (libOMSIBase ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}/libOMSIBase${LIBSUFFIX}.a)
 else()
 endif()
-
-#set OMSIBase lib
-#if(NOT PLATFORM OR PLATFORM STREQUAL "dynamic")
-#  set (libOMSIBase ${LIBINSTALLEXT}/libOMSIBase${SHREXT})
-#elseif(PLATFORM STREQUAL "static")
-#  set (libOMSIBase ${LIBINSTALLEXT}/libOMSIBase${LIBSUFFIX}.a)
-#else()
-#endif()
-
+MESSAGE(STATUS "OMSI Base Library: ${libOMSIBase}")
 
 
 include_directories ("${CMAKE_SOURCE_DIR}/include/solver")

@@ -65,7 +65,6 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     omsi_int i;
 
 
-
     /* set global callback functions */
     global_callback = (omsi_callback_functions*) functions;
     global_instance_name = instanceName;
@@ -126,8 +125,8 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     OSU->osu_data = functions->allocateMemory(1, sizeof(omsi_t));
     /* ToDo Check error memory */
     initXMLFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
-    sprintf(initXMLFilename, "%s/%s_init.xml", fmuResourceLocation, instanceName);
-    if (omsu_process_input_xml(OSU->osu_data, initXMLFilename, fmuGUID, instanceName, functions)) {
+    sprintf(initXMLFilename, "%s\\%s_init.xml", fmuResourceLocation, instanceName);
+    if (omsu_process_input_xml(OSU->osu_data, initXMLFilename, fmuGUID, instanceName, functions) == omsi_error) {
         LOG_FILTER(OSU, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", initXMLFilename))
         omsu_free_osu_data(OSU->osu_data);
@@ -140,7 +139,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     /* process JSON file and read missing parts of model_data in osu_data */
     infoJsonFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, instanceName);
-    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions)) {
+    if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
         LOG_FILTER(OSU, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", infoJsonFilename))
         omsu_free_osu_data(OSU->osu_data);
@@ -151,15 +150,20 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     DEBUG_PRINT(omsu_print_omsi_t (OSU->osu_data, ""))
 
     /* Set template function pointers */
-    OSU->osu_functions = (omsi_template_callback_functions_t *) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
-    if (!omsu_set_template_functions(OSU->osu_functions)) {
-        printf("Fail\n");
-        return NULL;
-    }
+    OSU->osu_functions = (omsi_template_callback_functions_t*) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
+    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
+        global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Set callback functions from template %s_omsic.c.", instanceName))
+    initialize_start_function(OSU->osu_functions);      /* ToDo: At the moment only for static compilation */
 
     /* Instantiate and initialize sim_data */
     omsu_allocate_sim_data(OSU->osu_data, functions, instanceName);
-    omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, functions);
+    if (omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, functions) == omsi_error) {
+        LOG_FILTER(OSU, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
+            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not initialize sim_data."))
+         return NULL;
+
+    }
     DEBUG_PRINT(omsu_print_sim_data (OSU->osu_data->sim_data, ""))
 
     OSU->instanceName = (omsi_char*) functions->allocateMemory(1 + strlen(instanceName), sizeof(omsi_char));

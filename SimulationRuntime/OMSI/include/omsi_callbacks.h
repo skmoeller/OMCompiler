@@ -70,11 +70,15 @@ typedef struct omsi_callback_functions{
  * Callbacks for template functions
  */
 typedef omsi_status (*omsu_initialize_omsi_function) (omsi_function_t* omsi_function);
+typedef omsi_status (*evaluate) (omsi_function_t* function, omsi_values* variables, void* data);
+
 
 typedef struct omsi_template_callback_functions_t {
     omsi_bool isSet;                                                        /* Boolean if template functions are set */
     omsu_initialize_omsi_function initialize_initialization_problem;  /* function pointer to initialize the initialization problem */
     omsu_initialize_omsi_function initialize_simulation_problem;      /* function pointer to initialize the simulation problem */
+
+    evaluate functionODE;
 }omsi_template_callback_functions_t;
 
 

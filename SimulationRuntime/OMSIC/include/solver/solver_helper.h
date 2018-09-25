@@ -52,10 +52,6 @@ if (!pointer) {                                                               \
 
 
 /* Function prototypes */
-omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_function,
-                                                    omsi_unsigned_int   n_input_vars,
-                                                    omsi_unsigned_int   n_output_vars);
-
 omsi_status free_omsi_function (omsi_function_t*    omsi_function,
                                 omsi_bool           shared_function_vars);
 
