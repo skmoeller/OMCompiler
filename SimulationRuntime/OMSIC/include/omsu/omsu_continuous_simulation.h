@@ -50,8 +50,8 @@ extern "C" {
 #include <omsi_global.h>
 #include <omsi_utils.h>
 
-#include <omsu_GettersAndSetters.h>
-#include <omsu_EventSimulation.h>
+#include <omsu_getters_and_setters.h>
+#include <omsu_event_simulation.h>
 
 /*#include <omsu_helper.h>
 #include <omsu_me.h>*/

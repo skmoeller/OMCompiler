@@ -39,10 +39,10 @@
 /* OpenModelica Simulation Unit / OpenModelica Simulation Interface */
 #include <omsu_initialization.h>
 #include <omsu_common.h>
+#include <omsu_continuous_simulation.h>
+#include <omsu_event_simulation.h>
+#include <omsu_getters_and_setters.h>
 #include <omsu_utils.h>
-#include <omsu_GettersAndSetters.h>
-#include <omsu_EventSimulation.h>
-#include <omsu_ContinuousSimulation.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -34,7 +34,7 @@
  * model equations during continuous-time mode with OMSI.
  */
 
-#include <omsu_ContinuousSimulation.h>
+#include <omsu_continuous_simulation.h>
 
 
 /*

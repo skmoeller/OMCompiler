@@ -34,7 +34,7 @@
  * of the FMU.
  */
 
-#define DEBUG omsi_true
+#define DEBUG omsi_false
 #define DEBUG_PRINT(function) if (DEBUG) {                                     \
     printf("\nDEBUG PRINT\n");                                                 \
     printf("=====================================================\n");         \

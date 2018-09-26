@@ -34,7 +34,7 @@
  * variables and FMI informations.
  */
 
-#include <omsu_GettersAndSetters.h>
+#include <omsu_getters_and_setters.h>
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
 

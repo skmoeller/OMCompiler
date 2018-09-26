@@ -34,7 +34,7 @@
  * model equations with OMSI.
  */
 
-#include <omsu_EventSimulation.h>
+#include <omsu_event_simulation.h>
 
 
 /*
