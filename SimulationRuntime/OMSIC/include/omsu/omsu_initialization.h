@@ -51,6 +51,7 @@ extern "C" {
 #include <omsi_input_xml.h>
 #include <omsi_input_json.h>
 #include <omsi_input_sim_data.h>
+#include <omsi_input_model_variables.h>
 #include <omsi_utils.h>
 
 #include <omsu_helper.h>

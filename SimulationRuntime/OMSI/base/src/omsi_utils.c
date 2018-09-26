@@ -132,7 +132,8 @@ omsi_bool vrOutOfRange(osu_t*               OSU,
     if ((omsi_int)vr >= end) {
         OSU->state = modelError;
         LOG_FILTER(OSU, LOG_STATUSERROR,
-            global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "%s: Illegal value reference %u.", function_name, vr))
+            global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR],
+            "%s: Illegal value reference %u.", function_name, vr))
         return omsi_true;
     }
     return omsi_false;

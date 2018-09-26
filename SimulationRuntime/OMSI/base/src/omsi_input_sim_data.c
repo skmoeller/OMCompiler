@@ -96,37 +96,37 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
                                    const omsi_callback_functions*   callback_functions,
                                    omsi_string                      instanceName ) {
 
-    /* set global function pointer */
+    /* Set global function pointer */
     global_callback = (omsi_callback_functions*) callback_functions;
 
+    /* Log function call */
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-            global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Allocates memory for sim_data"))
+        global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL],
+        "fmi2Instantiate: Allocates memory for sim_data"))
 
     omsu->sim_data = (sim_data_t*)global_callback->allocateMemory(1, sizeof(sim_data_t));
     if (!omsu->sim_data) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
             callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "omsu_allocate_sim_data: Not enough memory."))
-        return -1;
+            "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory."))
+        return omsi_error;
     }
 
     omsu->sim_data->model_vars_and_params = (omsi_values*)global_callback->allocateMemory(1, sizeof(omsi_values));
     if (!omsu->sim_data->model_vars_and_params) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "omsu_allocate_sim_data: Not enough memory."))
-        return -1;
+            callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
+            "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory."))
+        return omsi_error;
     }
 
     omsu->sim_data->pre_vars = (omsi_values*)global_callback->allocateMemory(1, sizeof(omsi_values));
     if (!omsu->sim_data->pre_vars) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
             callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "omsu_allocate_sim_data: Not enough memory."))
-        return -1;
+            "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory."))
+        return omsi_error;
     }
-
-
 
 
     omsu->sim_data->initialization = NULL;
@@ -138,21 +138,19 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
     omsu->sim_data->simulation = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
     if (!omsu->sim_data->simulation) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "omsu_allocate_sim_data: Not enough memory."))
+            callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
+            "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory."))
         return omsi_error;
     }
 
-    if (!omsu_instantiate_omsi_function_func_vars(omsu->sim_data->simulation, omsu->sim_data->model_vars_and_params)) {
+    if (omsu_instantiate_omsi_function_func_vars(omsu->sim_data->simulation, omsu->sim_data->model_vars_and_params) != omsi_ok) {
+        LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
+            callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
+            "fmi2Instantiate: in omsu_allocate_sim_data: Could not instantiate omsi_function variables."))
         return omsi_error;
     }
 
-    /* Allocate memory for model_vars_and_params */
-    /*This is done in omsi_allocate_model_variables in omsi_input_model_variables.c*/
 
-
-
-    /* ToDo: allocate memory for some pre-values */
     omsu->sim_data->zerocrossings_vars = NULL;
     /*omsi_data->sim_data->zerocrossings_vars = (omsi_bool *) global_callback->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));*/
     omsu->sim_data->pre_zerocrossings_vars = NULL;

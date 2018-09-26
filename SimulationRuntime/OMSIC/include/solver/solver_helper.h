@@ -34,6 +34,7 @@
 #include <omsi.h>
 #include <omsi_callbacks.h>
 #include <omsi_global.h>
+#include <omsi_utils.h>
 
 #include <stdio.h>
 #include <stdlib.h>

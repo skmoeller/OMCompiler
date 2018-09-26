@@ -304,10 +304,10 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
            + model_data->n_string_aliases;
 
     for (i=0; i<size; i++) {
-        printf("%s| id:\t\t\t%i\n", indent, model_data->model_vars_info[i].id);
+        printf("%s| id:\t\t\t\t%i\n", indent, model_data->model_vars_info[i].id);
         printf("%s| name:\t\t\t%s\n", indent, model_data->model_vars_info[i].name);
         printf("%s| comment:\t\t\t%s\n", indent, model_data->model_vars_info[i].comment);
-        printf("%s| variable type:\t\t%i\n", indent, (omsi_int)model_data->model_vars_info[i].type_index.type);
+        printf("%s| variable type:\t\t%s\n", indent, omsiDataTypesNames[model_data->model_vars_info[i].type_index.type]);
         printf("%s| variable index:\t\t%i\n", indent, model_data->model_vars_info[i].type_index.index);
 
         omsu_print_modelica_attributes(model_data->model_vars_info[i].modelica_attributes, &model_data->model_vars_info[i].type_index, nextnextIndent);
@@ -317,10 +317,10 @@ omsi_status omsu_print_model_variable_info(model_data_t*  model_data,
         printf("%s| aliasID:\t\t\t%i\n",  indent, model_data->model_vars_info[i].aliasID);
 
         printf("%s| file info:\n", indent);
-        printf("| | %sfilename:\t\t%s\n", indent, model_data->model_vars_info[i].info.filename);
+        printf("| | %sfilename:\t\t\t%s\n", indent, model_data->model_vars_info[i].info.filename);
         printf("| | %slineStart:\t\t%i\n", indent, model_data->model_vars_info[i].info.lineStart);
-        printf("| | %scolStart:\t\t%i\n", indent, model_data->model_vars_info[i].info.colStart);
-        printf("| | %slineEnd:\t\t%i\n", indent, model_data->model_vars_info[i].info.lineEnd);
+        printf("| | %scolStart:\t\t\t%i\n", indent, model_data->model_vars_info[i].info.colStart);
+        printf("| | %slineEnd:\t\t\t%i\n", indent, model_data->model_vars_info[i].info.lineEnd);
         printf("| | %scolEnd:\t\t\t%i\n", indent, model_data->model_vars_info[i].info.colEnd);
         printf("| | %sfileWritable:\t\t%s\n", indent, model_data->model_vars_info[i].info.fileWritable ? "true" : "false");
         printf("| %s\n", indent);
@@ -461,7 +461,7 @@ omsi_status omsu_print_equation_info(model_data_t*  model_data,
 
     for(i=0; i<model_data->n_equations; i++) {
         printf("%s| id:\t\t\t\t%i\n", indent, model_data->equation_info[i].id);
-        printf("%s| ProfileBlockIndex:\t\t\t%i\n", indent, model_data->equation_info[i].profileBlockIndex);
+        printf("%s| ProfileBlockIndex:\t\t%i\n", indent, model_data->equation_info[i].profileBlockIndex);
         printf("%s| parent: \t\t\t%i\n", indent, model_data->equation_info[i].parent);
         printf("%s| numVar:\t\t\t%i\n", indent, model_data->equation_info[i].numVar);
         printf("%s| variables:\t\t\t", indent);
@@ -563,7 +563,7 @@ omsi_status omsu_print_omsi_function_rec (omsi_function_t* omsi_function,
     nextIndent = (omsi_char*) global_callback->allocateMemory(strlen(indent)+2, sizeof(omsi_char));
     strcat(nextIndent, "| ");
 
-    printf("%sn_algebraic_system:\t%u\n", indent, omsi_function->n_algebraic_system);
+    printf("%sn_algebraic_system:\t\t%u\n", indent, omsi_function->n_algebraic_system);
     for (i=0; i<omsi_function->n_algebraic_system; i++) {
         omsu_print_algebraic_system(&omsi_function->algebraic_system_t[i], nextIndent);
     }
@@ -597,13 +597,13 @@ omsi_status omsu_print_this_omsi_function (omsi_function_t* omsi_function,
 
     omsu_print_omsi_values(omsi_function->function_vars, "function_vars", indent);
 
-    printf("%sevaluate function pointer set:%s\n", indent, omsi_function->evaluate!=NULL? "true" : "false");
+    printf("%sevaluate function pointer set: %s\n", indent, omsi_function->evaluate!=NULL? "true" : "false");
 
     omsu_print_index_type(omsi_function->input_vars_indices, omsi_function->n_input_vars, nextIndent);
     omsu_print_index_type(omsi_function->input_vars_indices, omsi_function->n_output_vars, nextIndent);
 
-    printf("%sn_input_vars:\t\t%i\n", indent, omsi_function->n_input_vars);
-    printf("%sn_inner_vars:\t\t%i\n", indent, omsi_function->n_inner_vars);
+    printf("%sn_input_vars:\t\t\t%i\n", indent, omsi_function->n_input_vars);
+    printf("%sn_inner_vars:\t\t\t%i\n", indent, omsi_function->n_inner_vars);
     printf("%sn_output_vars:\t\t%i\n", indent, omsi_function->n_output_vars);
 
     /* free memory */
@@ -629,22 +629,22 @@ omsi_status omsu_print_omsi_values (omsi_values*        omsi_values,
     printf("%somsi_values %s\n",indent, omsi_values_name);
     printf("%sreals:\n", indent);
     for(i=0; i<omsi_values->n_reals; i++) {
-        printf("%s| %f\n", indent, omsi_values->reals[i]);
+        printf("%s| \t\t\t\t%f\n", indent, omsi_values->reals[i]);
     }
 
     printf("%sints:\n", indent);
     for(i=0; i<omsi_values->n_ints; i++) {
-        printf("%s| %i\n", indent, omsi_values->ints[i]);
+        printf("%s| \t\t\t\t%i\n", indent, omsi_values->ints[i]);
     }
 
     printf("%sbools:\n", indent);
     for(i=0; i<omsi_values->n_bools; i++) {
-        printf("%s| %s\n", indent, omsi_values->bools[i] ? "true" : "false");
+        printf("%s| \t\t\t\t%s\n", indent, omsi_values->bools[i] ? "true" : "false");
     }
 
     /* omsu_print_externs(omsi_values->externs, omsi_values->n_externs); */
 
-    printf("%s| time_value: %f\n", indent, omsi_values->time_value);
+    printf("%stime_value: \t\t\t%f\n", indent, omsi_values->time_value);
 
     return omsi_ok;
 }

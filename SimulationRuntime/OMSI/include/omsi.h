@@ -115,6 +115,9 @@ typedef enum {
   OMSI_TYPE_STRING
 }omsi_data_type;
 
+static omsi_string omsiDataTypesNames[] = {"Unknown", "Real", "Integer", "Boolean", "String"};
+
+
 /* ToDo: is this the right location for these definitions? */
 typedef enum {
     omsi_model_exchange,
@@ -165,15 +168,17 @@ typedef struct omsi_index_type {
  * Also containing number of containing reals, ints and bools.
  */
 typedef struct omsi_values {
-    omsi_real*  reals;      /* array of omsi_real */
-    omsi_int*   ints;       /* array of omsi_int */
-    omsi_bool*  bools;      /* array of omsi_bool */
-    void*       externs;    /* array of pointer to extern objects */
-    omsi_real   time_value; /* current system time */
+    omsi_real*      reals;      /* array of omsi_real */
+    omsi_int*       ints;       /* array of omsi_int */
+    omsi_bool*      bools;      /* array of omsi_bool */
+    omsi_string*    strings;    /* array of omsi_string */
+    void*           externs;    /* array of pointer to extern objects */
+    omsi_real       time_value; /* current system time */
 
     omsi_unsigned_int   n_reals;    /* length of array reals */
     omsi_unsigned_int   n_ints;     /* length of array ints */
     omsi_unsigned_int   n_bools;    /* length of array bools */
+    omsi_unsigned_int   n_strings;  /* length of array strings */
     omsi_unsigned_int   n_externs;  /* length of array externs */
 } omsi_values;
 

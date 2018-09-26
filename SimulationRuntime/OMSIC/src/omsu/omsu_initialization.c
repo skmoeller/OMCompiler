@@ -63,6 +63,7 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     omsi_char* initXMLFilename;
     omsi_char* infoJsonFilename;
     omsi_int i;
+    omsi_status status;
 
 
     /* set global callback functions */
@@ -76,10 +77,11 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
         /* ToDo: Add error message, even if no logger is available */
         return NULL;
     }
-    else {
-        LOG_FILTER(NULL, LOG_ALL,
-            functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Instantiate OSU."))
-    }
+
+    /* Log function call */
+    LOG_FILTER(NULL, LOG_FMI2_CALL,
+        functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2Instantiate: Instantiate OSU."))
 
     if (!functions->allocateMemory || !functions->freeMemory) {
         LOG_FILTER(NULL, LOG_STATUSERROR,
@@ -141,7 +143,8 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, instanceName);
     if (omsu_process_input_json(OSU->osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
         LOG_FILTER(OSU, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", infoJsonFilename))
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
+            "fmi2Instantiate: Could not process %s.", infoJsonFilename))
         omsu_free_osu_data(OSU->osu_data);
         functions->freeMemory(OSU);
         return NULL;
@@ -156,14 +159,38 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
     initialize_start_function(OSU->osu_functions);      /* ToDo: At the moment only for static compilation */
 
     /* Instantiate and initialize sim_data */
-    omsu_allocate_sim_data(OSU->osu_data, functions, instanceName);
-    if (omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, functions) == omsi_error) {
+    status = omsu_allocate_sim_data(OSU->osu_data, functions, instanceName);
+    if (status != omsi_ok) {
         LOG_FILTER(OSU, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not initialize sim_data."))
+            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not allocate memory for sim_data."))
          return NULL;
-
     }
+
+    status = omsi_allocate_model_variables(OSU->osu_data, functions);   /* ToDo: move this function into omsu_allocate_sim_data */
+    if (status != omsi_ok) {
+        LOG_FILTER(OSU, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
+            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not allocate memory for sim_data->model_vars_and_params."))
+         return NULL;
+    }
+
+    status = omsu_setup_sim_data(OSU->osu_data, OSU->osu_functions, functions);
+    if (status != omsi_ok) {
+        LOG_FILTER(OSU, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
+            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not initialize sim_data->simulation."))
+         return NULL;
+    }
+
+    status = omsi_initialize_model_variables(OSU->osu_data, functions, instanceName);
+    if (status != omsi_ok) {
+        LOG_FILTER(OSU, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
+            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not initialize sim_data->model_vars_and_params."))
+         return NULL;
+    }
+
     DEBUG_PRINT(omsu_print_sim_data (OSU->osu_data->sim_data, ""))
 
     OSU->instanceName = (omsi_char*) functions->allocateMemory(1 + strlen(instanceName), sizeof(omsi_char));
@@ -178,7 +205,8 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
 
     OSU->state = modelInstantiated;
     LOG_FILTER(OSU, LOG_ALL,
-        functions->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: GUID=%s", fmuGUID))
+        functions->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+        "fmi2Instantiate: GUID=%s", fmuGUID))
 
     DEBUG_PRINT(omsu_print_osu(OSU))
     return OSU;
@@ -190,14 +218,19 @@ osu_t* omsi_instantiate(omsi_string                    instanceName,
 omsi_status omsi_enter_initialization_mode(osu_t* OSU) {
 
     if (invalidState(OSU, "fmi2EnterInitializationMode", modelInstantiated, ~0)) {
-        LOG_FILTER(OSU, LOG_STATUSERROR, global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2EnterInitializationMode: call was not allowed"))
+        LOG_FILTER(OSU, LOG_STATUSERROR,
+            global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR],
+            "fmi2EnterInitializationMode: Call was not allowed."))
         return omsi_error;
     }
 
-    /* ToDo: Do we need to do some stuff here? Maybe allocate memory for OSU->osu_data->sim_data->initialization and fill it. */
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2EnterInitializationMode: Successful."))
 
     OSU->state = modelInitializationMode;
-    LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2EnterInitializationMode: succeed"))
+
     return omsi_ok;
 }
 
@@ -250,9 +283,12 @@ omsi_status omsi_setup_experiment(osu_t*     OSU,
     OSU->osu_data->experiment->step_size = (OSU->osu_data->experiment->stop_time
                                             - OSU->osu_data->experiment->start_time) / 500;
 
-    LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetupExperiment: toleranceDefined=%d tolerance=%g startTime=%g stopTimeDefined=%d stopTime=%g",
-                    toleranceDefined, OSU->osu_data->experiment->tolerance, startTime, stopTimeDefined, OSU->osu_data->experiment->stop_time))
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+            "fmi2SetupExperiment: toleranceDefined=%s, tolerance=%g, startTime=%g, stopTimeDefined=%s, stopTime=%g",
+            toleranceDefined ? "true" : "false", OSU->osu_data->experiment->tolerance, startTime,
+            stopTimeDefined ? "true" : "false", OSU->osu_data->experiment->stop_time))
 
     return omsi_ok;
 }
