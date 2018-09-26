@@ -6,7 +6,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 # enable warnings and use ANSI C compatible compiler
 if(CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "GCC detected, adding compile flags")
-    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -g")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 #set exapat lib for visual studio compiler
@@ -33,6 +33,7 @@ install(TARGETS ${OSUBaseName} DESTINATION ${LIBINSTALLEXT})
 install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_json.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_model_variables.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_sim_data.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_xml.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_mmap.h
