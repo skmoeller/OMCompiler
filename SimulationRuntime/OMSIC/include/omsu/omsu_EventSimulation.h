@@ -44,24 +44,18 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <omsu_utils.h>
-#include <fmi2Functions.h>
 
-/*! \fn omsi_enter_event_mode
- *
- *  This function enters event mode.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_enter_event_mode(fmi2Component c);
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
+#include <omsi_utils.h>
 
-/*! \fn omsi_get_event_indicators
- *
- *  This function gets the event indicators.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_event_indicators(fmi2Component c, fmi2Real eventIndicators[], size_t ni);
+
+omsi_status omsi_enter_event_mode(osu_t* OSU);
+
+omsi_status omsi_get_event_indicators(osu_t*            OSU,
+                                      omsi_real         eventIndicators[],
+                                      omsi_unsigned_int ni);
 
 #ifdef __cplusplus
 }

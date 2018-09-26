@@ -34,122 +34,158 @@
  * model equations with OMSI.
  */
 
-#include "omsu/omsu_EventSimulation.h"
+#include <omsu_EventSimulation.h>
 
 
-fmi2Status omsi_enter_event_mode(fmi2Component c) {
-	osu_t *OSU = (osu_t *)c;
-	if (invalidState(OSU, "fmi2EnterEventMode", modelInitializationMode|modelContinuousTimeMode|modelEventMode, ~0))
-		return fmi2Error;
-	FILTERED_LOG(OSU, fmi2OK, LOG_EVENTS, "fmi2EnterEventMode")
-	OSU->state = modelEventMode;
-	return fmi2OK;
+/*
+ * The model enters Event Mode from the Continuous-Time Mode and discrete-time
+ * equations may become active (and relations are not “frozen”).
+ */
+omsi_status omsi_enter_event_mode(osu_t* OSU) {
+
+    if (invalidState(OSU, "fmi2EnterEventMode", modelInitializationMode|modelContinuousTimeMode|modelEventMode, ~0))
+        return omsi_error;
+    LOG_FILTER(OSU, LOG_ALL,
+                global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2EnterEventMode"))
+    OSU->state = modelEventMode;
+    return omsi_ok;
 }
 
-fmi2Status omsi_get_event_indicators(fmi2Component c, fmi2Real eventIndicators[], size_t nx) {
-	osu_t* OSU = (osu_t *)c;
-	threadData_t *threadData = OSU->threadData;
+/*
+ * Computes event indicators at current time instant and for the current states.
+ */
+omsi_status omsi_get_event_indicators(osu_t*            OSU,
+                                      omsi_real         eventIndicators[],
+                                      omsi_unsigned_int ni) {               /* number of event indicators */
 
-	/* According to FMI RC2 specification fmi2GetEventIndicators should only be allowed in Event Mode, Continuous-Time Mode & terminated.
-	* The following code is done only to make the FMUs compatible with Dymola because Dymola is trying to call fmi2GetEventIndicators after fmi2EnterInitializationMode.
-	*/
-	if (invalidState(OSU, "fmi2GetEventIndicators", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
-	/*if (invalidState(OSU, "fmi2GetEventIndicators", modelEventMode|modelContinuousTimeMode|modelTerminated|modelError))*/
-		return fmi2Error;
-	//if (invalidNumber(OSU, "fmi2GetEventIndicators", "nx", nx, NUMBER_OF_EVENT_INDICATORS)) TODO: event indicators?
-	//	return fmi2Error;
+    /* threadData_t *threadData = OSU->threadData; */
+    /* Variables */
+    omsi_unsigned_int i;
 
-	/* try */
-	MMC_TRY_INTERNAL(simulationJumpBuffer)
 
-//	#if NUMBER_OF_EVENT_INDICATORS>0
+    /* According to FMI RC2 specification fmi2GetEventIndicators should only be
+     * allowed in Event Mode, Continuous-Time Mode & terminated. The following code
+     * is done only to make the FMUs compatible with Dymola because Dymola is
+     * trying to call fmi2GetEventIndicators after fmi2EnterInitializationMode.
+     */
+    if (invalidState(OSU, "fmi2GetEventIndicators", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
+        return omsi_error;
+    }
 
-	/* eval needed equations*/
-	if (OSU->_need_update){
-		OSU->osu_functions->functionODE(OSU->old_data, threadData);
-		OSU->_need_update = 0;
-	}
-	OSU->osu_functions->function_ZeroCrossings(OSU->old_data, threadData, OSU->old_data->simulationInfo->zeroCrossings);
-	for (size_t i = 0; i < nx; i++) {
-		eventIndicators[i] = OSU->old_data->simulationInfo->zeroCrossings[i];
-		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetEventIndicators: z%d = %.16g", i, eventIndicators[i])
-	}
-//	#endif
-	return fmi2OK;
+    /* Check if number of event indicators ni is valid */
+    if (invalidNumber(OSU, "fmi2GetEventIndicators", "ni", ni, OSU->osu_data->model_data->n_zerocrossings)) {
+        return omsi_error;
+    }
 
-	/* catch */
-	MMC_CATCH_INTERNAL(simulationJumpBuffer)
+    /* If there are no event indicator there is nothing to do */
+    if (OSU->osu_data->model_data->n_zerocrossings == 0) {
+        return omsi_ok;
+    }
 
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "error", "fmi2GetEventIndicators: terminated by an assertion.");
-	return fmi2Error;
+    /* ToDo: try */
+    /* MMC_TRY_INTERNAL(simulationJumpBuffer)*/
+
+    /* Evaluate needed equations ToDo: is in FMI Standard but not really needed... */
+    if (OSU->_need_update) {
+        OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
+        OSU->_need_update = omsi_true;
+    }
+
+#if 0       /* ToDo: Add stuff */
+    /* Get event indicators */
+    OSU->osu_functions->function_ZeroCrossings(OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
+    for (i = 0; i < ni; i++) {
+        eventIndicators[i] = OSU->osu_data->sim_data->zerocrossings_vars[i];
+        LOG_FILTER(OSU, LOG_ALL,
+            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+            "fmi2GetEventIndicators: z%d = %.16g", i, eventIndicators[i]))
+    }
+#endif
+    return omsi_ok;
+
+    /* ToDo: catch */
+    /* MMC_CATCH_INTERNAL(simulationJumpBuffer)
+
+    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL, "error", "fmi2GetEventIndicators: terminated by an assertion.");
+    return omsi_error;*/
 }
 
-fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo)
-{
-  int i;
-  osu_t* OSU = (osu_t *)c;
-  threadData_t *threadData = OSU->threadData;
 
-  if (nullPointer(OSU, "fmi2EventUpdate", "eventInfo", eventInfo))
-    return fmi2Error;
-  eventInfo->valuesOfContinuousStatesChanged = fmi2False;
-  FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EventUpdate: Start Event Update! Next Sample Event %u", eventInfo->nextEventTime)
+#if 0
+omsi_status fmi2EventUpdate(osu_t*              OSU,
+                            omsi_event_info*    eventInfo) {
 
-  /* try */
-  MMC_TRY_INTERNAL(simulationJumpBuffer)
+    /* Variables */
+    omsi_int i;
+    /* threadData_t *threadData = OSU->threadData; */
+
+    if (nullPointer(OSU, "fmi2EventUpdate", "eventInfo", eventInfo)) {
+        return omsi_error;
+    }
+    eventInfo->valuesOfContinuousStatesChanged = omsi_false;
+    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
+            "fmi2EventUpdate: Start Event Update! Next Sample Event %u",
+            eventInfo->nextEventTime)
+
+    /* ToDo: try */
+    /* MMC_TRY_INTERNAL(simulationJumpBuffer)*/
 
 #if !defined(OMC_NO_STATESELECTION)
-    if (stateSelection(OSU->old_data, OSU->threadData, 1, 1))
-    {
-      FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EventUpdate: Need to iterate state values changed!")
-      /* if new set is calculated reinit the solver */
-      eventInfo->valuesOfContinuousStatesChanged = fmi2True;
+    if (stateSelection(OSU->old_data, OSU->threadData, 1, 1)) {
+        FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
+                "fmi2EventUpdate: Need to iterate state values changed!")
+        /* if new set is calculated reinit the solver */
+        eventInfo->valuesOfContinuousStatesChanged = omsi_true;
     }
 #endif
     storePreValues(OSU->old_data);
 
     /* activate sample event */
-    for(i=0; i<OSU->old_data->modelData->nSamples; ++i)
-    {
-      if(OSU->old_data->simulationInfo->nextSampleTimes[i] <= OSU->old_data->localData[0]->timeValue)
-      {
-        OSU->old_data->simulationInfo->samples[i] = 1;
-        //infoStreamPrint(LOG_EVENTS, 0, "[%ld] sample(%g, %g)", OSU->old_data->modelData->samplesInfo[i].index, OSU->old_data->modelData->samplesInfo[i].start, OSU->old_data->modelData->samplesInfo[i].interval);        //ToDO: implement
-      }
+    for (i = 0; i < OSU->old_data->modelData->nSamples; ++i) {
+        if (OSU->old_data->simulationInfo->nextSampleTimes[i]
+                <= OSU->old_data->localData[0]->timeValue) {
+            OSU->old_data->simulationInfo->samples[i] = 1;
+            //infoStreamPrint(LOG_EVENTS, 0, "[%ld] sample(%g, %g)", OSU->old_data->modelData->samplesInfo[i].index, OSU->old_data->modelData->samplesInfo[i].start, OSU->old_data->modelData->samplesInfo[i].interval);        //ToDO: implement
+        }
     }
 
     OSU->old_data->callback->functionDAE(OSU->old_data, OSU->threadData);
 
     /* deactivate sample events */
-    for(i=0; i<OSU->old_data->modelData->nSamples; ++i)
-    {
-      if(OSU->old_data->simulationInfo->samples[i])
-      {
-        OSU->old_data->simulationInfo->samples[i] = 0;
-        OSU->old_data->simulationInfo->nextSampleTimes[i] += OSU->old_data->modelData->samplesInfo[i].interval;
-      }
+    for (i = 0; i < OSU->old_data->modelData->nSamples; ++i) {
+        if (OSU->old_data->simulationInfo->samples[i]) {
+            OSU->old_data->simulationInfo->samples[i] = 0;
+            OSU->old_data->simulationInfo->nextSampleTimes[i] +=
+                    OSU->old_data->modelData->samplesInfo[i].interval;
+        }
     }
 
-    for(i=0; i<OSU->old_data->modelData->nSamples; ++i)
-      if((i == 0) || (OSU->old_data->simulationInfo->nextSampleTimes[i] < OSU->old_data->simulationInfo->nextSampleEvent))
-        OSU->old_data->simulationInfo->nextSampleEvent = OSU->old_data->simulationInfo->nextSampleTimes[i];
+    for (i = 0; i < OSU->old_data->modelData->nSamples; ++i)
+        if ((i == 0)
+                || (OSU->old_data->simulationInfo->nextSampleTimes[i]
+                        < OSU->old_data->simulationInfo->nextSampleEvent))
+            OSU->old_data->simulationInfo->nextSampleEvent =
+                    OSU->old_data->simulationInfo->nextSampleTimes[i];
 
     //if(OSU->old_data->callback->checkForDiscreteChanges(OSU->old_data, OSU->threadData) || OSU->old_data->simulationInfo->needToIterate || checkRelations(OSU->old_data) || eventInfo->valuesOfContinuousStatesChanged)
-    if(OSU->osu_functions->checkForDiscreteChanges(OSU->old_data, OSU->threadData) || OSU->old_data->simulationInfo->needToIterate || checkRelations(OSU->old_data) || eventInfo->valuesOfContinuousStatesChanged)
-    {
-      FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EventUpdate: Need to iterate(discrete changes)!")
-      eventInfo->newDiscreteStatesNeeded  = fmi2True;
-      eventInfo->nominalsOfContinuousStatesChanged = fmi2False;
-      eventInfo->valuesOfContinuousStatesChanged  = fmi2True;
-      eventInfo->terminateSimulation = fmi2False;
+    if (OSU->osu_functions->checkForDiscreteChanges(OSU->old_data,
+            OSU->threadData) || OSU->old_data->simulationInfo->needToIterate
+            || checkRelations(OSU->old_data)
+            || eventInfo->valuesOfContinuousStatesChanged) {
+        FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
+                "fmi2EventUpdate: Need to iterate(discrete changes)!")
+        eventInfo->newDiscreteStatesNeeded = omsi_true;
+        eventInfo->nominalsOfContinuousStatesChanged = omsi_false;
+        eventInfo->valuesOfContinuousStatesChanged = omsi_true;
+        eventInfo->terminateSimulation = omsi_false;
+    } else {
+        eventInfo->newDiscreteStatesNeeded = omsi_false;
+        eventInfo->nominalsOfContinuousStatesChanged = omsi_false;
+        eventInfo->terminateSimulation = omsi_false;
     }
-    else
-    {
-      eventInfo->newDiscreteStatesNeeded  = fmi2False;
-      eventInfo->nominalsOfContinuousStatesChanged = fmi2False;
-      eventInfo->terminateSimulation = fmi2False;
-    }
-    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EventUpdate: newDiscreteStatesNeeded %s",eventInfo->newDiscreteStatesNeeded?"true":"false");
+    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
+            "fmi2EventUpdate: newDiscreteStatesNeeded %s",
+            eventInfo->newDiscreteStatesNeeded ? "true" : "false");
 
     /* due to an event overwrite old values */
     overwriteOldSimulationData(OSU->old_data);
@@ -162,25 +198,26 @@ fmi2Status fmi2EventUpdate(fmi2Component c, fmi2EventInfo* eventInfo)
     updateRelationsPre(OSU->old_data);
 
     //Get Next Event Time
-    double nextSampleEvent=0;
+    omsi_real nextSampleEvent = 0;
     nextSampleEvent = getNextSampleTimeFMU(OSU->old_data);
-    if (nextSampleEvent == -1)
-    {
-      eventInfo->nextEventTimeDefined = fmi2False;
+    if (nextSampleEvent == -1) {
+        eventInfo->nextEventTimeDefined = omsi_false;
+    } else {
+        eventInfo->nextEventTimeDefined = omsi_true;
+        eventInfo->nextEventTime = nextSampleEvent;
     }
-    else
-    {
-      eventInfo->nextEventTimeDefined = fmi2True;
-      eventInfo->nextEventTime = nextSampleEvent;
-    }
-    FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2EventUpdate: Checked for Sample Events! Next Sample Event %u",eventInfo->nextEventTime)
+    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
+            "fmi2EventUpdate: Checked for Sample Events! Next Sample Event %u",
+            eventInfo->nextEventTime)
 
-    return fmi2OK;
+    return omsi_ok;
 
-  /* catch */
-  MMC_CATCH_INTERNAL(simulationJumpBuffer)
+    /* ToDo: catch */
+    /* MMC_CATCH_INTERNAL(simulationJumpBuffer)
 
-  FILTERED_LOG(OSU, fmi2Error, LOG_FMI2_CALL, "fmi2EventUpdate: terminated by an assertion.")
-  OSU->_need_update = 1;
-  return fmi2Error;
+    FILTERED_LOG(OSU, omsi_error, LOG_FMI2_CALL,
+            "fmi2EventUpdate: terminated by an assertion.")
+    OSU->_need_update = 1;
+    return omsi_error; */
 }
+#endif

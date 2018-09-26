@@ -404,8 +404,8 @@ typedef struct osu_t {
     omsi_t*             osu_data;           /* pointer to omsi_data struct, contains all data for simulation */
     omsi_template_callback_functions_t*   osu_functions;
 
-    omsi_int            _need_update;
-    omsi_int            _has_jacobian;
+    omsi_bool           _need_update;
+    omsi_bool           _has_jacobian;
     ModelState          state;
     omsi_bool           logCategories[NUMBER_OF_CATEGORIES];
     omsi_bool           loggingOn;
