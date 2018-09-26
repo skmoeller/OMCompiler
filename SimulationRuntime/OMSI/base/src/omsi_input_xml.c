@@ -49,10 +49,13 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     omsi_int n_model_vars_and_params;
     omsi_string guid;
     omsi_char buf[BUFSIZ] = {0};
+    omsi_status status;
 
     omc_ModelInput mi = {0};
     FILE* file = NULL;
     XML_Parser parser = NULL;
+
+    status = omsi_ok;
 
     /* set global function pointer */
     global_callback = (omsi_callback_functions*) functions;
@@ -112,11 +115,11 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
         return omsi_error;
     }
     else if (strcmp(fmuGUID, guid)) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_warning, logCategoriesNames[LOG_STATUSWARNING],
             "fmi2Instantiate: Wrong GUID %s in file %s. Expected %s.",
             guid, filename, fmuGUID))
-        return omsi_error;
+        status = omsi_warning;
     }
 
     /* process experiment data */
@@ -186,7 +189,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     /* now all data from init_xml should be utilized */
     omsu_free_ModelInput(mi);
 
-    return omsi_ok;
+    return status;
 }
 
 
