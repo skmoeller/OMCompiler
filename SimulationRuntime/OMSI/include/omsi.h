@@ -404,8 +404,8 @@ typedef struct osu_t {
     omsi_t*             osu_data;           /* pointer to omsi_data struct, contains all data for simulation */
     omsi_template_callback_functions_t*   osu_functions;
 
-    omsi_bool           _need_update;
-    omsi_bool           _has_jacobian;
+    omsi_bool           _need_update;           /* Bool if model needs update */
+    omsi_bool           _has_jacobian;          /* Bool if model has jocobian matrix. Defaults to omsi_false */
     ModelState          state;
     omsi_bool           logCategories[NUMBER_OF_CATEGORIES];
     omsi_bool           loggingOn;
@@ -418,8 +418,8 @@ typedef struct osu_t {
     omsi_bool           stopTimeDefined;
     omsi_real           stopTime;
     omsu_type           type;
-    omsi_unsigned_int*  vrStates;
-    omsi_unsigned_int*  vrStatesDerivatives;
+    omsi_unsigned_int*  vrStates;               /* Array of value references of states */
+    omsi_unsigned_int*  vrStatesDerivatives;    /* Array of value references of state derivatives */
 
     const omsi_callback_functions*  fmiCallbackFunctions;
 } osu_t;
