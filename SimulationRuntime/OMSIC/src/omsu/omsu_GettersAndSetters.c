@@ -96,7 +96,7 @@ omsi_status omsi_get_integer(osu_t*                     OSU,
 
 omsi_status omsi_get_real(osu_t*                    OSU,
                           const omsi_unsigned_int   vr[],
-                          omsi_unsigned_int                    nvr,
+                          omsi_unsigned_int         nvr,
                           omsi_real                 value[]){
 
     /* Variables */
@@ -115,7 +115,8 @@ omsi_status omsi_get_real(osu_t*                    OSU,
             return omsi_error;
           }
           value[i] = getReal(OSU, vr[i]);
-          LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2GetReal: vr = %i, value = %f", vr[i], value[i]))
+          LOG_FILTER(OSU, LOG_ALL,
+              global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2GetReal: vr = %i, value = %f", vr[i], value[i]))
         }
     }
     return omsi_ok;
@@ -123,7 +124,7 @@ omsi_status omsi_get_real(osu_t*                    OSU,
 
 omsi_status omsi_get_string(osu_t*                  OSU,
                             const omsi_unsigned_int vr[],
-                            omsi_unsigned_int                  nvr,
+                            omsi_unsigned_int       nvr,
                             omsi_string             value[]){
 
     /* Variables */
@@ -359,8 +360,10 @@ omsi_status omsi_set_interval(osu_t*            OSU,
  * ============================================================================
  */
 
+/* What happens for alias variables for getters and setters? */
+
 /*
- * gets real number of struct OSU with value reference vr
+ * Gets real number of struct OSU with value reference vr.
  */
 omsi_real getReal (osu_t*                   OSU,
                    const omsi_unsigned_int  vr) {
@@ -371,7 +374,7 @@ omsi_real getReal (osu_t*                   OSU,
 
 
 /*
- * sets real number of struct OSU for index reference vr with value
+ * Sets real number of struct OSU for index reference vr with value
  */
 omsi_status setReal(osu_t*                  OSU,
                     const omsi_unsigned_int vr,
@@ -383,23 +386,32 @@ omsi_status setReal(osu_t*                  OSU,
 
 
 /*
- * gets integer number of struct OSU with value reference vr
+ * Gets integer number of struct OSU with value reference vr
  */
 omsi_int getInteger (osu_t*                     OSU,
                      const omsi_unsigned_int    vr) {
 
-    omsi_int output = (omsi_int) OSU->osu_data->sim_data->model_vars_and_params->ints[vr];
+    /* Variables */
+    omsi_unsigned_int index;
+    omsi_int output;
+
+    index = vr - OSU->osu_data->sim_data->model_vars_and_params->n_reals;
+    output = (omsi_int) OSU->osu_data->sim_data->model_vars_and_params->ints[index];
     return output;
 }
 
 /*
- * sets integer number of struct OSU for index reference vr with value
+ * Sets integer number of struct OSU for index reference vr with value
  */
 omsi_status setInteger(osu_t*                   OSU,
                        const omsi_unsigned_int  vr,
                        const omsi_int           value) {
 
-    OSU->osu_data->sim_data->model_vars_and_params->ints[vr] = (omsi_int) value;
+    /* Variables */
+    omsi_unsigned_int index;
+
+    index = vr - OSU->osu_data->sim_data->model_vars_and_params->n_reals;
+    OSU->osu_data->sim_data->model_vars_and_params->ints[index] = (omsi_int) value;
     return omsi_ok;
 }
 
@@ -410,7 +422,13 @@ omsi_status setInteger(osu_t*                   OSU,
 omsi_bool getBoolean (osu_t*                    OSU,
                       const omsi_unsigned_int   vr) {
 
-    omsi_bool output = (omsi_bool) OSU->osu_data->sim_data->model_vars_and_params->bools[vr];
+    /* Variables */
+    omsi_unsigned_int index;
+    omsi_bool output;
+
+    index = vr - OSU->osu_data->sim_data->model_vars_and_params->n_reals
+               - OSU->osu_data->sim_data->model_vars_and_params->n_ints;
+    output = (omsi_bool) OSU->osu_data->sim_data->model_vars_and_params->bools[index];
     return output;
 }
 
@@ -421,7 +439,12 @@ omsi_status setBoolean(osu_t*                   OSU,
                        const omsi_unsigned_int  vr,
                        const omsi_bool          value) {
 
-    OSU->osu_data->sim_data->model_vars_and_params->bools[vr] = (omsi_bool) value;
+    /* Variables */
+    omsi_unsigned_int index;
+
+    index = vr - OSU->osu_data->sim_data->model_vars_and_params->n_reals
+               - OSU->osu_data->sim_data->model_vars_and_params->n_ints;
+    OSU->osu_data->sim_data->model_vars_and_params->bools[index] = (omsi_bool) value;
     return omsi_ok;
 }
 
