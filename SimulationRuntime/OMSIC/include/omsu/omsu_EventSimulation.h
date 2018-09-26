@@ -57,6 +57,9 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
                                       omsi_real         eventIndicators[],
                                       omsi_unsigned_int ni);
 
+omsi_status omsi_event_update(osu_t*              OSU,
+                              omsi_event_info*    eventInfo);
+
 #ifdef __cplusplus
 }
 #endif

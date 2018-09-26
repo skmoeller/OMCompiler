@@ -43,13 +43,19 @@
  */
 omsi_status omsi_enter_event_mode(osu_t* OSU) {
 
-    if (invalidState(OSU, "fmi2EnterEventMode", modelInitializationMode|modelContinuousTimeMode|modelEventMode, ~0))
+    if (invalidState(OSU, "fmi2EnterEventMode", modelInitializationMode|modelContinuousTimeMode|modelEventMode, ~0)) {
         return omsi_error;
-    LOG_FILTER(OSU, LOG_ALL,
-                global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2EnterEventMode"))
+    }
+
+    /* Log call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2EnterEventMode"))
+
     OSU->state = modelEventMode;
     return omsi_ok;
 }
+
 
 /*
  * Computes event indicators at current time instant and for the current states.
@@ -62,7 +68,6 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
     /* Variables */
     omsi_unsigned_int i;
 
-
     /* According to FMI RC2 specification fmi2GetEventIndicators should only be
      * allowed in Event Mode, Continuous-Time Mode & terminated. The following code
      * is done only to make the FMUs compatible with Dymola because Dymola is
@@ -71,11 +76,15 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
     if (invalidState(OSU, "fmi2GetEventIndicators", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
         return omsi_error;
     }
-
     /* Check if number of event indicators ni is valid */
     if (invalidNumber(OSU, "fmi2GetEventIndicators", "ni", ni, OSU->osu_data->model_data->n_zerocrossings)) {
         return omsi_error;
     }
+
+    /* Log call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2GetEventIndicators"))
 
     /* If there are no event indicator there is nothing to do */
     if (OSU->osu_data->model_data->n_zerocrossings == 0) {
@@ -85,11 +94,11 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
     /* ToDo: try */
     /* MMC_TRY_INTERNAL(simulationJumpBuffer)*/
 
-    /* Evaluate needed equations ToDo: is in FMI Standard but not really needed... */
+    /* Evaluate needed equations ToDo: is in FMI Standard but not really needed...
     if (OSU->_need_update) {
         OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
-        OSU->_need_update = omsi_true;
-    }
+        OSU->_need_update = omsi_false;
+    }*/
 
 #if 0       /* ToDo: Add stuff */
     /* Get event indicators */
@@ -111,9 +120,9 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
 }
 
 
-#if 0
-omsi_status fmi2EventUpdate(osu_t*              OSU,
-                            omsi_event_info*    eventInfo) {
+
+omsi_status omsi_event_update(osu_t*              OSU,
+                              omsi_event_info*    eventInfo) {
 
     /* Variables */
     omsi_int i;
@@ -122,14 +131,18 @@ omsi_status fmi2EventUpdate(osu_t*              OSU,
     if (nullPointer(OSU, "fmi2EventUpdate", "eventInfo", eventInfo)) {
         return omsi_error;
     }
+
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_ALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+        "fmi2EventUpdate: Start Event Update! Next Sample Event %u", eventInfo->nextEventTime))
+
     eventInfo->valuesOfContinuousStatesChanged = omsi_false;
-    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
-            "fmi2EventUpdate: Start Event Update! Next Sample Event %u",
-            eventInfo->nextEventTime)
 
     /* ToDo: try */
     /* MMC_TRY_INTERNAL(simulationJumpBuffer)*/
 
+#if 0
 #if !defined(OMC_NO_STATESELECTION)
     if (stateSelection(OSU->old_data, OSU->threadData, 1, 1)) {
         FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
@@ -138,6 +151,7 @@ omsi_status fmi2EventUpdate(osu_t*              OSU,
         eventInfo->valuesOfContinuousStatesChanged = omsi_true;
     }
 #endif
+
     storePreValues(OSU->old_data);
 
     /* activate sample event */
@@ -211,6 +225,8 @@ omsi_status fmi2EventUpdate(osu_t*              OSU,
             eventInfo->nextEventTime)
 
     return omsi_ok;
+#endif
+    return omsi_error;
 
     /* ToDo: catch */
     /* MMC_CATCH_INTERNAL(simulationJumpBuffer)
@@ -220,4 +236,3 @@ omsi_status fmi2EventUpdate(osu_t*              OSU,
     OSU->_need_update = 1;
     return omsi_error; */
 }
-#endif

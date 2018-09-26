@@ -34,212 +34,362 @@
  * model equations during continuous-time mode with OMSI.
  */
 
-#include "omsu/omsu_ContinuousSimulation.h"
-
-fmi2Status omsi_new_discrete_state(fmi2Component  c, fmi2EventInfo* eventInfo){
-	osu_t *OSU = (osu_t *)c;
-	fmi2Status returnValue = fmi2OK;
-
-	if (invalidState(OSU, "fmi2NewDiscreteStates", modelEventMode, ~0))
-		return fmi2Error;
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2NewDiscreteStates")
-
-	eventInfo->newDiscreteStatesNeeded = fmi2False;
-	eventInfo->terminateSimulation = fmi2False;
-	eventInfo->nominalsOfContinuousStatesChanged = fmi2False;
-	eventInfo->valuesOfContinuousStatesChanged = fmi2False;
-	eventInfo->nextEventTimeDefined = fmi2False;
-	eventInfo->nextEventTime = 0;
-
-	returnValue = fmi2EventUpdate(OSU, eventInfo);
-	return returnValue;
-}
+#include <omsu_ContinuousSimulation.h>
 
 
-fmi2Status omsi_enter_continuous_time_mode(fmi2Component c){
-	osu_t *OSU = (osu_t *)c;
-	if (invalidState(OSU, "fmi2EnterContinuousTimeMode", modelEventMode, ~0))
-		return fmi2Error;
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL,"fmi2EnterContinuousTimeMode")
-	OSU->state = modelContinuousTimeMode;
-	return fmi2OK;
-}
+/*
+ * The component environment is in Event Mode and the super dense time is
+ * incremented by this call.
+ */
+omsi_status omsi_new_discrete_state(osu_t*              OSU,
+                                    omsi_event_info*    eventInfo) {
 
+    /* Variables */
+    omsi_status returnValue;
 
-fmi2Status omsi_set_continuous_states(fmi2Component c, const fmi2Real x[], size_t nx){
-	osu_t *OSU = (osu_t *)c;
-
-	/* According to FMI RC2 specification fmi2SetContinuousStates should only be allowed in Continuous-Time Mode.
-	* The following code is done only to make the FMUs compatible with Dymola because Dymola is trying to call fmi2SetContinuousStates after fmi2EnterInitializationMode.
-	*/
-	if (invalidState(OSU, "fmi2SetContinuousStates", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode, ~0))
-	/*if (invalidState(OSU, "fmi2SetContinuousStates", modelContinuousTimeMode))*/
-		return fmi2Error;
-	if (invalidNumber(OSU, "fmi2SetContinuousStates", "nx", nx, OSU->osu_data->model_data.n_states))
-		return fmi2Error;
-	if (nullPointer(OSU, "fmi2SetContinuousStates", "x[]", x))
-		return fmi2Error;
-
-	for (size_t i = 0; i < nx; i++) {
-		fmi2ValueReference vr = OSU->vrStates[i];
-		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2SetContinuousStates: #r%d# = %.16g", vr, x[i])
-		if (setReal(OSU, vr, x[i]) != fmi2OK) {
-		  return fmi2Error;
-                }
-	}
-	OSU->_need_update = 1;
-
-	return fmi2OK;
-}
-
-
-fmi2Status omsi_get_continuous_states(fmi2Component c, fmi2Real x[], size_t nx) {
-	osu_t* OSU = (osu_t *)c;
-	if (invalidState(OSU, "fmi2GetContinuousStates", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
-		return fmi2Error;
-	if (invalidNumber(OSU, "fmi2GetContinuousStates", "nx", nx, OSU->osu_data->model_data.n_states))
-		return fmi2Error;
-	if (nullPointer(OSU, "fmi2GetContinuousStates", "states[]", x))
-		return fmi2Error;
-
-	for (size_t i = 0; i < nx; i++) {
-		fmi2ValueReference vr = OSU->vrStates[i];
-		x[i] = getReal(OSU, vr); // to be implemented by the includer of this file
-		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetContinuousStates: #r%u# = %.16g", vr, x[i])
-		}
-
-	return fmi2OK;
-}
-
-
-fmi2Status omsi_get_nominals_of_continuous_states(fmi2Component c, fmi2Real x_nominal[], size_t nx){
-	osu_t* OSU = (osu_t *)c;
-	if (invalidState(OSU, "fmi2GetNominalsOfContinuousStates", modelInstantiated|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
-		return fmi2Error;
-	if (invalidNumber(OSU, "fmi2GetNominalsOfContinuousStates", "nx", nx, OSU->osu_data->model_data.n_states))
-		return fmi2Error;
-	if (nullPointer(OSU, "fmi2GetNominalsOfContinuousStates", "x_nominal[]", x_nominal))
-		return fmi2Error;
-	x_nominal[0] = 1;
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetNominalsOfContinuousStates: x_nominal[0..%d] = 1.0", nx-1)
-	for (size_t i = 0; i < nx; i++)
-		x_nominal[i] = 1;
-	return fmi2OK;
-}
-
-
-fmi2Status omsi_completed_integrator_step(fmi2Component c, fmi2Boolean noSetFMUStatePriorToCurrentPoint, fmi2Boolean* enterEventMode, fmi2Boolean* terminateSimulation){
-
-	osu_t *OSU = (osu_t *)c;
-	threadData_t *threadData = OSU->threadData;
-	if (invalidState(OSU, "fmi2OSUletedIntegratorStep", modelContinuousTimeMode, ~0))
-		return fmi2Error;
-	if (nullPointer(OSU, "fmi2OSUletedIntegratorStep", "enterEventMode", enterEventMode))
-		return fmi2Error;
-	if (nullPointer(OSU, "fmi2OSUletedIntegratorStep", "terminateSimulation", terminateSimulation))
-		return fmi2Error;
-	FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL,"fmi2OSUletedIntegratorStep")
-
-	/* try */
-	MMC_TRY_INTERNAL(simulationJumpBuffer)
-
-	OSU->osu_functions->functionAlgebraics(OSU->old_data, threadData);
-	OSU->osu_functions->output_function(OSU->old_data, threadData);
-	OSU->osu_functions->function_storeDelayed(OSU->old_data, threadData);
-	storePreValues(OSU->old_data);
-	*enterEventMode = fmi2False;
-	*terminateSimulation = fmi2False;
-	/******** check state selection ********/
-	#if !defined(OMC_NO_STATESELECTION)
-	if (stateSelection(OSU->old_data, threadData, 1, 0)){
-		/* if new set is calculated reinit the solver */
-		*enterEventMode = fmi2True;
-		FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL,"fmi2CompletedIntegratorStep: Need to iterate state values changed!")
-	}
-	#endif
-	/* TODO: fix the extrapolation in non-linear system
-	*       then we can stop to save all variables in
-	*       in the whole ringbuffer
-	*/
-	overwriteOldSimulationData(OSU->old_data);
-	return fmi2OK;
-	/* catch */
-	MMC_CATCH_INTERNAL(simulationJumpBuffer)
-
-	FILTERED_LOG(OSU, fmi2Error, LOG_FMI2_CALL, "fmi2CompletedIntegratorStep: terminated by an assertion.")
-	return fmi2Error;
-}
-
-
-fmi2Status omsi_get_derivatives(fmi2Component c, fmi2Real derivatives[], size_t nx)
-{
-  osu_t* OSU = (osu_t *)c;
-  threadData_t *threadData = OSU->threadData;
-
-  if (invalidState(OSU, "fmi2GetDerivatives", modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
-    return fmi2Error;
-  if (invalidNumber(OSU, "fmi2GetDerivatives", "nx", nx, OSU->osu_data->model_data.n_states))
-    return fmi2Error;
-  if (nullPointer(OSU, "fmi2GetDerivatives", "derivatives[]", derivatives))
-    return fmi2Error;
-
-
-  /* try */
-  MMC_TRY_INTERNAL(simulationJumpBuffer)
-
-    if (OSU->_need_update){
-      OSU->osu_functions->functionODE(OSU->old_data, threadData);
-      // runtime function -> overwriteOldSimulationData(OSU->fmuData);
-
-      OSU->_need_update = 0;
+    if (invalidState(OSU, "fmi2NewDiscreteStates", modelEventMode, ~0)) {
+        return omsi_error;
     }
 
-    for (size_t i = 0; i < nx; i++) {
-      fmi2ValueReference vr = OSU->vrStatesDerivatives[i];
-      derivatives[i] = getReal(OSU, vr); // to be implemented by the includer of this file
-      FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetDerivatives: #r%d# = %.16g", vr, derivatives[i])
-    }
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2NewDiscreteStates"))
 
-    return fmi2OK;
-  /* catch */
-  MMC_CATCH_INTERNAL(simulationJumpBuffer)
+    /* Set event info */
+    eventInfo->newDiscreteStatesNeeded = omsi_false;
+    eventInfo->terminateSimulation = omsi_false;
+    eventInfo->nominalsOfContinuousStatesChanged = omsi_false;
+    eventInfo->valuesOfContinuousStatesChanged = omsi_false;
+    eventInfo->nextEventTimeDefined = omsi_false;
+    eventInfo->nextEventTime = 0;
 
-  FILTERED_LOG(OSU, fmi2Error, LOG_FMI2_CALL, "fmi2GetDerivatives: terminated by an assertion.")
-  return fmi2Error;
+    returnValue = omsi_event_update(OSU, eventInfo);
+    return returnValue;
 }
 
 
-fmi2Status omsi_get_directional_derivative(fmi2Component c,
-                const fmi2ValueReference vUnknown_ref[], size_t nUnknown,
-                const fmi2ValueReference vKnown_ref[],   size_t nKnown,
-                const fmi2Real dvKnown[], fmi2Real dvUnknown[]){
-  size_t i;
-  osu_t *OSU = (osu_t *)c;
-  if (invalidState(OSU, "fmi2GetDirectionalDerivative", modelInstantiated|modelEventMode|modelContinuousTimeMode, ~0))
-    return fmi2Error;
-  FILTERED_LOG(OSU, fmi2OK, LOG_FMI2_CALL, "fmi2GetDirectionalDerivative")
-  if (!OSU->_has_jacobian)
-    return unsupportedFunction(c, "fmi2GetDirectionalDerivative", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError);
-  /***************************************/
-  // This code assumes that the FMU variables are always sorted,
-  // states first and then derivatives.
-  // This is true for the actual OMC FMUs.
-  // Anyway we'll check that the references are in the valid range
-  for (i = 0; i < nUnknown; i++) {
-    if (vUnknown_ref[i]>=OSU->osu_data->model_data.n_states)
-        // We are only computing the A part of the Jacobian for now
-        // so unknowns can only be states
-        return fmi2Error;
-  }
-  for (i = 0; i < nKnown; i++) {
-    if (vKnown_ref[i]>=2*OSU->osu_data->model_data.n_states) {
-        // We are only computing the A part of the Jacobian for now
-        // so knowns can only be states derivatives
-        return fmi2Error;
-    }
-  }
-  OSU->osu_functions->functionFMIJacobian(OSU->old_data, OSU->threadData, vUnknown_ref, nUnknown, vKnown_ref, nKnown, (double*)dvKnown, dvUnknown);
+/*
+ * The model enters Continuous-Time Mode and all discrete-time equations become
+ * inactive and all relations are “frozen”.
+ */
+omsi_status omsi_enter_continuous_time_mode(osu_t* OSU) {
 
-  /***************************************/
-  return fmi2OK;
+    if (invalidState(OSU, "fmi2EnterContinuousTimeMode", modelEventMode, ~0)) {
+        return omsi_error;
+    }
+
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2EnterContinuousTimeMode"))
+
+    OSU->state = modelContinuousTimeMode;
+    return omsi_ok;
+}
+
+
+/*
+ * Sets a new (continuous) state vector and re-initialize caching of variables
+ * that depend on the states.
+ */
+omsi_status omsi_set_continuous_states(osu_t*               OSU,
+                                       const omsi_real      x[],
+                                       omsi_unsigned_int    nx) {
+
+    /* Variables */
+    omsi_unsigned_int i, vr;
+
+    /* According to FMI RC2 specification fmi2SetContinuousStates should only be
+     * allowed in Continuous-Time Mode. The following code is done only to make
+     * the FMUs compatible with Dymola because Dymola is trying to call
+     * fmi2SetContinuousStates after fmi2EnterInitializationMode.
+     */
+    if (invalidState(OSU, "fmi2SetContinuousStates", modelInstantiated | modelInitializationMode | modelEventMode | modelContinuousTimeMode, ~0)) {
+        return omsi_error;
+    }
+    if (invalidNumber(OSU, "fmi2SetContinuousStates", "nx", nx, OSU->osu_data->model_data->n_states)) {
+        return omsi_error;
+    }
+    if (nullPointer(OSU, "fmi2SetContinuousStates", "x[]", x)) {
+        return omsi_error;
+    }
+
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2SetContinuousStates"))
+
+    /* Set continuous states */
+    for (i = 0; i < nx; i++) {
+        vr = OSU->vrStates[i];
+        LOG_FILTER(OSU, LOG_ALL,
+            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+            "fmi2SetContinuousStates: #r%d# = %.16g", vr, x[i]))
+        if (setReal(OSU, vr, x[i]) != omsi_ok) {
+            return omsi_error;
+        }
+    }
+    OSU->_need_update = omsi_true;
+
+    return omsi_ok;
+}
+
+/*
+ * Returns the new (continuous) state vector x.
+ */
+omsi_status omsi_get_continuous_states(osu_t*               OSU,
+                                       omsi_real            x[],
+                                       omsi_unsigned_int    nx) {
+
+    /* Variables */
+    omsi_unsigned_int i, vr;
+
+    if (invalidState(OSU, "fmi2GetContinuousStates", modelInitializationMode | modelEventMode | modelContinuousTimeMode | modelTerminated | modelError, ~0)) {
+        return omsi_error;
+    }
+    if (invalidNumber(OSU, "fmi2GetContinuousStates", "nx", nx, OSU->osu_data->model_data->n_states)) {
+        return omsi_error;
+    }
+    if (nullPointer(OSU, "fmi2GetContinuousStates", "states[]", x)) {
+        return omsi_error;
+    }
+
+    /* Log call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2GetContinuousStates"))
+
+    for (i = 0; i < nx; i++) {
+        vr = OSU->vrStates[i];
+        x[i] = getReal(OSU, vr);
+
+        LOG_FILTER(OSU, LOG_ALL,
+            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+            "fmi2GetContinuousStates: #r%u# = %.16g", vr, x[i]))
+    }
+
+    return omsi_ok;
+}
+
+
+/*
+ * Returns the nominal values of the continuous states.
+ * Since the component enviroment has no information about the nominal value of
+ * the continuous states 1.0 is returned.
+ */
+omsi_status omsi_get_nominals_of_continuous_states(osu_t*               OSU,
+                                                   omsi_real            x_nominal[],
+                                                   omsi_unsigned_int    nx) {
+
+    /* Variables */
+    omsi_unsigned_int i;
+
+    if (invalidState(OSU, "fmi2GetNominalsOfContinuousStates", modelInstantiated | modelEventMode | modelContinuousTimeMode | modelTerminated | modelError, ~0)) {
+        return omsi_error;
+    }
+    if (invalidNumber(OSU, "fmi2GetNominalsOfContinuousStates", "nx", nx, OSU->osu_data->model_data->n_states)) {
+        return omsi_error;
+    }
+    if (nullPointer(OSU, "fmi2GetNominalsOfContinuousStates", "x_nominal[]", x_nominal)) {
+        return omsi_error;
+    }
+
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2GetNominalsOfContinuousStates: x_nominal[0, ... , %d] = 1.0", nx - 1))
+
+    x_nominal[0] = 1;       /* ToDo: What happens for nx = 0, otherwise this line is unneccessary */
+
+    for (i = 0; i < nx; i++) {
+        x_nominal[i] = 1;
+    }
+
+    return omsi_ok;
+}
+
+
+/*
+ * This function must be called by the environment after every completed step of
+ * the integrator provided the capability flag completedIntegratorStepNotNeeded = false.
+ * The function returns enterEventMode to signal to the environment if the OMSU
+ * shall call omsu_enter_event_mode, and it returns terminateSimulation to signal
+ * if the simulation shall be terminated.
+ */
+omsi_status omsi_completed_integrator_step(osu_t*       OSU,
+                                           omsi_bool    noSetFMUStatePriorToCurrentPoint,
+                                           omsi_bool*   enterEventMode,
+                                           omsi_bool*   terminateSimulation) {
+
+    /*threadData_t *threadData = OSU->threadData;*/
+
+    if (invalidState(OSU, "fmi2OSUletedIntegratorStep", modelContinuousTimeMode, ~0)) {
+        return omsi_error;
+    }
+    if (nullPointer(OSU, "fmi2OSUletedIntegratorStep", "enterEventMode", enterEventMode)) {
+        return omsi_error;
+    }
+    if (nullPointer(OSU, "fmi2OSUletedIntegratorStep", "terminateSimulation", terminateSimulation)) {
+        return omsi_error;
+    }
+
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2OSUletedIntegratorStep"))
+
+    /* ToDo: Do something useful with noSetFMUStatePriorToCurrentPoint */
+
+    /* ToDo: try */
+    /* MMC_TRY_INTERNAL (simulationJumpBuffer) */
+
+    /* ToDo: evaluate stuff ... */
+    /*OSU->osu_functions->functionAlgebraics(OSU->old_data, threadData);
+    OSU->osu_functions->output_function(OSU->old_data, threadData);
+    OSU->osu_functions->function_storeDelayed(OSU->old_data, threadData);
+
+    storePreValues(OSU->osu_data); */
+    *enterEventMode = omsi_false;
+    *terminateSimulation = omsi_false;
+
+    /******** check state selection ********/
+/*#if !defined(OMC_NO_STATESELECTION) */
+#if 0
+    if (stateSelection(OSU->old_data, threadData, 1, 0)) {
+        /* if new set is calculated reinit the solver */
+        *enterEventMode = omsi_true;
+        LOG_FILTER(OSU, LOG_ALL,
+            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+            "fmi2CompletedIntegratorStep: Need to iterate state values changed!"))
+    }
+#endif
+    /* TODO: fix the extrapolation in non-linear system
+     *       then we can stop to save all variables in
+     *       in the whole ringbuffer
+     */
+
+    /* overwriteOldSimulationData(OSU->old_data); */
+    return omsi_ok;
+
+    /* ToDo: catch */
+    /* MMC_CATCH_INTERNAL (simulationJumpBuffer)
+
+    FILTERED_LOG(OSU, omsi_error, LOG_FMI2_CALL,
+            "fmi2CompletedIntegratorStep: terminated by an assertion.")
+    return omsi_error;*/
+}
+
+
+/*
+ * Computes state derivatives at the current time instant and for the current states.
+ */
+omsi_status omsi_get_derivatives(osu_t*             OSU,
+                                 omsi_real          derivatives[],
+                                 omsi_unsigned_int  nx) {
+
+    /* Variables */
+    omsi_unsigned_int i, vr;
+
+    /* threadData_t *threadData = OSU->threadData; */
+
+    if (invalidState(OSU, "fmi2GetDerivatives",  modelEventMode | modelContinuousTimeMode | modelTerminated | modelError, ~0)) {
+        return omsi_error;
+    }
+    if (invalidNumber(OSU, "fmi2GetDerivatives", "nx", nx, OSU->osu_data->model_data->n_states)) {
+        return omsi_error;
+    }
+    if (nullPointer(OSU, "fmi2GetDerivatives", "derivatives[]", derivatives)) {
+        return omsi_error;
+    }
+
+    /* ToDo: try */
+    /* MMC_TRY_INTERNAL (simulationJumpBuffer) */
+
+    /* Loc function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2GetDerivatives"))
+
+
+    /* Evaluate needed equations */
+    if (OSU->_need_update) {
+        OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
+        OSU->_need_update = omsi_false;
+    }
+
+    for (i = 0; i < nx; i++) {
+        vr = OSU->vrStatesDerivatives[i];
+        derivatives[i] = getReal(OSU, vr);
+        LOG_FILTER(OSU, LOG_ALL,
+            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+                    "fmi2GetDerivatives: #r%d# = %.16g", vr, derivatives[i]))
+    }
+
+    return omsi_ok;
+
+    /* ToDo: catch */
+    /* MMC_CATCH_INTERNAL (simulationJumpBuffer)
+
+    FILTERED_LOG(OSU, omsi_error, LOG_FMI2_CALL,
+            "fmi2GetDerivatives: terminated by an assertion.")
+    return omsi_error;*/
+}
+
+/*
+ * ToDo: Comment me
+ * Actually does nothing at the moment ¯\_(ツ)_/¯
+ */
+omsi_status omsi_get_directional_derivative(osu_t*                  OSU,
+                                            const omsi_unsigned_int vUnknown_ref[],
+                                            omsi_unsigned_int       nUnknown,
+                                            const omsi_unsigned_int vKnown_ref[],
+                                            omsi_unsigned_int       nKnown,
+                                            const omsi_real         dvKnown[],
+                                            omsi_real               dvUnknown[]) {
+
+    /* Variables */
+    omsi_unsigned_int i;
+
+    if (invalidState(OSU, "fmi2GetDirectionalDerivative", modelInstantiated | modelEventMode | modelContinuousTimeMode, ~0)) {
+        return omsi_error;
+    }
+
+    /* Log function call */
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2GetDirectionalDerivative"))
+
+    if (!OSU->_has_jacobian) {
+        unsupportedFunction(OSU, "fmi2GetDirectionalDerivative", modelInitializationMode | modelEventMode | modelContinuousTimeMode | modelTerminated | modelError);
+        return  omsi_error;
+    }
+
+#if 0
+    /***************************************/
+    // This code assumes that the FMU variables are always sorted,
+    // states first and then derivatives.
+    // This is true for the actual OMC FMUs.
+    // Anyway we'll check that the references are in the valid range
+    for (i = 0; i < nUnknown; i++) {
+        if (vUnknown_ref[i] >= OSU->osu_data->model_data->n_states)
+            // We are only computing the A part of the Jacobian for now
+            // so unknowns can only be states
+            return omsi_error;
+    }
+    for (i = 0; i < nKnown; i++) {
+        if (vKnown_ref[i] >= 2 * OSU->osu_data->model_data->n_states) {
+            // We are only computing the A part of the Jacobian for now
+            // so knowns can only be states derivatives
+            return omsi_error;
+        }
+    }
+    OSU->osu_functions->functionFMIJacobian(OSU->old_data, OSU->threadData,
+            vUnknown_ref, nUnknown, vKnown_ref, nKnown, (double*) dvKnown,
+            dvUnknown);
+
+    /***************************************/
+#endif
+
+    return omsi_ok;
 }

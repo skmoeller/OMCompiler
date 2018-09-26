@@ -44,81 +44,53 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <omsu_helper.h>
-#include <omsu_utils.h>
-#include <omsu_me.h>
-#include <fmi2Functions.h>
 
-/*! \fn  omsi_new_discrete_state
- *
- *  This function sets a the discrete state.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_new_discrete_state(fmi2Component  c, fmi2EventInfo* eventInfo);
+#include <omsi.h>
+#include <omsi_callbacks.h>
+#include <omsi_global.h>
+#include <omsi_utils.h>
 
-/*! \fn  omsi_enter_continuous_time_mode
- *
- *  This function enters continuous time mode.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_enter_continuous_time_mode(fmi2Component c);
+#include <omsu_GettersAndSetters.h>
+#include <omsu_EventSimulation.h>
 
-/*! \fn  omsi_set_continuous_states
- *
- *  This function sets continuous states of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_set_continuous_states(fmi2Component c, const fmi2Real x[], size_t nx);
+/*#include <omsu_helper.h>
+#include <omsu_me.h>*/
 
-/*! \fn omsi_get_continuous_states
- *
- *  This function gets continuous states of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_continuous_states(fmi2Component c, fmi2Real x[], size_t nx);
+/* function prototypes */
+omsi_status omsi_new_discrete_state(osu_t*              OSU,
+                                    omsi_event_info*    eventInfo);
 
-/*! \fn omsi_get_nominals_of_continuous_states
- *
- *  This function gets nominals of continuous states of the model.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_nominals_of_continuous_states(fmi2Component c,fmi2Real x_nominal[], size_t nx);
+omsi_status omsi_enter_continuous_time_mode(osu_t* OSU);
 
-/*! \fn  omsi_completed_integrator_step
- *
- *  This function completes an integrator step
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_completed_integrator_step(fmi2Component c,
-                                          fmi2Boolean   noSetFMUStatePriorToCurrentPoint,
-                                          fmi2Boolean*  enterEventMode,
-                                          fmi2Boolean*  terminateSimulation);
-										  fmi2Status fmi2_get_fmu_state(fmi2Component c, fmi2FMUstate* FMUstate);
+omsi_status omsi_set_continuous_states(osu_t*               OSU,
+                                       const omsi_real      x[],
+                                       omsi_unsigned_int    nx);
 
-/*! \fn omsi_get_derivatives
-*
-*  This function obtains derivatives of the model.
-*
-*  \param [ref] [data]
-*/
-fmi2Status omsi_get_derivatives(fmi2Component c, fmi2Real derivatives[], size_t nx);
+omsi_status omsi_get_continuous_states(osu_t*               OSU,
+                                       omsi_real            x[],
+                                       omsi_unsigned_int    nx);
 
-/*! \fn omsi_get_directional_derivative
- *
- *  This function gets the directional derivative.
- *
- *  \param [ref] [data]
- */
-fmi2Status omsi_get_directional_derivative(fmi2Component c,
-										  const fmi2ValueReference vUnknown_ref[], size_t nUnknown,
-										  const fmi2ValueReference vKnown_ref[],   size_t nKnown,
-										  const fmi2Real dvKnown[], fmi2Real dvUnknown[]);
+omsi_status omsi_get_nominals_of_continuous_states(osu_t*               OSU,
+                                                   omsi_real            x_nominal[],
+                                                   omsi_unsigned_int    nx);
+
+omsi_status omsi_completed_integrator_step(osu_t*       OSU,
+                                           omsi_bool    noSetFMUStatePriorToCurrentPoint,
+                                           omsi_bool*   enterEventMode,
+                                           omsi_bool*   terminateSimulation);
+
+omsi_status omsi_get_derivatives(osu_t*             OSU,
+                                 omsi_real          derivatives[],
+                                 omsi_unsigned_int  nx);
+
+omsi_status omsi_get_directional_derivative(osu_t*                  OSU,
+                                            const omsi_unsigned_int vUnknown_ref[],
+                                            omsi_unsigned_int       nUnknown,
+                                            const omsi_unsigned_int vKnown_ref[],
+                                            omsi_unsigned_int       nKnown,
+                                            const omsi_real         dvKnown[],
+                                            omsi_real               dvUnknown[]);
+
 
 #ifdef __cplusplus
 }

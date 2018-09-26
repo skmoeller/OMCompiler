@@ -19,7 +19,7 @@ include_directories ("${CMAKE_SOURCE_DIR}/include/solver")
 include_directories ("${CMAKE_SOURCE_DIR}/include/omsu")
 include_directories ("${OMSI_SOURCE_DIR}/base/include")
 
-add_library(${OMSUName} STATIC omsu_helper.c omsu_initialization.c omsu_GettersAndSetters.c omsu_EventSimulation.c)
+add_library(${OMSUName} STATIC omsu_helper.c omsu_initialization.c omsu_GettersAndSetters.c omsu_EventSimulation.c omsu_ContinuousSimulation.c)
 
 target_link_libraries(${OMSUName} ${CMAKE_DL_LIBS} ${libOMSIBase})
 
