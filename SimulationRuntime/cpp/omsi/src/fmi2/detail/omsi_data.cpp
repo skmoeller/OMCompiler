@@ -29,17 +29,17 @@ omsi_t* instantiate_omsi(omsi_string                    instanceName,
 	}
 	string initXMLFilename = get_init_file_name(instanceName, fmuResourceLocation);
 	if (omsu_process_input_xml(omsu, initXMLFilename.c_str() , fmuGUID, instanceName, functions)) {     // ToDo: needs some information beforehand
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename);
+		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename.c_str());
 		return NULL;
 	}
 
 	if ((omsu_allocate_sim_data(omsu, functions, instanceName))) {     // ToDo: needs some information beforehand
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename);
+		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename.c_str());
 		return NULL;
 	}
 
 	if ((omsi_allocate_model_variables(omsu, functions))){     // ToDo: needs some information beforehand
-		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename);
+		functions->logger(functions->componentEnvironment, instanceName, omsi_error, "error", "fmi2Instantiate: Could not process %s.", initXMLFilename.c_str());
 		return NULL;
 	}
 
