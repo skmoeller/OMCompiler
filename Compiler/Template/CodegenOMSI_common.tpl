@@ -355,7 +355,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       if (!algSystem->jacobian) {
         return omsi_error;
       }
-      if (!problem2_initialize_derivativeMatFunc_<%algSysIndex%>_OMSIFunc(algSystem->jacobian)){
+      if (problem2_initialize_derivativeMatFunc_<%algSysIndex%>_OMSIFunc(algSystem->jacobian) == omsi_error){
         return omsi_error;
       }
 
@@ -364,7 +364,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       if (!algSystem->functions) {
         return omsi_error;
       }
-      if (!problem2_initialize_resFunction_<%algSysIndex%>_OMSIFunc(algSystem->functions)){
+      if (problem2_initialize_resFunction_<%algSysIndex%>_OMSIFunc(algSystem->functions) == omsi_error){
         return omsi_error;
       }
 
@@ -479,7 +479,7 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
         >>
       %>
 
-      if (!instantiate_input_inner_output_indices (omsi_function, <%listLength(inputVars)%>, <%listLength(outputVars)%>)) {
+      if (instantiate_input_inner_output_indices (omsi_function, <%listLength(inputVars)%>, <%listLength(outputVars)%>) == omsi_error) {
         return omsi_error;
       }
 
