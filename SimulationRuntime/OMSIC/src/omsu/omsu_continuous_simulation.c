@@ -47,6 +47,7 @@ omsi_status omsi_new_discrete_state(osu_t*              OSU,
     /* Variables */
     omsi_status returnValue;
 
+    /* Check inputs */
     if (invalidState(OSU, "fmi2NewDiscreteStates", modelEventMode, ~0)) {
         return omsi_error;
     }

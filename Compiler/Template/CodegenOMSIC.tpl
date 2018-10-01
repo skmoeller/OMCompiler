@@ -155,6 +155,9 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
      -I<%fileNamePrefix%>.fmutmp/sources/include/solver \
      -I<%fileNamePrefix%>.fmutmp/sources/include/fmi2
 
+    EXPATDIR=<%makefileParams.omhome%>/../OMCompiler/3rdParty/FMIL/build/ExpatEx
+    EXPAT=libexpat.a
+
     LIBS=-lOMSISolver_static -lOMSU_static -lOMSIBase_static
     LIBSDIR=-L<%fileNamePrefix%>.fmutmp/sources/libs
 
@@ -163,6 +166,11 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     all: <%fileNamePrefix%>_FMU
 
     <%fileNamePrefix%>_FMU : compile
+    <%\t%>cd <%fileNamePrefix%>.fmutmp; \
+    <%\t%>zip<%exeEnding%> -r ../<%fileNamePrefix%>.fmu *;\
+    <%\t%>cd ..;\
+    <%\t%>rm -rf <%fileNamePrefix%>.fmutmp
+
 
     copyFiles: makeStructure
     <%\t%>cp -a $(OMHOME)/include/omc/omsi/* <%includedir%>
@@ -170,6 +178,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     <%\t%>cp -a $(OMHOME)/lib/omc/omsi/libOMSIBase_static.* <%fileNamePrefix%>.fmutmp/sources/libs
     <%\t%>cp -a $(OMHOME)/lib/omc/omsi/libOMSU_static.* <%fileNamePrefix%>.fmutmp/sources/libs
     <%\t%>cp -a $(OMHOME)/lib/omc/omsi/libOMSISolver_static.* <%fileNamePrefix%>.fmutmp/sources/libs
+    <%\t%>cp -f $(EXPATDIR)/$(EXPAT) <%fileNamePrefix%>.fmutmp/sources/libs
 
     <%\t%>cp -a modelDescription.xml <%fileNamePrefix%>.fmutmp/
     <%\t%>cp -a $(CFILES) <%fileNamePrefix%>.fmutmp/sources/
@@ -183,7 +192,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     <%\t%><%mkdir%> -p <%fileNamePrefix%>.fmutmp/binaries/<%makefileParams.platform%>
 
     compile: $(OFILES) copyLibs copyFiles
-    <%\t%>$(AR) <%fileNamePrefix%>.a $(OFILES) libOMSIBase_static.a libOMSU_static.a libOMSISolver_static.a
+    <%\t%>$(AR) <%fileNamePrefix%>.a $(OFILES) $(EXPAT) libOMSIBase_static.a libOMSU_static.a libOMSISolver_static.a
     <%\t%>cp -a <%fileNamePrefix%>.a <%fileNamePrefix%>.fmutmp/binaries/<%makefileParams.platform%>/
 
     %.o : %.c copyFiles
@@ -193,6 +202,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     <%\t%>cp -f $(OMHOME)/lib/omc/omsi/libOMSIBase_static.a .
     <%\t%>cp -f $(OMHOME)/lib/omc/omsi/libOMSU_static.a .
     <%\t%>cp -f $(OMHOME)/lib/omc/omsi/libOMSISolver_static.a .
+    <%\t%>cp -f $(EXPATDIR)/$(EXPAT) .
 
     clean:
     <%\t%>rm -f *.o

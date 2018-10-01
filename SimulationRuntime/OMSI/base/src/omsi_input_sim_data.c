@@ -67,7 +67,7 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
     /* osu_functions->initialize_initialization_problem(omsi_data->sim_data->initialization); */ /* ToDo: not implemented yet */
 
     /* Call generated initialization function for initialization problem */
-    if (!template_function->initialize_simulation_problem(omsi_data->sim_data->simulation)) {
+    if (template_function->initialize_simulation_problem(omsi_data->sim_data->simulation)==omsi_error) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             global_callback->logger(global_callback->componentEnvironment, global_instance_name,
             omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating initialization problem with generated code."))

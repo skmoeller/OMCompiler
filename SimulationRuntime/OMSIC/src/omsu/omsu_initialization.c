@@ -241,14 +241,17 @@ omsi_status omsi_exit_initialization_mode(osu_t* OSU) {
 
     if (invalidState(OSU, "fmi2ExitInitializationMode", modelInitializationMode, ~0))
         return omsi_error;
-    LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2ExitInitializationMode..."))
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+        "fmi2ExitInitializationMode: ...."))
 
     /* ToDo: free OSU->omsi_data->initialization */
     /* ToDo: allocate OSU->omsi_data->simulation here to save some memory? */
 
     OSU->state = modelEventMode;
-    LOG_FILTER(OSU, LOG_ALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2ExitInitializationMode: succeed"))
+    LOG_FILTER(OSU, LOG_FMI2_CALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+        "fmi2ExitInitializationMode: Success."))
 
     return omsi_ok;
 }
