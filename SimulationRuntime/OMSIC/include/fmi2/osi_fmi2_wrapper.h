@@ -37,31 +37,22 @@
 #define OSI_FMI2_WRAPPER_H
 
 /* FMI2 interface */
-#include <omsu_initialization.h>
-#include "fmi2Functions.h"
-#include "fmi2FunctionTypes.h"
-#include "fmi2TypesPlatform.h"
+#include <fmi2Functions.h>
+#include <fmi2FunctionTypes.h>
+#include <fmi2TypesPlatform.h>
 
 /* OpenModelica Simulation Interface */
 #include <omsi.h>
-#include <omsu_common.h>
-#include <omsu_utils.h>
-#include <omsu_me.h>
-
+#include <omsi_utils.h>
+#include <omsu_initialization.h>
+#include <omsu_getters_and_setters.h>
+#include <omsu_continuous_simulation.h>
+#include <omsu_continuous_simulation.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* type definitions of variables */
-typedef fmi2ValueReference omsi_unsignedInt;
-typedef fmi2Real omsi_real;
-typedef fmi2Integer omsi_int;
-typedef fmi2Boolean omsi_bool;
-typedef fmi2Char omsi_char;
-typedef fmi2String omsi_string;
-typedef fmi2Byte omsi_byte;
 
 /* Function prototypes */
 FMI2_Export const char* fmi2GetTypesPlatform(void);
