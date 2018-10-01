@@ -796,12 +796,6 @@ algorithm
         runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file="modelDescription.xml");
         runTplWriteFile(func = function CodegenOMSIC.createMakefile(a_simCode=simCode, a_target=Config.simulationCodeTarget(), a_FileNamePrefix=fileprefix, a_makeflieName=fileprefix+"_FMU.makefile"), file=fileprefix+"_FMU.makefile");
 
-        if 0 <> System.systemCall("cp -f /d/workspace/OpenModelica/build/lib/omc/omsi/*.dll .") then
-          if 0 <> System.systemCall("cp -f /d/workspace/OpenModelica/build/lib/omc/omsi/*.a .") then
-            Error.addInternalError("Failed to copy OMSI libraries", sourceInfo());
-          end if;
-        end if;
-
         runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(a_simCode=simCode), file=fileprefix+"_omsic.c");
         
         //runTplWriteFile(func = function CodegenOMSIC_Equations.generateEquationFiles(a_simCode=simCode, a_fileNamePrefix=fileprefix, a_name="allEqns"), file=fileprefix+"_eqns.c");

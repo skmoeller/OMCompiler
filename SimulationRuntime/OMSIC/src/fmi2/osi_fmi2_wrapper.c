@@ -38,7 +38,6 @@
 #include <osi_fmi2_wrapper.h>
 
 
-
 FMI2_Export const char* fmi2GetTypesPlatform(void) {
     return fmi2TypesPlatform;
 }
