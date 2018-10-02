@@ -19,12 +19,15 @@ ELSE(BUILD_SHARED_LIBS)
   SET(LIBSUFFIX "_static")
 ENDIF(BUILD_SHARED_LIBS)
 
- IF(MSVC)
+
+
+IF(MSVC)
   MESSAGE(STATUS "MSVC")
-  SET(LIBINSTALLEXT "/lib/omc/omsi/msvc" CACHE STRING "library directory")
+  SET(LIBINSTALLEXT "${LIB_OMC}/omsi/msvc" CACHE STRING "library directory")
 ELSE(MSVC)
-  SET(LIBINSTALLEXT "/lib/omc/omsi" CACHE STRING "library directory")
- ENDIF(MSVC)
+  SET(LIBINSTALLEXT "${LIB_OMC}/omsi" CACHE STRING "library directory")
+ENDIF(MSVC)
+message(STATUS "Libs will be installed in ${LIBINSTALLEXT}")
 
 SET(OSUBaseName ${LIBPREFIX}OMSIBase${LIBSUFFIX})
 

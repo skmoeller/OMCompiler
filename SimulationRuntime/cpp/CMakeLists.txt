@@ -110,6 +110,7 @@ else()
   message(STATUS "Libs will be installed in ${LIBINSTALLEXT}")
 endif()
 message(STATUS "Libs will be installed in ${LIBINSTALLEXT}")
+message(STATUS "Libs will be installed in MACHINE = ${MACHINE} PLATFORM = ${PLATFORM}   -> ${LIBINSTALLEXT}")
 
 MESSAGE(STATUS "CMake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
 

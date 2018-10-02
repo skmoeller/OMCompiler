@@ -6,7 +6,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 # enable warnings and use ANSI C compatible compiler
 if(CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "GCC detected, adding compile flags")
-    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -g")
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -Wall -Wextra -pedantic -g")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 #set exapat lib for visual studio compiler
@@ -28,7 +28,8 @@ ELSE(WIN32)
     target_link_libraries(${OSUBaseName} ${CMAKE_DL_LIBS} )
 ENDIF(WIN32)
 
-install(TARGETS ${OSUBaseName} DESTINATION ${LIBINSTALLEXT})
+install(TARGETS ${OSUBaseName} DESTINATION /${LIBINSTALLEXT})
+message(STATUS "target = ${TARGETS} base = ${OSUBaseName}  dest = ${DESTINATION} libinst = ${LIBINSTALLEXT}")
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h

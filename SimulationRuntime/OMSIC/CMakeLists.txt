@@ -7,7 +7,7 @@ PROJECT(OMSICSimulationRuntime)
 # enable warnings and use ANSI C compatible compiler
 if(CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "GCC detected, adding compile flags")
-  set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -ansi -pedantic -g")
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -Wall -Wextra -ansi -pedantic -g")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if(NOT PLATFORM OR PLATFORM STREQUAL "dynamic")
@@ -23,12 +23,14 @@ ELSE(BUILD_SHARED_LIBS)
   SET(LIBSUFFIX "_static")
 ENDIF(BUILD_SHARED_LIBS)
 
- IF(MSVC)
+IF(MSVC)
   MESSAGE(STATUS "MSVC")
-  SET(LIBINSTALLEXT "/lib/omc/omsi/msvc" CACHE STRING "library directory")
+  SET(LIBINSTALLEXT "${LIB_OMC}/omsi/msvc" CACHE STRING "library directory")
 ELSE(MSVC)
-  SET(LIBINSTALLEXT "/lib/omc/omsi" CACHE STRING "library directory")
- ENDIF(MSVC)
+  SET(LIBINSTALLEXT "${LIB_OMC}/omsi" CACHE STRING "library directory")
+ENDIF(MSVC)
+message(STATUS "Libs will be installed in ${LIBINSTALLEXT}")
+
 
 SET(OSUCName ${LIBPREFIX}OMSIC${LIBSUFFIX})
 
@@ -54,7 +56,18 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_common.h
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_helper.h
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_initialization.h
+  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_getters_and_setters.h
+  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_continuous_simulation.h
+  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_event_simulation.h
 DESTINATION /include/omc/omsic)
+
+install(FILES
+  ${CMAKE_SOURCE_DIR}/include/fmi2/osi_fmi2_wrapper.h
+  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2Functions.h
+  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2FunctionTypes.h
+  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2TypesPlatform.h
+DESTINATION /include/omc/omsic/fmi2/)
+
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/solver/solver_helper.h

@@ -38,6 +38,14 @@
 #include <osi_fmi2_wrapper.h>
 
 
+/* OpenModelica Simulation Interface */
+#include <omsi.h>
+#include <omsi_utils.h>
+#include <omsu_initialization.h>
+#include <omsu_getters_and_setters.h>
+#include <omsu_continuous_simulation.h>
+
+
 FMI2_Export const char* fmi2GetTypesPlatform(void) {
     return fmi2TypesPlatform;
 }

@@ -84,7 +84,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   <%insertCopyrightOpenModelica()%>
 
   /* All Equations Code */
-  #include <<%headerFileName%>.h>
+  #include "<%headerFileName%>.h"
 
   #if defined(__cplusplus)
   extern "C" {
@@ -130,7 +130,7 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '<%funcCallArgName%>, model_vars_and_params, &res[i++]') +"\n"
         <<>>
       case algSystem as SES_ALGEBRAIC_SYSTEM(__) then
-        let &includes += "#include <"+ FileNamePrefix + "_sim_algSyst_" + algSysIndex + ".h>\n"
+        let &includes += <<#include "<%FileNamePrefix%>_sim_algSyst_<%algSysIndex%>.h"<%\n%>>>
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, '&<%funcCallArgName%>->algebraic_system_t[<%algSysIndex%>], model_vars_and_params, simulation->function_vars') +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix)
@@ -167,7 +167,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
 
     // generate jacobian matrix files
-    let &includes += <<#include <<%FileNamePrefix%>_sim_derMat_<%algSystem.algSysIndex%>.h><%\n%>>>
+    let &includes += <<#include "<%FileNamePrefix%>_sim_derMat_<%algSystem.algSysIndex%>.h"<%\n%>>>
     let _ = generateDerivativeFile(matrix, FileNamePrefix, algSystem.algSysIndex)
 
     // generate algebraic system header file
@@ -184,7 +184,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   <%insertCopyrightOpenModelica()%>
 
   /* Algebraic system code */
-  #include <<%headerFileName%>.h>
+  #include "<%headerFileName%>.h"
 
   #if defined(__cplusplus)
   extern "C" {
@@ -295,7 +295,7 @@ template generateDerivativeFile (Option<DerivativeMatrix> matrix, String FileNam
     <%insertCopyrightOpenModelica()%>
 
     /* derivative matrix code for algebraic system <%index%>*/
-    #include <<%headerFileName%>.h>
+    #include "<%headerFileName%>.h"
 
     #if defined(__cplusplus)
     extern "C" {

@@ -41,15 +41,6 @@
 #include <fmi2FunctionTypes.h>
 #include <fmi2TypesPlatform.h>
 
-/* OpenModelica Simulation Interface */
-#include <omsi.h>
-#include <omsi_utils.h>
-#include <omsu_initialization.h>
-#include <omsu_getters_and_setters.h>
-#include <omsu_continuous_simulation.h>
-#include <omsu_continuous_simulation.h>
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
