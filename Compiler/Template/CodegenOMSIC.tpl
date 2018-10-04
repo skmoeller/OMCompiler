@@ -124,7 +124,6 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
   case SIMCODE(modelInfo=MODELINFO(__), makefileParams=MAKEFILE_PARAMS(__), simulationSettingsOpt = sopt) then
     let includedir = '<%fileNamePrefix%>.fmutmp/sources/include/'
     let mkdir = match makefileParams.platform case "win32" case "win64" then '"mkdir.exe"' else 'mkdir'
-    let libEnding = match makefileParams.platform case "win32" case "win64" then 'dll' else 'so'
     let exeEnding = match makefileParams.platform case "win32" case "win64" then '.exe' else ''
 
     <<
@@ -139,6 +138,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
 
     RUNTIMEPATH=.
 
+    # Files
     MAINFILE=<%fileNamePrefix%>_omsic.c
     MAINOBJ=<%fileNamePrefix%>_omsic.o
     # INIT_FILES=<%fileNamePrefix%>_init_equations.c \
@@ -153,6 +153,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
 
     GENERATEDFILES=$(MAINFILE) <%fileNamePrefix%>_FMU.makefile # ...
 
+    # Includes
     INCLUDE_DIR_OMSI=$(OMHOME)/include/omc/omsi
     INCLUDE_DIR_OMSI_BASE=$(OMHOME)/include/omc/omsi/base
     INCLUDE_DIR_OMSI_SOLVER=$(OMHOME)/include/omc/omsi/solver
@@ -160,15 +161,13 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     INCLUDE_DIR_OMSIC=$(OMHOME)/include/omc/omsic
     INCLUDE_DIR_OMSIC_FMI2=$(OMHOME)/include/omc/omsic/fmi2
 
-    EXPATDIR=<%makefileParams.omhome%>/../OMCompiler/3rdParty/FMIL/build/ExpatEx
-    EXPAT=libexpat.a
-
-    LIBS=-lOMSISolver_static -lOMSU_static -lOMSIBase_static
-    LIBSDIR_dllext=<%makefileParams.dllext%>
-    LIBSDIR_rt_libs=<%makefileParams.runtimelibs%>
-    LIBSDIR=<%makefileParams.libs |> lib => '<%lib%>';separator="\n"%>
-    LIBSDIR_platform=<%makefileParams.platform%>
-    LIBSDIR_comileDir=<%makefileParams.compileDir%>
+    # Libraries
+    EXPAT_LIBDIR=-L$(OMHOME)/../OMCompiler/3rdParty/FMIL/build/ExpatEx
+    EXPAT_LIB=-lexpat
+    OMSU_STATIC_LIB=-Wl,--whole-archive -lOMSU_static -Wl,--no-whole-archive
+    OMSU_STATIC_LIBDIR=-L$(OMHOME)/lib/omc/omsi
+    LIBS = $(OMSU_STATIC_LIB) -Wl,-Bdynamic -lOMSISolver -lOMSIBase $(EXPAT_LIB)
+    LIBSDIR= $(OMSU_STATIC_LIBDIR) $(EXPAT_LIBDIR)
 
     .PHONY: clean
 
@@ -187,7 +186,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     <%\t%>cp -a $(OMHOME)/lib/omc/omsi/libOMSIBase_static.* <%fileNamePrefix%>.fmutmp/sources/libs
     <%\t%>cp -a $(OMHOME)/lib/omc/omsi/libOMSU_static.* <%fileNamePrefix%>.fmutmp/sources/libs
     <%\t%>cp -a $(OMHOME)/lib/omc/omsi/libOMSISolver_static.* <%fileNamePrefix%>.fmutmp/sources/libs
-    <%\t%>cp -f $(EXPATDIR)/$(EXPAT) <%fileNamePrefix%>.fmutmp/sources/libs
+    <%\t%>cp -f $(OMHOME)/../OMCompiler/3rdParty/FMIL/build/ExpatEx/libexpat.a <%fileNamePrefix%>.fmutmp/sources/libs
 
     <%\t%>cp -a modelDescription.xml <%fileNamePrefix%>.fmutmp/
     <%\t%>cp -a $(CFILES) <%fileNamePrefix%>.fmutmp/sources/
@@ -201,17 +200,15 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     <%\t%><%mkdir%> -p <%fileNamePrefix%>.fmutmp/binaries/<%makefileParams.platform%>
 
     compile: $(OFILES) copyLibs copyFiles
-    <%\t%>$(LD) -o <%fileNamePrefix%>.<%libEnding%> $(OFILES) $(EXPAT) $(LIBS)
-    <%\t%>cp -a <%fileNamePrefix%>.<%libEnding%> <%fileNamePrefix%>.fmutmp/binaries/<%makefileParams.platform%>/
+    <%\t%>$(LD) -o <%fileNamePrefix%><%makefileParams.dllext%> $(OFILES) $(LIBSDIR) $(LIBS)
+    <%\t%>cp -a <%fileNamePrefix%><%makefileParams.dllext%> <%fileNamePrefix%>.fmutmp/binaries/<%makefileParams.platform%>/
 
     %.o : %.c copyFiles
     <%\t%>$(CC) $(CFLAGS) -I$(INCLUDE_DIR_OMSI)  -I$(INCLUDE_DIR_OMSI_BASE) -I$(INCLUDE_DIR_OMSI_SOLVER) -I$(INCLUDE_DIR_OMSI_FMI2) -I$(INCLUDE_DIR_OMSIC) -I$(INCLUDE_DIR_OMSIC_FMI2) -c $<
 
     copyLibs:
-    <%\t%>cp -f $(OMHOME)/lib/omc/omsi/libOMSIBase_static.a .
-    <%\t%>cp -f $(OMHOME)/lib/omc/omsi/libOMSU_static.a .
-    <%\t%>cp -f $(OMHOME)/lib/omc/omsi/libOMSISolver_static.a .
-    <%\t%>cp -f $(EXPATDIR)/$(EXPAT) .
+    <%\t%>cp -f $(OMHOME)/lib/omc/omsi/libOMSIBase<%makefileParams.dllext%> .
+    <%\t%>cp -f $(OMHOME)/lib/omc/omsi/libOMSISolver<%makefileParams.dllext%> .
 
     clean:
     <%\t%>rm -f *.o

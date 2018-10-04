@@ -29,7 +29,6 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 install(TARGETS ${OSUBaseName} DESTINATION /${LIBINSTALLEXT})
-message(STATUS "target = ${TARGETS} base = ${OSUBaseName}  dest = ${DESTINATION} libinst = ${LIBINSTALLEXT}")
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h
@@ -40,7 +39,7 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_mmap.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_utils.h
   ${CMAKE_SOURCE_DIR}/base/include/uthash.h
-DESTINATION /include/omc/omsi/base)
+  DESTINATION /include/omc/omsi/base)
 
 
 
