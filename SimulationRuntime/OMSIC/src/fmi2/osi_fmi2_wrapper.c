@@ -35,11 +35,8 @@
 /* TODO: implement external functions in FMU wrapper for c++ target
  */
 
-#include <osi_fmi2_wrapper.h>
-
-
-/* OpenModelica Simulation Interface */
 #include <omsi.h>
+#include <omsi_fmi2_wrapper.h>
 #include <omsi_utils.h>
 #include <omsu_initialization.h>
 #include <omsu_getters_and_setters.h>
@@ -297,7 +294,7 @@ FMI2_Export fmi2Status fmi2GetDerivatives(fmi2Component c,
 
 FMI2_Export fmi2Status fmi2GetEventIndicators(fmi2Component c,
                                               fmi2Real      eventIndicators[],
-                                              size_t    ni) {
+                                              size_t        ni) {
 
     return omsi_get_event_indicators(c, eventIndicators, ni);
 }

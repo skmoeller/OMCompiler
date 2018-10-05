@@ -43,14 +43,13 @@ ADD_SUBDIRECTORY(base)
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/omsi.h
   ${CMAKE_SOURCE_DIR}/include/omsi_callbacks.h
-  ${CMAKE_SOURCE_DIR}/include/omsi_cs.h
-  ${CMAKE_SOURCE_DIR}/include/omsi_jacobian.h
-  ${CMAKE_SOURCE_DIR}/include/omsi_me.h
+  ${CMAKE_SOURCE_DIR}/include/omsi_api_functions.h
   DESTINATION /include/omc/omsi)
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/fmi2/omsi_fmi2_cs.h
   ${CMAKE_SOURCE_DIR}/include/fmi2/omsi_fmi2_me.h
+  ${CMAKE_SOURCE_DIR}/include/fmi2/omsi_fmi2_wrapper.h
   DESTINATION /include/omc/omsi/fmi2/)
 
 

@@ -47,29 +47,26 @@ ADD_SUBDIRECTORY(src/omsu)
 install(FILES
   ${OMSI_SOURCE_DIR}/include/omsi.h
   ${OMSI_SOURCE_DIR}/include/omsi_callbacks.h
-  ${OMSI_SOURCE_DIR}/include/omsi_cs.h
-  ${OMSI_SOURCE_DIR}/include/omsi_jacobian.h
-  ${OMSI_SOURCE_DIR}/include/omsi_me.h
+  ${OMSI_SOURCE_DIR}/include/omsi_api_functions.h
 DESTINATION /include/omc/omsi)
 
-install(FILES
-  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_common.h
-  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_helper.h
-  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_initialization.h
-  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_getters_and_setters.h
-  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_continuous_simulation.h
-  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_event_simulation.h
-DESTINATION /include/omc/omsic)
+#install(FILES
+#  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_common.h
+#  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_helper.h
+#  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_initialization.h
+#  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_getters_and_setters.h
+#  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_continuous_simulation.h
+#  ${CMAKE_SOURCE_DIR}/include/omsu/omsu_event_simulation.h
+#DESTINATION /include/omc/omsic)
 
-install(FILES
-  ${CMAKE_SOURCE_DIR}/include/fmi2/osi_fmi2_wrapper.h
-  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2Functions.h
-  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2FunctionTypes.h
-  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2TypesPlatform.h
-DESTINATION /include/omc/omsic/fmi2/)
+#install(FILES
+#  ${CMAKE_SOURCE_DIR}/include/fmi2/osi_fmi2_wrapper.h
+#  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2Functions.h
+#  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2FunctionTypes.h
+#  ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2TypesPlatform.h
+#DESTINATION /include/omc/omsic/fmi2/)
 
-
-install(FILES
-  ${CMAKE_SOURCE_DIR}/include/solver/solver_helper.h
-  ${CMAKE_SOURCE_DIR}/include/solver/solver_lapack.h
-DESTINATION /include/omc/omsi/solver)
+#install(FILES
+#  ${CMAKE_SOURCE_DIR}/include/solver/solver_helper.h
+#  ${CMAKE_SOURCE_DIR}/include/solver/solver_lapack.h
+#DESTINATION /include/omc/omsi/solver)

@@ -34,7 +34,7 @@
  */
 
 #ifndef OMSI_ME_H
-#define OMSI_ME_H
+#define OMSI_API_FUNC_H
 
 /* OpenModelica Simulation Unit / OpenModelica Simulation Interface */
 #include <omsu_initialization.h>

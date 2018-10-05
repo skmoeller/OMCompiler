@@ -72,7 +72,7 @@ FMI2_Export fmi2Status fmi2SerializeFMUstate(fmi2Component c, fmi2FMUstate FMUst
 FMI2_Export fmi2Status fmi2DeSerializeFMUstate(fmi2Component c, const fmi2Byte serializedState[],size_t size, fmi2FMUstate* FMUstate);
 FMI2_Export fmi2Status fmi2GetDirectionalDerivative(fmi2Component c,const fmi2ValueReference vUnknown_ref[], size_t nUnknown,const fmi2ValueReference vKnown_ref[],   size_t nKnown, const fmi2Real dvKnown[], fmi2Real dvUnknown[]);
 FMI2_Export fmi2Status fmi2EnterEventMode(fmi2Component c);
-FMI2_Export fmi2Status fmi2NewDiscreteStates(fmi2Component  c,fmi2EventInfo* fmiEventInfo);
+FMI2_Export fmi2Status fmi2NewDiscreteStates(fmi2Component c, fmi2EventInfo* fmiEventInfo);
 FMI2_Export fmi2Status fmi2EnterContinuousTimeMode(fmi2Component c);
 FMI2_Export fmi2Status fmi2CompletedIntegratorStep(fmi2Component c,fmi2Boolean   noSetFMUStatePriorToCurrentPoint, fmi2Boolean*  enterEventMode, fmi2Boolean*   terminateSimulation);
 FMI2_Export fmi2Status fmi2SetTime(fmi2Component c, fmi2Real time);
