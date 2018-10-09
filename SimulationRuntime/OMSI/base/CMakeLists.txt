@@ -30,16 +30,16 @@ ENDIF(WIN32)
 
 install(TARGETS ${OSUBaseName} DESTINATION /${LIBINSTALLEXT})
 
-#install(FILES
-#  ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h
-#  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_json.h
-#  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_model_variables.h
-#  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_sim_data.h
-#  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_xml.h
-#  ${CMAKE_SOURCE_DIR}/base/include/omsi_mmap.h
-#  ${CMAKE_SOURCE_DIR}/base/include/omsi_utils.h
-#  ${CMAKE_SOURCE_DIR}/base/include/uthash.h
-#  DESTINATION /include/omc/omsi/base)
+install(FILES
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_json.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_model_variables.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_sim_data.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_input_xml.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_mmap.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_utils.h
+  ${CMAKE_SOURCE_DIR}/base/include/uthash.h
+  DESTINATION /include/omc/omsi/base)
 
 
 

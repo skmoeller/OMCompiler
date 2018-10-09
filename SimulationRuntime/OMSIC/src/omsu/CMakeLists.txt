@@ -20,7 +20,7 @@ include_directories ("${CMAKE_SOURCE_DIR}/include/omsu")
 include_directories ("${CMAKE_SOURCE_DIR}/include/fmi2")
 include_directories ("${OMSI_SOURCE_DIR}/base/include")
 
-add_library(${OMSUName} STATIC omsu_helper.c omsu_initialization.c omsu_getters_and_setters.c omsu_event_simulation.c omsu_continuous_simulation.c ../fmi2/osi_fmi2_wrapper.c)
+add_library(${OMSUName} STATIC omsu_helper.c omsu_initialization.c omsu_getters_and_setters.c omsu_event_simulation.c omsu_continuous_simulation.c ../fmi2/omsi_fmi2_wrapper.c)
 
 target_link_libraries(${OMSUName} ${CMAKE_DL_LIBS} ${libOMSIBase})
 
