@@ -44,4 +44,4 @@ add_library(${OMSISolverName} lapack/solver_lapack.c solver_helper.c)
 
 target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} ${libOMSIBase} ${LAPACK_LIBRARIES})
 
-install(TARGETS ${OMSISolverName} DESTINATION /${LIBINSTALLEXT})
+install(TARGETS ${OMSISolverName} DESTINATION ${LIBINSTALLEXT})

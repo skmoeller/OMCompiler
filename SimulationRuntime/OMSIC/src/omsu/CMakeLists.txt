@@ -24,4 +24,4 @@ add_library(${OMSUName} STATIC omsu_helper.c omsu_initialization.c omsu_getters_
 
 target_link_libraries(${OMSUName} ${CMAKE_DL_LIBS} ${libOMSIBase})
 
-install(TARGETS ${OMSUName} DESTINATION /${LIBINSTALLEXT})
+install(TARGETS ${OMSUName} DESTINATION ${LIBINSTALLEXT})

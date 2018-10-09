@@ -28,7 +28,7 @@ ELSE(WIN32)
     target_link_libraries(${OSUBaseName} ${CMAKE_DL_LIBS} )
 ENDIF(WIN32)
 
-install(TARGETS ${OSUBaseName} DESTINATION /${LIBINSTALLEXT})
+install(TARGETS ${OSUBaseName} DESTINATION ${LIBINSTALLEXT})
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h
