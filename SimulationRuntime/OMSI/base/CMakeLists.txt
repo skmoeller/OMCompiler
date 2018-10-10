@@ -20,7 +20,14 @@ ELSE(MSVC)
 ENDIF(MSVC)
 
 include_directories ("${CMAKE_SOURCE_DIR}/base/include")
-add_library(${OSUBaseName} src/omsi_input_json.c src/omsi_input_xml.c src/omsi_mmap.c src/omsi_input_sim_data.c src/omsi_input_model_variables.c src/omsi_utils.c)
+add_library(${OSUBaseName}
+  src/omsi_initialization.c
+  src/omsi_input_json.c
+  src/omsi_input_xml.c
+  src/omsi_mmap.c
+  src/omsi_input_sim_data.c
+  src/omsi_input_model_variables.c
+  src/omsi_utils.c)
 
 IF(WIN32)
     target_link_libraries(${OSUBaseName}  ${CMAKE_DL_LIBS} wsock32 ws2_32 ${expat_lib})
@@ -32,6 +39,7 @@ install(TARGETS ${OSUBaseName} DESTINATION ${LIBINSTALLEXT})
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_initialization.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_json.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_model_variables.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_sim_data.h

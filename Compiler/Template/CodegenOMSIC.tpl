@@ -80,8 +80,6 @@ template generateOMSIC(SimCode simCode)
       callback->initialize_initialization_problem = NULL;
       callback->initialize_simulation_problem = <%fileNamePrefix%>_initialize_allEqns_OMSIFunc;
 
-      callback->functionODE = <%fileNamePrefix%>_allEqns;
-
       callback->isSet = omsi_true;
     }
 

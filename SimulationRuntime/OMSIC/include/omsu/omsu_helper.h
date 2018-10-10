@@ -54,16 +54,6 @@ extern void printLapackData(DATA_LAPACK*    lapack_data,
 
 
 /* function prototypes */
-void omsu_free_osu_data(omsi_t* omsi_data);
-
-void omsu_free_model_data (model_data_t* model_data);
-
-void omsu_free_sim_data (sim_data_t* sim_data);
-
-void omsu_free_omsi_function(omsi_function_t* omsi_function);
-
-void omsu_free_omsi_values(omsi_values* values);
-
 void omsu_print_osu (osu_t* OSU);
 
 void omsu_print_omsi_t (omsi_t*     omsi,

@@ -114,6 +114,16 @@ omsi_status omsi_set_debug_logging(osu_t*               OSU,
                                    omsi_unsigned_int    nCategories,
                                    const omsi_string    categories[]);
 
+void omsu_free_osu_data(omsi_t* omsi_data);
+
+void omsu_free_model_data (model_data_t* model_data);
+
+void omsu_free_sim_data (sim_data_t* sim_data);
+
+void omsu_free_omsi_function(omsi_function_t* omsi_function);
+
+void omsu_free_omsi_values(omsi_values* values);
+
 #ifdef __cplusplus
 }
 #endif

@@ -78,8 +78,6 @@ typedef struct omsi_template_callback_functions_t {
     omsu_initialize_omsi_function initialize_initialization_problem;  /* function pointer to initialize the initialization problem */
     omsu_initialize_omsi_function initialize_simulation_problem;      /* function pointer to initialize the simulation problem */
 
-    evaluate_function functionODE;
-    evaluate_function function_ZeroCrossings;
 }omsi_template_callback_functions_t;
 
 
