@@ -68,9 +68,10 @@ FMI2_Export fmi2Component fmi2Instantiate(fmi2String                    instance
                                           fmi2String                    fmuResourceLocation,
                                           const fmi2CallbackFunctions*  functions,
                                           fmi2Boolean                   visible,
-                                          fmi2Boolean                   loggingOn) {
+                                          fmi2Boolean                   loggingOn)
+{
 
-    return (fmi2Component) omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, (omsi_callback_functions *) functions, visible, loggingOn);
+    return (fmi2Component) omsic_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, (const omsi_callback_functions*)functions, visible, loggingOn);
 }
 
 
@@ -114,6 +115,8 @@ FMI2_Export fmi2Status fmi2GetReal(fmi2Component            c,
                                    const fmi2ValueReference vr[],
                                    size_t                   nvr,
                                    fmi2Real                 value[]) {
+
+    /* ToDo: Check for Update */
 
     return omsi_get_real(c, vr, nvr, value);
 }

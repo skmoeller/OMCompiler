@@ -44,12 +44,13 @@ extern "C" {
 #include <stdlib.h>
 #include <stdarg.h>
 
-/* Public OMSI headers */
+/* OMSI headers */
 #include <omsi.h>
 #include <omsi_callbacks.h>
 
-/* Private headers */
+/* OMSIBase headers */
 #include <omsi_global.h>
+#include <omsi_initialization.h>
 #include <omsi_input_xml.h>
 #include <omsi_input_json.h>
 #include <omsi_input_sim_data.h>
@@ -70,13 +71,13 @@ extern void omsic_model_setup_data(osu_t* OSU);
  *
  *  \param [ref] [data]
  */
-osu_t* omsi_instantiate(omsi_string                    instanceName,
-                        omsu_type                      fmuType,
-                        omsi_string                    fmuGUID,
-                        omsi_string                    fmuResourceLocation,
-                        const omsi_callback_functions* functions,
-                        omsi_bool                      visible,
-                        omsi_bool                      loggingOn);
+osu_t* omsic_instantiate(omsi_string                            instanceName,
+                         omsu_type                              fmuType,
+                         omsi_string                            fmuGUID,
+                         omsi_string                            fmuResourceLocation,
+                         const omsi_callback_functions*         functions,
+                         omsi_bool                              __attribute__((unused)) visible,
+                         omsi_bool                              loggingOn);
 
 
 /*! \fn omsi_enter_initialization_mode
