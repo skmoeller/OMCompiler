@@ -162,4 +162,6 @@ SimulationRuntime/cpp/.vs/
 SimulationRuntime/cpp/CMakeSettings.json
 SimulationRuntime/OMSI/.vs/
 SimulationRuntime/OMSI/CMakeSettings.json
+SimulationRuntime/OMSIC/.vs/
+SimulationRuntime/OMSIC/CMakeSettings.json
 tags
