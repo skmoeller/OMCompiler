@@ -64,6 +64,11 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
         return NULL;
     }
+
+    /* set global callback functions */
+    global_callback = (omsi_callback_functions*) functions;
+    global_instance_name = instanceName;
+
     global_callback->componentEnvironment = OSU;
 
     /* set general OSU data */
@@ -73,16 +78,18 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     OSU->loggingOn = loggingOn;
     OSU->GUID = (omsi_char*) functions->allocateMemory(1, strlen(fmuGUID) + 1);
     if (!OSU->GUID) {
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory.");
+        LOG_FILTER(OSU, LOG_STATUSERROR,
+            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
         return NULL;
     }
+
     strcpy(OSU->GUID, fmuGUID);
     OSU->instanceName = strdup(instanceName);
     OSU->type = fmuType;
     OSU->fmiCallbackFunctions = functions;
-    /* OSU->vrStates = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
-     * OSU->vrStatesDerivatives = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
-     */
+    OSU->vrStates = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
+    OSU->vrStatesDerivatives = (omsi_unsigned_int *) functions->allocateMemory(1, sizeof(omsi_unsigned_int));
+    OSU->osu_functions = (omsi_template_callback_functions_t*) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
 
     if (!OSU->osu_functions || !OSU->instanceName || !OSU->vrStates || !OSU->vrStatesDerivatives) {
         LOG_FILTER(OSU, LOG_STATUSERROR,
@@ -91,19 +98,21 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     }
 
     /* Set template function pointers */
-    OSU->osu_functions = (omsi_template_callback_functions_t*) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
         global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Set callback functions from template %s_omsic.c.", instanceName))
     initialize_start_function(OSU->osu_functions);      /* ToDo: At the moment only for static compilation */
 
+
     /* Call OMSIBase function for initialization of osu_data */
     OSU->osu_data = omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, OSU->osu_functions, visible, loggingOn);
+
 
     /* Set state and log informations */
     OSU->state = modelInstantiated;
     LOG_FILTER(OSU, LOG_ALL,
         functions->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
         "fmi2Instantiate: GUID=%s", fmuGUID))
+
 
     DEBUG_PRINT(omsu_print_osu(OSU))
 

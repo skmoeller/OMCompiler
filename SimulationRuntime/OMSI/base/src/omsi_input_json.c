@@ -79,6 +79,14 @@ omsi_status omsu_process_input_json(omsi_t*                         osu_data,
     global_callback = (omsi_callback_functions*) functions;
     global_instance_name = instanceName;
 
+    /* check filename for network path e.g. starting with "file://" */
+    if (strncmp(fileName, "file:///", 8) == 0 ){
+        memmove(fileName, fileName+8, strlen(fileName) - 8 + 1);
+    }
+    else if(strncmp(fileName, "file://", 7) == 0 ){
+        memmove(fileName, fileName+7, strlen(fileName) - 7 + 1);
+    }
+    /* Log function call */
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
         global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process JSON file %s.", fileName))
 

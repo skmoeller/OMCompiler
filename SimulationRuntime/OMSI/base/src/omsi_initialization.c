@@ -87,7 +87,7 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     osu_data = functions->allocateMemory(1, sizeof(omsi_t));
     /* ToDo Check error memory */
     initXMLFilename = functions->allocateMemory(20 + strlen(instanceName) + strlen(fmuResourceLocation), sizeof(omsi_char));
-    sprintf(initXMLFilename, "%s\\%s_init.xml", fmuResourceLocation, instanceName);
+    sprintf(initXMLFilename, "%s\%s_init.xml", fmuResourceLocation, instanceName);
     if (omsu_process_input_xml(osu_data, initXMLFilename, fmuGUID, instanceName, functions) == omsi_error) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not process %s.", initXMLFilename))
