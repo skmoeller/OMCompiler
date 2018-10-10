@@ -161,7 +161,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     EXPAT_LIBDIR=-L$(OMHOME)/../OMCompiler/3rdParty/FMIL/build/ExpatEx
     EXPAT_LIB=-lexpat
 
-    LAPACK_LIBDIR=<%lapackDirWn%>
+    LAPACK_LIBDIR=<%lapackDirWin%>
     LAPACK_LIB=-lopenblas
 
     OMSU_STATIC_LIB=-Wl,--whole-archive -lOMSISolver_static -lOMSIBase_static -lOMSU_static -Wl,--no-whole-archive
