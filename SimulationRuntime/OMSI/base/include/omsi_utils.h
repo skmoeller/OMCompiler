@@ -51,6 +51,10 @@
 extern "C" {
 #endif
 
+#if _MSC_VER
+#define __attribute__(x)
+#endif
+
 /* used for filtered_log */
 #define LOG_EVENTS                      0
 #define LOG_SINGULARLINEARSYSTEMS       1
