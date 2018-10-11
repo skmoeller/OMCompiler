@@ -54,6 +54,17 @@ extern void printLapackData(DATA_LAPACK*    lapack_data,
 
 
 /* function prototypes */
+omsi_bool omsu_discrete_changes(osu_t*  OSU,
+                                void*   threadData);
+
+void omsu_storePreValues(omsi_t* omsi_data);
+
+omsi_bool omsu_values_equal(omsi_values*    vars_1,
+                            omsi_values*    vars_2);
+
+omsi_status omsu_copy_values(omsi_values*   target_vars,
+                             omsi_values*   source_vars);
+
 void omsu_print_osu (osu_t* OSU);
 
 void omsu_print_omsi_t (omsi_t*     omsi,

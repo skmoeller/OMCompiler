@@ -145,26 +145,33 @@ omsi_status omsi_event_update(osu_t*              OSU,
 #if 0
 #if !defined(OMC_NO_STATESELECTION)
     if (stateSelection(OSU->old_data, OSU->threadData, 1, 1)) {
-        FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
-                "fmi2EventUpdate: Need to iterate state values changed!")
+        LOG_FILTER(OSU, LOG_FMI2_CALL,
+            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+            "fmi2EventUpdate: Need to iterate state values changed!"))
         /* if new set is calculated reinit the solver */
         eventInfo->valuesOfContinuousStatesChanged = omsi_true;
     }
 #endif
+#endif
 
-    storePreValues(OSU->old_data);
+    omsu_storePreValues(OSU->osu_data);
 
+    /* ToDo: Add sample events */
+#if 0
     /* activate sample event */
     for (i = 0; i < OSU->old_data->modelData->nSamples; ++i) {
         if (OSU->old_data->simulationInfo->nextSampleTimes[i]
                 <= OSU->old_data->localData[0]->timeValue) {
             OSU->old_data->simulationInfo->samples[i] = 1;
-            //infoStreamPrint(LOG_EVENTS, 0, "[%ld] sample(%g, %g)", OSU->old_data->modelData->samplesInfo[i].index, OSU->old_data->modelData->samplesInfo[i].start, OSU->old_data->modelData->samplesInfo[i].interval);        //ToDO: implement
+            //infoStreamPrint(LOG_EVENTS, 0, "[%ld] sample(%g, %g)", OSU->old_data->modelData->samplesInfo[i].index, OSU->old_data->modelData->samplesInfo[i].start, OSU->old_data->modelData->samplesInfo[i].interval);
         }
     }
+#endif
 
-    OSU->old_data->callback->functionDAE(OSU->old_data, OSU->threadData);
+    /*evaluate functionDAE */
+    OSU->osu_data->sim_data->simulation->evaluate(OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->simulation->function_vars, NULL);
 
+#if 0
     /* deactivate sample events */
     for (i = 0; i < OSU->old_data->modelData->nSamples; ++i) {
         if (OSU->old_data->simulationInfo->samples[i]) {
@@ -180,6 +187,13 @@ omsi_status omsi_event_update(osu_t*              OSU,
                         < OSU->old_data->simulationInfo->nextSampleEvent))
             OSU->old_data->simulationInfo->nextSampleEvent =
                     OSU->old_data->simulationInfo->nextSampleTimes[i];
+#endif
+
+    /* ToDo: check for discrete changes */
+#if 0
+    if (omsu_discrete_changes(OSU->osu_data, thread_data) || eventInfo->valuesOfContinuousStatesChanged) {
+        /* ? */
+    }
 
     //if(OSU->old_data->callback->checkForDiscreteChanges(OSU->old_data, OSU->threadData) || OSU->old_data->simulationInfo->needToIterate || checkRelations(OSU->old_data) || eventInfo->valuesOfContinuousStatesChanged)
     if (OSU->osu_functions->checkForDiscreteChanges(OSU->old_data,
@@ -197,10 +211,14 @@ omsi_status omsi_event_update(osu_t*              OSU,
         eventInfo->nominalsOfContinuousStatesChanged = omsi_false;
         eventInfo->terminateSimulation = omsi_false;
     }
-    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
-            "fmi2EventUpdate: newDiscreteStatesNeeded %s",
-            eventInfo->newDiscreteStatesNeeded ? "true" : "false");
+#endif
 
+    LOG_FILTER(OSU, LOG_ALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+        "fmi2EventUpdate: newDiscreteStatesNeeded %s",
+        eventInfo->newDiscreteStatesNeeded ? "true" : "false"))
+
+#if 0
     /* due to an event overwrite old values */
     overwriteOldSimulationData(OSU->old_data);
 
@@ -208,7 +226,7 @@ omsi_status omsi_event_update(osu_t*              OSU,
      * in fmi2 import and export. This is an workaround,
      * since the iteration seem not starting.
      */
-    storePreValues(OSU->old_data);
+    omsu_storePreValues(OSU->osu_data);
     updateRelationsPre(OSU->old_data);
 
     //Get Next Event Time
@@ -220,13 +238,15 @@ omsi_status omsi_event_update(osu_t*              OSU,
         eventInfo->nextEventTimeDefined = omsi_true;
         eventInfo->nextEventTime = nextSampleEvent;
     }
-    FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
-            "fmi2EventUpdate: Checked for Sample Events! Next Sample Event %u",
-            eventInfo->nextEventTime)
+#endif
+
+    LOG_FILTER(OSU, LOG_ALL,
+        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
+        "fmi2EventUpdate: Checked for Sample Events! Next Sample Event %u",
+        eventInfo->nextEventTime))
 
     return omsi_ok;
-#endif
-    return omsi_error;
+
 
     /* ToDo: catch */
     /* MMC_CATCH_INTERNAL(simulationJumpBuffer)

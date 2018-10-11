@@ -33,6 +33,150 @@
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
 
+/*
+ * ============================================================================
+ * Stuff I don't know where to put yet. ToDo: Do the thing!
+ * ============================================================================
+ */
+
+
+/*
+ * Checks for discrete changes.
+ * Returns omsi_true if changes were found, otherwise omsi_false;
+ */
+omsi_bool omsu_discrete_changes(osu_t*  OSU,
+                                void*   threadData) {     /* ToDo: threadData not implemented yet */
+
+    /* ToDo: Log all changed variables */
+    if (OSU->logCategories[LOG_ALL]) {
+        /* ToDo: implement */
+        return omsi_false;
+    }
+    else {
+        return omsu_values_equal(OSU->osu_data->sim_data->model_vars_and_params, threadData);
+    }
+
+
+}
+
+
+/*
+ * Stores pre values of omsi_data->sim_data->model_vars_and_params.
+ */
+void omsu_storePreValues(omsi_t* omsi_data) {
+
+    omsu_copy_values(omsi_data->sim_data->pre_vars, omsi_data->sim_data->model_vars_and_params);
+}
+
+
+/*
+ * ============================================================================
+ * Section for data copying, comparing and such stuff
+ * ============================================================================
+ */
+
+/*
+ * Compare memory of vars_1 and vars_2 and returns omsi_true if they are equal.
+ * Otherwise omsi_false is returned.
+ */
+omsi_bool omsu_values_equal(omsi_values*    vars_1,
+                            omsi_values*    vars_2) {
+
+    omsi_unsigned_int size;
+
+    /* Check reals */
+    if (vars_1->n_reals != vars_2->n_reals) {
+        return omsi_false;
+    }
+    size = vars_1->n_reals*sizeof(omsi_real);
+    if (0 != memcmp(vars_1->reals, vars_2->reals, size)) {
+        return omsi_false;
+    }
+
+    /* Check ints */
+    if (vars_1->n_ints != vars_2->n_ints) {
+        return omsi_false;
+    }
+    size = vars_1->n_ints*sizeof(omsi_int);
+    if (0 != memcmp(vars_1->ints, vars_2->ints, size)) {
+        return omsi_false;
+    }
+
+    /* Check bools */
+    if (vars_1->n_bools != vars_2->n_bools) {
+        return omsi_false;
+    }
+    size = vars_1->n_bools*sizeof(omsi_bool);
+    if (0 != memcmp(vars_1->bools, vars_2->bools, size)) {
+        return omsi_false;
+    }
+
+    /* Check strings */
+    if (vars_1->n_strings != vars_2->n_strings) {
+        return omsi_false;
+    }
+    size = vars_1->n_strings*sizeof(omsi_string);
+    if (0 != memcmp(vars_1->strings, vars_2->strings, size)) {
+        return omsi_false;
+    }
+
+    /* Check externs */
+    if (vars_1->n_externs != vars_2->n_externs) {
+        return omsi_false;
+    }
+    size = vars_1->n_externs*sizeof(void*);
+    if (0 != memcmp(vars_1->externs, vars_2->externs, size)) {
+        return omsi_false;
+    }
+
+    /* Check time_value */
+    if (0 != memcmp(&vars_1->time_value, &vars_2->time_value, sizeof(omsi_real))) {
+        return omsi_false;
+    }
+
+    return omsi_true;
+}
+
+
+/*
+ * Copies source_vars to target_vars.
+ */
+omsi_status omsu_copy_values(omsi_values*   target_vars,
+                             omsi_values*   source_vars) {
+
+    omsi_unsigned_int size;
+
+    if (target_vars == NULL || source_vars) {
+        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
+            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok, logCategoriesNames[LOG_STATUSERROR],
+            "copy_values: Pointer is NULL."))
+        return omsi_error;
+    }
+
+    /* Copy values */
+    size = sizeof(omsi_real)*source_vars->n_reals;
+    memcpy(target_vars->reals, source_vars->reals, size);
+
+    size = sizeof(omsi_real)*source_vars->n_bools;
+    memcpy(target_vars->bools, source_vars->bools, size);
+
+    size = sizeof(omsi_real)*source_vars->n_strings;
+    memcpy(target_vars->strings, source_vars->strings, size);
+
+    size = sizeof(omsi_real)*source_vars->n_externs;
+    memcpy(target_vars->externs, source_vars->externs, size);
+
+    target_vars->time_value = source_vars->time_value;
+
+    /* Copy meta information */
+    target_vars->n_reals = source_vars->n_reals;
+    target_vars->n_ints = source_vars->n_ints;
+    target_vars->n_bools = source_vars->n_bools;
+    target_vars->n_strings = source_vars->n_strings;
+    target_vars->n_externs = source_vars->n_externs;
+
+    return omsi_ok;
+}
 
 
 /*
