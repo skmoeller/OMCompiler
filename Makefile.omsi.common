@@ -155,7 +155,7 @@ OMSIBaseMSVC: getMSVCversion
 OMSIBaseInstall: OMSIBase
 	cd SimulationRuntime/OMSI; \
 	$(foreach PLATFORM, $(PLATFORMS), \
-	  (cd Build_$(PLATFORM); $(MAKE) DESTDIR=$(OMBUILDDIR) install);)
+	  (cd Build_$(PLATFORM); $(MAKE) install);)
 
 OMSIBaseClean:
 	cd SimulationRuntime/OMSI; \
@@ -179,7 +179,7 @@ OMSIC: OMSIBaseInstall
 OMSICInstall: OMSIC
 	cd SimulationRuntime/OMSIC; \
 	$(foreach PLATFORM, $(PLATFORMS), \
-	  (cd Build_$(PLATFORM); $(MAKE) DESTDIR=$(OMBUILDDIR) install);)
+	  (cd Build_$(PLATFORM); $(MAKE) install);)
 
 OMSICClean:
 	cd SimulationRuntime/OMSIC; \

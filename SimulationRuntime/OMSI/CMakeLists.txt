@@ -27,7 +27,7 @@ IF(MSVC)
 ELSE(MSVC)
   SET(LIBINSTALLEXT "${LIB_OMC}/omsi" CACHE STRING "library directory" FORCE)
 ENDIF(MSVC)
-message(STATUS "Libs will be installed in ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "Libs will be installed in ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}")
 
 SET(OSUBaseName ${LIBPREFIX}OMSIBase${LIBSUFFIX})
 

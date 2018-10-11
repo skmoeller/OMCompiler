@@ -25,11 +25,11 @@ ENDIF(BUILD_SHARED_LIBS)
 
 IF(MSVC)
   MESSAGE(STATUS "MSVC")
-  SET(LIBINSTALLEXT "/${LIB_OMC}/omsi/msvc" CACHE STRING "library directory")
+  SET(LIBINSTALLEXT "${LIB_OMC}/omsi/msvc" CACHE STRING "library directory")
 ELSE(MSVC)
-  SET(LIBINSTALLEXT "/${LIB_OMC}/omsi" CACHE STRING "library directory")
+  SET(LIBINSTALLEXT "${LIB_OMC}/omsi" CACHE STRING "library directory")
 ENDIF(MSVC)
-message(STATUS "Libs will be installed in ${LIBINSTALLEXT}")
+message(STATUS "Libs will be installed in ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}")
 
 
 SET(OSUCName ${LIBPREFIX}OMSIC${LIBSUFFIX})
@@ -49,7 +49,7 @@ install(FILES
   ${OMSI_SOURCE_DIR}/include/omsi.h
   ${OMSI_SOURCE_DIR}/include/omsi_callbacks.h
   ${OMSI_SOURCE_DIR}/include/omsi_api_functions.h
-DESTINATION /include/omc/omsi)
+DESTINATION include/omc/omsi)
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_common.h
@@ -58,15 +58,15 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_getters_and_setters.h
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_continuous_simulation.h
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_event_simulation.h
-DESTINATION /include/omc/omsic)
+DESTINATION include/omc/omsic)
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2Functions.h
   ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2FunctionTypes.h
   ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2TypesPlatform.h
-DESTINATION /include/omc/omsic/fmi2/)
+DESTINATION include/omc/omsic/fmi2/)
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/solver/solver_helper.h
   ${CMAKE_SOURCE_DIR}/include/solver/solver_lapack.h
-DESTINATION /include/omc/omsi/solver)
+DESTINATION include/omc/omsi/solver)
