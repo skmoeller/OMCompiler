@@ -23,11 +23,11 @@ ENDIF(BUILD_SHARED_LIBS)
 
 IF(MSVC)
   MESSAGE(STATUS "MSVC")
-  SET(LIBINSTALLEXT "/${LIB_OMC}/omsi/msvc" CACHE STRING "library directory")
+  SET(LIBINSTALLEXT "${LIB_OMC}/omsi/msvc" CACHE STRING "library directory" FORCE)
 ELSE(MSVC)
-  SET(LIBINSTALLEXT "/${LIB_OMC}/omsi" CACHE STRING "library directory")
+  SET(LIBINSTALLEXT "${LIB_OMC}/omsi" CACHE STRING "library directory" FORCE)
 ENDIF(MSVC)
-message(STATUS "Libs will be installed in ${LIBINSTALLEXT}")
+message(STATUS "Libs will be installed in ${CMAKE_INSTALL_PREFIX}")
 
 SET(OSUBaseName ${LIBPREFIX}OMSIBase${LIBSUFFIX})
 
@@ -44,13 +44,13 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/include/omsi.h
   ${CMAKE_SOURCE_DIR}/include/omsi_callbacks.h
   ${CMAKE_SOURCE_DIR}/include/omsi_api_functions.h
-  DESTINATION /include/omc/omsi)
+  DESTINATION include/omc/omsi)
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/fmi2/omsi_fmi2_cs.h
   ${CMAKE_SOURCE_DIR}/include/fmi2/omsi_fmi2_me.h
   ${CMAKE_SOURCE_DIR}/include/fmi2/omsi_fmi2_wrapper.h
-  DESTINATION /include/omc/omsi/fmi2/)
+  DESTINATION include/omc/omsi/fmi2/)
 
 
 
