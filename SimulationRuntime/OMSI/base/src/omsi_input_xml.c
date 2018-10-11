@@ -61,6 +61,15 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     global_callback = (omsi_callback_functions*) functions;
     global_instance_name = instanceName;
 
+    /* check filename for network path e.g. starting with "file://" */
+    if (strncmp(filename, "file:///", 8) == 0 ){
+        memmove(filename, filename+8, strlen(filename) - 8 + 1);
+    }
+    else if(strncmp(filename, "file://", 7) == 0 ){
+        memmove(filename, filename+7, strlen(filename) - 7 + 1);
+    }
+
+    /* Log function call */
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
         functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process XML file %s.", filename))
 
@@ -187,7 +196,11 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_var_infos(osu_data->model_data, &mi);
 
     /* now all data from init_xml should be utilized */
-    omsu_free_ModelInput(mi);
+    /* omsu_free_ModelInput(mi); */
+    /*
+     * ToDo: We get segmentation faults. Is it possible that the expat macros are not unique and
+     * crazy stuff happens???
+     */
 
     return status;
 }

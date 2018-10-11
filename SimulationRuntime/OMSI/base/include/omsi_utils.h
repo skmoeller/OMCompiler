@@ -51,6 +51,10 @@
 extern "C" {
 #endif
 
+#if _MSC_VER
+#define __attribute__(x)
+#endif
+
 /* used for filtered_log */
 #define LOG_EVENTS                      0
 #define LOG_SINGULARLINEARSYSTEMS       1
@@ -75,8 +79,10 @@ static omsi_string logCategoriesNames[] = {"logEvents", "logSingularLinearSystem
         printf("Error in LOG_FILTER: Global callback not set!\n"); fflush(stdout);  \
         abort();                                                                    \
       }                                                                             \
-      if(isCategoryLogged(instance, categoryIndex))                                 \
-        log_call;
+      if(isCategoryLogged(instance, categoryIndex)) {                               \
+        log_call;                                                                   \
+        fflush(stdout);                                                             \
+      }                                                                             \
 
 /* function prototypes */
 omsi_bool isCategoryLogged(osu_t*       OSU,
