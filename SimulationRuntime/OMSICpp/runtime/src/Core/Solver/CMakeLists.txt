@@ -28,5 +28,5 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/SystemStateSelection.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/SimulationMonitor.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/Solver/FactoryExport.h
-  DESTINATION include/omc/OMSICpp/Core/Solver)
+  DESTINATION include/omc/omsicpp/Core/Solver)
 

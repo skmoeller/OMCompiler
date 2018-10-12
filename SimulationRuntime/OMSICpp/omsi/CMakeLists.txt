@@ -1,5 +1,5 @@
 #Cpp Simulation  for OpenModelica Simulation Interface (OMSI)
-PROJECT(OMSICPP)
+PROJECT(omsicpp)
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 

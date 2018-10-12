@@ -7,7 +7,7 @@ IF(DGESV_FOUND)
   include_directories (${DGESV_INCLUDE_DIR})
   add_library(${DgesvName}_static STATIC ${DGESV_SRCS})
   install(TARGETS ${DgesvName}_static DESTINATION ${LIBINSTALLEXT})
-  install(FILES ${DGESV_HEADERS} DESTINATION include/omc/OMSICpp/Solver/Dgesv)
+  install(FILES ${DGESV_HEADERS} DESTINATION include/omc/omsicpp/Solver/Dgesv)
   GET_TARGET_PROPERTY(libDgesvLocation ${DgesvName}_static LOCATION)
   GET_FILENAME_COMPONENT(libDgesvExt ${libDgesvLocation} EXT CACHE)
 
@@ -18,7 +18,7 @@ IF(DGESV_FOUND)
   install(FILES
     ${CMAKE_SOURCE_DIR}/runtime/include/Solver/Dgesv/DgesvSolver.h
     ${CMAKE_SOURCE_DIR}/runtime/include/Solver/Dgesv/FactoryExport.h
-    DESTINATION include/omc/OMSICpp/Solver/Dgesv)
+    DESTINATION include/omc/omsicpp/Solver/Dgesv)
 
 ELSE()
   MESSAGE(STATUS "DGESV disabled")

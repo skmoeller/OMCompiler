@@ -22,4 +22,4 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/SimulationSettings/ISettingsFactory.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/SimulationSettings/ISimControllerSettings.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/SimulationSettings/Factory.h
-  DESTINATION include/omc/OMSICpp/Core/SimulationSettings)
+  DESTINATION include/omc/omsicpp/Core/SimulationSettings)

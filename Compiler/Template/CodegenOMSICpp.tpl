@@ -777,8 +777,8 @@ case SIMCODE(modelInfo=MODELINFO(__), makefileParams=MAKEFILE_PARAMS(__), simula
   CXX=cl
   EXEEXT=.exe
   DLLEXT=.dll
-  include <%makefileParams.omhome%>/include/omc/cpp/ModelicaConfig_msvc.inc
-  include <%makefileParams.omhome%>/include/omc/cpp/ModelicaLibraryConfig_msvc.inc
+  include <%makefileParams.omhome%>/include/omc/omsicpp/ModelicaConfig_msvc.inc
+  include <%makefileParams.omhome%>/include/omc/omsicpp/ModelicaLibraryConfig_msvc.inc
   # /Od - Optimization disabled
   # /EHa enable C++ EH (w/ SEH exceptions)
   # /fp:except - consider floating-point exceptions when generating code
@@ -787,19 +787,19 @@ case SIMCODE(modelInfo=MODELINFO(__), makefileParams=MAKEFILE_PARAMS(__), simula
   # /DNOMINMAX - Define NOMINMAX (does what it says)
   # /TP - Use C++ Compiler
   !IF "$(PCH_FILE)" == ""
-  CFLAGS=  $(SYSTEM_CFLAGS) /DRUNTIME_STATIC_LINKING /I"<%makefileParams.omhome%>/include/omc/cpp/" /I"<%makefileParams.omhome%>/include/omc/OMSI/" /I"<%makefileParams.omhome%>/include/omc/c/fmi2/" /I. <%makefileParams.includes%>  /I"$(BOOST_INCLUDE)" /I"$(UMFPACK_INCLUDE)" /I"$(SUNDIALS_INCLUDE)" /DNOMINMAX /TP /DNO_INTERACTIVE_DEPENDENCY <%additionalCFlags_MSVC%>
+  CFLAGS=  $(SYSTEM_CFLAGS) /DRUNTIME_STATIC_LINKING /I"<%makefileParams.omhome%>/include/omc/omsicpp/" /I"<%makefileParams.omhome%>/include/omc/OMSI/" /I"<%makefileParams.omhome%>/include/omc/c/fmi2/" /I. <%makefileParams.includes%>  /I"$(BOOST_INCLUDE)" /I"$(UMFPACK_INCLUDE)" /I"$(SUNDIALS_INCLUDE)" /DNOMINMAX /TP /DNO_INTERACTIVE_DEPENDENCY <%additionalCFlags_MSVC%>
   !ELSE
-  CFLAGS=  $(SYSTEM_CFLAGS) /DRUNTIME_STATIC_LINKING /I"<%makefileParams.omhome%>/include/omc/cpp/" /I"<%makefileParams.omhome%>/include/omc/OMSI/"  /I"<%makefileParams.omhome%>/include/omc/c/fmi2/"  /I. <%makefileParams.includes%>  /I"$(BOOST_INCLUDE)" /I"$(UMFPACK_INCLUDE)" /I"$(SUNDIALS_INCLUDE)" /DNOMINMAX /TP /DNO_INTERACTIVE_DEPENDENCY  /Fp<%makefileParams.omhome%>/include/omc/cpp/Core/$(PCH_FILE)  /YuCore/$(H_FILE) <%additionalCFlags_MSVC%>
+  CFLAGS=  $(SYSTEM_CFLAGS) /DRUNTIME_STATIC_LINKING /I"<%makefileParams.omhome%>/include/omc/omsicpp/" /I"<%makefileParams.omhome%>/include/omc/OMSI/"  /I"<%makefileParams.omhome%>/include/omc/c/fmi2/"  /I. <%makefileParams.includes%>  /I"$(BOOST_INCLUDE)" /I"$(UMFPACK_INCLUDE)" /I"$(SUNDIALS_INCLUDE)" /DNOMINMAX /TP /DNO_INTERACTIVE_DEPENDENCY  /Fp<%makefileParams.omhome%>/include/omc/omsicpp/Core/$(PCH_FILE)  /YuCore/$(H_FILE) <%additionalCFlags_MSVC%>
   !ENDIF
   CPPFLAGS =
   # /ZI enable Edit and Continue debug info
   CDFLAGS = /ZI
   !IF "$(PCH_FILE)" == ""
-  LDSYSTEMFLAGS=  /link /DLL  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/cpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/OMSI/msvc"  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc/debug"  /LIBPATH:"<%makefileParams.omhome%>/bin" /LIBPATH:"$(BOOST_LIBS)"  OMCppExtensionUtilities_static.lib OMCppModelicaUtilities_static.lib  OMCppOSU.lib  OMSIBase_static.lib OMCppDataExchange_static.lib  OMCppSystem_static.lib   OMCppMath_static.lib  OMCppOMCFactory.lib  libexpat.lib WSock32.lib Ws2_32.lib
+  LDSYSTEMFLAGS=  /link /DLL  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsicpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/OMSI/msvc"  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc/debug"  /LIBPATH:"<%makefileParams.omhome%>/bin" /LIBPATH:"$(BOOST_LIBS)"  OMCppExtensionUtilities_static.lib OMCppModelicaUtilities_static.lib  OMCppOSU.lib  OMSIBase_static.lib OMCppDataExchange_static.lib  OMCppSystem_static.lib   OMCppMath_static.lib  OMCppOMCFactory.lib  libexpat.lib WSock32.lib Ws2_32.lib
   !ELSE
-  LDSYSTEMFLAGS=  /link /DLL  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/cpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/OMSI/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc/debug"  /LIBPATH:"<%makefileParams.omhome%>/bin" /LIBPATH:"$(BOOST_LIBS)"  OMCppExtensionUtilities_static.lib OMCppModelicaUtilities_static.lib  OMCppOSU.lib  OMSIBase_static.lib OMCppDataExchange_static.lib  OMCppSystem_static.lib  OMCppMath_static.lib  OMCppOMCFactory.lib   libexpat.lib $(PCH_LIB)  WSock32.lib Ws2_32.lib
+  LDSYSTEMFLAGS=  /link /DLL  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsicpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/OMSI/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc/debug"  /LIBPATH:"<%makefileParams.omhome%>/bin" /LIBPATH:"$(BOOST_LIBS)"  OMCppExtensionUtilities_static.lib OMCppModelicaUtilities_static.lib  OMCppOSU.lib  OMSIBase_static.lib OMCppDataExchange_static.lib  OMCppSystem_static.lib  OMCppMath_static.lib  OMCppOMCFactory.lib   libexpat.lib $(PCH_LIB)  WSock32.lib Ws2_32.lib
   !ENDIF
-  # lib names should not be appended with a d just switch to lib/omc/cpp
+  # lib names should not be appended with a d just switch to lib/omc/omsicpp
 
 
 
@@ -869,8 +869,8 @@ case "gcc" then
             <<
             # Makefile generated by OpenModelica
             OMHOME=<%makefileParams.omhome%>
-            include $(OMHOME)/include/omc/cpp/ModelicaConfig_gcc.inc
-            include $(OMHOME)/include/omc/cpp/ModelicaLibraryConfig_gcc.inc
+            include $(OMHOME)/include/omc/omsicpp/ModelicaConfig_gcc.inc
+            include $(OMHOME)/include/omc/omsicpp/ModelicaLibraryConfig_gcc.inc
             # Simulations use -O0 by default
             SIM_OR_DYNLOAD_OPT_LEVEL=-O0
             CC=<%CC%>
@@ -903,7 +903,7 @@ case "gcc" then
 
             CFLAGS_BASED_ON_INIT_FILE=<%extraCflags%>
             FMU_CFLAGS=$(subst -DUSE_THREAD,,$(subst -O0,$(SIM_OPT_LEVEL),$(SYSTEM_CFLAGS))) $(ABI_CFLAG)
-            CFLAGS=$(CFLAGS_BASED_ON_INIT_FILE) -Winvalid-pch $(FMU_CFLAGS) -DFMU_BUILD -DRUNTIME_STATIC_LINKING -I"$(OMHOME)/include/omc/cpp" -I"$(OMHOME)/include/omc/OMSI/" -I"$(OMHOME)/include/omc/c/fmi2/"  -I"$(UMFPACK_INCLUDE)" -I"$(SUNDIALS_INCLUDE)" -I"$(BOOST_INCLUDE)" <%makefileParams.includes ; separator=" "%> <%additionalCFlags_GCC%>
+            CFLAGS=$(CFLAGS_BASED_ON_INIT_FILE) -Winvalid-pch $(FMU_CFLAGS) -DFMU_BUILD -DRUNTIME_STATIC_LINKING -I"$(OMHOME)/include/omc/omsicpp" -I"$(OMHOME)/include/omc/OMSI/" -I"$(OMHOME)/include/omc/c/fmi2/"  -I"$(UMFPACK_INCLUDE)" -I"$(SUNDIALS_INCLUDE)" -I"$(BOOST_INCLUDE)" <%makefileParams.includes ; separator=" "%> <%additionalCFlags_GCC%>
 
             ifeq ($(USE_LOGGER),ON)
               $(eval CFLAGS=$(CFLAGS) -DUSE_LOGGER)
@@ -917,7 +917,7 @@ case "gcc" then
             EXTRA_LIBS=<%dirExtra%> <%libsExtra%>
             LIBS=$(OMCPP_LIBS) $(MODELICA_EXTERNAL_LIBS) $(BASE_LIB) $(EXTRA_LIBS) -L$(BOOST_LIBS) -l$(BOOST_SYSTEM_LIB) -l$(BOOST_FILESYSTEM_LIB) -lexpat
 
-            LDFLAGS=-L"$(OMHOME)/lib/$(TRIPLET)/omc/cpp" <%additionalLinkerFlags_GCC%> -Wl,--no-undefined
+            LDFLAGS=-L"$(OMHOME)/lib/$(TRIPLET)/omc/omsicpp" -L"$(OMHOME)/lib/$(TRIPLET)/omc/omsi" <%additionalLinkerFlags_GCC%> -Wl,--no-undefined
 
 
             BINARIES=<%fileNamePrefix%>$(DLLEXT) $(BOOST_LIBS)/lib$(BOOST_SYSTEM_LIB)$(DLLEXT) $(BOOST_LIBS)/lib$(BOOST_FILESYSTEM_LIB)$(DLLEXT)
@@ -946,7 +946,7 @@ case "gcc" then
             <%\t%>rm -rf documentation
             <%\t%><%mkdir%> -p "documentation"
             <%\t%>cp $(SUNDIALS_LIBRARIES_KINSOL) "binaries/$(PLATFORM)/"
-            <%\t%>cp $(OMHOME)/share/omc/runtime/cpp/licenses/sundials.license "documentation/"
+            <%\t%>cp $(OMHOME)/share/omc/runtime/omsicpp/licenses/sundials.license "documentation/"
             endif
             <%\t%>rm -f <%modelName%>.fmu
             ifeq ($(USE_FMU_SUNDIALS),ON)
