@@ -52,6 +52,10 @@ extern "C" {
 #include <omsi_utils.h>
 
 
+typedef struct modelDescriptionData {
+    omsi_char* modelName;
+} modelDescriptionData;
+
 
 /*! \fn omsi_me_instantiate
  *
@@ -68,6 +72,7 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
                          omsi_bool                              __attribute__((unused)) visible,
                          omsi_bool                              loggingOn);
 
+omsi_string omsi_get_model_name(omsi_string fmuResourceLocation);
 
 #ifdef __cplusplus
 }

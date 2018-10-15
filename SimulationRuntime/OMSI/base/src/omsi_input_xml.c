@@ -61,17 +61,10 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     global_callback = (omsi_callback_functions*) functions;
     global_instance_name = instanceName;
 
-    /* check filename for network path e.g. starting with "file://" */
-    if (strncmp(filename, "file:///", 8) == 0 ){
-        memmove(filename, filename+8, strlen(filename) - 8 + 1);
-    }
-    else if(strncmp(filename, "file://", 7) == 0 ){
-        memmove(filename, filename+7, strlen(filename) - 7 + 1);
-    }
-
     /* Log function call */
     LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Process XML file %s.", filename))
+        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL],
+        "fmi2Instantiate: Process XML file %s.", filename))
 
     /* open xml file */
     file = fopen(filename, "r");
