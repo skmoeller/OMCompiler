@@ -238,7 +238,7 @@ omsi_status omsi_completed_integrator_step(osu_t*       OSU,
     /* Log function call */
     LOG_FILTER(OSU, LOG_FMI2_CALL,
         global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2OSUletedIntegratorStep"))
+        "fmi2OSUCompletedIntegratorStep"))
 
     /* ToDo: Do something useful with noSetFMUStatePriorToCurrentPoint */
 
@@ -250,7 +250,14 @@ omsi_status omsi_completed_integrator_step(osu_t*       OSU,
     OSU->osu_functions->output_function(OSU->old_data, threadData);
     OSU->osu_functions->function_storeDelayed(OSU->old_data, threadData);
 
+
     storePreValues(OSU->osu_data); */
+
+    if (OSU->_need_update) {
+        OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
+        OSU->_need_update = omsi_false;
+    }
+
     *enterEventMode = omsi_false;
     *terminateSimulation = omsi_false;
 
@@ -320,7 +327,7 @@ omsi_status omsi_get_derivatives(osu_t*             OSU,
     }
 
     for (i = 0; i < nx; i++) {
-        vr = OSU->vrStatesDerivatives[i];
+        vr = nx + i;
         derivatives[i] = getReal(OSU, vr);
         LOG_FILTER(OSU, LOG_ALL,
             global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],

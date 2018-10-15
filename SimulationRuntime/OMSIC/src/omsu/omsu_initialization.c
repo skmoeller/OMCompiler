@@ -229,7 +229,7 @@ void omsi_free_instance(osu_t* OSU) {
     LOG_FILTER(OSU, LOG_ALL,
                 global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2FreeInstance"))
 
-
+#if 0
     /* free OSU data */
     omsu_free_osu_data(OSU->osu_data);
     OSU->fmiCallbackFunctions->freeMemory(OSU->osu_data);
@@ -242,6 +242,7 @@ void omsi_free_instance(osu_t* OSU) {
 
     /* free callback functions */
     OSU->fmiCallbackFunctions->freeMemory(OSU);
+#endif
 }
 
 /*
