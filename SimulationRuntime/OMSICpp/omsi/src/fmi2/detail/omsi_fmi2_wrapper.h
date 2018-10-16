@@ -167,6 +167,7 @@ class OSU
   string _instanceName;
   string _GUID;
   fmi2CallbackFunctions _functions;
+  omsi_template_callback_functions_t*  _osu_functions;
   ModelState _state;
   double _simTime;
   //OMSU include, arrays for variables memory real,int bool and prevariables

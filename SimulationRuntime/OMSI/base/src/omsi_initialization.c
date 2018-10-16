@@ -118,14 +118,19 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     /* process JSON file and read missing parts of model_data in osu_data */
     infoJsonFilename = functions->allocateMemory(20 + strlen(fmuResourceLocation) + strlen(modelName), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, modelName);
-    if (omsu_process_input_json(osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
+
+	/****temporarily disabled because omsicpp doesn't generate the json file****/
+
+	/*if (omsu_process_input_json(osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Could not process %s.", infoJsonFilename))
+            "fmi2Instantiate: Could not process %s.", infoJsonFilename))*/
         /* omsu_free_osu_data(osu_data); */
-        return NULL;
+        /*return NULL;
     }
-    functions->freeMemory(infoJsonFilename);
+    functions->freeMemory(infoJsonFilename);*/
+
+	/***************************************************************************/
 
     /* Instantiate and initialize sim_data */
     status = omsu_allocate_sim_data(osu_data, functions, instanceName);
@@ -150,7 +155,9 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
         LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
             functions->logger(functions->componentEnvironment, instanceName, omsi_error,
             logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not initialize sim_data->simulation."))
-         return NULL;
+         /*******temporarily disabled because omsicpp doesn't generate omsi functions**********/
+			/*return NULL;*/
+		 /**********************************************************************************/
     }
 
     status = omsi_initialize_model_variables(osu_data, functions, instanceName);

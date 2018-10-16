@@ -40,14 +40,17 @@
 #include <Core/SimController/ISimController.h>
 #include <Core/System/FactoryExport.h>
 #include <Core/Utils/extension/logger.hpp>
+
 //omsi cpp inlcudes
 #include <omsi_global_settings.h>
-
-
 #include "omsi_fmi2_log.h"
 #include "omsi_fmi2_wrapper.h"
 #include "omsi_factory.h"
-#include "omsi_data.h"
+
+
+
+//omsi base includes
+#include <omsi_initialization.h>
 
 //3rdparty includes
 #include <boost/filesystem/operations.hpp>
@@ -100,7 +103,9 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
  /*Todo: only load if type is omsu, not for fmi*/
  fs::path p(_instanceName);
   string omsu_name = p.stem().string();
-  _omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
+  //_omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
+  _osu_functions = (omsi_template_callback_functions_t*)functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
+  _omsu = omsi_instantiate(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, _osu_functions,visible, loggingOn);
 
   _model = createOSUSystem(_global_settings, _instanceName,_omsu);
   _initialize_model = dynamic_pointer_cast<ISystemInitialization>(_model);
@@ -118,7 +123,7 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _initialize_model->initializeFreeVariables();
 
 
-  initialize_omsi(_omsu, (omsi_callback_functions *)functions, omsu_name.c_str());
+  //initialize_omsi(_omsu, (omsi_callback_functions *)functions, omsu_name.c_str());
 
    _string_buffer.resize(_continuous_model->getDimString());
   _clockTick = new bool[_event_model->getDimClock()];
@@ -151,7 +156,7 @@ OSU::~OSU()
     delete [] _zero_funcs;
  if(_events)
     delete [] _events;
- free_omsi(_omsu);
+ omsi_free_model_variables(_omsu);
 }
 
 fmi2Status OSU::setDebugLogging(fmi2Boolean loggingOn,
