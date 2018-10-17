@@ -61,9 +61,6 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     global_instance_name = instanceName;
     global_callback->componentEnvironment = OSU;
 
-    filtered_base_logger(NULL, log_statuserror, omsi_error,
-            "Logger test: %s", "helloWorldsgsdgsdgsdgsdgsdg");
-
     /* allocate memory for Openmodelica Simulation Unit */
     OSU = functions->allocateMemory(1, sizeof(osu_t));
     if (!OSU) {

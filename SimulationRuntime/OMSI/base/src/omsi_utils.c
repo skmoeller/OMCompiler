@@ -46,15 +46,34 @@ void filtered_base_logger(omsi_bool*            logCategories,      /* Array of 
     va_list args;
     va_start(args, message);
 
+#if OVERFLOW_PROTECTED
+    omsi_int size;
+    omsi_char* buffer;
+#else
+    omsi_char buffer[BUFSIZ];
+#endif
+
+#if OVERFLOW_PROTECTED
+    size = vsnprintf(NULL, 0, message, args);
+    buffer = (omsi_char*) global_callback->allocateMemory(size+1, sizeof(omsi_char));
+#endif
+
+    vsprintf(buffer, message, args);
+
     if(isCategoryLogged(logCategories, category)) {
         global_callback->logger(global_callback->componentEnvironment,
                                 global_instance_name,
                                 status,
                                 log_categories_names[category],
-                                message,
-                                args);
+                                buffer);
         DEBUG_FLUSH
     }
+
+    /* free stuff */
+#if OVERFLOW_PROTECTED
+    global_callback->freeMemory(buffer);
+#endif
+    va_end(args);
 
 }
 
@@ -62,8 +81,8 @@ void filtered_base_logger(omsi_bool*            logCategories,      /* Array of 
 /*
  * Returns true, if categoryIndex should be logged or OSU was not set.
  */
-omsi_bool isCategoryLogged(omsi_bool*   logCategories,
-                           omsi_int     categoryIndex) {
+omsi_bool isCategoryLogged(omsi_bool*       logCategories,
+                           log_categories   categoryIndex) {
 
     if (logCategories==NULL) {
         return omsi_true;
