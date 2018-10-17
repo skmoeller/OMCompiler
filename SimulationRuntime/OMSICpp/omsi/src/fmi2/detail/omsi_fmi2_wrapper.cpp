@@ -114,16 +114,13 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _event_model = dynamic_pointer_cast<IEvent>(_model);
   _step_event_system = dynamic_pointer_cast<IStepEvent>(_model);
 
-  fs::path model_name_path(_model->getModelName() + ("_init.xml"));
-  fs::path init_file_path = fs::path(fmuResourceLocations);
-  init_file_path /= model_name_path;
-  _global_settings->setInitfilePath(init_file_path.string());
+
 
   _initialize_model->initializeMemory();
   _initialize_model->initializeFreeVariables();
 
 
-  //initialize_omsi(_omsu, (omsi_callback_functions *)functions, omsu_name.c_str());
+
 
    _string_buffer.resize(_continuous_model->getDimString());
   _clockTick = new bool[_event_model->getDimClock()];
@@ -679,3 +676,10 @@ fmi2Status OSU::getNominalsOfContinuousStates(fmi2Real x_nominal[], size_t nx)
 /** @} */ // end of fmu2
 
 
+/*old init file*/
+/*
+fs::path model_name_path(_model->getModelName() + ("_init.xml"));
+fs::path init_file_path = fs::path(fmuResourceLocations);
+init_file_path /= model_name_path;
+_global_settings->setInitfilePath(init_file_path.string());
+*/
