@@ -40,14 +40,17 @@
 #include <Core/SimController/ISimController.h>
 #include <Core/System/FactoryExport.h>
 #include <Core/Utils/extension/logger.hpp>
+
 //omsi cpp inlcudes
 #include <omsi_global_settings.h>
-
-
 #include "omsi_fmi2_log.h"
 #include "omsi_fmi2_wrapper.h"
 #include "omsi_factory.h"
-#include "omsi_data.h"
+
+
+
+//omsi base includes
+#include <omsi_initialization.h>
 
 //3rdparty includes
 #include <boost/filesystem/operations.hpp>
@@ -100,7 +103,9 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
  /*Todo: only load if type is omsu, not for fmi*/
  fs::path p(_instanceName);
   string omsu_name = p.stem().string();
-  _omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
+  //_omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
+  _osu_functions = (omsi_template_callback_functions_t*)functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
+  _omsu = omsi_instantiate(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, _osu_functions,visible, loggingOn);
 
   _model = createOSUSystem(_global_settings, _instanceName,_omsu);
   _initialize_model = dynamic_pointer_cast<ISystemInitialization>(_model);
@@ -109,16 +114,13 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _event_model = dynamic_pointer_cast<IEvent>(_model);
   _step_event_system = dynamic_pointer_cast<IStepEvent>(_model);
 
-  fs::path model_name_path(_model->getModelName() + ("_init.xml"));
-  fs::path init_file_path = fs::path(fmuResourceLocations);
-  init_file_path /= model_name_path;
-  _global_settings->setInitfilePath(init_file_path.string());
+
 
   _initialize_model->initializeMemory();
   _initialize_model->initializeFreeVariables();
 
 
-  initialize_omsi(_omsu, (omsi_callback_functions *)functions, omsu_name.c_str());
+
 
    _string_buffer.resize(_continuous_model->getDimString());
   _clockTick = new bool[_event_model->getDimClock()];
@@ -151,7 +153,7 @@ OSU::~OSU()
     delete [] _zero_funcs;
  if(_events)
     delete [] _events;
- free_omsi(_omsu);
+ omsi_free_model_variables(_omsu);
 }
 
 fmi2Status OSU::setDebugLogging(fmi2Boolean loggingOn,
@@ -674,3 +676,10 @@ fmi2Status OSU::getNominalsOfContinuousStates(fmi2Real x_nominal[], size_t nx)
 /** @} */ // end of fmu2
 
 
+/*old init file*/
+/*
+fs::path model_name_path(_model->getModelName() + ("_init.xml"));
+fs::path init_file_path = fs::path(fmuResourceLocations);
+init_file_path /= model_name_path;
+_global_settings->setInitfilePath(init_file_path.string());
+*/

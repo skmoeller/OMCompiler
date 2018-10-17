@@ -133,13 +133,16 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     infoJsonFilename = functions->allocateMemory(20 + strlen(fmuResourceLocation) + strlen(modelName), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, modelName);
 
-    if (omsu_process_input_json(osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
+    /****temporarily disabled because omsicpp doesn't generate the json file****/
+    /* if (omsu_process_input_json(osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
         filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Could not process %s.", infoJsonFilename);
         /* omsu_free_osu_data(osu_data); */
-        return NULL;
+        /*return NULL;
     }
-    functions->freeMemory(infoJsonFilename);
+    functions->freeMemory(infoJsonFilename);*/
+
+	/***************************************************************************/
 
     /* Instantiate and initialize sim_data */
     status = omsu_allocate_sim_data(osu_data, functions, instanceName);
@@ -162,8 +165,10 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     if (status != omsi_ok) {
         filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Could not initialize sim_data->simulation.");
+        /*******temporarily disabled because omsicpp doesn't generate omsi functions**********/
         /* Todo: free stuff */
-        return NULL;
+        /* return NULL; */
+        /**********************************************************************************/
     }
 
     status = omsi_initialize_model_variables(osu_data, functions, instanceName);
