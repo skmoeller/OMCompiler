@@ -46,9 +46,8 @@ omsi_status omsi_allocate_model_variables(omsi_t*                           omsu
     global_callback = (omsi_callback_functions*) functions;
 
     /* Log function call */
-    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-        "fmi2Instantiate: Allocates memory for model_variables"))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2Instantiate: Allocates memory for model_variables");
 
     /*Todo: Allocate memory for all string model variables*/
 
@@ -100,9 +99,8 @@ omsi_status omsi_allocate_model_variables(omsi_t*                           omsu
     /* ToDo: Allocate memory for all string variables */
     n_strings = omsu->model_data->n_string_vars+ omsu->model_data->n_string_parameters;
     if (n_strings > 0) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: String variables / parameters not supported yet!"))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: String variables / parameters not supported yet!");
         return omsi_error;
     }
     else {
@@ -121,39 +119,33 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
 
     /* Check inputs */
     if (!omsu->model_data) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: No model data available."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: No model data available.");
         return omsi_error;
     }
     if (!omsu->model_data->model_vars_info) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-        functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: No model vars info available."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: No model vars info available.");
         return omsi_error;
     }
     if (!omsu->sim_data->model_vars_and_params) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: No model vars and parameter structure is not yet allocated."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: No model vars and parameter structure is not yet allocated.");
         return omsi_error;
     }
     if (!omsu->sim_data->model_vars_and_params->reals && omsu->sim_data->model_vars_and_params->n_reals > 0) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Real variables are not yet allocated."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Real variables are not yet allocated.");
         return omsi_error;
     }
     if (!omsu->sim_data->model_vars_and_params->ints && omsu->sim_data->model_vars_and_params->n_ints > 0) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Int variables are not yet allocated."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Int variables are not yet allocated.");
         return omsi_error;
     }
     if (!omsu->sim_data->model_vars_and_params->bools  && omsu->sim_data->model_vars_and_params->n_bools > 0) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate:  Bool variables are not yet allocated."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate:  Bool variables are not yet allocated.");
         return omsi_error;
     }
 
@@ -163,9 +155,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     for (state = 0; state <n; ++state) {
         real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[state].modelica_attributes);
         if (!attr) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "could not read start value attribute"))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate:  could not read start value attribute.");
             return omsi_error;
         }
         omsu->sim_data->model_vars_and_params->reals[state] = attr->start;
@@ -177,9 +168,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     for (derstate = state; derstate <n; ++derstate) {
         real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[derstate].modelica_attributes);
         if (!attr) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "could not read start value attribute"))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate:  could not read start value attribute.");
             return omsi_error;
         }
         omsu->sim_data->model_vars_and_params->reals[derstate] = attr->start;
@@ -191,9 +181,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     for (real_algebraic = derstate; real_algebraic < n; ++real_algebraic) {
         real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[real_algebraic].modelica_attributes);
         if (!attr) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "could not read start value attribute"))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate:  could not read start value attribute.");
             return omsi_error;
         }
         omsu->sim_data->model_vars_and_params->reals[real_algebraic] = attr->start;
@@ -205,9 +194,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     for (real_parameter = real_algebraic; real_parameter < n; ++real_parameter) {
         real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[real_parameter].modelica_attributes);
         if (!attr) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "could not read start value attribute"))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate:  could not read start value attribute.");
             return omsi_error;
         }
         omsu->sim_data->model_vars_and_params->reals[real_parameter] = attr->start;
@@ -224,9 +212,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     for (int_algebraic = real_parameter+ real_alias, int_algebraic_2=0; int_algebraic < n; ++int_algebraic, ++int_algebraic_2) {
         int_var_attribute_t* attr = (int_var_attribute_t*)(omsu->model_data->model_vars_info[int_algebraic].modelica_attributes);
         if (!attr) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "could not read start value attribute"))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate:  could not read start value attribute.");
             return omsi_error;
         }
         omsu->sim_data->model_vars_and_params->ints[int_algebraic_2] = attr->start;
@@ -239,9 +226,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     for (int_parameter = int_algebraic, int_parameter_2 = int_algebraic_2; int_parameter < n; ++int_parameter, ++int_parameter_2) {
         int_var_attribute_t* attr = (int_var_attribute_t*)(omsu->model_data->model_vars_info[int_parameter].modelica_attributes);
         if (!attr) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "could not read start value attribute"))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate:  could not read start value attribute.");
             return omsi_error;
         }
         omsu->sim_data->model_vars_and_params->ints[int_parameter_2] = attr->start;
@@ -258,9 +244,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     for (bool_algebraic = int_parameter+ int_alias, bool_algebraic_2 = 0; bool_algebraic < n; ++bool_algebraic, ++bool_algebraic_2) {
         bool_var_attribute_t* attr = (bool_var_attribute_t*)(omsu->model_data->model_vars_info[bool_algebraic].modelica_attributes);
         if (!attr) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "could not read start value attribute"))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate:  could not read start value attribute.");
             return omsi_error;
         }
         omsu->sim_data->model_vars_and_params->bools[bool_algebraic_2] = attr->start;
@@ -273,9 +258,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     for (bool_parameter = bool_algebraic, bool_parameter_2 = bool_algebraic_2; bool_parameter < n; ++bool_parameter, ++bool_parameter_2) {
         bool_var_attribute_t* attr = (bool_var_attribute_t*)(omsu->model_data->model_vars_info[bool_parameter].modelica_attributes);
         if (!attr) {
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "could not read start value attribute"))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate:  could not read start value attribute.");
             return omsi_error;
         }
         omsu->sim_data->model_vars_and_params->bools[bool_parameter_2] = attr->start;
@@ -299,7 +283,8 @@ omsi_status omsi_free_model_variables(omsi_t* omsu) {
 }
 
 
-void* alignedMalloc(size_t required_bytes, size_t alignment)        /* ToDo: change size_t to some omsi type */
+void* alignedMalloc(size_t required_bytes,
+                    size_t alignment)        /* ToDo: change size_t to some omsi type */
 {
     void *p1;
     void **p2;

@@ -43,6 +43,8 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
                          omsi_bool                              loggingOn)
 {
     /* Variables */
+    omsi_int i;
+
     omsi_t* osu_data;
     omsi_string modelName=NULL;
     omsi_char* initXMLFilename;
@@ -50,42 +52,56 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     omsi_status status;
 
 
-    /* set global callback functions */
-    global_callback = (omsi_callback_functions*) functions;
-    global_instance_name = instanceName;
-
-
     /* check all input arguments */
-    /* ignoring arguments: fmuResourceLocation, visible */
+    /* ignoring argument: visible */
     if (!functions->logger) {
-        /* ToDo: Add error message, even if no logger is available */
+        printf("(Fatal Error) fmi2Instantiate: No logger function set.\n");
         return NULL;
     }
 
     /* Log function call */
-    LOG_FILTER(NULL, LOG_FMI2_CALL,
-        functions->logger(NULL, instanceName, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2Instantiate: Instantiate OSU."))
+    filtered_base_logger(NULL, log_fmi2_call, omsi_ok,
+            "fmi2Instantiate: Instantiate osu_data.");
 
     if (!functions->allocateMemory || !functions->freeMemory) {
-        LOG_FILTER(NULL, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing callback function."))
+        filtered_base_logger(NULL, log_statuserror, omsi_error,
+                "fmi2Instantiate: Missing callback function.");
         return NULL;
     }
     if (!instanceName || strlen(instanceName) == 0) {
-        LOG_FILTER(NULL, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing instance name."))
+        filtered_base_logger(NULL, log_statuserror, omsi_error,
+                "fmi2Instantiate: Missing instance name.");
         return NULL;
     }
     if (!fmuGUID || strlen(fmuGUID) == 0) {
-        LOG_FILTER(NULL, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Missing GUID."))
+        filtered_base_logger(NULL, log_statuserror, omsi_error,
+                "fmi2Instantiate: Missing GUID.");
         return NULL;
     }
 
+    /* Allocate memory for osu_data */
+    osu_data = functions->allocateMemory(1, sizeof(omsi_t));
+    if (!osu_data) {
+        filtered_base_logger(NULL, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not allocate memory for omsi_data.");
+        return NULL;
+    }
+
+    /* Set logCategories an loggingOn*/
+    for (i = 0; i < NUMBER_OF_CATEGORIES; i++) { /* set all categories to on or off */
+        osu_data->logCategories[i] = loggingOn;
+    }
+    osu_data->loggingOn = loggingOn;
+
+    /* set global callback functions */
+    global_callback = (omsi_callback_functions*) functions;
+    global_instance_name = instanceName;
+    global_logCategories = osu_data->logCategories;
+
     /* check fmuResourceLocation for network path e.g. starting with "file://" */
+    /* ToDo: copy fmuResourceLocation and manipulate copy */
     if (strncmp(fmuResourceLocation, "file:///", 8) == 0 ){
-        memmove((omsi_char *)fmuResourceLocation, fmuResourceLocation+8, strlen(fmuResourceLocation) - 8 + 1);
+        memmove(fmuResourceLocation, fmuResourceLocation+8, strlen(fmuResourceLocation) - 8 + 1);
     }
     else if(strncmp(fmuResourceLocation, "file://", 7) == 0 ){
         memmove(fmuResourceLocation, fmuResourceLocation+7, strlen(fmuResourceLocation) - 7 + 1);
@@ -94,23 +110,21 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     /* Read model name from modelDescription */
     modelName = omsi_get_model_name(fmuResourceLocation);
     if (!modelName) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Could not read modelName from %s/modelDescription.xml.", fmuResourceLocation))
-        /* omsu_free_osu_data(osu_data); */
+        filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not read modelName from %s/modelDescription.xml.",
+                fmuResourceLocation);
+        /* ToDo: omsu_free_osu_data(osu_data); */
         return NULL;
     }
 
     /* process Inti-XML file and read experiment_data and parts of model_data in osu_data*/
-    osu_data = functions->allocateMemory(1, sizeof(omsi_t));
     /* ToDo Check error memory */
     initXMLFilename = functions->allocateMemory(20 + strlen(fmuResourceLocation) + strlen(modelName), sizeof(omsi_char));
     sprintf(initXMLFilename, "%s/%s_init.xml", fmuResourceLocation, modelName);
     if (omsu_process_input_xml(osu_data, initXMLFilename, fmuGUID, instanceName, functions) == omsi_error) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Could not process %s.", initXMLFilename))
-        /* omsu_free_osu_data(osu_data); */
+        filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not process %s.", initXMLFilename);
+        /* Todo omsu_free_osu_data(osu_data); */
         return NULL;
     }
     functions->freeMemory(initXMLFilename);
@@ -118,10 +132,10 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     /* process JSON file and read missing parts of model_data in osu_data */
     infoJsonFilename = functions->allocateMemory(20 + strlen(fmuResourceLocation) + strlen(modelName), sizeof(omsi_char));
     sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, modelName);
+
     if (omsu_process_input_json(osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Could not process %s.", infoJsonFilename))
+        filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not process %s.", infoJsonFilename);
         /* omsu_free_osu_data(osu_data); */
         return NULL;
     }
@@ -130,35 +144,34 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     /* Instantiate and initialize sim_data */
     status = omsu_allocate_sim_data(osu_data, functions, instanceName);
     if (status != omsi_ok) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not allocate memory for sim_data."))
-         return NULL;
+        filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not allocate memory for sim_data.");
+        /* ToDo: free stuff */
+        return NULL;
     }
 
     status = omsi_allocate_model_variables(osu_data, functions);   /* ToDo: move this function into omsu_allocate_sim_data */
     if (status != omsi_ok) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not allocate memory for sim_data->model_vars_and_params."))
-         return NULL;
+        filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not allocate memory for sim_data->model_vars_and_params.");
+        /* Todo: free stuff */
+        return NULL;
     }
 
-    /*status = omsu_setup_sim_data(osu_data, OSU->osu_functions, functions);*/
     status = omsu_setup_sim_data(osu_data, template_functions, functions);
     if (status != omsi_ok) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not initialize sim_data->simulation."))
-         return NULL;
+        filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not initialize sim_data->simulation.");
+        /* Todo: free stuff */
+        return NULL;
     }
 
     status = omsi_initialize_model_variables(osu_data, functions, instanceName);
     if (status != omsi_ok) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Could not initialize sim_data->model_vars_and_params."))
-         return NULL;
+        filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not initialize sim_data->model_vars_and_params.");
+        /* Todo: free stuff */
+        return NULL;
     }
 
     return osu_data;
@@ -194,6 +207,10 @@ void XMLCALL startElement_2(void*           userData,
 }
 
 
+/*
+ * Reads modelName from modelDescription.xml and returns it as string.
+ * modelDescription.xml should be located at fmuResourceLocation/..
+ */
 omsi_string omsi_get_model_name(omsi_string fmuResourceLocation) {
 
     /* Variables */
@@ -212,19 +229,19 @@ omsi_string omsi_get_model_name(omsi_string fmuResourceLocation) {
     /* open xml file */
     file = fopen(fileName, "r");
     if(!file) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Can not read input file %s.", fileName))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Can not read input file %s.", fileName);
+        global_callback->freeMemory(fileName);
         return NULL;
     }
 
     /* create the XML parser */
     parser = XML_ParserCreate("UTF-8");
     if(!parser) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Can not create XML parser");
         fclose(file);
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Out of memory."))
+        global_callback->freeMemory(fileName);
         return NULL;
     }
 
@@ -238,20 +255,21 @@ omsi_string omsi_get_model_name(omsi_string fmuResourceLocation) {
         omsi_unsigned_int len = fread(buf, 1, sizeof(buf), file);
         done = len < sizeof(buf);
         if(XML_STATUS_ERROR == XML_Parse(parser, buf, len, done)) {
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate: failed to read the XML file %s: %s at line %lu.",
+                    fileName,
+                    XML_ErrorString(XML_GetErrorCode(parser)),
+                    XML_GetCurrentLineNumber(parser));
+
             fclose(file);
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "fmi2Instantiate: failed to read the XML file %s: %s at line %lu.", fileName,
-                XML_ErrorString(XML_GetErrorCode(parser)), XML_GetCurrentLineNumber(parser)))
             XML_ParserFree(parser);
             global_callback->freeMemory(fileName);
             return NULL;
         }
     } while(!done);
 
+    /* Deallocate memory */
     fclose(file);
-
-    /* Free allocated memory */
     XML_ParserFree(parser);
     global_callback->freeMemory(fileName);
 

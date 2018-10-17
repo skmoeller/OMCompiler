@@ -55,70 +55,16 @@ extern "C" {
 #define __attribute__(x)
 #endif
 
-/* used for filtered_log */
-#define LOG_EVENTS                      0
-#define LOG_SINGULARLINEARSYSTEMS       1
-#define LOG_NONLINEARSYSTEMS            2
-#define LOG_DYNAMICSTATESELECTION       3
-#define LOG_STATUSWARNING               4
-#define LOG_STATUSDISCARD               5
-#define LOG_STATUSERROR                 6
-#define LOG_STATUSFATAL                 7
-#define LOG_STATUSPENDING               8
-#define LOG_ALL                         9
-#define LOG_FMI2_CALL                   10
-
-static omsi_string logCategoriesNames[] = {"logEvents", "logSingularLinearSystems", "logNonlinearSystems", "logDynamicStateSelection",
-    "logStatusWarning", "logStatusDiscard", "logStatusError", "logStatusFatal", "logStatusPending", "logAll", "logFmi2Call"};
-
-/*#define FILTERED_LOG(instance, status, categoryIndex, message, ...) if (isCategoryLogged(instance, categoryIndex)) \
-    instance->fmiCallbackFunctions->logger(instance->fmiCallbackFunctions->componentEnvironment, instance->instanceName, status, \
-        logCategoriesNames[categoryIndex], message, ##__VA_ARGS__);*/
-
-#define LOG_FILTER(instance, categoryIndex, log_call) if(!global_callback) {        \
-        printf("Error in LOG_FILTER: Global callback not set!\n"); fflush(stdout);  \
-        abort();                                                                    \
-      }                                                                             \
-      if(isCategoryLogged(instance, categoryIndex)) {                               \
-        log_call;                                                                   \
-        fflush(stdout);                                                             \
-      }                                                                             \
 
 /* function prototypes */
-omsi_bool isCategoryLogged(osu_t*       OSU,
+void filtered_base_logger(omsi_bool*            logCategories,      /* Array of categories, that should be logged */
+                          omsi_unsigned_int     category,           /* Category of this log call */
+                          omsi_status           status,             /* Status for logger */
+                          omsi_string           message,            /* Message for logger */
+                          ...);                                      /* Optional arguments in message */
+
+omsi_bool isCategoryLogged(omsi_bool*   logCategories,
                            omsi_int     categoryIndex);
-
-omsi_string stateToString(osu_t* OSU);
-
-omsi_bool invalidState(osu_t*       OSU,
-                       omsi_string  function_name,
-                       omsi_int     meStates,
-                       omsi_int     csStates);
-
-omsi_bool nullPointer(osu_t*        OSU,
-                      omsi_string   function_name,
-                      omsi_string   arg,
-                      const void *  pointer);
-
-omsi_bool vrOutOfRange(osu_t*               OSU,
-                       omsi_string          function_name,
-                       omsi_unsigned_int    vr,
-                       omsi_int             end);
-
-omsi_status unsupportedFunction(osu_t*      OSU,
-                                omsi_string function_name,
-                                omsi_int    statesExpected);
-
-omsi_bool invalidNumber(osu_t*          OSU,
-                        omsi_string     function_name,
-                        omsi_string     arg,
-                        omsi_int        n,
-                        omsi_int        nExpected);
-
-omsi_status omsi_set_debug_logging(osu_t*               OSU,
-                                   omsi_bool            loggingOn,
-                                   omsi_unsigned_int    nCategories,
-                                   const omsi_string    categories[]);
 
 void omsu_free_osu_data(omsi_t* omsi_data);
 

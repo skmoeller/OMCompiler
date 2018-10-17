@@ -62,16 +62,14 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     global_instance_name = instanceName;
 
     /* Log function call */
-    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        functions->logger(functions->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL],
-        "fmi2Instantiate: Process XML file %s.", filename))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2Instantiate: Process XML file %s.", filename);
 
     /* open xml file */
     file = fopen(filename, "r");
     if(!file) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Can not read input file %s.", filename))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Can not read input file %s.", filename);
         return omsi_error;
     }
 
@@ -79,9 +77,8 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     parser = XML_ParserCreate("UTF-8");
     if(!parser) {
         fclose(file);
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Out of memory."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Out of memory.");
         return omsi_error;
     }
     /* set our user data */
@@ -95,10 +92,11 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
         done = len < sizeof(buf);
         if(XML_STATUS_ERROR == XML_Parse(parser, buf, len, done)) {
             fclose(file);
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "fmi2Instantiate: failed to read the XML file %s: %s at line %lu.", filename,
-                XML_ErrorString(XML_GetErrorCode(parser)), XML_GetCurrentLineNumber(parser)))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate: failed to read the XML file %s: %s at line %lu.",
+                    filename,
+                    XML_ErrorString(XML_GetErrorCode(parser)),
+                    XML_GetCurrentLineNumber(parser));
             XML_ParserFree(parser);
             return omsi_error;
         }
@@ -110,26 +108,23 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     /* check model GUID */
     guid = omsu_findHashStringStringNull(mi.md,"guid");
     if (NULL==guid) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Model GUID %s is not set in model description %s.",
-            fmuGUID, filename))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Model GUID %s is not set in model description %s.",
+                fmuGUID, filename);
         return omsi_error;
     }
     else if (strcmp(fmuGUID, guid)) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_warning, logCategoriesNames[LOG_STATUSWARNING],
-            "fmi2Instantiate: Wrong GUID %s in file %s. Expected %s.",
-            guid, filename, fmuGUID))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Wrong GUID %s in file %s. Expected %s.",
+                guid, filename, fmuGUID);
         status = omsi_warning;
     }
 
     /* process experiment data */
     osu_data->experiment = functions->allocateMemory(1, sizeof(omsi_experiment_t));
     if (!osu_data->experiment) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Not enough memory to allocate osu_data->experiment."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Not enough memory to allocate osu_data->experiment.");
         return omsi_error;
     }
 
@@ -144,9 +139,8 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     /* process all model data */
     osu_data->model_data = functions->allocateMemory(1, sizeof(model_data_t));
     if (!osu_data->model_data) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Not enough memory to allocate osu_data->model_data."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate: Not enough memory to allocate osu_data->model_data.");
         return omsi_error;
     }
     omsu_read_value_string(omsu_findHashStringStringNull(mi.md,"guid"), (omsi_char**) &(osu_data->model_data->modelGUID));
@@ -178,9 +172,8 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
 
     osu_data->model_data->model_vars_info = (model_variable_info_t*) functions->allocateMemory(n_model_vars_and_params, sizeof(model_variable_info_t));
     if (!osu_data->model_data->model_vars_info) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Not enough memory to allocate osu_data->model_data->model_vars_info."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Not enough memory to allocate osu_data->model_data->model_vars_info.");
         return omsi_error;
 
     }
@@ -254,10 +247,8 @@ void omsu_read_var_info (omc_ScalarVariable*    v,
     switch(type) {
         default:
         case OMSI_TYPE_UNKNOWN:
-            LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-                global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-                omsi_error, logCategoriesNames[LOG_STATUSERROR],
-                "fmi2Instantiate: Unknown OMSI type for modelica attributes."))
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate: Unknown OMSI type for modelica attributes.");
         break;
 
         case OMSI_TYPE_REAL:
@@ -334,10 +325,8 @@ void omsu_read_var_infos(model_data_t*      model_data,
                          omc_ModelInput*    mi) {
 
     /* Log function call */
-    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-        omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Read variable informations from XML file."))
-
+    filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+            "fmi2Instantiate: Read variable informations from XML file.");
 
     /* Variables */
     omsi_unsigned_int i, j=0;
@@ -535,9 +524,8 @@ omc_ScalarVariable** omsu_findHashLongVar(hash_long_var*    ht,
                 global_callback->logger(global_callback->componentEnvironment, global_instance_name,
                 omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "HashMap contained: %ld->*map*\n", c->id)) */
         }
-    LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSWARNING,
-        global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-        omsi_warning, logCategoriesNames[LOG_STATUSWARNING], "fmi2Instantiate: Failed to lookup long %s in hashmap %p", key, ht))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Failed to lookup long %s in hashmap %p", key, ht);
     }
     return &res->val;
 }
@@ -590,17 +578,16 @@ void omsu_read_value_string(omsi_string s,
                             omsi_char** str) {
 
     if(str == NULL) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_ok, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: In function omsu_read_value_string: Memory for string not allocated."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: In function omsu_read_value_string:           \
+                 Memory for string not allocated.");
         return;
     }
 
     *str = strdup(s);
     if (str == NULL) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_ok, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Out of memory."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Out of memory.");
         return;
     }
 }
@@ -700,9 +687,9 @@ void XMLCALL startElement(void*         userData,
         }
 
     if (fail) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_ok, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Found unknown class: %s  for variable: %s while reading XML.",ct,omsu_findHashStringString(v,"name")))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Found unknown class: %s  for variable: %s while reading XML.",
+                ct, omsu_findHashStringString(v,"name"));
     }
 
         /* add the ScalarVariable map to the correct map! */

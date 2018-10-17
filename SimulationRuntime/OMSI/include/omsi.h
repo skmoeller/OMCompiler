@@ -75,7 +75,37 @@ typedef const omsi_char*    omsi_string;
 /* macros */
 #define OMSI_DBL_MAX DBL_MAX
 #define OMSI_INT_MAX INT_MAX
+
+/* used for filtered_log */
 #define NUMBER_OF_CATEGORIES 11
+typedef enum {
+    log_events,
+    log_singulalinearsystems,
+    log_nonlinearsystems,
+    log_dynamicstateselection,
+    log_statuswarning,
+    log_statusdiscard,
+    log_statuserror,
+    log_statusfatal,
+    log_statuspending,
+    log_all,
+    log_fmi2_call
+} log_categories;
+
+static omsi_string log_categories_names[NUMBER_OF_CATEGORIES] = {
+    "logEvents",
+    "logSingularLinearSystems",
+    "logNonlinearSystems",
+    "logDynamicStateSelection",
+    "logStatusWarning",
+    "logStatusDiscard",
+    "logStatusError",
+    "logStatusFatal",
+    "logStatusPending",
+    "logAll",
+    "logFmi2Call"
+};
+
 
 /* Model FMU/ OSU states */
 typedef enum {
@@ -396,38 +426,10 @@ typedef struct omsi_t {
     sim_data_t*         sim_data;   /* containing data for simulation */
     omsi_experiment_t*  experiment; /* containing infos for experiment */
     model_data_t*       model_data; /* containing additional model infos */
-} omsi_t;
 
-
-/*
- * ============================================================================
- * Central structure containing all informations
- * ============================================================================
- */
-typedef struct osu_t {
-    /* open modelica simulation interface data */
-    omsi_t*             osu_data;           /* pointer to omsi_data struct, contains all data for simulation */
-    omsi_template_callback_functions_t*   osu_functions;
-
-    omsi_bool           _need_update;           /* Bool if model needs update */
-    omsi_bool           _has_jacobian;          /* Bool if model has jocobian matrix. Defaults to omsi_false */
-    ModelState          state;
-    omsi_bool           logCategories[NUMBER_OF_CATEGORIES];
+    omsi_bool           logCategories[NUMBER_OF_CATEGORIES];      /* Containing information for filtered logger */
     omsi_bool           loggingOn;
-    omsi_char*          GUID;
-    omsi_string         instanceName;
-    omsi_event_info     eventInfo;
-    omsi_bool           toleranceDefined;   /* ToDo: delete up to stopTime, redundant information. Already in osu_data->model_info */
-    omsi_real           tolerance;
-    omsi_real           startTime;
-    omsi_bool           stopTimeDefined;
-    omsi_real           stopTime;
-    omsu_type           type;
-    omsi_unsigned_int*  vrStates;               /* Array of value references of states */
-    omsi_unsigned_int*  vrStatesDerivatives;    /* Array of value references of state derivatives */
-
-    const omsi_callback_functions*  fmiCallbackFunctions;
-} osu_t;
+} omsi_t;
 
 
 /*

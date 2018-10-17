@@ -42,8 +42,10 @@ extern "C" {
 /* global callback functions */
 omsi_callback_functions* global_callback;
 
-/* global instance name, used for logger function */
+/* global variables used for filtered_base_logger */
 omsi_string global_instance_name;
+omsi_bool*  global_logCategories;
+
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

@@ -43,23 +43,20 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
     /* set global function pointer */
     global_callback = (omsi_callback_functions*) callback_functions;
 
-    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok,
-        logCategoriesNames[LOG_ALL], "fmi2Instantiate: Set up sim_data structure."))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2Instantiate: Set up sim_data structure.");
 
     /* Check if memory is already allocated */
     if (!omsi_data->sim_data) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: sim_data struct not allocated."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: sim_data struct not allocated.");
         return omsi_error;
     }
 
     /* check if template callback functions are set */
     if (!template_function->isSet) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Generated functions not set."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Generated functions not set.");
         return omsi_error;
     }
 
@@ -68,17 +65,15 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
 
     /* Call generated initialization function for initialization problem */
     if (template_function->initialize_simulation_problem(omsi_data->sim_data->simulation)==omsi_error) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating initialization problem with generated code."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Error while instantiating initialization problem with generated code.");
         return omsi_error;
     }
 
 
     if (omsu_instantiate_omsi_function_func_vars(omsi_data->sim_data->simulation, omsi_data->sim_data->model_vars_and_params)==omsi_error) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name,
-            omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Error while instantiating function variables of sim_data->simulation."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Error while instantiating function variables of sim_data->simulation.");
         return omsi_error;
     }
 
@@ -100,31 +95,27 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
     global_callback = (omsi_callback_functions*) callback_functions;
 
     /* Log function call */
-    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL],
-        "fmi2Instantiate: Allocates memory for sim_data"))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2Instantiate: Allocates memory for sim_data");
 
     omsu->sim_data = (sim_data_t*)global_callback->allocateMemory(1, sizeof(sim_data_t));
     if (!omsu->sim_data) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-            callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: In omsu_allocate_sim_data: Not enough memory.");
         return omsi_error;
     }
 
     omsu->sim_data->model_vars_and_params = (omsi_values*)global_callback->allocateMemory(1, sizeof(omsi_values));
     if (!omsu->sim_data->model_vars_and_params) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-            callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: In omsu_allocate_sim_data: Not enough memory.");
         return omsi_error;
     }
 
     omsu->sim_data->pre_vars = (omsi_values*)global_callback->allocateMemory(1, sizeof(omsi_values));
     if (!omsu->sim_data->pre_vars) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-            callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: In omsu_allocate_sim_data: Not enough memory.");
         return omsi_error;
     }
 
@@ -137,16 +128,14 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
 
     omsu->sim_data->simulation = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
     if (!omsu->sim_data->simulation) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-            callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                        "fmi2Instantiate: In omsu_allocate_sim_data: Not enough memory.");
         return omsi_error;
     }
 
     if (omsu_instantiate_omsi_function_func_vars(omsu->sim_data->simulation, omsu->sim_data->model_vars_and_params) != omsi_ok) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-            callback_functions->logger(callback_functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: in omsu_allocate_sim_data: Could not instantiate omsi_function variables."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: in omsu_allocate_sim_data: Could not instantiate omsi_function variables.");
         return omsi_error;
     }
 
@@ -172,9 +161,8 @@ omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_f
 
     /* Set function_vars */
     if (function_vars==NULL) {  /* allocate memory for own copy function_vars */
-        LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2Instantiate: Dedicated memory for OMSI function variables not implemented."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Dedicated memory for OMSI function variables not implemented.");
         return omsi_error;
     }
     else {  /* share function_vars with sim_data->global model_vars_and_params */
@@ -268,9 +256,8 @@ omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_fun
 
     /* Check omsi_function */
     if (!omsi_function) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Memory for omsi_function not allocated."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Memory for omsi_function not allocated.");
         return omsi_error;
     }
 
