@@ -31,21 +31,19 @@
 #ifndef OMSU_HELPER_H
 #define OMSU_HELPER_H
 
-#include <omsi.h>
-#include <omsi_callbacks.h>
-#include <omsi_global.h>
-#include <omsu_common.h>
-
-#include <solver_lapack.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
 
 
+#include <omsic.h>
+
+#include <solver_lapack.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 
 /* extern function prototypes */
@@ -54,6 +52,38 @@ extern void printLapackData(DATA_LAPACK*    lapack_data,
 
 
 /* function prototypes */
+omsi_string stateToString(osu_t* OSU);
+
+omsi_bool invalidState(osu_t*       OSU,
+                       omsi_string  function_name,
+                       omsi_int     meStates,
+                       omsi_int     csStates);
+
+omsi_bool nullPointer(osu_t*        OSU,
+                      omsi_string   function_name,
+                      omsi_string   arg,
+                      const void *  pointer);
+
+omsi_bool vrOutOfRange(osu_t*               OSU,
+                       omsi_string          function_name,
+                       omsi_unsigned_int    vr,
+                       omsi_int             end);
+
+omsi_status unsupportedFunction(osu_t*      OSU,
+                                omsi_string function_name,
+                                omsi_int    statesExpected);
+
+omsi_bool invalidNumber(osu_t*          OSU,
+                        omsi_string     function_name,
+                        omsi_string     arg,
+                        omsi_int        n,
+                        omsi_int        nExpected);
+
+omsi_status omsi_set_debug_logging(osu_t*               OSU,
+                                   omsi_bool            loggingOn,
+                                   omsi_unsigned_int    nCategories,
+                                   const omsi_string    categories[]);
+
 omsi_bool omsu_discrete_changes(osu_t*  OSU,
                                 void*   threadData);
 

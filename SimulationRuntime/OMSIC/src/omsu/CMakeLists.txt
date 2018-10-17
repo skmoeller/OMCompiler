@@ -15,6 +15,7 @@ endif()
 MESSAGE(STATUS "OMSI Base Library: ${libOMSIBase}")
 
 
+include_directories ("${CMAKE_SOURCE_DIR}/include")
 include_directories ("${CMAKE_SOURCE_DIR}/include/solver")
 include_directories ("${CMAKE_SOURCE_DIR}/include/omsu")
 include_directories ("${CMAKE_SOURCE_DIR}/include/fmi2")

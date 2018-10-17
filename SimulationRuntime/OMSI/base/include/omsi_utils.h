@@ -57,14 +57,14 @@ extern "C" {
 
 
 /* function prototypes */
-void filtered_base_logger(omsi_bool*            logCategories,      /* Array of categories, that should be logged */
-                          omsi_unsigned_int     category,           /* Category of this log call */
+void filtered_base_logger(omsi_bool*            logCategories,      /* Array of categories, that should be logged, can be NULL */
+                          log_categories        category,           /* Category of this log call */
                           omsi_status           status,             /* Status for logger */
                           omsi_string           message,            /* Message for logger */
                           ...);                                      /* Optional arguments in message */
 
-omsi_bool isCategoryLogged(omsi_bool*   logCategories,
-                           omsi_int     categoryIndex);
+omsi_bool isCategoryLogged(omsi_bool*       logCategories,
+                           log_categories   categoryIndex);
 
 void omsu_free_osu_data(omsi_t* omsi_data);
 

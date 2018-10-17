@@ -55,31 +55,28 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
 {
     /* Variables */
     osu_t *OSU;
-    omsi_int i;
-
-    /* allocate memory for Openmodelica Simulation Unit */
-    OSU = functions->allocateMemory(1, sizeof(osu_t));
-    if (!OSU) {
-        LOG_FILTER(NULL, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
-        return NULL;
-    }
 
     /* set global callback functions */
     global_callback = (omsi_callback_functions*) functions;
     global_instance_name = instanceName;
-
     global_callback->componentEnvironment = OSU;
 
-    /* set general OSU data */
-    for (i = 0; i < NUMBER_OF_CATEGORIES; i++) { /* set all categories to on or off */
-        OSU->logCategories[i] = loggingOn;
+    filtered_base_logger(NULL, log_statuserror, omsi_error,
+            "Logger test: %s", "helloWorldsgsdgsdgsdgsdgsdg");
+
+    /* allocate memory for Openmodelica Simulation Unit */
+    OSU = functions->allocateMemory(1, sizeof(osu_t));
+    if (!OSU) {
+        filtered_base_logger(NULL, log_statuserror, omsi_error,
+                "fmi2Instantiate: Not enough memory.");
+        return NULL;
     }
-    OSU->loggingOn = loggingOn;
+
+    /* set general OSU data */
     OSU->GUID = (omsi_char*) functions->allocateMemory(1, strlen(fmuGUID) + 1);
     if (!OSU->GUID) {
-        LOG_FILTER(OSU, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
+        filtered_base_logger(NULL, log_statuserror, omsi_error,
+                        "fmi2Instantiate: Not enough memory.");
         return NULL;
     }
 
@@ -92,26 +89,28 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     OSU->osu_functions = (omsi_template_callback_functions_t*) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
 
     if (!OSU->osu_functions || !OSU->instanceName || !OSU->vrStates || !OSU->vrStatesDerivatives) {
-        LOG_FILTER(OSU, LOG_STATUSERROR,
-            functions->logger(functions->componentEnvironment, instanceName, omsi_error, logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
+        filtered_base_logger(NULL, log_statuserror, omsi_error,
+                "fmi2Instantiate: Not enough memory.");
         return NULL;
     }
 
     /* Set template function pointers */
-    LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        global_callback->logger(global_callback->componentEnvironment, instanceName, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Instantiate: Set callback functions from template %s_omsic.c.", instanceName))
+    filtered_base_logger(NULL, log_all, omsi_ok,
+            "fmi2Instantiate: Set callback functions from generated C-Code");
     initialize_start_function(OSU->osu_functions);      /* ToDo: At the moment only for static compilation */
 
 
     /* Call OMSIBase function for initialization of osu_data */
     OSU->osu_data = omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, OSU->osu_functions, visible, loggingOn);
 
+    /* Set pointer to logCategories and loggingOn */
+    OSU->logCategories = OSU->osu_data->logCategories;
+    OSU->loggingOn = &OSU->osu_data->loggingOn;
 
     /* Set state and log informations */
     OSU->state = modelInstantiated;
-    LOG_FILTER(OSU, LOG_ALL,
-        functions->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-        "fmi2Instantiate: GUID=%s", fmuGUID))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2Instantiate: GUID=%s", fmuGUID);
 
 
     DEBUG_PRINT(omsu_print_osu(OSU))
@@ -126,16 +125,14 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
 omsi_status omsi_enter_initialization_mode(osu_t* OSU) {
 
     if (invalidState(OSU, "fmi2EnterInitializationMode", modelInstantiated, ~0)) {
-        LOG_FILTER(OSU, LOG_STATUSERROR,
-            global_callback->logger(OSU, global_instance_name, omsi_error, logCategoriesNames[LOG_STATUSERROR],
-            "fmi2EnterInitializationMode: Call was not allowed."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2EnterInitializationMode: Call was not allowed.");
         return omsi_error;
     }
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2EnterInitializationMode: Successful."))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2EnterInitializationMode: Successful.");
 
     OSU->state = modelInitializationMode;
 
@@ -149,17 +146,15 @@ omsi_status omsi_exit_initialization_mode(osu_t* OSU) {
 
     if (invalidState(OSU, "fmi2ExitInitializationMode", modelInitializationMode, ~0))
         return omsi_error;
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-        "fmi2ExitInitializationMode: ...."))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2ExitInitializationMode: ....");
 
     /* ToDo: free OSU->omsi_data->initialization */
     /* ToDo: allocate OSU->omsi_data->simulation here to save some memory? */
 
     OSU->state = modelEventMode;
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2ExitInitializationMode: Success."))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2ExitInitializationMode: Success.");
 
     return omsi_ok;
 }
@@ -195,11 +190,10 @@ omsi_status omsi_setup_experiment(osu_t*     OSU,
                                             - OSU->osu_data->experiment->start_time) / 500;
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
             "fmi2SetupExperiment: toleranceDefined=%s, tolerance=%g, startTime=%g, stopTimeDefined=%s, stopTime=%g",
             toleranceDefined ? "true" : "false", OSU->osu_data->experiment->tolerance, startTime,
-            stopTimeDefined ? "true" : "false", OSU->osu_data->experiment->stop_time))
+            stopTimeDefined ? "true" : "false", OSU->osu_data->experiment->stop_time);
 
     return omsi_ok;
 }
@@ -225,9 +219,8 @@ void omsi_free_instance(osu_t* OSU) {
     if (invalidState(OSU, "fmi2FreeInstance", meStates, csStates)) {
         return;
     }
-
-    LOG_FILTER(OSU, LOG_ALL,
-                global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2FreeInstance"))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2FreeInstance");
 
 #if 0
     /* free OSU data */
@@ -254,8 +247,8 @@ omsi_status omsi_reset(osu_t* OSU) {
     if (invalidState(OSU, "fmi2Reset", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
         return omsi_error;
 
-    LOG_FILTER(OSU, LOG_ALL,
-                    global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Reset"))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2Reset");
 
     if (OSU->state & modelTerminated) {
       /* initialize OSU */
@@ -277,8 +270,8 @@ omsi_status omsi_terminate(osu_t* OSU) {
     if (invalidState(OSU, "fmi2Terminate", modelEventMode|modelContinuousTimeMode, ~0))
         return omsi_error;
 
-    LOG_FILTER(OSU, LOG_ALL,
-                        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2Terminate"))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2Terminate");
 
     OSU->state = modelTerminated;
     return omsi_ok;

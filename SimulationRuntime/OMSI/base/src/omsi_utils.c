@@ -34,9 +34,11 @@
 #define DEBUG_FLUSH if (DEBUG_FILTER_FLUSH) fflush(stdout);
 
 
+#define OVERFLOW_PROTECTED omsi_false
+
 /* Filter function for logger */
-void filtered_base_logger(omsi_bool*            logCategories,      /* Array of categories, that should be logged */
-                          omsi_unsigned_int     category,           /* Category of this log call */
+void filtered_base_logger(omsi_bool*            logCategories,      /* Array of categories, that should be logged, can be NULL */
+                          log_categories        category,           /* Category of this log call */
                           omsi_status           status,             /* Status for logger */
                           omsi_string           message,            /* Message for logger */
                           ...) {                                    /* Optional arguments in message */

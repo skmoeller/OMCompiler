@@ -58,8 +58,8 @@ typedef struct osu_t {
     omsi_bool           _need_update;           /* Bool if model needs update */
     omsi_bool           _has_jacobian;          /* Bool if model has jocobian matrix. Defaults to omsi_false */
     ModelState          state;
-    omsi_bool           logCategories[NUMBER_OF_CATEGORIES];
-    omsi_bool           loggingOn;
+    omsi_bool*          logCategories;          /* Pointer to osu_data->logCategories array */
+    omsi_bool*          loggingOn;              /* Pointer to osu_data->loggingOn */
     omsi_char*          GUID;
     omsi_string         instanceName;
     omsi_event_info     eventInfo;

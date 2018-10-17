@@ -241,6 +241,7 @@ template generateCodeHeader(String FileNamePrefix, Text &includes, String header
   #define <%headerName%>_H
 
   #include <omsi.h>
+  #include <omsic.h>
   #include <omsi_callbacks.h>
   #include <omsi_global.h>
 
@@ -454,9 +455,8 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
     <<
     omsi_status <%FileNamePrefix%>_initialize_<%functionName%>_OMSIFunc (omsi_function_t* omsi_function) {
 
-      LOG_FILTER(global_callback->componentEnvironment, LOG_ALL,
-        global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_ok,
-        logCategoriesNames[LOG_ALL], "fmi2Instantiate: Initialize omsi_function <%functionName%>.")) /* ToDo: delte */
+      filtered_base_logger(global_logCategories, log_all, omsi_ok,
+          "fmi2Instantiate: Initialize omsi_function <%functionName%>.");
 
       omsi_function->n_algebraic_system = <%nAlgebraicSystems%>;
 
@@ -469,9 +469,8 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
         /* Initialize algebraic system */
         omsi_function->algebraic_system_t = omsu_initialize_alg_system_array(<%nAlgebraicSystems%>);
         if (!omsi_function->algebraic_system_t) {
-          LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Not enough memory."))
+          filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                        "fmi2Instantiate: Not enough memory.");
           return omsi_error;
         }
         <%algSystemInit%>
@@ -506,9 +505,8 @@ template generateAlgebraicSystemInstantiation (String FileNamePrefix, Integer nA
       <<
       <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%>(&(omsi_function->algebraic_system_t[<%i0%>]), omsi_function->function_vars);
       if (!&omsi_function->algebraic_system_t[<%i0%>]) {
-        LOG_FILTER(global_callback->componentEnvironment, LOG_STATUSERROR,
-            global_callback->logger(global_callback->componentEnvironment, global_instance_name, omsi_error,
-            logCategoriesNames[LOG_STATUSERROR], "fmi2Instantiate: Function <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%> failed."))
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+            "fmi2Instantiate: Function <%FileNamePrefix%>_initializeAlgSystem_<%algSysIndex%> failed.");
         return omsi_error;
       }
       >>

@@ -69,9 +69,8 @@ omsi_status omsi_get_boolean(osu_t*                     OSU,
             return omsi_error;
         }
         value[i] = getBoolean(OSU, vr[i]);
-        LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2GetBoolean: #b%u# = %s", vr[i], value[i]? "true" : "false"))
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2GetBoolean: #b%u# = %s", vr[i], value[i]? "true" : "false");
     }
     return omsi_ok;
 }
@@ -101,9 +100,8 @@ omsi_status omsi_get_integer(osu_t*                     OSU,
         return omsi_error;
       }
       value[i] = getInteger(OSU, vr[i]);
-      LOG_FILTER(OSU, LOG_ALL,
-          global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-          "fmi2GetInteger: #i%u# = %d", vr[i], value[i]))
+      filtered_base_logger(global_logCategories, log_all, omsi_ok,
+              "fmi2GetInteger: #i%u# = %d", vr[i], value[i]);
     }
     return omsi_ok;
 }
@@ -133,9 +131,8 @@ omsi_status omsi_get_real(osu_t*                    OSU,
             return omsi_error;
         }
         value[i] = getReal(OSU, vr[i]);
-        LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2GetReal: vr = %i, value = %f", vr[i], value[i]))
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2GetReal: vr = %i, value = %f", vr[i], value[i]);
     }
     return omsi_ok;
 }
@@ -158,9 +155,8 @@ omsi_status omsi_get_string(osu_t*                  OSU,
         if (vrOutOfRange(OSU, "fmi2GetString", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_strings))
             return omsi_error;
         value[i] = getString(OSU, vr[i]); /* to be implemented by the includer of this file */
-        LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2GetString: #s%u# = '%s'", vr[i], value[i]))
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2GetString: #s%u# = '%s'", vr[i], value[i]);
     }
     return omsi_ok;
 }
@@ -218,12 +214,14 @@ omsi_status omsi_set_boolean(osu_t*                     OSU,
     if (nvr>0 && nullPointer(OSU, "fmi2SetBoolean", "value[]", value))
         return omsi_error;
 
-    LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetBoolean: nvr = %d", nvr))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2SetBoolean: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
         if (vrOutOfRange(OSU, "fmi2SetBoolean", vr[i], OSU->osu_data->model_data->n_bool_vars))
             return omsi_error;
-        LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false"))
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false");
         if (setBoolean(OSU, vr[i], value[i]) != omsi_ok) /* to be implemented by the includer of this file */
             return omsi_error;
     }
@@ -250,14 +248,18 @@ omsi_status omsi_set_integer(osu_t*                     OSU,
     if (nvr > 0 && nullPointer(OSU, "fmi2SetInteger", "value[]", value))
         return omsi_error;
 
-    LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetInteger: nvr = %d", nvr))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2SetInteger: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2SetInteger", vr[i], OSU->osu_data->model_data->n_int_vars))
+        if (vrOutOfRange(OSU, "fmi2SetInteger", vr[i], OSU->osu_data->model_data->n_int_vars)) {
             return omsi_error;
-        LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetInteger: #i%d# = %d", vr[i], value[i]))
-        if (setInteger(OSU, vr[i], value[i]) != omsi_ok) /*to be implemented by the includer of this file */
+        }
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2SetInteger: #i%d# = %d", vr[i], value[i]);
+        if (setInteger(OSU, vr[i], value[i]) != omsi_ok) {
             return omsi_error;
+        }
     }
     OSU->_need_update = 1;
     return omsi_ok;
@@ -282,16 +284,18 @@ omsi_status omsi_set_real(osu_t*                    OSU,
     if (nvr > 0 && nullPointer(OSU, "fmi2SetReal", "value[]", value))
         return omsi_error;
 
-    LOG_FILTER(OSU, LOG_ALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetReal: nvr = %d", nvr))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2SetReal: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2SetReal", vr[i], OSU->osu_data->model_data->n_real_vars+OSU->osu_data->model_data->n_states))
+        if (vrOutOfRange(OSU, "fmi2SetReal", vr[i], OSU->osu_data->model_data->n_real_vars+OSU->osu_data->model_data->n_states)) {
             return omsi_error;
-        LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetReal: #r%d# = %.16g", vr[i], value[i]))
-        if (setReal(OSU, vr[i], value[i]) != omsi_ok) /* to be implemented by the includer of this file */
+        }
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2SetReal: #r%d# = %.16g", vr[i], value[i]);
+        if (setReal(OSU, vr[i], value[i]) != omsi_ok) {
             return omsi_error;
+        }
     }
     OSU->_need_update = 1;
     return omsi_ok;
@@ -316,15 +320,19 @@ omsi_status omsi_set_string(osu_t*                  OSU,
     if (nvr>0 && nullPointer(OSU, "fmi2SetString", "value[]", value))
         return omsi_error;
 
-    LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetString: nvr = %d", nvr))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2SetString: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2SetString", vr[i], OSU->osu_data->model_data->n_string_vars))
+        if (vrOutOfRange(OSU, "fmi2SetString", vr[i], OSU->osu_data->model_data->n_string_vars)) {
             return omsi_error;
-        LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetString: #s%d# = '%s'", vr[i], value[i]))
+        }
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2SetString: #s%d# = '%s'", vr[i], value[i]);
 
-        if (setString(OSU, vr[i], value[i]) != omsi_ok) /* to be implemented by the includer of this file */
+        if (setString(OSU, vr[i], value[i]) != omsi_ok) {
             return omsi_error;
+        }
     }
     OSU->_need_update = 1;
     return omsi_ok;
@@ -335,7 +343,9 @@ omsi_status omsi_set_time(osu_t*    OSU,
 
     if (invalidState(OSU, "fmi2SetTime", modelInstantiated|modelEventMode|modelContinuousTimeMode, ~0))
         return omsi_error;
-    LOG_FILTER(OSU, LOG_ALL, global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetTime: time=%.16g", time))
+
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2SetTime: time=%.16g", time);
 
     OSU->osu_data->sim_data->model_vars_and_params->time_value = time;
     OSU->_need_update = 1;

@@ -41,10 +41,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include <omsi.h>
-#include <omsi_callbacks.h>
-#include <omsi_global.h>
-#include <omsi_utils.h>
+#include <omsic.h>
 
 #include <omsu_common.h>
 

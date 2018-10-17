@@ -132,20 +132,25 @@ typedef struct {
 /* forward some structs */
 typedef struct omsi_function_t omsi_function_t;
 typedef struct omsi_template_callback_functions_t omsi_template_callback_functions_t;
-typedef struct omsi_callback_functions omsi_callback_functions;
+/*typedef struct omsi_callback_functions omsi_callback_functions;*/
 
 /**
  * variable basic data type
  */
 typedef enum {
-  OMSI_TYPE_UNKNOWN,
-  OMSI_TYPE_REAL,
-  OMSI_TYPE_INTEGER,
-  OMSI_TYPE_BOOLEAN,
-  OMSI_TYPE_STRING
+    OMSI_TYPE_UNKNOWN,
+    OMSI_TYPE_REAL,
+    OMSI_TYPE_INTEGER,
+    OMSI_TYPE_BOOLEAN,
+    OMSI_TYPE_STRING
 }omsi_data_type;
 
-static omsi_string omsiDataTypesNames[] = {"Unknown", "Real", "Integer", "Boolean", "String"};
+static omsi_string omsiDataTypesNames[] = {
+    "Unknown",
+    "Real",
+    "Integer",
+    "Boolean",
+    "String"};
 
 
 /* ToDo: is this the right location for these definitions? */

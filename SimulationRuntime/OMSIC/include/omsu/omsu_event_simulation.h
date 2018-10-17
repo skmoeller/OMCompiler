@@ -45,10 +45,7 @@ extern "C" {
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include <omsi.h>
-#include <omsi_callbacks.h>
-#include <omsi_global.h>
-#include <omsi_utils.h>
+#include <omsic.h>
 
 
 omsi_status omsi_enter_event_mode(osu_t* OSU);

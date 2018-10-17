@@ -325,7 +325,7 @@ void omsu_read_var_infos(model_data_t*      model_data,
                          omc_ModelInput*    mi) {
 
     /* Log function call */
-    filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
             "fmi2Instantiate: Read variable informations from XML file.");
 
     /* Variables */

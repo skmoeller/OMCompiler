@@ -48,9 +48,8 @@ omsi_status omsi_enter_event_mode(osu_t* OSU) {
     }
 
     /* Log call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2EnterEventMode"))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2EnterEventMode");
 
     OSU->state = modelEventMode;
     return omsi_ok;
@@ -82,9 +81,8 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
     }
 
     /* Log call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2GetEventIndicators"))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2GetEventIndicators");
 
     /* If there are no event indicator there is nothing to do */
     if (OSU->osu_data->model_data->n_zerocrossings == 0) {
@@ -133,9 +131,9 @@ omsi_status omsi_event_update(osu_t*              OSU,
     }
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_ALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-        "fmi2EventUpdate: Start Event Update! Next Sample Event %u", eventInfo->nextEventTime))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2EventUpdate: Start Event Update! Next Sample Event %u",
+            eventInfo->nextEventTime);
 
     eventInfo->valuesOfContinuousStatesChanged = omsi_false;
 
@@ -213,10 +211,9 @@ omsi_status omsi_event_update(osu_t*              OSU,
     }
 #endif
 
-    LOG_FILTER(OSU, LOG_ALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-        "fmi2EventUpdate: newDiscreteStatesNeeded %s",
-        eventInfo->newDiscreteStatesNeeded ? "true" : "false"))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2EventUpdate: newDiscreteStatesNeeded %s",
+            eventInfo->newDiscreteStatesNeeded ? "true" : "false");
 
 #if 0
     /* due to an event overwrite old values */
@@ -240,10 +237,9 @@ omsi_status omsi_event_update(osu_t*              OSU,
     }
 #endif
 
-    LOG_FILTER(OSU, LOG_ALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-        "fmi2EventUpdate: Checked for Sample Events! Next Sample Event %u",
-        eventInfo->nextEventTime))
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2EventUpdate: Checked for Sample Events! Next Sample Event %u",
+            eventInfo->nextEventTime);
 
     return omsi_ok;
 

@@ -53,9 +53,8 @@ omsi_status omsi_new_discrete_state(osu_t*              OSU,
     }
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2NewDiscreteStates"))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2NewDiscreteStates");
 
     /* Set event info */
     eventInfo->newDiscreteStatesNeeded = omsi_false;
@@ -81,9 +80,8 @@ omsi_status omsi_enter_continuous_time_mode(osu_t* OSU) {
     }
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2EnterContinuousTimeMode"))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2EnterContinuousTimeMode");
 
     OSU->state = modelContinuousTimeMode;
     return omsi_ok;
@@ -117,16 +115,14 @@ omsi_status omsi_set_continuous_states(osu_t*               OSU,
     }
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2SetContinuousStates"))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2SetContinuousStates");
 
     /* Set continuous states */
     for (i = 0; i < nx; i++) {
         vr = OSU->vrStates[i];
-        LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2SetContinuousStates: #r%d# = %.16g", vr, x[i]))
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2SetContinuousStates: #r%d# = %.16g", vr, x[i]);
         if (setReal(OSU, vr, x[i]) != omsi_ok) {
             return omsi_error;
         }
@@ -157,17 +153,15 @@ omsi_status omsi_get_continuous_states(osu_t*               OSU,
     }
 
     /* Log call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2GetContinuousStates"))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2GetContinuousStates");
 
     for (i = 0; i < nx; i++) {
         vr = OSU->vrStates[i];
         x[i] = getReal(OSU, vr);
 
-        LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2GetContinuousStates: #r%u# = %.16g", vr, x[i]))
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2GetContinuousStates: #r%u# = %.16g", vr, x[i]);
     }
 
     return omsi_ok;
@@ -197,9 +191,9 @@ omsi_status omsi_get_nominals_of_continuous_states(osu_t*               OSU,
     }
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2GetNominalsOfContinuousStates: x_nominal[0, ... , %d] = 1.0", nx - 1))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2GetNominalsOfContinuousStates: x_nominal[0, ... , %d] = 1.0",
+            nx - 1);
 
     x_nominal[0] = 1;       /* ToDo: What happens for nx = 0, otherwise this line is unneccessary */
 
@@ -236,9 +230,8 @@ omsi_status omsi_completed_integrator_step(osu_t*       OSU,
     }
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2OSUCompletedIntegratorStep"))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2OSUCompletedIntegratorStep");
 
     /* ToDo: Do something useful with noSetFMUStatePriorToCurrentPoint */
 
@@ -314,10 +307,9 @@ omsi_status omsi_get_derivatives(osu_t*             OSU,
     /* ToDo: try */
     /* MMC_TRY_INTERNAL (simulationJumpBuffer) */
 
-    /* Loc function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2GetDerivatives"))
+    /* Log function call */
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2GetDerivatives");
 
 
     /* Evaluate needed equations */
@@ -329,9 +321,8 @@ omsi_status omsi_get_derivatives(osu_t*             OSU,
     for (i = 0; i < nx; i++) {
         vr = nx + i;
         derivatives[i] = getReal(OSU, vr);
-        LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-                    "fmi2GetDerivatives: #r%d# = %.16g", vr, derivatives[i]))
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2GetDerivatives: #r%d# = %.16g", vr, derivatives[i]);
     }
 
     return omsi_ok;
@@ -364,9 +355,8 @@ omsi_status omsi_get_directional_derivative(osu_t*                  OSU,
     }
 
     /* Log function call */
-    LOG_FILTER(OSU, LOG_FMI2_CALL,
-        global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_FMI2_CALL],
-        "fmi2GetDirectionalDerivative"))
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
+            "fmi2GetDirectionalDerivative");
 
     if (!OSU->_has_jacobian) {
         unsupportedFunction(OSU, "fmi2GetDirectionalDerivative", modelInitializationMode | modelEventMode | modelContinuousTimeMode | modelTerminated | modelError);

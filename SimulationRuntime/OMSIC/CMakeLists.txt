@@ -52,6 +52,7 @@ install(FILES
 DESTINATION include/omc/omsi)
 
 install(FILES
+  ${CMAKE_SOURCE_DIR}/include/omsic.h
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_common.h
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_helper.h
   ${CMAKE_SOURCE_DIR}/include/omsu/omsu_initialization.h
