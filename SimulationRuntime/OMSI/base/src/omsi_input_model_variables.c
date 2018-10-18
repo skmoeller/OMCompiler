@@ -397,8 +397,6 @@ omsi_status omsi_get_real(omsi_t*                    omsu,
     /* Get reals */
     for (i = 0; i < nvr; i++) {
         if (omsi_vr_out_of_range(omsu, "fmi2GetReal", vr[i], omsu->sim_data->model_vars_and_params->n_reals)) {
-            /* ToDo: delete printf!!! */
-            printf("\n vr=%u, number of reals= %u \n\n", vr[i], omsu->sim_data->model_vars_and_params->n_reals);
             return omsi_error;
         }
         value[i] =getReal(omsu, vr[i]);

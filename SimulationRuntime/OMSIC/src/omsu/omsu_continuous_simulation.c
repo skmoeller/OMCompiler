@@ -84,6 +84,7 @@ omsi_status omsi_enter_continuous_time_mode(osu_t* OSU) {
             "fmi2EnterContinuousTimeMode");
 
     OSU->state = modelContinuousTimeMode;
+
     return omsi_ok;
 }
 

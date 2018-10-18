@@ -118,7 +118,7 @@ FMI2_Export fmi2Status fmi2GetReal(fmi2Component            c,
 
     /* ToDo: Check for Update */
 
-    return omsi_get_real(c, vr, nvr, value);
+    return omsic_get_real(c, vr, nvr, value);
 }
 
 
@@ -127,7 +127,7 @@ FMI2_Export fmi2Status fmi2GetInteger(fmi2Component             c,
                                       size_t                    nvr,
                                       fmi2Integer               value[]) {
 
-    return omsi_get_integer(c, vr, nvr, value);
+    return omsic_get_integer(c, vr, nvr, value);
 }
 
 
@@ -145,7 +145,7 @@ FMI2_Export fmi2Status fmi2GetString(fmi2Component              c,
                                      size_t                     nvr,
                                      fmi2String                 value[]) {
 
-    return omsi_get_string(c, vr, nvr, value);
+    return omsic_get_string(c, vr, nvr, value);
 }
 
 
@@ -154,7 +154,7 @@ FMI2_Export fmi2Status fmi2SetReal(fmi2Component            c,
                                    size_t                   nvr,
                                    const fmi2Real           value[]) {
 
-    return omsi_set_real(c, vr, nvr, value);
+    return omsic_set_real(c, vr, nvr, value);
 }
 
 
@@ -163,7 +163,7 @@ FMI2_Export fmi2Status fmi2SetInteger(fmi2Component             c,
                                       size_t                    nvr,
                                       const fmi2Integer         value[]) {
 
-    return omsi_set_integer(c, vr, nvr, value);
+    return omsic_set_integer(c, vr, nvr, value);
 }
 
 
@@ -172,7 +172,7 @@ FMI2_Export fmi2Status fmi2SetBoolean(fmi2Component             c,
                                       size_t                    nvr,
                                       const fmi2Boolean         value[]) {
 
-    return omsi_set_boolean(c, vr, nvr, value);
+    return omsic_set_boolean(c, vr, nvr, value);
 }
 
 
@@ -181,11 +181,13 @@ FMI2_Export fmi2Status fmi2SetString(fmi2Component              c,
                                      size_t                     nvr,
                                      const fmi2String           value[]) {
 
-    return omsi_set_string(c, vr, nvr, value);
+    return omsic_set_string(c, vr, nvr, value);
 }
 
 
-FMI2_Export fmi2Status fmi2GetFMUstate(fmi2Component c, fmi2FMUstate* FMUstate) {
+FMI2_Export fmi2Status fmi2GetFMUstate(fmi2Component c,
+                                       fmi2FMUstate* FMUstate) {
+
     return omsi_get_fmu_state(c, FMUstate);
 }
 
@@ -247,6 +249,7 @@ FMI2_Export fmi2Status fmi2GetDirectionalDerivative(fmi2Component               
 
 
 FMI2_Export fmi2Status fmi2EnterEventMode(fmi2Component c) {
+
     return omsi_enter_event_mode(c);
 }
 
@@ -259,6 +262,7 @@ FMI2_Export fmi2Status fmi2NewDiscreteStates(fmi2Component  c,
 
 
 FMI2_Export fmi2Status fmi2EnterContinuousTimeMode(fmi2Component c) {
+
     return omsi_enter_continuous_time_mode(c);
 }
 
