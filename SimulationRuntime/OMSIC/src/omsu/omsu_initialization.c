@@ -55,6 +55,7 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
 {
     /* Variables */
     osu_t *OSU;
+    omsi_unsigned_int i;
 
     /* set global callback functions */
     global_callback = (omsi_callback_functions*) functions;
@@ -99,6 +100,12 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
 
     /* Call OMSIBase function for initialization of osu_data */
     OSU->osu_data = omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, OSU->osu_functions, visible, loggingOn);
+
+    /* Set OSU value referenze arrays */
+    for (i=0; i < OSU->osu_data->model_data->n_states; i++) {
+        OSU->vrStates[i] = i;
+        OSU->vrStatesDerivatives[i] = i+OSU->osu_data->model_data->n_states;
+    }
 
     /* Set pointer to logCategories and loggingOn */
     OSU->logCategories = OSU->osu_data->logCategories;
