@@ -318,7 +318,7 @@ omsi_status omsi_get_boolean(omsi_t*                     omsu,
 
     /* Get bool values */
     for (i = 0; i < nvr; i++){
-        if (vrOutOfRange(omsu, "fmi2GetBoolean", vr[i], omsu->sim_data->model_vars_and_params->n_bools)) {
+        if (omsi_vr_out_of_range(omsu, "fmi2GetBoolean", vr[i], omsu->sim_data->model_vars_and_params->n_bools)) {
             return omsi_error;
         }
 		value[i] = omsu->sim_data->model_vars_and_params->bools[vr[i]];
@@ -348,7 +348,7 @@ omsi_status omsi_get_integer(omsi_t*                     omsu,
 
     /* Get integers */
     for (i = 0; i < nvr; i++) {
-      if (vrOutOfRange(omsu, "fmi2GetInteger", vr[i], omsu->sim_data->model_vars_and_params->n_ints)) {
+      if (omsi_vr_out_of_range(omsu, "fmi2GetInteger", vr[i], omsu->sim_data->model_vars_and_params->n_ints)) {
         return omsi_error;
       }
       value[i] = omsu->sim_data->model_vars_and_params->ints[vr[i]];
@@ -378,7 +378,7 @@ omsi_status omsi_get_real(omsi_t*                    omsu,
 
     /* Get reals */
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(omsu, "fmi2GetReal", vr[i], omsu->sim_data->model_vars_and_params->n_reals)) {
+        if (omsi_vr_out_of_range(omsu, "fmi2GetReal", vr[i], omsu->sim_data->model_vars_and_params->n_reals)) {
             return omsi_error;
         }
         value[i] = omsu->sim_data->model_vars_and_params->reals[vr[i]];
@@ -403,7 +403,7 @@ omsi_status omsi_get_string(omsi_t*                  omsu,
     if (nvr>0 && value==NULL)
         return omsi_error;
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(omsu, "fmi2GetString", vr[i], omsu->sim_data->model_vars_and_params->n_strings))
+        if (omsi_vr_out_of_range(omsu, "fmi2GetString", vr[i], omsu->sim_data->model_vars_and_params->n_strings))
             return omsi_error;
         value[i] = omsu->sim_data->model_vars_and_params->strings[vr[i]]; /* to be implemented by the includer of this file */
 		filtered_base_logger(global_logCategories, log_all, omsi_ok,
@@ -437,7 +437,7 @@ omsi_status omsi_set_boolean(omsi_t*                     omsu,
 		"fmi2SetBoolean: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(omsu, "fmi2SetBoolean", vr[i], omsu->sim_data->model_vars_and_params->n_bools))
+        if (omsi_vr_out_of_range(omsu, "fmi2SetBoolean", vr[i], omsu->sim_data->model_vars_and_params->n_bools))
             return omsi_error;
 		filtered_base_logger(global_logCategories, log_all, omsi_ok,
 			"fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false");
@@ -467,7 +467,7 @@ omsi_status omsi_set_integer(omsi_t*                     omsu,
 		"fmi2SetInteger: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(omsu, "fmi2SetInteger", vr[i], omsu->sim_data->model_vars_and_params->n_ints))
+        if (omsi_vr_out_of_range(omsu, "fmi2SetInteger", vr[i], omsu->sim_data->model_vars_and_params->n_ints))
             return omsi_error;
 		filtered_base_logger(global_logCategories, log_all, omsi_ok,
 			"fmi2SetInteger: #i%d# = %d", vr[i], value[i]);
@@ -497,7 +497,7 @@ omsi_status omsi_set_real(omsi_t*                    omsu,
 		"fmi2SetReal: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(omsu, "fmi2SetReal", vr[i], omsu->sim_data->model_vars_and_params->n_reals))
+        if (omsi_vr_out_of_range(omsu, "fmi2SetReal", vr[i], omsu->sim_data->model_vars_and_params->n_reals))
             return omsi_error;
 		filtered_base_logger(global_logCategories, log_all, omsi_ok,
 			"fmi2SetReal: #r%d# = %.16g", vr[i], value[i]);
@@ -528,7 +528,7 @@ omsi_status omsi_set_string(omsi_t*                  omsu,
 		"fmi2SetString: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(omsu, "fmi2SetString", vr[i], omsu->sim_data->model_vars_and_params->n_strings))
+        if (omsi_vr_out_of_range(omsu, "fmi2SetString", vr[i], omsu->sim_data->model_vars_and_params->n_strings))
             return omsi_error;
 		filtered_base_logger(global_logCategories, log_all, omsi_ok,
 			"fmi2SetString: #s%d# = '%s'", vr[i], value[i]);

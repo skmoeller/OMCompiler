@@ -225,3 +225,21 @@ void omsu_free_omsi_values(omsi_values* values) {
 
     global_callback->freeMemory(values);
 }
+/*
+ * Returns true if vr is out of range of end, emits error message and sets
+ * model state to modelError.
+ * Otherwise it returns false.
+ */
+omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
+	omsi_string          function_name,
+	omsi_unsigned_int    vr,
+	omsi_int             end) {
+
+	if ((omsi_int)vr >= end) {
+		filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+			"%s: Illegal value reference %u.", function_name, vr);
+
+	 	return omsi_true;
+	}
+	return omsi_false;
+}
