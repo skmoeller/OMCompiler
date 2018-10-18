@@ -117,22 +117,11 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
                                             const omsi_callback_functions*  functions,
                                             omsi_string                     instanceName) {
 
-    /* Check inputs */
-    if (!omsu->model_data) {
-        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-                "fmi2Instantiate: No model data available.");
-        return omsi_error;
-    }
-    if (!omsu->model_data->model_vars_info) {
-        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-                "fmi2Instantiate: No model vars info available.");
-        return omsi_error;
-    }
-    if (!omsu->sim_data->model_vars_and_params) {
-        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-                "fmi2Instantiate: No model vars and parameter structure is not yet allocated.");
-        return omsi_error;
-    }
+
+
+	if(!model_variables_allocated(omsu))
+		return omsi_error;
+
     if (!omsu->sim_data->model_vars_and_params->reals && omsu->sim_data->model_vars_and_params->n_reals > 0) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Real variables are not yet allocated.");
@@ -314,6 +303,8 @@ omsi_status omsi_get_boolean(omsi_t*                     omsu,
                              omsi_unsigned_int          nvr,
                              omsi_bool                  value[]){
 
+	if (!model_variables_allocated(omsu))
+		return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
@@ -331,9 +322,8 @@ omsi_status omsi_get_boolean(omsi_t*                     omsu,
             return omsi_error;
         }
 		value[i] = omsu->sim_data->model_vars_and_params->bools[vr[i]];
-        LOG_FILTER(omsu, LOG_ALL,
-            global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2GetBoolean: #b%u# = %s", vr[i], value[i]? "true" : "false"))
+		filtered_base_logger(global_logCategories, log_all, omsi_ok,
+			"fmi2GetBoolean: #b%u# = %s", vr[i], value[i] ? "true" : "false");
     }
     return omsi_ok;
 }
@@ -343,6 +333,8 @@ omsi_status omsi_get_integer(omsi_t*                     omsu,
                              omsi_unsigned_int          nvr,
                              omsi_int                   value[]){
 
+	if (!model_variables_allocated(omsu))
+		return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
@@ -360,9 +352,8 @@ omsi_status omsi_get_integer(omsi_t*                     omsu,
         return omsi_error;
       }
       value[i] = omsu->sim_data->model_vars_and_params->ints[vr[i]];
-      LOG_FILTER(omsu, LOG_ALL,
-          global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-          "fmi2GetInteger: #i%u# = %d", vr[i], value[i]))
+	  filtered_base_logger(global_logCategories, log_all, omsi_ok,
+		  "fmi2GetInteger: #i%u# = %d", vr[i], value[i]);
     }
     return omsi_ok;
 }
@@ -372,6 +363,8 @@ omsi_status omsi_get_real(omsi_t*                    omsu,
                           omsi_unsigned_int         nvr,
                           omsi_real                 value[]){
 
+	if (!model_variables_allocated(omsu))
+		return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
@@ -389,9 +382,8 @@ omsi_status omsi_get_real(omsi_t*                    omsu,
             return omsi_error;
         }
         value[i] = omsu->sim_data->model_vars_and_params->reals[vr[i]];
-        LOG_FILTER(omsu, LOG_ALL,
-            global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2GetReal: vr = %i, value = %f", vr[i], value[i]))
+		filtered_base_logger(global_logCategories, log_all, omsi_ok,
+			"fmi2GetReal: vr = %i, value = %f", vr[i], value[i]);
     }
     return omsi_ok;
 }
@@ -400,6 +392,8 @@ omsi_status omsi_get_string(omsi_t*                  omsu,
                             omsi_unsigned_int       nvr,
                             omsi_string             value[]){
 
+	if (!model_variables_allocated(omsu))
+		return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
@@ -412,9 +406,8 @@ omsi_status omsi_get_string(omsi_t*                  omsu,
         if (vrOutOfRange(omsu, "fmi2GetString", vr[i], omsu->sim_data->model_vars_and_params->n_strings))
             return omsi_error;
         value[i] = omsu->sim_data->model_vars_and_params->strings[vr[i]]; /* to be implemented by the includer of this file */
-        LOG_FILTER(omsu, LOG_ALL,
-            global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2GetString: #s%u# = '%s'", vr[i], value[i]))
+		filtered_base_logger(global_logCategories, log_all, omsi_ok,
+			"fmi2GetString: #s%u# = '%s'", vr[i], value[i]);
     }
     return omsi_ok;
 }
@@ -430,6 +423,8 @@ omsi_status omsi_set_boolean(omsi_t*                     omsu,
                              omsi_unsigned_int          nvr,
                              const omsi_bool            value[]) {
 
+	if (!model_variables_allocated(omsu))
+		return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
@@ -438,12 +433,14 @@ omsi_status omsi_set_boolean(omsi_t*                     omsu,
     if (nvr>0 &&  value==NULL)
         return omsi_error;
 
-    LOG_FILTER(omsu, LOG_ALL, global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetBoolean: nvr = %d", nvr))
+	filtered_base_logger(global_logCategories, log_all, omsi_ok,
+		"fmi2SetBoolean: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
         if (vrOutOfRange(omsu, "fmi2SetBoolean", vr[i], omsu->sim_data->model_vars_and_params->n_bools))
             return omsi_error;
-		LOG_FILTER(omsu, LOG_ALL, global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false"));
+		filtered_base_logger(global_logCategories, log_all, omsi_ok,
+			"fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false");
 		omsu->sim_data->model_vars_and_params->bools[vr[i]]= value[i];
 
     }
@@ -456,6 +453,8 @@ omsi_status omsi_set_integer(omsi_t*                     omsu,
                              omsi_unsigned_int                     nvr,
                              const omsi_int             value[]) {
 
+	if (!model_variables_allocated(omsu))
+		return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
@@ -464,12 +463,14 @@ omsi_status omsi_set_integer(omsi_t*                     omsu,
     if (nvr > 0 && value==NULL)
         return omsi_error;
 
-    LOG_FILTER(omsu, LOG_ALL, global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetInteger: nvr = %d", nvr))
+	filtered_base_logger(global_logCategories, log_all, omsi_ok,
+		"fmi2SetInteger: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
         if (vrOutOfRange(omsu, "fmi2SetInteger", vr[i], omsu->sim_data->model_vars_and_params->n_ints))
             return omsi_error;
-		LOG_FILTER(omsu, LOG_ALL, global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetInteger: #i%d# = %d", vr[i], value[i]));
+		filtered_base_logger(global_logCategories, log_all, omsi_ok,
+			"fmi2SetInteger: #i%d# = %d", vr[i], value[i]);
 		omsu->sim_data->model_vars_and_params->ints[vr[i]] = value[i];
             return omsi_error;
     }
@@ -482,6 +483,8 @@ omsi_status omsi_set_real(omsi_t*                    omsu,
                           omsi_unsigned_int                    nvr,
                           const omsi_real           value[]) {
 
+	if (!model_variables_allocated(omsu))
+		return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
@@ -490,14 +493,14 @@ omsi_status omsi_set_real(omsi_t*                    omsu,
     if (nvr > 0 && value==NULL)
         return omsi_error;
 
-    LOG_FILTER(omsu, LOG_ALL,
-        global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetReal: nvr = %d", nvr))
+	filtered_base_logger(global_logCategories, log_all, omsi_ok,
+		"fmi2SetReal: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
         if (vrOutOfRange(omsu, "fmi2SetReal", vr[i], omsu->sim_data->model_vars_and_params->n_reals))
             return omsi_error;
-		LOG_FILTER(omsu, LOG_ALL,
-			global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetReal: #r%d# = %.16g", vr[i], value[i]));
+		filtered_base_logger(global_logCategories, log_all, omsi_ok,
+			"fmi2SetReal: #r%d# = %.16g", vr[i], value[i]);
 		omsu->sim_data->model_vars_and_params->reals[vr[i]] = value[i];
             return omsi_error;
     }
@@ -510,6 +513,8 @@ omsi_status omsi_set_string(omsi_t*                  omsu,
                             omsi_unsigned_int                  nvr,
                             const omsi_string       value[]) {
 
+	if (!model_variables_allocated(omsu))
+		return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
@@ -519,16 +524,40 @@ omsi_status omsi_set_string(omsi_t*                  omsu,
     if (nvr>0 && value==NULL)
         return omsi_error;
 
-    LOG_FILTER(omsu, LOG_ALL, global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetString: nvr = %d", nvr))
+	filtered_base_logger(global_logCategories, log_all, omsi_ok,
+		"fmi2SetString: nvr = %d", nvr);
 
     for (i = 0; i < nvr; i++) {
         if (vrOutOfRange(omsu, "fmi2SetString", vr[i], omsu->sim_data->model_vars_and_params->n_strings))
             return omsi_error;
-		LOG_FILTER(omsu, LOG_ALL, global_callback->logger(omsu, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL], "fmi2SetString: #s%d# = '%s'", vr[i], value[i]))
+		filtered_base_logger(global_logCategories, log_all, omsi_ok,
+			"fmi2SetString: #s%d# = '%s'", vr[i], value[i]);
 
 		omsu->sim_data->model_vars_and_params->strings[vr[i]] = value[i];
 
     }
 
     return omsi_ok;
+}
+
+omsi_status model_variables_allocated(omsi_t*                  omsu)
+{
+
+
+	/* Check inputs */
+	if (!omsu->model_data) {
+		filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+			"fmi2Instantiate: No model data available.");
+		return omsi_error;
+	}
+	if (!omsu->model_data->model_vars_info) {
+		filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+			"fmi2Instantiate: No model vars info available.");
+		return omsi_error;
+	}
+	if (!omsu->sim_data->model_vars_and_params) {
+		filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+			"fmi2Instantiate: No model vars and parameter structure is not yet allocated.");
+		return omsi_error;
+	}
 }

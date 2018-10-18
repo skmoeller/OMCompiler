@@ -72,7 +72,7 @@ omsi_status omsi_set_string(omsi_t*                  omsu,
 	const omsi_string       value[]);
 
 
-
+omsi_status model_variables_allocated(omsi_t*                  omsu);
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */
