@@ -437,8 +437,6 @@ algorithm
 
     // create model info
     modelInfo := createModelInfo(inClassName, program, dlow, inInitDAE, functions, {}, numStateSets, inFileDir, listLength(clockedSysts), tempvars);
-    print("ToDo: change index of parameters!!\n");    // ToDo: change index of parameters, shlould not start at zero
-    dumpModelInfo(modelInfo);
     if debug then execStat("simCode: createModelInfo and variables"); end if;
 
     //build labels

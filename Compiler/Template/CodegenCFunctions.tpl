@@ -3553,8 +3553,8 @@ template getLocalSimVar(ComponentRef cref, HashTableCrefSimVar.HashTable hashTab
     case v as SIMVAR(index=-2) then
       match cref2simvar(cref, getSimCode())
         case v as SIMVAR(__) then
-        //let index = getValueReference(v, getSimCode(), false)
-        let index = v.index
+        let index = getValueReference(v, getSimCode(), false)
+        //let index = v.index
         let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
          <<
          model_vars_and_params-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
