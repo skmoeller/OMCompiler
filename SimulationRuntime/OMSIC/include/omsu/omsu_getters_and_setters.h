@@ -52,6 +52,7 @@ extern "C" {
 
 
 /* function prototypes */
+/*
 omsi_status omsi_get_boolean(osu_t*                     OSU,
                              const omsi_unsigned_int    vr[],
                              omsi_unsigned_int          nvr,
@@ -71,7 +72,7 @@ omsi_status omsi_get_string(osu_t*                  OSU,
                             const omsi_unsigned_int vr[],
                             omsi_unsigned_int       nvr,
                             omsi_string             value[]);
-
+*/
 omsi_status omsi_get_fmu_state(osu_t*        OSU,
                                void **      FMUstate);
 
@@ -84,7 +85,7 @@ omsi_status omsi_get_interval(osu_t*            OSU,
                               const omsi_int    clockIndex[],
                               omsi_unsigned_int nClockIndex,
                               omsi_real         interval[]);
-
+/*
 omsi_status omsi_set_boolean(osu_t*                     OSU,
                              const omsi_unsigned_int    vr[],
                              omsi_unsigned_int          nvr,
@@ -104,7 +105,7 @@ omsi_status omsi_set_string(osu_t*                  OSU,
                             const omsi_unsigned_int vr[],
                             omsi_unsigned_int       nvr,
                             const omsi_string       value[]);
-
+*/
 omsi_status omsi_set_time(osu_t*    OSU,
                           omsi_real time);
 

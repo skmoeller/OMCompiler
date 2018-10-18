@@ -43,16 +43,17 @@
  * Getters
  * ============================================================================
  */
+/***** disabled becaus it is moved to omsi base
 
 omsi_status omsi_get_boolean(osu_t*                     OSU,
                              const omsi_unsigned_int    vr[],
                              omsi_unsigned_int          nvr,
                              omsi_bool                  value[]){
 
-    /* Variables */
+
     omsi_unsigned_int i;
 
-    /* Check inputs and if call is valid*/
+
     if (invalidState(OSU, "fmi2GetBoolean", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
         return omsi_error;
     }
@@ -63,7 +64,7 @@ omsi_status omsi_get_boolean(osu_t*                     OSU,
         return omsi_error;
     }
 
-    /* Get bool values */
+
     for (i = 0; i < nvr; i++){
         if (vrOutOfRange(OSU, "fmi2GetBoolean", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_bools)) {
             return omsi_error;
@@ -80,10 +81,10 @@ omsi_status omsi_get_integer(osu_t*                     OSU,
                              omsi_unsigned_int          nvr,
                              omsi_int                   value[]){
 
-    /* Variables */
+
     omsi_unsigned_int i;
 
-    /* Check inputs and if call is valid*/
+
     if (invalidState(OSU, "fmi2GetInteger", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
       return omsi_error;
     }
@@ -94,7 +95,7 @@ omsi_status omsi_get_integer(osu_t*                     OSU,
       return omsi_error;
     }
 
-    /* Get integers */
+
     for (i = 0; i < nvr; i++) {
       if (vrOutOfRange(OSU, "fmi2GetInteger", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_ints)) {
         return omsi_error;
@@ -111,10 +112,10 @@ omsi_status omsi_get_real(osu_t*                    OSU,
                           omsi_unsigned_int         nvr,
                           omsi_real                 value[]){
 
-    /* Variables */
+
     omsi_unsigned_int i;
 
-    /* Check inputs and if call is valid*/
+
     if (invalidState(OSU, "fmi2GetReal", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
       return omsi_error;
     }
@@ -125,7 +126,7 @@ omsi_status omsi_get_real(osu_t*                    OSU,
       return omsi_error;
     }
 
-    /* Get reals */
+
     for (i = 0; i < nvr; i++) {
         if (vrOutOfRange(OSU, "fmi2GetReal", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_reals)) {
             return omsi_error;
@@ -142,7 +143,7 @@ omsi_status omsi_get_string(osu_t*                  OSU,
                             omsi_unsigned_int       nvr,
                             omsi_string             value[]){
 
-    /* Variables */
+
     omsi_unsigned_int i;
 
     if (invalidState(OSU, "fmi2GetString", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
@@ -154,12 +155,15 @@ omsi_status omsi_get_string(osu_t*                  OSU,
     for (i = 0; i < nvr; i++) {
         if (vrOutOfRange(OSU, "fmi2GetString", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_strings))
             return omsi_error;
-        value[i] = getString(OSU, vr[i]); /* to be implemented by the includer of this file */
+        value[i] = getString(OSU, vr[i]);
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
                 "fmi2GetString: #s%u# = '%s'", vr[i], value[i]);
     }
     return omsi_ok;
 }
+disabled becaus it is moved to omsi base ***********************************************/
+
+
 
 omsi_status omsi_get_fmu_state(osu_t*        OSU,
                                void **      FMUstate) {
@@ -194,13 +198,14 @@ omsi_status omsi_get_interval(osu_t*            OSU,
  * Setters
  * ============================================================================
  */
+/********************disabled becaus it is moved to omsi base  *******************
 
 omsi_status omsi_set_boolean(osu_t*                     OSU,
                              const omsi_unsigned_int    vr[],
                              omsi_unsigned_int          nvr,
                              const omsi_bool            value[]) {
 
-    /* Variables */
+
     omsi_unsigned_int i;
     omsi_int meStates, csStates;
 
@@ -222,7 +227,7 @@ omsi_status omsi_set_boolean(osu_t*                     OSU,
             return omsi_error;
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
                 "fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false");
-        if (setBoolean(OSU, vr[i], value[i]) != omsi_ok) /* to be implemented by the includer of this file */
+        if (setBoolean(OSU, vr[i], value[i]) != omsi_ok)
             return omsi_error;
     }
     OSU->_need_update = 1;
@@ -234,7 +239,7 @@ omsi_status omsi_set_integer(osu_t*                     OSU,
                              omsi_unsigned_int                     nvr,
                              const omsi_int             value[]) {
 
-    /* Variables */
+
     omsi_unsigned_int i;
     omsi_int meStates, csStates;
 
@@ -270,7 +275,7 @@ omsi_status omsi_set_real(osu_t*                    OSU,
                           omsi_unsigned_int                    nvr,
                           const omsi_real           value[]) {
 
-    /* Variables */
+
     omsi_unsigned_int i;
     omsi_int meStates, csStates;
 
@@ -306,7 +311,7 @@ omsi_status omsi_set_string(osu_t*                  OSU,
                             omsi_unsigned_int                  nvr,
                             const omsi_string       value[]) {
 
-    /* Variables */
+
     omsi_unsigned_int i;
     omsi_int meStates, csStates;
 
@@ -337,6 +342,10 @@ omsi_status omsi_set_string(osu_t*                  OSU,
     OSU->_need_update = 1;
     return omsi_ok;
 }
+disabled becaus it is moved to omsi base **************************************/
+
+
+
 
 omsi_status omsi_set_time(osu_t*    OSU,
                           omsi_real time) {
