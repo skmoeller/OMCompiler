@@ -31,6 +31,49 @@ void *alignedMalloc(size_t required_bytes,
 
 void alignedFree(void* p);
 
+omsi_status omsi_get_boolean(omsi_t*                     omsu,
+	const omsi_unsigned_int    vr[],
+	omsi_unsigned_int          nvr,
+	omsi_bool                  value[]);
+
+omsi_status omsi_get_integer(omsi_t*                     omsu,
+	const omsi_unsigned_int    vr[],
+	omsi_unsigned_int          nvr,
+	omsi_int                   value[]);
+
+omsi_status omsi_get_real(omsi_t*                    omsu,
+	const omsi_unsigned_int   vr[],
+	omsi_unsigned_int         nvr,
+	omsi_real                 value[]);
+
+omsi_status omsi_get_string(omsi_t*                  omsu,
+	const omsi_unsigned_int vr[],
+	omsi_unsigned_int       nvr,
+	omsi_string             value[]);
+
+omsi_status omsi_set_boolean(omsi_t*                     omsu,
+	const omsi_unsigned_int    vr[],
+	omsi_unsigned_int          nvr,
+	const omsi_bool            value[]);
+
+omsi_status omsi_set_integer(omsi_t*                     omsu,
+	const omsi_unsigned_int    vr[],
+	omsi_unsigned_int          nvr,
+	const omsi_int             value[]);
+
+omsi_status omsi_set_real(omsi_t*                    omsu,
+	const omsi_unsigned_int   vr[],
+	omsi_unsigned_int         nvr,
+	const omsi_real           value[]);
+
+omsi_status omsi_set_string(omsi_t*                  omsu,
+	const omsi_unsigned_int vr[],
+	omsi_unsigned_int       nvr,
+	const omsi_string       value[]);
+
+
+
+
 #ifdef __cplusplus
 }  /* end of extern "C" { */
 #endif

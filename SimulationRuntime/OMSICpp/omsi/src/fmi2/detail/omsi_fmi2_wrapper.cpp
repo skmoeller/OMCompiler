@@ -81,6 +81,7 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
                          const fmi2CallbackFunctions *functions,
 	fmi2Boolean                  visible, fmi2Boolean loggingOn,fmi2String fmuResourceLocations)
 	:_functions(*functions),
+	_osu_functions(NULL),
   callbackLogger(_functions.logger),
   _conditions(NULL),
   _zero_funcs(NULL),
@@ -154,6 +155,7 @@ OSU::~OSU()
  if(_events)
     delete [] _events;
  omsi_free_model_variables(_omsu);
+ free(_osu_functions);
 }
 
 fmi2Status OSU::setDebugLogging(fmi2Boolean loggingOn,
