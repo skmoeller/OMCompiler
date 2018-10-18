@@ -123,7 +123,7 @@ omsi_status omsi_set_continuous_states(osu_t*               OSU,
         vr = OSU->vrStates[i];
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
                 "fmi2SetContinuousStates: #r%d# = %.16g", vr, x[i]);
-        if (setReal(OSU, vr, x[i]) != omsi_ok) {
+        if (setReal(OSU->osu_data, vr, x[i]) != omsi_ok) {
             return omsi_error;
         }
     }
@@ -158,7 +158,7 @@ omsi_status omsi_get_continuous_states(osu_t*               OSU,
 
     for (i = 0; i < nx; i++) {
         vr = OSU->vrStates[i];
-        x[i] = getReal(OSU, vr);
+        x[i] = getReal(OSU->osu_data, vr);
 
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
                 "fmi2GetContinuousStates: #r%u# = %.16g", vr, x[i]);
@@ -320,7 +320,7 @@ omsi_status omsi_get_derivatives(osu_t*             OSU,
 
     for (i = 0; i < nx; i++) {
         vr = nx + i;
-        derivatives[i] = getReal(OSU, vr);
+        derivatives[i] = getReal(OSU->osu_data, vr);
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
                 "fmi2GetDerivatives: #r%d# = %.16g", vr, derivatives[i]);
     }
@@ -346,9 +346,6 @@ omsi_status omsi_get_directional_derivative(osu_t*                  OSU,
                                             omsi_unsigned_int       nKnown,
                                             const omsi_real         dvKnown[],
                                             omsi_real               dvUnknown[]) {
-
-    /* Variables */
-    omsi_unsigned_int i;
 
     if (invalidState(OSU, "fmi2GetDirectionalDerivative", modelInstantiated | modelEventMode | modelContinuousTimeMode, ~0)) {
         return omsi_error;

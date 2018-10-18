@@ -43,126 +43,94 @@
  * Getters
  * ============================================================================
  */
-/***** disabled becaus it is moved to omsi base
-
-omsi_status omsi_get_boolean(osu_t*                     OSU,
-                             const omsi_unsigned_int    vr[],
-                             omsi_unsigned_int          nvr,
-                             omsi_bool                  value[]){
 
 
-    omsi_unsigned_int i;
+omsi_status omsic_get_boolean(osu_t*                     OSU,
+                              const omsi_unsigned_int    vr[],
+                              omsi_unsigned_int          nvr,
+                              omsi_bool                  value[]) {
 
+    /* Variables */
+    omsi_bool return_status;
 
     if (invalidState(OSU, "fmi2GetBoolean", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
         return omsi_error;
     }
-    if (nvr > 0 && nullPointer(OSU, "fmi2GetBoolean", "vr[]", vr)) {
-        return omsi_error;
-    }
-    if (nvr > 0 && nullPointer(OSU, "fmi2GetBoolean", "value[]", value)) {
-        return omsi_error;
+
+    return_status = omsi_get_boolean(OSU->osu_data, vr, nvr, value);
+    if (return_status != omsi_ok) {
+        OSU->state = modelError;
     }
 
-
-    for (i = 0; i < nvr; i++){
-        if (vrOutOfRange(OSU, "fmi2GetBoolean", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_bools)) {
-            return omsi_error;
-        }
-        value[i] = getBoolean(OSU, vr[i]);
-        filtered_base_logger(global_logCategories, log_all, omsi_ok,
-                "fmi2GetBoolean: #b%u# = %s", vr[i], value[i]? "true" : "false");
-    }
-    return omsi_ok;
+    return return_status;
 }
 
-omsi_status omsi_get_integer(osu_t*                     OSU,
-                             const omsi_unsigned_int    vr[],
-                             omsi_unsigned_int          nvr,
-                             omsi_int                   value[]){
+omsi_status omsic_get_integer(osu_t*                     OSU,
+                              const omsi_unsigned_int    vr[],
+                              omsi_unsigned_int          nvr,
+                              omsi_int                   value[]){
 
-
-    omsi_unsigned_int i;
-
+    /* Variables */
+    omsi_bool return_status;
 
     if (invalidState(OSU, "fmi2GetInteger", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
       return omsi_error;
     }
-    if (nvr > 0 && nullPointer(OSU, "fmi2GetInteger", "vr[]", vr)) {
-      return omsi_error;
-    }
-    if (nvr > 0 && nullPointer(OSU, "fmi2GetInteger", "value[]", value)) {
-      return omsi_error;
+
+    /* OMSIBase function call */
+    return_status = omsi_get_integer(OSU->osu_data, vr, nvr, value);
+    if (return_status != omsi_ok) {
+        OSU->state = modelError;
     }
 
-
-    for (i = 0; i < nvr; i++) {
-      if (vrOutOfRange(OSU, "fmi2GetInteger", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_ints)) {
-        return omsi_error;
-      }
-      value[i] = getInteger(OSU, vr[i]);
-      filtered_base_logger(global_logCategories, log_all, omsi_ok,
-              "fmi2GetInteger: #i%u# = %d", vr[i], value[i]);
-    }
-    return omsi_ok;
+    return return_status;
 }
 
-omsi_status omsi_get_real(osu_t*                    OSU,
-                          const omsi_unsigned_int   vr[],
-                          omsi_unsigned_int         nvr,
-                          omsi_real                 value[]){
+omsi_status omsic_get_real(osu_t*                    OSU,
+                           const omsi_unsigned_int   vr[],
+                           omsi_unsigned_int         nvr,
+                           omsi_real                 value[]){
 
-
-    omsi_unsigned_int i;
-
+    /* Variables */
+    omsi_bool return_status;
 
     if (invalidState(OSU, "fmi2GetReal", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
       return omsi_error;
     }
-    if (nvr > 0 && nullPointer(OSU, "fmi2GetReal", "vr[]", vr)) {
-      return omsi_error;
-    }
-    if (nvr > 0 && nullPointer(OSU, "fmi2GetReal", "value[]", value)) {
-      return omsi_error;
+
+    /* OMSIBase function call */
+    return_status = omsi_get_real(OSU->osu_data, vr, nvr, value);
+    if (return_status != omsi_ok) {
+        OSU->state = modelError;
     }
 
-
-    for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2GetReal", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_reals)) {
-            return omsi_error;
-        }
-        value[i] = getReal(OSU, vr[i]);
-        filtered_base_logger(global_logCategories, log_all, omsi_ok,
-                "fmi2GetReal: vr = %i, value = %f", vr[i], value[i]);
-    }
-    return omsi_ok;
+    return return_status;
 }
 
-omsi_status omsi_get_string(osu_t*                  OSU,
-                            const omsi_unsigned_int vr[],
-                            omsi_unsigned_int       nvr,
-                            omsi_string             value[]){
+omsi_status omsic_get_string(osu_t*                  OSU,
+                             const omsi_unsigned_int vr[],
+                             omsi_unsigned_int       nvr,
+                             omsi_string             value[]){
 
+    /* Variables */
+    omsi_bool return_status;
 
-    omsi_unsigned_int i;
-
-    if (invalidState(OSU, "fmi2GetString", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0))
+    if (invalidState(OSU, "fmi2GetString", modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
         return omsi_error;
+    }
     if (nvr>0 && nullPointer(OSU, "fmi2GetString", "vr[]", vr))
         return omsi_error;
     if (nvr>0 && nullPointer(OSU, "fmi2GetString", "value[]", value))
         return omsi_error;
-    for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2GetString", vr[i], OSU->osu_data->sim_data->model_vars_and_params->n_strings))
-            return omsi_error;
-        value[i] = getString(OSU, vr[i]);
-        filtered_base_logger(global_logCategories, log_all, omsi_ok,
-                "fmi2GetString: #s%u# = '%s'", vr[i], value[i]);
-    }
-    return omsi_ok;
-}
-disabled becaus it is moved to omsi base ***********************************************/
 
+    /* OMSIBase function call */
+    return_status = omsi_get_string(OSU->osu_data, vr, nvr, value);
+    if (return_status != omsi_ok) {
+        OSU->state = modelError;
+    }
+
+    return return_status;
+}
 
 
 omsi_status omsi_get_fmu_state(osu_t*        OSU,
@@ -198,85 +166,66 @@ omsi_status omsi_get_interval(osu_t*            OSU,
  * Setters
  * ============================================================================
  */
-/********************disabled becaus it is moved to omsi base  *******************
 
-omsi_status omsi_set_boolean(osu_t*                     OSU,
-                             const omsi_unsigned_int    vr[],
-                             omsi_unsigned_int          nvr,
-                             const omsi_bool            value[]) {
+omsi_status omsic_set_boolean(osu_t*                     OSU,
+                              const omsi_unsigned_int    vr[],
+                              omsi_unsigned_int          nvr,
+                              const omsi_bool            value[]) {
 
-
-    omsi_unsigned_int i;
+    /* Variables */
+    omsi_bool return_status;
     omsi_int meStates, csStates;
 
     meStates = modelInstantiated|modelInitializationMode|modelEventMode;
     csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
 
-    if (invalidState(OSU, "fmi2SetReal", meStates, csStates))
-        return omsi_error;
-    if (nvr>0 && nullPointer(OSU, "fmi2SetBoolean", "vr[]", vr))
-        return omsi_error;
-    if (nvr>0 && nullPointer(OSU, "fmi2SetBoolean", "value[]", value))
+    if (invalidState(OSU, "fmi2SetBoolean", meStates, csStates))
         return omsi_error;
 
-    filtered_base_logger(global_logCategories, log_all, omsi_ok,
-            "fmi2SetBoolean: nvr = %d", nvr);
-
-    for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2SetBoolean", vr[i], OSU->osu_data->model_data->n_bool_vars))
-            return omsi_error;
-        filtered_base_logger(global_logCategories, log_all, omsi_ok,
-                "fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false");
-        if (setBoolean(OSU, vr[i], value[i]) != omsi_ok)
-            return omsi_error;
+    /* OMSIBase function call */
+    return_status = omsi_set_boolean(OSU->osu_data, vr, nvr, value);
+    if (return_status != omsi_ok) {
+        OSU->state = modelError;
     }
-    OSU->_need_update = 1;
-    return omsi_ok;
+
+    OSU->_need_update = omsi_true;
+
+    return return_status;
 }
 
-omsi_status omsi_set_integer(osu_t*                     OSU,
-                             const omsi_unsigned_int    vr[],
-                             omsi_unsigned_int                     nvr,
-                             const omsi_int             value[]) {
+omsi_status omsic_set_integer(osu_t*                     OSU,
+                              const omsi_unsigned_int    vr[],
+                              omsi_unsigned_int          nvr,
+                              const omsi_int             value[]) {
 
-
-    omsi_unsigned_int i;
+    /* Variables */
+    omsi_bool return_status;
     omsi_int meStates, csStates;
 
     meStates = modelInstantiated|modelInitializationMode|modelEventMode;
     csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
 
-    if (invalidState(OSU, "fmi2SetReal", meStates, csStates))
-        return omsi_error;
-    if (nvr > 0 && nullPointer(OSU, "fmi2SetInteger", "vr[]", vr))
-        return omsi_error;
-    if (nvr > 0 && nullPointer(OSU, "fmi2SetInteger", "value[]", value))
+    if (invalidState(OSU, "fmi2SetInteger", meStates, csStates))
         return omsi_error;
 
-    filtered_base_logger(global_logCategories, log_all, omsi_ok,
-            "fmi2SetInteger: nvr = %d", nvr);
-
-    for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2SetInteger", vr[i], OSU->osu_data->model_data->n_int_vars)) {
-            return omsi_error;
-        }
-        filtered_base_logger(global_logCategories, log_all, omsi_ok,
-                "fmi2SetInteger: #i%d# = %d", vr[i], value[i]);
-        if (setInteger(OSU, vr[i], value[i]) != omsi_ok) {
-            return omsi_error;
-        }
+    /* OMSIBase function call */
+    return_status = omsi_set_integer(OSU->osu_data, vr, nvr, value);
+    if (return_status != omsi_ok) {
+        OSU->state = modelError;
     }
-    OSU->_need_update = 1;
-    return omsi_ok;
+
+    OSU->_need_update = omsi_true;
+
+    return return_status;
 }
 
-omsi_status omsi_set_real(osu_t*                    OSU,
-                          const omsi_unsigned_int   vr[],
-                          omsi_unsigned_int                    nvr,
-                          const omsi_real           value[]) {
+omsi_status omsic_set_real(osu_t*                    OSU,
+                           const omsi_unsigned_int   vr[],
+                           omsi_unsigned_int         nvr,
+                           const omsi_real           value[]) {
 
-
-    omsi_unsigned_int i;
+    /* Variables */
+    omsi_bool return_status;
     omsi_int meStates, csStates;
 
     meStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
@@ -284,67 +233,43 @@ omsi_status omsi_set_real(osu_t*                    OSU,
 
     if (invalidState(OSU, "fmi2SetReal", meStates, csStates))
         return omsi_error;
-    if (nvr > 0 && nullPointer(OSU, "fmi2SetReal", "vr[]", vr))
-        return omsi_error;
-    if (nvr > 0 && nullPointer(OSU, "fmi2SetReal", "value[]", value))
-        return omsi_error;
 
-    filtered_base_logger(global_logCategories, log_all, omsi_ok,
-            "fmi2SetReal: nvr = %d", nvr);
-
-    for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2SetReal", vr[i], OSU->osu_data->model_data->n_real_vars+OSU->osu_data->model_data->n_states)) {
-            return omsi_error;
-        }
-        filtered_base_logger(global_logCategories, log_all, omsi_ok,
-                "fmi2SetReal: #r%d# = %.16g", vr[i], value[i]);
-        if (setReal(OSU, vr[i], value[i]) != omsi_ok) {
-            return omsi_error;
-        }
+    /* OMSIBase function call */
+    return_status = omsi_set_real(OSU->osu_data, vr, nvr, value);
+    if (return_status != omsi_ok) {
+        OSU->state = modelError;
     }
-    OSU->_need_update = 1;
-    return omsi_ok;
+
+    OSU->_need_update = omsi_true;
+
+    return return_status;
 }
 
-omsi_status omsi_set_string(osu_t*                  OSU,
-                            const omsi_unsigned_int vr[],
-                            omsi_unsigned_int                  nvr,
-                            const omsi_string       value[]) {
+omsi_status omsic_set_string(osu_t*                  OSU,
+                             const omsi_unsigned_int vr[],
+                             omsi_unsigned_int       nvr,
+                             const omsi_string       value[]) {
 
-
-    omsi_unsigned_int i;
+    /* Variables */
+    omsi_bool return_status;
     omsi_int meStates, csStates;
 
     meStates = modelInstantiated|modelInitializationMode|modelEventMode;
     csStates = modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode;
 
-    if (invalidState(OSU, "fmi2SetReal", meStates, csStates))
-        return omsi_error;
-    if (nvr>0 && nullPointer(OSU, "fmi2SetString", "vr[]", vr))
-        return omsi_error;
-    if (nvr>0 && nullPointer(OSU, "fmi2SetString", "value[]", value))
+    if (invalidState(OSU, "fmi2SetString", meStates, csStates))
         return omsi_error;
 
-    filtered_base_logger(global_logCategories, log_all, omsi_ok,
-            "fmi2SetString: nvr = %d", nvr);
-
-    for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(OSU, "fmi2SetString", vr[i], OSU->osu_data->model_data->n_string_vars)) {
-            return omsi_error;
-        }
-        filtered_base_logger(global_logCategories, log_all, omsi_ok,
-                "fmi2SetString: #s%d# = '%s'", vr[i], value[i]);
-
-        if (setString(OSU, vr[i], value[i]) != omsi_ok) {
-            return omsi_error;
-        }
+    /* OMSIBase function call */
+    return_status = omsi_set_string(OSU->osu_data, vr, nvr, value);
+    if (return_status != omsi_ok) {
+        OSU->state = modelError;
     }
-    OSU->_need_update = 1;
-    return omsi_ok;
+
+    OSU->_need_update = omsi_true;
+
+    return return_status;
 }
-disabled becaus it is moved to omsi base **************************************/
-
-
 
 
 omsi_status omsi_set_time(osu_t*    OSU,
@@ -387,126 +312,5 @@ omsi_status omsi_set_interval(osu_t*            OSU,
 
     /* TODO: implement */
     UNUSED(OSU); UNUSED(clockIndex); UNUSED(nClockIndex); UNUSED(interval);
-    return omsi_error;
-}
-
-
-
-
-/*
- * ============================================================================
- * Helper functions for getters and setters
- * ============================================================================
- */
-
-/* What happens for alias variables for getters and setters? */
-
-/*
- * Gets real number of struct OSU with value reference vr.
- */
-omsi_real getReal (osu_t*                   OSU,
-                   const omsi_unsigned_int  vr) {
-
-    omsi_real output = (omsi_real) OSU->osu_data->sim_data->model_vars_and_params->reals[vr];
-    return output;
-}
-
-
-/*
- * Sets real number of struct OSU for index reference vr with value
- */
-omsi_status setReal(osu_t*                  OSU,
-                    const omsi_unsigned_int vr,
-                    const omsi_real         value) {
-
-    OSU->osu_data->sim_data->model_vars_and_params->reals[vr] = (omsi_real) value;
-    return omsi_ok;
-}
-
-
-/*
- * Gets integer number of struct OSU with value reference vr
- */
-omsi_int getInteger (osu_t*                     OSU,
-                     const omsi_unsigned_int    vr) {
-
-    /* Variables */
-    omsi_unsigned_int index;
-    omsi_int output;
-
-    index = vr - OSU->osu_data->sim_data->model_vars_and_params->n_reals;
-    output = (omsi_int) OSU->osu_data->sim_data->model_vars_and_params->ints[index];
-    return output;
-}
-
-/*
- * Sets integer number of struct OSU for index reference vr with value
- */
-omsi_status setInteger(osu_t*                   OSU,
-                       const omsi_unsigned_int  vr,
-                       const omsi_int           value) {
-
-    /* Variables */
-    omsi_unsigned_int index;
-
-    index = vr - OSU->osu_data->sim_data->model_vars_and_params->n_reals;
-    OSU->osu_data->sim_data->model_vars_and_params->ints[index] = (omsi_int) value;
-    return omsi_ok;
-}
-
-
-/*
- * gets boolean variable of struct OSU with value reference vr
- */
-omsi_bool getBoolean (osu_t*                    OSU,
-                      const omsi_unsigned_int   vr) {
-
-    /* Variables */
-    omsi_unsigned_int index;
-    omsi_bool output;
-
-    index = vr - OSU->osu_data->sim_data->model_vars_and_params->n_reals
-               - OSU->osu_data->sim_data->model_vars_and_params->n_ints;
-    output = (omsi_bool) OSU->osu_data->sim_data->model_vars_and_params->bools[index];
-    return output;
-}
-
-/*
- * sets boolean variable of struct OSU for index reference vr with value
- */
-omsi_status setBoolean(osu_t*                   OSU,
-                       const omsi_unsigned_int  vr,
-                       const omsi_bool          value) {
-
-    /* Variables */
-    omsi_unsigned_int index;
-
-    index = vr - OSU->osu_data->sim_data->model_vars_and_params->n_reals
-               - OSU->osu_data->sim_data->model_vars_and_params->n_ints;
-    OSU->osu_data->sim_data->model_vars_and_params->bools[index] = (omsi_bool) value;
-    return omsi_ok;
-}
-
-
-/*
- * gets stringe of struct OSU with value reference vr
- * ToDO: implement string in sim_data_t
- */
-omsi_string getString (osu_t*                   OSU,
-                       const omsi_unsigned_int  vr) {
-
-    UNUSED(OSU); UNUSED(vr);
-    return "ERROR";
-}
-
-/*
- * sets string of struct OSU for index reference vr with value
- *  * ToDO: implement string in sim_data_t
- */
-omsi_status setString(osu_t*                    OSU,
-                      const omsi_unsigned_int   vr,
-                      const omsi_string         value) {
-
-    UNUSED(OSU); UNUSED(vr); UNUSED(value);
     return omsi_error;
 }

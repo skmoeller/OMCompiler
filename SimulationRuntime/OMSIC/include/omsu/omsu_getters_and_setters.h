@@ -42,8 +42,10 @@
 #include <stdarg.h>
 
 #include <omsic.h>
+#include <omsi_input_model_variables.h>
 
 #include <omsu_common.h>
+#include <omsu_helper.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,27 +54,27 @@ extern "C" {
 
 
 /* function prototypes */
-/*
-omsi_status omsi_get_boolean(osu_t*                     OSU,
-                             const omsi_unsigned_int    vr[],
-                             omsi_unsigned_int          nvr,
-                             omsi_bool                  value[]);
 
-omsi_status omsi_get_integer(osu_t*                     OSU,
-                             const omsi_unsigned_int    vr[],
-                             omsi_unsigned_int          nvr,
-                             omsi_int                   value[]);
+omsi_status omsic_get_boolean(osu_t*                     OSU,
+                              const omsi_unsigned_int    vr[],
+                              omsi_unsigned_int          nvr,
+                              omsi_bool                  value[]);
 
-omsi_status omsi_get_real(osu_t*                    OSU,
-                          const omsi_unsigned_int   vr[],
-                          omsi_unsigned_int         nvr,
-                          omsi_real                 value[]);
+omsi_status omsic_get_integer(osu_t*                     OSU,
+                              const omsi_unsigned_int    vr[],
+                              omsi_unsigned_int          nvr,
+                              omsi_int                   value[]);
 
-omsi_status omsi_get_string(osu_t*                  OSU,
-                            const omsi_unsigned_int vr[],
-                            omsi_unsigned_int       nvr,
-                            omsi_string             value[]);
-*/
+omsi_status omsic_get_real(osu_t*                    OSU,
+                           const omsi_unsigned_int   vr[],
+                           omsi_unsigned_int         nvr,
+                           omsi_real                 value[]);
+
+omsi_status omsic_get_string(osu_t*                  OSU,
+                             const omsi_unsigned_int vr[],
+                             omsi_unsigned_int       nvr,
+                             omsi_string             value[]);
+
 omsi_status omsi_get_fmu_state(osu_t*        OSU,
                                void **      FMUstate);
 
@@ -85,27 +87,27 @@ omsi_status omsi_get_interval(osu_t*            OSU,
                               const omsi_int    clockIndex[],
                               omsi_unsigned_int nClockIndex,
                               omsi_real         interval[]);
-/*
-omsi_status omsi_set_boolean(osu_t*                     OSU,
-                             const omsi_unsigned_int    vr[],
-                             omsi_unsigned_int          nvr,
-                             const omsi_bool            value[]);
 
-omsi_status omsi_set_integer(osu_t*                     OSU,
-                             const omsi_unsigned_int    vr[],
-                             omsi_unsigned_int          nvr,
-                             const omsi_int             value[]);
+omsi_status omsic_set_boolean(osu_t*                     OSU,
+                              const omsi_unsigned_int    vr[],
+                              omsi_unsigned_int          nvr,
+                              const omsi_bool            value[]);
 
-omsi_status omsi_set_real(osu_t*                    OSU,
-                          const omsi_unsigned_int   vr[],
-                          omsi_unsigned_int         nvr,
-                          const omsi_real           value[]);
+omsi_status omsic_set_integer(osu_t*                     OSU,
+                              const omsi_unsigned_int    vr[],
+                              omsi_unsigned_int          nvr,
+                              const omsi_int             value[]);
 
-omsi_status omsi_set_string(osu_t*                  OSU,
-                            const omsi_unsigned_int vr[],
-                            omsi_unsigned_int       nvr,
-                            const omsi_string       value[]);
-*/
+omsi_status omsic_set_real(osu_t*                    OSU,
+                           const omsi_unsigned_int   vr[],
+                           omsi_unsigned_int         nvr,
+                           const omsi_real           value[]);
+
+omsi_status omsic_set_string(osu_t*                  OSU,
+                             const omsi_unsigned_int vr[],
+                             omsi_unsigned_int       nvr,
+                             const omsi_string       value[]);
+
 omsi_status omsi_set_time(osu_t*    OSU,
                           omsi_real time);
 
@@ -122,17 +124,6 @@ omsi_status omsi_set_interval(osu_t*            OSU,
                               const omsi_int    clockIndex[],
                               omsi_unsigned_int nClockIndex,
                               const omsi_real   interval[]);
-
-
-omsi_real getReal(osu_t* OSU, const omsi_unsigned_int vr);
-omsi_status setReal(osu_t* OSU, const omsi_unsigned_int vr, const omsi_real value);
-omsi_int getInteger(osu_t* OSU, const omsi_unsigned_int vr);
-omsi_status setInteger(osu_t* OSU, const omsi_unsigned_int vr, const omsi_int value);
-omsi_bool getBoolean(osu_t* OSU, const omsi_unsigned_int vr);
-omsi_status setBoolean(osu_t* OSU, const omsi_unsigned_int vr, const omsi_bool value);
-omsi_string getString(osu_t* OSU, const omsi_unsigned_int vr);
-omsi_status setString(osu_t* OSU, const omsi_unsigned_int vr, omsi_string value);
-
 
 
 #ifdef __cplusplus

@@ -131,12 +131,12 @@ FMI2_Export fmi2Status fmi2GetInteger(fmi2Component             c,
 }
 
 
-FMI2_Export fmi2Status fmi2GetBoolean(fmi2Component             c,
+FMI2_Export fmi2Status fmi2GetBoolean(fmi2Component             component,
                                       const fmi2ValueReference  vr[],
                                       size_t                    nvr,
                                       fmi2Boolean               value[]) {
 
-    return omsi_get_boolean(c, vr, nvr, value);
+    return omsic_get_boolean(component, vr, nvr, value);
 }
 
 
