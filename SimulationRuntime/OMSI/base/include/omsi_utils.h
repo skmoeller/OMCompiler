@@ -76,6 +76,8 @@ void omsu_free_omsi_function(omsi_function_t* omsi_function);
 
 void omsu_free_omsi_values(omsi_values* values);
 
+omsi_bool omsi_vr_out_of_range(omsi_t*  omsu, omsi_string function_name,omsi_unsigned_int    vr,omsi_int             end);
+
 #ifdef __cplusplus
 }
 #endif

@@ -81,6 +81,7 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
                          const fmi2CallbackFunctions *functions,
 	fmi2Boolean                  visible, fmi2Boolean loggingOn,fmi2String fmuResourceLocations)
 	:_functions(*functions),
+	_osu_functions(NULL),
   callbackLogger(_functions.logger),
   _conditions(NULL),
   _zero_funcs(NULL),
@@ -154,6 +155,7 @@ OSU::~OSU()
  if(_events)
     delete [] _events;
  omsi_free_model_variables(_omsu);
+ free(_osu_functions);
 }
 
 fmi2Status OSU::setDebugLogging(fmi2Boolean loggingOn,
@@ -318,46 +320,18 @@ fmi2Status OSU::completedIntegratorStep(fmi2Boolean noSetFMUStatePriorToCurrentP
 fmi2Status OSU::setReal(const fmi2ValueReference vr[], size_t nvr,
                                 const fmi2Real value[])
 {
-
-  double* realvars = _model->getSimObjects()->getSimVars(_model->getModelName())->getRealVarsVector();
-  if(realvars)
-  {
-	  for (int i = 0; i < nvr; i++, vr++, value++) {
-		// access variables and aliases in SimVars memory
-		if (*vr < _continuous_model->getDimReal())
-		  realvars[*vr] = *value;
-		// convert negated aliases
-		else switch (*vr) {
-		  default:
-			throw std::invalid_argument("setReal with wrong value reference " + omcpp::to_string(*vr));
-		}
-	  }
-	}
-  else
+  omsi_status status = omsi_set_real(_omsu, vr, nvr, value);
+  if(!status)
 	  throw std::invalid_argument("getReal with wrong real vars memory allocation");
-
-  _need_update = true;
+   _need_update = true;
   return fmi2OK;
 }
 
 fmi2Status OSU::setInteger(const fmi2ValueReference vr[], size_t nvr,
                                    const fmi2Integer value[])
 {
-  int* intvars = _model->getSimObjects()->getSimVars(_model->getModelName())->getIntVarsVector();
-  if(intvars)
-  {
-	   for (int i = 0; i < nvr; i++, vr++, value++) {
-		// access variables and aliases in SimVars memory
-		if (*vr < _continuous_model->getDimInteger())
-		  intvars[*vr] = *value;
-		// convert negated aliases
-		else switch (*vr) {
-		  default:
-			throw std::invalid_argument("setInteger with wrong value reference " + omcpp::to_string(*vr));
-		}
-	  }
-  }
-  else
+ omsi_status status = omsi_set_integer(_omsu, vr, nvr, value);
+	if (!status)
 	  throw std::invalid_argument("setInt with wrong Integer vars memory allocation");
   _need_update = true;
   return fmi2OK;
@@ -366,21 +340,8 @@ fmi2Status OSU::setInteger(const fmi2ValueReference vr[], size_t nvr,
 fmi2Status OSU::setBoolean(const fmi2ValueReference vr[], size_t nvr,
                                    const fmi2Boolean value[])
 {
-   bool* boolvars = _model->getSimObjects()->getSimVars(_model->getModelName())->getBoolVarsVector();
-  if(boolvars)
-  {
-	  for (int i = 0; i < nvr; i++, vr++, value++) {
-		// access variables and aliases in SimVars memory
-		if (*vr < _continuous_model->getDimBoolean())
-		  boolvars[*vr] = *value;
-		// convert negated aliases
-		else switch (*vr) {
-		  default:
-			throw std::invalid_argument("setBoolean with wrong value reference " + omcpp::to_string(*vr));
-		}
-	  }
-  }
-  else
+	omsi_status status = omsi_set_boolean(_omsu, vr, nvr, value);
+	if (!status)
 	  throw std::invalid_argument("setBool with wrong Boolean vars memory allocation");
   _need_update = true;
   return fmi2OK;
@@ -389,36 +350,19 @@ fmi2Status OSU::setBoolean(const fmi2ValueReference vr[], size_t nvr,
 fmi2Status OSU::setString(const fmi2ValueReference vr[], size_t nvr,
                                   const fmi2String  value[])
 {
-  if (nvr > _string_buffer.size()) {
-    FMU2_LOG(this, fmi2Error, logStatusError,
-             "Attempt to set %d fmi2String; FMU only has %d",
-             nvr, _string_buffer.size());
-    return fmi2Error;
-  }
-  for (size_t i = 0; i < nvr; i++)
-    _string_buffer[i] = string(value[i]); // convert to string
+  //if (nvr > _string_buffer.size()) {
+  //  FMU2_LOG(this, fmi2Error, logStatusError,
+  //           "Attempt to set %d fmi2String; FMU only has %d",
+  //           nvr, _string_buffer.size());
+  //  return fmi2Error;
+  //}
+  //for (size_t i = 0; i < nvr; i++)
+  //  _string_buffer[i] = string(value[i]); // convert to string
 
 
-
-
-  string* stringvars = _model->getSimObjects()->getSimVars(_model->getModelName())->getStringVarsVector();
-
-  if(stringvars)
-  {
-
-		  for (int i = 0; i < nvr; i++, vr++, value++) {
-		// access variables and aliases in SimVars memory
-		if (*vr < _continuous_model->getDimString())
-		  stringvars[*vr] = _string_buffer[i];
-		// convert negated aliases
-		else switch (*vr) {
-		  default:
-			throw std::invalid_argument("setString with wrong value reference " + omcpp::to_string(*vr));
-		}
-	  }
-  }
-
-
+  omsi_status status = omsi_set_string(_omsu, vr, nvr, value);
+	if (!status)
+		throw std::invalid_argument("setString with wrong string vars memory allocation");
   _need_update = true;
   return fmi2OK;
 }
@@ -469,34 +413,10 @@ fmi2Status OSU::getReal(const fmi2ValueReference vr[], size_t nvr,
 {
   if (_need_update)
     updateModel();
-  /*log disabled
-   for (int i = 0; i < nvr; i++)
-   {
-       LOG_CALL(this, "get real for real %i: %i", i,vr[i] );
-   }
-  */
-  double* realvars = _model->getSimObjects()->getSimVars(_model->getModelName())->getRealVarsVector();
-  if(realvars)
-  {
-	   for (int i = 0; i < nvr; i++, vr++, value++) {
-		// access variables and aliases in SimVars memory
-		if (*vr < _continuous_model->getDimReal())
-		  *value = realvars[*vr];
-		// convert negated aliases
-		else switch (*vr) {
-		  default:
-			throw std::invalid_argument("getReal with wrong value reference " + omcpp::to_string(*vr));
-		}
-	  }
-  }
-  else
+  omsi_status status= omsi_get_real(_omsu, vr, nvr, value);
+  if(!status)
 	  throw std::invalid_argument("getReal with wrong real vars memory allocation");
-   /*log disabled
-  for (int i = 0; i < nvr; i++)
-   {
-       LOG_CALL(this, "real  value %i: %g", vr[i],value[i] );
-   }
-   */
+
   return fmi2OK;
 }
 
@@ -505,22 +425,9 @@ fmi2Status OSU::getInteger(const fmi2ValueReference vr[], size_t nvr,
 {
   if (_need_update)
     updateModel();
-  int* intvars = _model->getSimObjects()->getSimVars(_model->getModelName())->getIntVarsVector();
-  if(intvars)
-  {
-	  for (int i = 0; i < nvr; i++, vr++, value++) {
-		// access variables and aliases in SimVars memory
-		if (*vr < _continuous_model->getDimInteger())
-		  *value = intvars[*vr];
-		// convert negated aliases
-		else switch (*vr) {
-		  default:
-			throw std::invalid_argument("getInteger with wrong value reference " + omcpp::to_string(*vr));
-		}
-	  }
-  }
-  else
-	  throw std::invalid_argument("getReal with wrong bool vars memory allocation");
+  omsi_status status = omsi_get_integer(_omsu, vr, nvr, value);
+  if(!status)
+	  throw std::invalid_argument("getInteger with wrong int vars memory allocation");
 
 
   return fmi2OK;
@@ -531,58 +438,25 @@ fmi2Status OSU::getBoolean(const fmi2ValueReference vr[], size_t nvr,
 {
   if (_need_update)
     updateModel();
-  bool* boolvars = _model->getSimObjects()->getSimVars(_model->getModelName())->getBoolVarsVector();
-  if(boolvars)
-  {
-	  for (int i = 0; i < nvr; i++, vr++, value++) {
-		// access variables and aliases in SimVars memory
-		if (*vr < _continuous_model->getDimBoolean())
-		  *value = boolvars[*vr];
-		// convert negated aliases
-		else switch (*vr) {
-		  default:
-			throw std::invalid_argument("getBoolean with wrong value reference " + omcpp::to_string(*vr));
-		}
-	  }
-  }
-  else
-	  throw std::invalid_argument("getReal with wrong bool vars memory allocation");
+  omsi_status status = omsi_get_boolean(_omsu, vr, nvr, value);
+  if (!status)
+	  throw std::invalid_argument("getBoolean with wrong bool vars memory allocation");
   return fmi2OK;
 }
 
 fmi2Status OSU::getString(const fmi2ValueReference vr[], size_t nvr,
                                   fmi2String value[])
 {
-  if (nvr > _string_buffer.size()) {
-    FMU2_LOG(this, fmi2Error, logStatusError,
-             "Attempt to get %d fmi2String; FMU only has %d",
-             nvr, _string_buffer.size());
-    return fmi2Error;
-  }
+
   if (_need_update)
     updateModel();
 
-  string* stringvars = _model->getSimObjects()->getSimVars(_model->getModelName())->getStringVarsVector();
+  omsi_status status = omsi_get_string(_omsu, vr, nvr, value);
+  if (!status)
+	  throw std::invalid_argument("getString with wrong string vars memory allocation");
 
-  if(stringvars)
-  {
-
-	  for (int i = 0; i < nvr; i++, vr++) {
-		// access variables and aliases in SimVars memory
-		if (*vr < _continuous_model->getDimString())
-		 _string_buffer.push_back(stringvars[*vr]);
-		// convert negated aliases
-		else switch (*vr) {
-		  default:
-			throw std::invalid_argument("getString with wrong value reference " + omcpp::to_string(*vr));
-		}
-	  }
-  }
-  else
-	 throw std::invalid_argument("getReal with wrong string vars memory allocation");
-
-  for (size_t i = 0; i < nvr; i++)
-    value[i] = _string_buffer[i].c_str(); // convert to fmi2String
+  /*for (size_t i = 0; i < nvr; i++)
+    value[i] = _string_buffer[i].c_str(); // convert to fmi2String*/
   return fmi2OK;
 }
 
