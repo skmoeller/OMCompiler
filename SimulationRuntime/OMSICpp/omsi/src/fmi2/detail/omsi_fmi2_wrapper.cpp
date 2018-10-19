@@ -90,7 +90,9 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
 
 {
 	_global_settings = shared_ptr<OMSIGlobalSettings>(new OMSIGlobalSettings());
-  _instanceName = instanceName;
+	fs::path p(instanceName);
+	_instanceName = p.stem().string();
+
   _GUID = GUID;
 
   // setup logger
@@ -98,15 +100,22 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   LogSettings logSettings = _global_settings->getLogSettings();
   logSettings.setAll(loggingOn? LL_DEBUG: LL_ERROR);
   FMU2Logger::initialize(this, logSettings, loggingOn);
-  _logger = Logger::getInstance();
+
+
+
 
   // setup model
- /*Todo: only load if type is omsu, not for fmi*/
- fs::path p(_instanceName);
-  string omsu_name = p.stem().string();
+
+
+  /*Todo: only load if type is omsu, not for fmi*/
+
+  /* set global callback functions */
+  global_callback = (omsi_callback_functions*)functions;
+  global_instance_name = _instanceName.c_str();
+  global_callback->componentEnvironment = this;
   //_omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
   _osu_functions = (omsi_template_callback_functions_t*)functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
-  _omsu = omsi_instantiate(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, _osu_functions,visible, loggingOn);
+  _omsu = omsi_instantiate(_instanceName.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, _osu_functions,visible, loggingOn);
 
   _model = createOSUSystem(_global_settings, _instanceName,_omsu);
   _initialize_model = dynamic_pointer_cast<ISystemInitialization>(_model);
@@ -321,7 +330,7 @@ fmi2Status OSU::setReal(const fmi2ValueReference vr[], size_t nvr,
                                 const fmi2Real value[])
 {
   omsi_status status = omsi_set_real(_omsu, vr, nvr, value);
-  if(!status)
+  if(status)
 	  throw std::invalid_argument("getReal with wrong real vars memory allocation");
    _need_update = true;
   return fmi2OK;
@@ -331,7 +340,7 @@ fmi2Status OSU::setInteger(const fmi2ValueReference vr[], size_t nvr,
                                    const fmi2Integer value[])
 {
  omsi_status status = omsi_set_integer(_omsu, vr, nvr, value);
-	if (!status)
+	if (status)
 	  throw std::invalid_argument("setInt with wrong Integer vars memory allocation");
   _need_update = true;
   return fmi2OK;
@@ -341,7 +350,7 @@ fmi2Status OSU::setBoolean(const fmi2ValueReference vr[], size_t nvr,
                                    const fmi2Boolean value[])
 {
 	omsi_status status = omsi_set_boolean(_omsu, vr, nvr, value);
-	if (!status)
+	if (status)
 	  throw std::invalid_argument("setBool with wrong Boolean vars memory allocation");
   _need_update = true;
   return fmi2OK;
@@ -414,7 +423,7 @@ fmi2Status OSU::getReal(const fmi2ValueReference vr[], size_t nvr,
   if (_need_update)
     updateModel();
   omsi_status status= omsi_get_real(_omsu, vr, nvr, value);
-  if(!status)
+  if(status)
 	  throw std::invalid_argument("getReal with wrong real vars memory allocation");
 
   return fmi2OK;
@@ -426,7 +435,7 @@ fmi2Status OSU::getInteger(const fmi2ValueReference vr[], size_t nvr,
   if (_need_update)
     updateModel();
   omsi_status status = omsi_get_integer(_omsu, vr, nvr, value);
-  if(!status)
+  if(status)
 	  throw std::invalid_argument("getInteger with wrong int vars memory allocation");
 
 
@@ -439,7 +448,7 @@ fmi2Status OSU::getBoolean(const fmi2ValueReference vr[], size_t nvr,
   if (_need_update)
     updateModel();
   omsi_status status = omsi_get_boolean(_omsu, vr, nvr, value);
-  if (!status)
+  if (status)
 	  throw std::invalid_argument("getBoolean with wrong bool vars memory allocation");
   return fmi2OK;
 }
@@ -452,7 +461,7 @@ fmi2Status OSU::getString(const fmi2ValueReference vr[], size_t nvr,
     updateModel();
 
   omsi_status status = omsi_get_string(_omsu, vr, nvr, value);
-  if (!status)
+  if (status)
 	  throw std::invalid_argument("getString with wrong string vars memory allocation");
 
   /*for (size_t i = 0; i < nvr; i++)

@@ -40,10 +40,11 @@ void importFMU2logger(jm_callbacks* c, jm_string module, jm_log_level_enu_t log_
 void fmi2logger(fmi2_component_environment_t env, fmi2_string_t instanceName, fmi2_status_t status, fmi2_string_t category, fmi2_string_t message, ...)
 {
 	int len;
-	char msg[BUFFER];
+	char msg[256];
 	va_list argp;
 	va_start(argp, message);
-	len = vsnprintf(msg, BUFFER, message, argp);
+	len = vsnprintf(msg, 256, message, argp);
+	va_end(argp);
 	std::cout << fmi2_status_to_string((fmi2_status_t)status) << " " << instanceName << " " << category << " " << msg << std::endl;
 
 }
@@ -71,7 +72,7 @@ OSUSystem::OSUSystem(shared_ptr<IGlobalSettings> globalSettings, string osu_name
 	_osu_me->callbacks.calloc = calloc;
 	_osu_me->callbacks.realloc = realloc;
 	_osu_me->callbacks.free = free;
-	_osu_me->callbacks.logger = /*importFMU2logger*/ jm_default_logger;
+	_osu_me->callbacks.logger = importFMU2logger;
 	_osu_me->callbacks.log_level = jm_log_level_warning;
 	_osu_me->callbacks.context = 0;
 
@@ -97,7 +98,7 @@ OSUSystem::OSUSystem(shared_ptr<IGlobalSettings> globalSettings, string osu_name
 
 
 	/* FMI callback functions */
-	_osu_me->callback_functions.logger = fmi2_log_forwarding  /*fmi2logger*/;
+	_osu_me->callback_functions.logger = fmi2logger;
 	_osu_me->callback_functions.allocateMemory = calloc;
 	_osu_me->callback_functions.freeMemory = free;
 	_osu_me->callback_functions.componentEnvironment = _osu_me->instance;
