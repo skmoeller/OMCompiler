@@ -47,6 +47,7 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
 
     omsi_t* osu_data;
     omsi_string modelName=NULL;
+    omsi_char* omsi_resource_location;
     omsi_char* initXMLFilename;
     omsi_char* infoJsonFilename;
     omsi_status status;
@@ -99,28 +100,25 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     global_logCategories = osu_data->logCategories;
 
     /* check fmuResourceLocation for network path e.g. starting with "file://" */
-    /* ToDo: copy fmuResourceLocation and manipulate copy */
-    if (strncmp(fmuResourceLocation, "file:///", 8) == 0 ){
-        memmove(fmuResourceLocation, fmuResourceLocation+8, strlen(fmuResourceLocation) - 8 + 1);
-    }
-    else if(strncmp(fmuResourceLocation, "file://", 7) == 0 ){
-        memmove(fmuResourceLocation, fmuResourceLocation+7, strlen(fmuResourceLocation) - 7 + 1);
+    omsi_resource_location = strdup(fmuResourceLocation);
+    if(strncmp(omsi_resource_location, "file://", 7) == 0 ){
+        memmove(omsi_resource_location, omsi_resource_location+7, strlen(omsi_resource_location) - 7 + 1);
     }
 
     /* Read model name from modelDescription */
-    modelName = omsi_get_model_name(fmuResourceLocation);
+    modelName = omsi_get_model_name(omsi_resource_location);
     if (!modelName) {
         filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Could not read modelName from %s/modelDescription.xml.",
-                fmuResourceLocation);
+                omsi_resource_location);
         /* ToDo: omsu_free_osu_data(osu_data); */
         return NULL;
     }
 
     /* process Inti-XML file and read experiment_data and parts of model_data in osu_data*/
     /* ToDo Check error memory */
-    initXMLFilename = functions->allocateMemory(20 + strlen(fmuResourceLocation) + strlen(modelName), sizeof(omsi_char));
-    sprintf(initXMLFilename, "%s/%s_init.xml", fmuResourceLocation, modelName);
+    initXMLFilename = functions->allocateMemory(20 + strlen(omsi_resource_location) + strlen(modelName), sizeof(omsi_char));
+    sprintf(initXMLFilename, "%s/%s_init.xml", omsi_resource_location, modelName);
     if (omsu_process_input_xml(osu_data, initXMLFilename, fmuGUID, instanceName, functions) == omsi_error) {
         filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Could not process %s.", initXMLFilename);
@@ -130,8 +128,8 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     functions->freeMemory(initXMLFilename);
 
     /* process JSON file and read missing parts of model_data in osu_data */
-    infoJsonFilename = functions->allocateMemory(20 + strlen(fmuResourceLocation) + strlen(modelName), sizeof(omsi_char));
-    sprintf(infoJsonFilename, "%s/%s_info.json", fmuResourceLocation, modelName);
+    infoJsonFilename = functions->allocateMemory(20 + strlen(omsi_resource_location) + strlen(modelName), sizeof(omsi_char));
+    sprintf(infoJsonFilename, "%s/%s_info.json", omsi_resource_location, modelName);
 
     /****temporarily disabled because omsicpp doesn't generate the json file****/
     /* if (omsu_process_input_json(osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
