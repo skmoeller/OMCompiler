@@ -282,7 +282,7 @@ omsi_status omsi_set_time(osu_t*    OSU,
             "fmi2SetTime: time=%.16g", time);
 
     OSU->osu_data->sim_data->model_vars_and_params->time_value = time;
-    OSU->_need_update = 1;
+    OSU->_need_update = omsi_true;
     return omsi_ok;
 }
 

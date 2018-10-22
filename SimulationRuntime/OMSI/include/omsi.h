@@ -219,7 +219,7 @@ typedef struct omsi_values {
 
 
 /**
- * general algebraic system
+ * General algebraic system
  */
 typedef struct omsi_algebraic_system_t {
     omsi_unsigned_int n_iteration_vars; /* number of iteration variables */
@@ -238,7 +238,7 @@ typedef struct omsi_algebraic_system_t {
 
 
 /*
- * Structure containing all data to evaluate equations or equ
+ * Structure containing all data to evaluate equations or system of equations
  */
 typedef struct omsi_function_t {
     omsi_unsigned_int           n_algebraic_system; /* number of algebraic systems */

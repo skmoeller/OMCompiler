@@ -249,6 +249,6 @@ omsi_status omsi_event_update(osu_t*              OSU,
 
     FILTERED_LOG(OSU, omsi_error, LOG_FMI2_CALL,
             "fmi2EventUpdate: terminated by an assertion.")
-    OSU->_need_update = 1;
+    OSU->_need_update = omsi_true;
     return omsi_error; */
 }
