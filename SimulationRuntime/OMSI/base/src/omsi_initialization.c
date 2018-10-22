@@ -30,6 +30,14 @@
 
 #include <omsi_initialization.h>
 
+#ifdef _WIN32
+#define ON_WINDOWS 1
+#else
+#define ON_WINDOWS 0
+#endif
+
+
+
 /*
  * Allocates memory for the Openmodelica Simulation Unit and initializes it.
  */
@@ -101,7 +109,10 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
 
     /* check fmuResourceLocation for network path e.g. starting with "file://" */
     omsi_resource_location = strdup(fmuResourceLocation);
-    if(strncmp(omsi_resource_location, "file://", 7) == 0 ){
+    if (strncmp(omsi_resource_location, "file:///", 8) == 0 && ON_WINDOWS){
+        memmove(omsi_resource_location, omsi_resource_location+8, strlen(omsi_resource_location) - 8 + 1);
+    }
+    else if(strncmp(omsi_resource_location, "file://", 7) == 0 ){
         memmove(omsi_resource_location, omsi_resource_location+7, strlen(omsi_resource_location) - 7 + 1);
     }
 
