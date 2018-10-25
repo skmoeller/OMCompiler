@@ -237,23 +237,14 @@ void omsi_free_instance(osu_t* OSU) {
     if (invalidState(OSU, "fmi2FreeInstance", meStates, csStates)) {
         return;
     }
-    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
             "fmi2FreeInstance");
 
-#if 0
+
     /* free OSU data */
     omsu_free_osu_data(OSU->osu_data);
-    OSU->fmiCallbackFunctions->freeMemory(OSU->osu_data);
-    /* ToDo: free everything inside osu_functions */
-    OSU->fmiCallbackFunctions->freeMemory(OSU->osu_functions);
+    omsu_free_osu(OSU);
 
-    /* free instanceName & GUID */
-    if (OSU->instanceName) OSU->fmiCallbackFunctions->freeMemory((void*)OSU->instanceName);
-    if (OSU->GUID) OSU->fmiCallbackFunctions->freeMemory((void*)OSU->GUID);
-
-    /* free callback functions */
-    OSU->fmiCallbackFunctions->freeMemory(OSU);
-#endif
 }
 
 /*

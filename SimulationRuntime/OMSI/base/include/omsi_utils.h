@@ -46,6 +46,8 @@
 #include <omsi_callbacks.h>
 #include <omsi_global.h>
 
+#include <omsi_input_model_variables.h>
+
 
 #ifdef __cplusplus
 extern "C" {

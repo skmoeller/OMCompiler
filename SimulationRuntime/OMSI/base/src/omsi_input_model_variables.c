@@ -259,14 +259,40 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     return omsi_ok;
 }
 
-omsi_status omsi_free_model_variables(omsi_t* omsu) {
+omsi_status omsi_free_model_variables(sim_data_t* sim_data) {
 
-    alignedFree(omsu->sim_data->model_vars_and_params->bools);
-    alignedFree(omsu->sim_data->pre_vars->bools);
-    alignedFree(omsu->sim_data->model_vars_and_params->ints);
-    alignedFree(omsu->sim_data->pre_vars->ints);
-    alignedFree(omsu->sim_data->model_vars_and_params->reals);
-    alignedFree(omsu->sim_data->pre_vars->reals);
+    /* Check input */
+    if (!sim_data) {
+            return omsi_warning;
+        }
+
+    if (sim_data->model_vars_and_params) {
+        if (sim_data->model_vars_and_params->bools) {
+            alignedFree(sim_data->model_vars_and_params->bools);
+        }
+        if (sim_data->model_vars_and_params->ints) {
+            alignedFree(sim_data->model_vars_and_params->ints);
+        }
+        if (sim_data->model_vars_and_params->reals) {
+                alignedFree(sim_data->model_vars_and_params->reals);
+        }
+
+        global_callback->freeMemory(sim_data->model_vars_and_params);
+    }
+
+    if (sim_data->pre_vars) {
+        if (sim_data->pre_vars->bools) {
+            alignedFree(sim_data->pre_vars->bools);
+        }
+        if (sim_data->pre_vars->ints) {
+            alignedFree(sim_data->pre_vars->ints);
+        }
+        if (sim_data->pre_vars->reals) {
+        alignedFree(sim_data->pre_vars->reals);
+        }
+
+        global_callback->freeMemory(sim_data->pre_vars);
+    }
 
     return omsi_ok;
 }

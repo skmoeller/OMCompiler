@@ -23,7 +23,7 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
                                             const omsi_callback_functions*  functions,
                                             omsi_string                     instanceName);
 
-omsi_status omsi_free_model_variables(omsi_t* omsu);
+omsi_status omsi_free_model_variables(sim_data_t* sim_data);
 
 
 void *alignedMalloc(size_t required_bytes,

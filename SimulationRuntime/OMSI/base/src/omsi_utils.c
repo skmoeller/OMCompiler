@@ -106,6 +106,9 @@ omsi_bool isCategoryLogged(omsi_bool*       logCategories,
  */
 void omsu_free_osu_data(omsi_t* omsi_data) {
 
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2FreeInstance: Free omsi data.");
+
     if (omsi_data==NULL) {
         return;
     }
@@ -235,15 +238,13 @@ void omsu_free_sim_data (sim_data_t* sim_data) {
         return;
     }
 
+    omsi_free_model_variables(sim_data);        /* ToDo: free global variables first */
+
     omsu_free_omsi_function (sim_data->initialization);
     omsu_free_omsi_function (sim_data->simulation);
 
-    omsu_free_omsi_values(sim_data->model_vars_and_params);
-    omsu_free_omsi_values(sim_data->pre_vars);
 
-    /* ToDo: free pre_vars_mapping */
-
-    global_callback->freeMemory(sim_data->zerocrossings_vars);      /* ToDo: free inner stuff */
+    global_callback->freeMemory(sim_data->zerocrossings_vars);          /* ToDo: free inner stuff */
     global_callback->freeMemory(sim_data->pre_zerocrossings_vars);
 
     global_callback->freeMemory(sim_data);
@@ -259,22 +260,41 @@ void omsu_free_omsi_function(omsi_function_t* omsi_function) {
         return;
     }
 
+    /*omsu_free_omsi_values(omsi_function->function_vars);*/        /* ToDo: check function! */
+
+    global_callback->freeMemory(omsi_function->input_vars_indices);
+    global_callback->freeMemory(omsi_function->output_vars_indices);
+
+
     global_callback->freeMemory(omsi_function);
 }
 
 
 /*
  * frees memory for omsi_values struct and all its components
- */
+*/
 void omsu_free_omsi_values(omsi_values* values) {
 
     if (values==NULL) {
         return;
     }
 
-    global_callback->freeMemory(values->reals);
-    global_callback->freeMemory(values->ints);
-    global_callback->freeMemory(values->bools);
+    if (values->reals) {
+        alignedFree(values->reals);
+    }
+    if (values->ints) {
+        alignedFree(values->ints);
+    }
+    if (values->bools) {
+        alignedFree(values->bools);
+    }
+    if (values->strings) {
+        alignedFree(values->strings);
+    }
+
+    if (values->externs) {
+        alignedFree(values->externs);
+    }
 
     global_callback->freeMemory(values);
 }

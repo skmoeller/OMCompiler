@@ -42,7 +42,7 @@ void omsu_free_osu(osu_t* OSU) {
 
     /* Log function call */
     if (OSU->state == modelError || OSU->state == 0) {
-        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+        filtered_base_logger(global_logCategories, log_all, omsi_error,
                 "Free OSU component.");
     }
     else {
