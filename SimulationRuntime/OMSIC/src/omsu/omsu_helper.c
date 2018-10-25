@@ -35,6 +35,36 @@
 
 /*
  * ============================================================================
+ * Helper for deallocating memory.
+ * ============================================================================
+ */
+void omsu_free_osu(osu_t* OSU) {
+
+    /* Log function call */
+    if (OSU->state == modelError || OSU->state == 0) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "Free OSU component.");
+    }
+    else {
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "Free OSU component.");
+    }
+
+    if (OSU==NULL) {
+        return;
+    }
+
+    global_callback->freeMemory(OSU->osu_functions);
+    global_callback->freeMemory(OSU->vrStatesDerivatives);
+    global_callback->freeMemory(OSU->vrStates);
+    global_callback->freeMemory(OSU->GUID);
+
+    global_callback->freeMemory(OSU);
+}
+
+
+/*
+ * ============================================================================
  * Stuff I don't know where to put yet. ToDo: Do the thing!
  * ============================================================================
  */

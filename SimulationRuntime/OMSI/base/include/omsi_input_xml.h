@@ -174,13 +174,11 @@ void XMLCALL startElement(void*         userData,
 void XMLCALL endElement(void*       userData,
                         omsi_string name);
 
-void omsu_free_ModelInput(omc_ModelInput mi);
+void omsu_free_ModelInput(omc_ModelInput* mi);
 
 void free_hash_string_string (hash_string_string* data);
 
 void free_hash_long_var (hash_long_var* data);
-
-void free_hash_string_long (hash_string_long* data);
 
 
 #ifdef __cplusplus

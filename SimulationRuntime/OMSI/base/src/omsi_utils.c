@@ -118,9 +118,11 @@ void omsu_free_osu_data(omsi_t* omsi_data) {
 
     /* free memory for experiment data */
     if (omsi_data->experiment != NULL) {
-        global_callback->freeMemory((omsi_char *)omsi_data->experiment->solver_name);        /* type-cast to shut of warning when compiling */
+        free((omsi_char *)omsi_data->experiment->solver_name);      /* can't use freeMemory function, memory was allocated in strdup */
         global_callback->freeMemory(omsi_data->experiment);
     }
+
+    global_callback->freeMemory(omsi_data);
 
 }
 
@@ -131,46 +133,69 @@ void omsu_free_osu_data(omsi_t* omsi_data) {
 void omsu_free_model_data (model_data_t* model_data) {
 
     /* Variables */
-    omsi_unsigned_int i, j;
     omsi_unsigned_int size;
-    real_var_attribute_t* attribute;
 
     if (model_data==NULL) {
         return;
     }
 
-    global_callback->freeMemory((omsi_char *)model_data->modelGUID);
+    free((omsi_char*) model_data->modelGUID);        /* can't use freeMemory function, memory was allocated in strdup */
 
+    /* free model_variable_info_t */
     size = model_data->n_states + model_data->n_derivatives
-         + model_data->n_real_vars+model_data->n_real_parameters
-         + model_data->n_real_aliases;
-    for (i=0, j=0; i<size; i++, j++) {
-        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info[j].name);
-        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info[j].comment);
-        attribute = model_data->model_vars_info[j].modelica_attributes;
-        global_callback->freeMemory ((omsi_char *)attribute->unit);
-        global_callback->freeMemory ((omsi_char *)attribute->displayUnit);
-        global_callback->freeMemory (attribute);
-        /*global_callback->freeMemory(model_data.model_vars_info[j].info.filename);     // ToDo: something is wrong here */
-    }
-    size += model_data->n_int_vars + model_data->n_int_parameters + model_data->n_int_aliases
+            + model_data->n_real_vars+model_data->n_real_parameters
+            + model_data->n_real_aliases
+            + model_data->n_int_vars + model_data->n_int_parameters + model_data->n_int_aliases
             + model_data->n_bool_vars + model_data->n_bool_parameters + model_data->n_bool_aliases
             + model_data->n_string_vars + model_data->n_string_parameters + model_data->n_string_aliases;
-    for (i=j; i<size; i++, j++) {
-        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info[j].name);
-        global_callback->freeMemory ((omsi_char *)model_data->model_vars_info[j].comment);
-        global_callback->freeMemory (model_data->model_vars_info[j].modelica_attributes);
-        /*global_callback->freeMemory(model_data.model_vars_info[j].info.filename);     // ToDo: something is wrong here */
-    }
-    global_callback->freeMemory (model_data->model_vars_info);
+    omsu_free_model_variable_info(model_data->model_vars_info, size);
 
-    /*for (i=0; i<omsi_data->model_data.n_equations; i++) {
-            global_callback->freeMemory (omsi_data->model_data.equation_info[i].variables);
-        }
-        //global_callback->freeMemory (omsi_data->model_data.equation_info);     // ToDo: something's wrong here
-    */
+    /* ToDo: free equation_info */
 
     global_callback->freeMemory (model_data);
+}
+
+
+/* Frees array of model_variable_info struct. */
+void omsu_free_model_variable_info(model_variable_info_t*   model_vars_info,
+                                   omsi_unsigned_int        size) {
+
+    if (model_vars_info == NULL) {
+        return;
+    }
+
+    omsi_unsigned_int i;
+
+    for (i=0; i<size; i++) {
+        free((omsi_char *)model_vars_info[i].name);           /* can't use freeMemory function, memory was allocated in strdup */
+        free((omsi_char *)model_vars_info[i].comment);
+
+        omsu_free_modelica_attributes(model_vars_info[i].modelica_attributes, model_vars_info[i].type_index.type);
+        free((omsi_char *)model_vars_info[i].info.filename);
+    }
+
+    global_callback->freeMemory (model_vars_info);
+}
+
+
+void omsu_free_modelica_attributes(void*            modelica_attribute,
+                                   omsi_data_type  type) {
+
+    real_var_attribute_t* attribute_real;
+
+    if (type==OMSI_TYPE_REAL) {
+        attribute_real = modelica_attribute;
+
+        free((omsi_char *)attribute_real->unit);         /* can't use freeMemory function, memory was allocated in strdup */
+        free((omsi_char *)attribute_real->displayUnit);
+        global_callback->freeMemory (attribute_real);
+    }
+    else {
+
+        global_callback->freeMemory (modelica_attribute);
+    }
+
+    /* else: nothing to free manually */
 }
 
 

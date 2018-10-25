@@ -67,6 +67,8 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     if (!OSU) {
         filtered_base_logger(NULL, log_statuserror, omsi_error,
                 "fmi2Instantiate: Not enough memory.");
+        filtered_base_logger(global_logCategories, log_statusfatal, omsi_error,
+                "Could not instantiate OSU component.");
         return NULL;
     }
 
@@ -75,6 +77,9 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     if (!OSU->GUID) {
         filtered_base_logger(NULL, log_statuserror, omsi_error,
                         "fmi2Instantiate: Not enough memory.");
+        omsu_free_osu(OSU);
+        filtered_base_logger(global_logCategories, log_statusfatal, omsi_error,
+                        "Could not instantiate OSU component.");
         return NULL;
     }
 
@@ -89,6 +94,9 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     if (!OSU->osu_functions || !OSU->instanceName || !OSU->vrStates || !OSU->vrStatesDerivatives) {
         filtered_base_logger(NULL, log_statuserror, omsi_error,
                 "fmi2Instantiate: Not enough memory.");
+        omsu_free_osu(OSU);
+        filtered_base_logger(global_logCategories, log_statusfatal, omsi_error,
+                "Could not instantiate OSU component.");
         return NULL;
     }
 
@@ -100,8 +108,14 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
 
     /* Call OMSIBase function for initialization of osu_data */
     OSU->osu_data = omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, OSU->osu_functions, visible, loggingOn);
+    if (OSU->osu_data == NULL) {
+        omsu_free_osu(OSU);
+        filtered_base_logger(global_logCategories, log_statusfatal, omsi_error,
+                        "Could not instantiate OSU component.");
+        return NULL;
+    }
 
-    /* Set OSU value referenze arrays */
+    /* Set OSU value reference arrays */
     for (i=0; i < OSU->osu_data->model_data->n_states; i++) {
         OSU->vrStates[i] = i;
         OSU->vrStatesDerivatives[i] = i+OSU->osu_data->model_data->n_states;

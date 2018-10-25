@@ -52,6 +52,8 @@ extern void printLapackData(DATA_LAPACK*    lapack_data,
 
 
 /* function prototypes */
+void omsu_free_osu(osu_t* OSU);
+
 omsi_string stateToString(osu_t* OSU);
 
 omsi_bool invalidState(osu_t*       OSU,

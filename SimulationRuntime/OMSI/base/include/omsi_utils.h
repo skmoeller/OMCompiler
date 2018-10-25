@@ -70,6 +70,12 @@ void omsu_free_osu_data(omsi_t* omsi_data);
 
 void omsu_free_model_data (model_data_t* model_data);
 
+void omsu_free_model_variable_info(model_variable_info_t*   model_vars_info,
+                                   omsi_unsigned_int        size);
+
+void omsu_free_modelica_attributes(void*            modelica_attribute,
+                                   omsi_data_type  type);
+
 void omsu_free_sim_data (sim_data_t* sim_data);
 
 void omsu_free_omsi_function(omsi_function_t* omsi_function);

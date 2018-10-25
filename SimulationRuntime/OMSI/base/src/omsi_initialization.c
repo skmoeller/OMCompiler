@@ -122,7 +122,8 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
         filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Could not read modelName from %s/modelDescription.xml.",
                 omsi_resource_location);
-        /* ToDo: omsu_free_osu_data(osu_data); */
+        omsu_free_osu_data(osu_data);
+        free(omsi_resource_location);
         return NULL;
     }
 
@@ -133,7 +134,9 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     if (omsu_process_input_xml(osu_data, initXMLFilename, fmuGUID, instanceName, functions) == omsi_error) {
         filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Could not process %s.", initXMLFilename);
-        /* Todo omsu_free_osu_data(osu_data); */
+        omsu_free_osu_data(osu_data);
+        functions->freeMemory(initXMLFilename);
+        free(omsi_resource_location);
         return NULL;
     }
     functions->freeMemory(initXMLFilename);
@@ -146,10 +149,13 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     /* if (omsu_process_input_json(osu_data, infoJsonFilename, fmuGUID, instanceName, functions) == omsi_error) {
         filtered_base_logger(osu_data->logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Could not process %s.", infoJsonFilename);
-        /* omsu_free_osu_data(osu_data); */
+        /* omsu_free_osu_data(osu_data);
+        functions->freeMemory(infoJsonFilename);
+        free(omsi_resource_location);*/
         /*return NULL;
     }
     functions->freeMemory(infoJsonFilename);*/
+    free(omsi_resource_location);
 
 	/***************************************************************************/
 

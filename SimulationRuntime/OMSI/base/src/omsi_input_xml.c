@@ -159,7 +159,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanAliasVariables"), &(osu_data->model_data->n_bool_aliases));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringAliasVariables"), &(osu_data->model_data->n_string_aliases));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data->n_zerocrossings));       /* ToDo: Is numberOfTimeEvents also part of n_zerocrossings???? */
-    osu_data->model_data->n_equations = -1; /* ToDo: numberOfEquations is not in XML */
+    osu_data->model_data->n_equations = -1; /* numberOfEquations is read from JSON */
 
     /* read model_vars_info */
     n_model_vars_and_params = osu_data->model_data->n_states + osu_data->model_data->n_derivatives
@@ -182,11 +182,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_var_infos(osu_data->model_data, &mi);
 
     /* now all data from init_xml should be utilized */
-    /* omsu_free_ModelInput(mi); */
-    /*
-     * ToDo: We get segmentation faults. Is it possible that the expat macros are not unique and
-     * crazy stuff happens???
-     */
+    omsu_free_ModelInput(&mi);
 
     return status;
 }
@@ -686,17 +682,18 @@ void XMLCALL startElement(void*         userData,
             fail = 1;
         }
 
-    if (fail) {
-        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-                "fmi2Instantiate: Found unknown class: %s  for variable: %s while reading XML.",
-                ct, omsu_findHashStringString(v,"name"));
-    }
+        if (fail) {
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate: Found unknown class: %s  for variable: %s while reading XML.",
+                    ct, omsu_findHashStringString(v,"name"));
+        }
 
         /* add the ScalarVariable map to the correct map! */
         omsu_addHashLongVar(mi->lastCT, mi->lastCI, v);
 
         return;
     }
+
     /* handle Real/Integer/Boolean/String */
     if (!strcmp(name, "Real") || !strcmp(name, "Integer")
             || !strcmp(name, "Boolean") || !strcmp(name, "String")) {
@@ -726,68 +723,55 @@ void XMLCALL endElement(void*       userData,
 
 /* deallocates memory for omc_ModelInput struct */
 /* ToDo: is full of bugs */
-void omsu_free_ModelInput(omc_ModelInput mi) {
+void omsu_free_ModelInput(omc_ModelInput* mi) {
 
-    free_hash_string_string(mi.md);
-    free_hash_string_string(mi.de);
+    free_hash_string_string(mi->md);
+    free_hash_string_string(mi->de);
 
-    free_hash_long_var(mi.rSta);
-    free_hash_long_var(mi.rDer);
-    free_hash_long_var(mi.rAlg);
-    free_hash_long_var(mi.rPar);
-    free_hash_long_var(mi.rAli);
-    free_hash_long_var(mi.rSen);
+    free_hash_long_var(mi->rSta);
+    free_hash_long_var(mi->rDer);
+    free_hash_long_var(mi->rAlg);
+    free_hash_long_var(mi->rPar);
+    free_hash_long_var(mi->rAli);
+    free_hash_long_var(mi->rSen);
 
-    free_hash_long_var(mi.iAlg);
-    free_hash_long_var(mi.iPar);
-    free_hash_long_var(mi.iAli);
+    free_hash_long_var(mi->iAlg);
+    free_hash_long_var(mi->iPar);
+    free_hash_long_var(mi->iAli);
 
-    free_hash_long_var(mi.bAlg);
-    free_hash_long_var(mi.bPar);
-    free_hash_long_var(mi.bAli);
+    free_hash_long_var(mi->bAlg);
+    free_hash_long_var(mi->bPar);
+    free_hash_long_var(mi->bAli);
 
-    free_hash_long_var(mi.sAlg);
-    free_hash_long_var(mi.sPar);
-    free_hash_long_var(mi.sAli);
+    free_hash_long_var(mi->sAlg);
+    free_hash_long_var(mi->sPar);
+    free_hash_long_var(mi->sAli);
 
 }
 
 
-/* delete all items from hash and frees memory for hash table hash_string_string*/
+/* Deletes all items from hash and frees memory for hash table hash_string_string */
 void free_hash_string_string (hash_string_string* data) {
 
     hash_string_string* current, *tmp;
 
     HASH_ITER(hh, data, current, tmp) {
         HASH_DEL(data, current);             /* delete; current advances to next */
-        global_callback->freeMemory((omsi_char *)current->id);
-        global_callback->freeMemory((omsi_char *)current->val);
-        free(current);
+        free((omsi_char *)current->id);
+        free((omsi_char *)current->val);
+        global_callback->freeMemory(current);
     }
 }
 
 
-/* delete all items from hash and frees memory for hash table hash_long_var*/
+/* Deletes all items from hash and frees memory for hash table hash_long_var */
 void free_hash_long_var (hash_long_var* data) {
 
     hash_long_var* current, *tmp;
 
     HASH_ITER(hh, data, current, tmp) {
         HASH_DEL(data, current);             /* delete; current advances to next */
-        global_callback->freeMemory((omsi_char *)current->val);
-        free(current);            /* optional- if you want to free  */
-    }
-}
-
-
-/* delete all items from hash and frees memory for hash table hash_long_var*/
-void free_hash_string_long (hash_string_long* data) {
-
-    hash_string_long* current, *tmp;
-
-    HASH_ITER(hh, data, current, tmp) {
-        HASH_DEL(data, current);             /* delete; current advances to next */
-        global_callback->freeMemory((omsi_char *)current->id);
-        free(current);            /* optional- if you want to free  */
+        free_hash_string_string(current->val);
+        global_callback->freeMemory(current);
     }
 }
