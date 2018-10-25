@@ -76,6 +76,9 @@ void omsu_free_model_variable_info(model_variable_info_t*   model_vars_info,
 void omsu_free_modelica_attributes(void*            modelica_attribute,
                                    omsi_data_type  type);
 
+void omsu_free_equation_info(equation_info_t*   eq_info,
+                             omsi_unsigned_int  n_equations );
+
 void omsu_free_sim_data (sim_data_t* sim_data);
 
 void omsu_free_omsi_function(omsi_function_t* omsi_function);

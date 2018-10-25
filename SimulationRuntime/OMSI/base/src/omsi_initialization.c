@@ -128,7 +128,6 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     }
 
     /* process Inti-XML file and read experiment_data and parts of model_data in osu_data*/
-    /* ToDo Check error memory */
     initXMLFilename = functions->allocateMemory(20 + strlen(omsi_resource_location) + strlen(modelName), sizeof(omsi_char));
     sprintf(initXMLFilename, "%s/%s_init.xml", omsi_resource_location, modelName);
     if (omsu_process_input_xml(osu_data, initXMLFilename, fmuGUID, instanceName, functions) == omsi_error) {

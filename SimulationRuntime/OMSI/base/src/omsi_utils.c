@@ -150,7 +150,8 @@ void omsu_free_model_data (model_data_t* model_data) {
             + model_data->n_string_vars + model_data->n_string_parameters + model_data->n_string_aliases;
     omsu_free_model_variable_info(model_data->model_vars_info, size);
 
-    /* ToDo: free equation_info */
+    /* free equation_info */
+    omsu_free_equation_info(model_data->equation_info, model_data->n_equations);
 
     global_callback->freeMemory (model_data);
 }
@@ -196,6 +197,32 @@ void omsu_free_modelica_attributes(void*            modelica_attribute,
     }
 
     /* else: nothing to free manually */
+}
+
+
+/*
+ *
+ */
+void omsu_free_equation_info(equation_info_t*   eq_info,
+                             omsi_unsigned_int  n_equations ) {
+
+    if (eq_info == NULL) {
+        return;
+    }
+
+    /* Variables */
+    omsi_unsigned_int i;
+    omsi_int j;
+
+    for (i=0; i<n_equations; i++) {
+        for (j=0; j<eq_info[i].numVar; j++) {
+            global_callback->freeMemory((omsi_char*) eq_info[i].variables[j]);
+        }
+
+        global_callback->freeMemory(eq_info[i].variables);
+    }
+
+    global_callback->freeMemory(eq_info);
 }
 
 
