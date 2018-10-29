@@ -3749,7 +3749,7 @@ protected
   list<SimCodeVar.SimVar> tempVars;
   Integer nAlgebraicSystems = 0;
   Integer index, nAllVars;
-  Boolean debug=false;
+  Boolean debug=true;
 algorithm
   for component in components loop
     tmpEqns := {};
@@ -3760,6 +3760,7 @@ algorithm
       BackendDAE.Var var;
       
       BackendDAE.Jacobian jacobian;
+      BackendDAE.JacobianType jacobianType;
       BackendDAE.InnerEquations innerEquations;
       list<Integer> tearingVars, residualEqns;
       list<BackendDAE.Var> tvars;
@@ -3771,6 +3772,9 @@ algorithm
       Boolean linear, mixedSystem;
       Option<SimCode.DerivativeMatrix> derivativeMatrix;
       Integer algEqIndex;
+
+      list<Integer> eqns;
+      list<Integer> variables;
 
     // case for singele equations
     case BackendDAE.SINGLEEQUATION() equation
@@ -3791,7 +3795,7 @@ algorithm
       algEqIndex := uniqueEqIndex;
       uniqueEqIndex := uniqueEqIndex+1;
       // get tearing vars
-      tvars := List.map1r(tearingVars, BackendVariable.getVarAt,  constSyst.orderedVars);
+      tvars := List.map1r(tearingVars, BackendVariable.getVarAt, constSyst.orderedVars);
       tvars := List.map(tvars, BackendVariable.transformXToXd);
       tvars := BackendVariable.setVarsKind(tvars, BackendDAE.LOOP_ITERATION());
       ((loopIterationVars, _)) := List.fold(tvars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
@@ -3846,6 +3850,71 @@ algorithm
       nAlgebraicSystems := nAlgebraicSystems+1;
       tmpEqns := {algSystem};
     then ();
+
+    // case for non-teared systems of equations
+    case BackendDAE.EQUATIONSYSTEM(eqns = eqns,
+                                   vars = variables,
+                                   jac = jacobian,
+                                   jacType = jacobianType,
+                                   mixedSystem = mixedSystem)
+      algorithm
+
+      if not SymbolicJacobian.isJacobianGeneric(jacobian) then
+        Error.addMessage(Error.NO_JACONIAN_TORNLINEAR_SYSTEM, {});    // ToDo: edit error message
+        fail();
+      end if;
+
+      algEqIndex := uniqueEqIndex;
+      uniqueEqIndex := uniqueEqIndex+1;
+
+      // get variables
+      tvars := List.map1r(variables, BackendVariable.getVarAt, constSyst.orderedVars);
+      tvars := List.map(tvars, BackendVariable.transformXToXd);
+      //tvars := BackendVariable.setVarsKind(tvars, BackendDAE.LOOP_SOLVED());
+      ((loopSolvedVars, _)) := List.fold(tvars, traversingdlowvarToSimvarFold, ({}, BackendVariable.emptyVars(0)));
+      loopSolvedVars := listReverse(loopSolvedVars);
+
+      // get residual equations
+      reqns := BackendEquation.getList(eqns, constSyst.orderedEqs);
+      reqns := BackendEquation.replaceDerOpInEquationList(reqns);
+      (resEqs, uniqueEqIndex, tempVars) := createNonlinearResidualEquations(reqns, uniqueEqIndex, {});
+
+      //set index
+      (loopSolvedVars, index) := rewriteIndex(loopSolvedVars, 0);
+
+      // create hash table with local index
+      nAllVars := listLength(loopSolvedVars)+listLength(tempVars);
+      hashTable := fillLocalHashTable({loopSolvedVars, tempVars}, nAllVars);
+
+      // fill OMSI_FUNCTION
+      omsiFunction := SimCode.OMSI_FUNCTION(equations = resEqs,
+                                            inputVars = {},
+                                            outputVars = loopSolvedVars,
+                                            innerVars = tempVars,
+                                            nAllVars = nAllVars,
+                                            context = SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
+                                            nAlgebraicSystems = 0);
+
+      // fill SES_ALGEBRAIC_SYSTEM
+      (derivativeMatrix, uniqueEqIndex) := createDerivativeMatrix(jacobian, uniqueEqIndex);
+      algSystem := SimCode.SES_ALGEBRAIC_SYSTEM(index = algEqIndex,
+                                                algSysIndex = nAlgebraicSystems,
+                                                partOfMixed = mixedSystem,
+                                                tornSystem = false,
+                                                linearSystem = false,             // ToDo: check if system is linear
+                                                residual = omsiFunction,
+                                                matrix = derivativeMatrix,
+                                                zeroCrossingConditions = {},
+                                                sources = {},
+                                                eqAttr = BackendDAE.EQ_ATTR_DEFAULT_UNKNOWN);
+
+      nAlgebraicSystems := nAlgebraicSystems+1;
+      tmpEqns := {algSystem};
+
+      if debug then
+        dumpOMSIFunc(omsiFunction, "\nEquation system omsiFunction");
+      end if;
+    then();
 
     // error case
     else algorithm
