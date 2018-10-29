@@ -40,6 +40,9 @@
 #include <omsi_utils.h>
 
 
+#define DIVISION(a,b,c) (((b) != 0) ? ((a) / (b)) :  division_error_time(c, model_vars_and_params->time_value))
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -206,9 +206,9 @@ void XMLCALL startElement_2(void*           userData,
     printf("%s %s\n", attr[i], attr[i+1]); fflush(stdout);
 
     /* handle fmiModelDescription */
-    if (!strcmp(name, "fmiModelDescription")) {
+    if (!strcmp(name, "ModelExchange")) {
         for (i = 0; attr[i]; i += 2) {
-            if (strcmp("modelName", attr[i]) == 0 ) {
+            if (strcmp("modelIdentifier", attr[i]) == 0 ) {
                 modelName = strdup(attr[i+1]);
                 md->modelName = modelName;
 

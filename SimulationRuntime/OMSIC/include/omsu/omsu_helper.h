@@ -35,7 +35,6 @@
 #include <string.h>
 #include <stddef.h>
 
-
 #include <omsic.h>
 
 #include <solver_lapack.h>
@@ -98,6 +97,8 @@ omsi_status omsu_copy_values(omsi_values*   target_vars,
                              omsi_values*   source_vars);
 
 void omsu_print_osu (osu_t* OSU);
+
+
 #ifdef __cplusplus
 }  /* end of extern "C" { */
 #endif
