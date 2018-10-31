@@ -45,7 +45,7 @@ omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
                         omsi_callback_functions*    callback_functions){
 
     /* variables */
-    DATA_LAPACK* lapack_data;
+    solver_data_lapack* lapack_data;
     omsi_status status;
 
     /* set global functions */
@@ -73,7 +73,7 @@ omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
     if (lapack_data->info < 0) {
         /* ToDO: Log */
         printf("ERROR solving linear system: the %d-th argument had an illegal value\n", (-1)*lapack_data->info);
-        freeLapackData(lapack_data);
+        lapack_free_data(lapack_data);
         return omsi_error;
     }
     else if (lapack_data->info > 0) {
@@ -81,7 +81,7 @@ omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
         printf("ERROR solving linear system:  U(%d,%d) is exactly zero.\n", lapack_data->info, lapack_data->info);
         printf("The factorization has been completed, but the factor U is exactly"
                 "singular, so the solution could not be computed\n");
-        freeLapackData(lapack_data);
+        lapack_free_data(lapack_data);
         return omsi_error;
     }
 
@@ -98,7 +98,7 @@ omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
     }
 
     /* free memory */
-    freeLapackData(lapack_data);
+    lapack_free_data(lapack_data);
 
     return status;
 }
@@ -110,10 +110,10 @@ omsi_status solveLapack(omsi_algebraic_system_t*    linearSystem,
  * Input:   equationSystemFunc
  * Output:  pointer to lapack_data, if pointer=NULL an error occurred
  */
-DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system,
+solver_data_lapack* set_lapack_data(const omsi_algebraic_system_t* linear_system,
                              const omsi_values*             read_only_vars_and_params) {
 
-    DATA_LAPACK* lapack_data = (DATA_LAPACK*) global_callback->allocateMemory(1, sizeof(DATA_LAPACK));
+    solver_data_lapack* lapack_data = (solver_data_lapack*) global_callback->allocateMemory(1, sizeof(solver_data_lapack));
     if (!lapack_data) {
         /* ToDo: log error out of memory */
         return NULL;
@@ -143,7 +143,7 @@ DATA_LAPACK* set_lapack_data(const omsi_algebraic_system_t* linear_system,
  * Read data from equationSystemFunc and
  * set matrix A in row-major order.
  */
-omsi_status set_lapack_a (DATA_LAPACK*                      lapack_data,
+omsi_status set_lapack_a (solver_data_lapack*                      lapack_data,
                           const omsi_algebraic_system_t*    linear_system) {
 
     omsi_int i,j;
@@ -163,7 +163,7 @@ omsi_status set_lapack_a (DATA_LAPACK*                      lapack_data,
  * Sets right hand side b of equation system.
  * Evaluates residual function with iteration variables set to 0 to get b.
  */
-omsi_status set_lapack_b (DATA_LAPACK*                      lapack_data,
+omsi_status set_lapack_b (solver_data_lapack*                      lapack_data,
                           const omsi_algebraic_system_t*    linearSystem,
                           const omsi_values*                read_only_vars_and_params) {
 
@@ -193,7 +193,7 @@ omsi_status set_lapack_b (DATA_LAPACK*                      lapack_data,
  * Evaluate residual A*x-b=res and return omsi_ok if it is zero,
  * otherwise omsi_warning.
  */
-omsi_status eval_residual(DATA_LAPACK*              lapack_data,
+omsi_status eval_residual(solver_data_lapack*              lapack_data,
                           omsi_algebraic_system_t*  linearSystem,
                           const omsi_values*        read_only_vars_and_params) {
     /* local variables */
@@ -231,7 +231,7 @@ omsi_status eval_residual(DATA_LAPACK*              lapack_data,
  * Output:  equationSystemFunc
  */
 void get_result(omsi_function_t*    equationSystemFunc,
-                DATA_LAPACK*        lapack_data) {
+                solver_data_lapack*        lapack_data) {
 
     omsi_unsigned_int i;
     omsi_unsigned_int index;
@@ -243,22 +243,13 @@ void get_result(omsi_function_t*    equationSystemFunc,
 }
 
 
-/*
- *  Frees lapack_data
- */
-void freeLapackData(DATA_LAPACK* lapack_data) {
-    global_callback->freeMemory(lapack_data->A);
-    global_callback->freeMemory(lapack_data->ipiv);
-    global_callback->freeMemory(lapack_data->b);
 
-    global_callback->freeMemory(lapack_data);
-}
 
 
 /*
  * Debug function. Print all information of DATA_LAPACK structure.
  */
-void printLapackData(DATA_LAPACK*   lapack_data,
+void printLapackData(solver_data_lapack*   lapack_data,
                      omsi_string    indent) {
 
     omsi_int i;
@@ -288,3 +279,67 @@ void printLapackData(DATA_LAPACK*   lapack_data,
     printf("%sleading dimension of b: %i\n", indent, lapack_data->ldb);
     printf("%sinfo:%i\n", indent, lapack_data->info);
 }
+
+
+
+
+
+/*
+ *
+ * Solve equation systems A*x=b with
+ *   A matrix of dimension (lda, n), row major order
+ *   b vector of dimension (ldb, nrhs), row major order
+ *
+ */
+
+
+/*
+ * ====================================================================
+ */
+
+
+/*
+ * Allocate memory for specific solver data and set dimensions in newly
+ * allocated struct.
+ */
+solver_data_lapack* lapack_allocate (solver_unsigned_int n,
+                                     solver_unsigned_int nrhs,
+                                     solver_unsigned_int lda,
+                                     solver_unsigned_int ldb) {
+
+    /* Variables */
+    solver_data_lapack* data;
+
+    /* allocate memory */
+    data = (solver_data_lapack*) solver_allocateMemory(1, sizeof(solver_data_lapack));
+
+    data->A = (solver_real*) solver_allocateMemroy(lda*n, sizeof(solver_real));
+    data->ipiv = (solver_int*) solver_allocateMemory(n, sizeof(solver_int));
+    data->b = (solver_real*) solver_allocateMemory(ldb*nrhs, sizeof(solver_real));
+
+    /* set dimensions */
+    data->n = n;
+    data->nrhs = nrhs;
+    data->lda = lda;
+    data->ldb = ldb;
+
+    return data;
+}
+
+
+/*
+ *  Frees lapack_data
+ */
+void lapack_free_data(solver_data_lapack* lapack_data) {
+    solver_freeMemory(lapack_data->A);
+    solver_freeMemory(lapack_data->ipiv);
+    solver_freeMemory(lapack_data->b);
+
+    solver_freeMemory(lapack_data);
+}
+
+
+
+
+
+

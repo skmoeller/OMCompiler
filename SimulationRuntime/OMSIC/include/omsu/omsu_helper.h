@@ -46,7 +46,7 @@ extern "C" {
 
 
 /* extern function prototypes */
-extern void printLapackData(DATA_LAPACK*    lapack_data,
+extern void printLapackData(solver_data_lapack*    lapack_data,
                             omsi_string     indent);
 
 
