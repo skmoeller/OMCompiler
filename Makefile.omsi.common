@@ -102,6 +102,9 @@ OMSI: OMSIBaseInstall OMSICInstall
 
 
 OMSI-clean: OMSIBaseClean OMSICClean
+	cd $(OMBUILDDIR);                             \
+	rm -rf include/omc/omsi include/omc/omsic;    \
+	rm -rf lib/omc/omsi
 
 
 #############################
