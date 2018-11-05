@@ -448,7 +448,10 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
     let &includes +=
       <<
       #include <omsu_helper.h>
-      #include <solver_helper.h>
+      <%if nAlgebraicSystems then <<
+        #include <solver_api.h>
+        >>
+      %>
       #include <omsi_input_sim_data.h><%\n%>
       >>
 

@@ -32,7 +32,11 @@ message(STATUS "Libs will be installed in ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEX
 SET(OSUBaseName ${LIBPREFIX}OMSIBase${LIBSUFFIX})
 
 
-
+# enable warnings and use ANSI C compatible compiler
+if(CMAKE_COMPILER_IS_GNUCXX)
+    message(STATUS "GCC detected, adding compile flags")
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -Wall -Wextra -pedantic -g")
+endif(CMAKE_COMPILER_IS_GNUCXX)
 
 
 include_directories ("${CMAKE_SOURCE_DIR}/include")

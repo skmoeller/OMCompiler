@@ -3,12 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 PROJECT(OMSIBASE)
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
-# enable warnings and use ANSI C compatible compiler
-if(CMAKE_COMPILER_IS_GNUCXX)
-    message(STATUS "GCC detected, adding compile flags")
-    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -Wall -Wextra -pedantic -g")
-endif(CMAKE_COMPILER_IS_GNUCXX)
-
 #set exapat lib for visual studio compiler
 IF(MSVC)
   INCLUDE_DIRECTORIES($ENV{OMDEV}/lib/expat-win32-msvc)
