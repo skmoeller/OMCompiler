@@ -34,10 +34,7 @@
 #ifndef _LINEARSOLVERLAPACK_H_
 #define _LINEARSOLVERLAPACK_H_
 
-#include <omsi.h>
-#include <omsi_callbacks.h>
-#include <omsi_global.h>
-
+#include <omsi_solver.h>
 #include <solver_helper.h>
 
 #include <stdio.h>
@@ -72,6 +69,7 @@ extern solver_int dgesv_(solver_int *n, solver_int *nrhs, solver_real *a, solver
 extern solver_real ddot_(solver_int* n, solver_real* dx, solver_int* incx, solver_real* dy, solver_int* incy);
 
 /* function prototypes */
+/*
 omsi_status solveLapack(omsi_algebraic_system_t*            linearSystem,
                         const omsi_values*                  read_only_vars_and_params,
                         omsi_callback_functions*            callback_functions);
@@ -97,6 +95,7 @@ void lapack_free_data(solver_data_lapack* lapack_data);
 
 void printLapackData(solver_data_lapack*   lapack_data,
                      omsi_string    indent);
+*/
 
 #ifdef __cplusplus
 }   /* end of extern "C" { */

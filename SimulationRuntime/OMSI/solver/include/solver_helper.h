@@ -31,10 +31,7 @@
 #ifndef _SOLVERHELPER_H_
 #define _SOLVERHELPER_H_
 
-#include <omsi.h>
-#include <omsi_callbacks.h>
-#include <omsi_global.h>
-#include <omsi_utils.h>
+#include <omsi_solver.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,15 +48,8 @@ if (!pointer) {                                                               \
     return omsi_error;                                                        \
 }                                                                             \
 
-
+#if 0
 /* Function prototypes */
-omsi_status free_omsi_function (omsi_function_t*    omsi_function,
-                                omsi_bool           shared_function_vars);
-
-omsi_status free_alg_system (omsi_algebraic_system_t* algebraic_system);
-
-omsi_status free_omsi_values (omsi_values* values);
-
 omsi_status omsu_set_omsi_value (omsi_values*       vars,
                                  omsi_index_type**  targetPlaces,
                                  omsi_unsigned_int  numTargetPlaces,
@@ -74,6 +64,9 @@ omsi_values* save_omsi_values (const omsi_values*   vars,
 omsi_status omsi_get_derivative_matrix (omsi_algebraic_system_t*    algebraicSystem,
                                         omsi_bool                   rowMajorOrder,
                                         omsi_real*                  matrix);
+#endif
+
+
 #ifdef __cplusplus
 }   /* end of extern "C" { */
 #endif

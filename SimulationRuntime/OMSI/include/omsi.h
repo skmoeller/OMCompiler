@@ -50,6 +50,7 @@
 
 #include <limits.h>
 #include <float.h>
+/*#include <omsi_solver.h>*/
 
 #ifdef __cplusplus
 extern "C" {

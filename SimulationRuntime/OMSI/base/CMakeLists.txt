@@ -19,7 +19,7 @@ ELSE(MSVC)
   set(expat_lib "expat")
 ENDIF(MSVC)
 
-include_directories ("${CMAKE_SOURCE_DIR}/base/include")
+include_directories ("${CMAKE_SOURCE_DIR}/base/include" "${CMAKE_SOURCE_DIR}/solver/include")
 add_library(${OSUBaseName}
   src/omsi_initialization.c
   src/omsi_input_json.c

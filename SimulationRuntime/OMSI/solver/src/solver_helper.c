@@ -30,64 +30,6 @@
 
 #include <solver_helper.h>
 
-/* ToDo Check if global_callbacks struct is already set!!!!! */
-
-
-/*
- * Deallocates memory of omsi_function_t struct.
- * If shared_function_vars=false function_vars gets also freed.
- */
-omsi_status free_omsi_function (omsi_function_t*    omsi_function,
-                                omsi_bool           shared_function_vars) {
-
-    omsi_unsigned_int i;
-
-    for (i=0; i<omsi_function->n_algebraic_system; i++) {
-        free_alg_system(&(omsi_function->algebraic_system_t[i]));
-    }
-    global_callback->freeMemory(omsi_function->algebraic_system_t);
-
-    if (!shared_function_vars) {
-        free_omsi_values(omsi_function->function_vars);
-    }
-
-    global_callback->freeMemory(omsi_function->input_vars_indices);
-    global_callback->freeMemory(omsi_function->output_vars_indices);
-
-    global_callback->freeMemory(omsi_function);
-
-    return omsi_ok;
-}
-
-
-/*
- * Deallocates memory of omsi_algebraic_system_t struct.
- */
-omsi_status free_alg_system (omsi_algebraic_system_t* algebraic_system) {
-
-    global_callback->freeMemory(algebraic_system->zerocrossing_indices);
-    free_omsi_function(algebraic_system->jacobian, omsi_true);
-    free_omsi_function(algebraic_system->functions, omsi_true);
-
-    global_callback->freeMemory(algebraic_system);
-    return omsi_ok;
-}
-
-
-/*
- * Deallocates memory for omsi_values struct.
- */
-omsi_status free_omsi_values (omsi_values* values) {
-
-    global_callback->freeMemory(values->reals);
-    global_callback->freeMemory(values->ints);
-    global_callback->freeMemory(values->bools);
-    global_callback->freeMemory(values->externs);
-
-    global_callback->freeMemory(values);
-    return omsi_ok;
-}
-
 
 /*
  * Sets first numTargetPlaces variables in vars to tragetValue.

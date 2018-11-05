@@ -41,7 +41,6 @@ include_directories ("${OMSI_SOURCE_DIR}/include/fmi2")
 include_directories ("${OMSI_SOURCE_DIR}/base/include")
 
 # omsic simulation runtime
-ADD_SUBDIRECTORY(src/solver)
 ADD_SUBDIRECTORY(src/omsu)
 
 
@@ -66,8 +65,3 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2FunctionTypes.h
   ${CMAKE_SOURCE_DIR}/include/fmi2/fmi2TypesPlatform.h
 DESTINATION include/omc/omsic/fmi2/)
-
-install(FILES
-  ${CMAKE_SOURCE_DIR}/include/solver/solver_helper.h
-  ${CMAKE_SOURCE_DIR}/include/solver/solver_lapack.h
-DESTINATION include/omc/omsi/solver)

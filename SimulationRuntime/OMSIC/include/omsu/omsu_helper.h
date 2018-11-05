@@ -37,7 +37,7 @@
 
 #include <omsic.h>
 
-#include <solver_lapack.h>
+/*#include <solver_lapack.h>*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,9 +45,9 @@ extern "C" {
 
 
 
-/* extern function prototypes */
+/* extern function prototypes
 extern void printLapackData(solver_data_lapack*    lapack_data,
-                            omsi_string     indent);
+                            omsi_string     indent);*/
 
 
 /* function prototypes */

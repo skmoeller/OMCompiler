@@ -38,7 +38,7 @@ SET(OSUBaseName ${LIBPREFIX}OMSIBase${LIBSUFFIX})
 include_directories ("${CMAKE_SOURCE_DIR}/include")
 # omsi base simulation runtime
 ADD_SUBDIRECTORY(base)
-
+ADD_SUBDIRECTORY(solver)
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/include/omsi.h
