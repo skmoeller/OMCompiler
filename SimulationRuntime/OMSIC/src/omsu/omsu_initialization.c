@@ -88,7 +88,8 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     OSU->type = fmuType;
     OSU->fmiCallbackFunctions = functions;
 
-    if (!OSU->osu_functions || !OSU->instanceName || !OSU->vrStates || !OSU->vrStatesDerivatives) {
+    OSU->osu_functions = (omsi_template_callback_functions_t*) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
+    if (!OSU->osu_functions || !OSU->instanceName) {
         filtered_base_logger(NULL, log_statuserror, omsi_error,
                 "fmi2Instantiate: Not enough memory.");
         omsu_free_osu(OSU);
@@ -108,13 +109,18 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     if (OSU->osu_data == NULL) {
         omsu_free_osu(OSU);
         filtered_base_logger(global_logCategories, log_statusfatal, omsi_error,
-                        "Could not instantiate OSU component.");
+                "Could not instantiate OSU component.");
         return NULL;
     }
 
     OSU->vrStates = (omsi_unsigned_int *) functions->allocateMemory(OSU->osu_data->model_data->n_states, sizeof(omsi_unsigned_int));
     OSU->vrStatesDerivatives = (omsi_unsigned_int *) functions->allocateMemory(OSU->osu_data->model_data->n_states, sizeof(omsi_unsigned_int));
-    OSU->osu_functions = (omsi_template_callback_functions_t*) functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
+    if (!OSU->vrStates || !OSU->vrStatesDerivatives) {
+        omsu_free_osu(OSU);
+        filtered_base_logger(global_logCategories, log_statusfatal, omsi_error,
+                "Could not instantiate OSU component.");
+        return NULL;
+    }
 
     /* Set OSU value reference arrays */
     for (i=0; i < OSU->osu_data->model_data->n_states; i++) {
