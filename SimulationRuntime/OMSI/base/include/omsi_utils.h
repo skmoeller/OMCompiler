@@ -85,6 +85,8 @@ void omsu_free_sim_data (sim_data_t* sim_data);
 
 void omsu_free_omsi_function(omsi_function_t* omsi_function);
 
+void omsu_free_alg_system (omsi_algebraic_system_t* algebraic_system);
+
 void omsu_free_omsi_values(omsi_values* values);
 
 omsi_bool omsi_vr_out_of_range(omsi_t*  omsu, omsi_string function_name,omsi_unsigned_int    vr,omsi_int             end);

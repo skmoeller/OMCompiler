@@ -28,6 +28,14 @@
  *
  */
 
+/** \file omsi_utils.c
+ */
+
+
+/** @addtogroup OMSIBase OMSI Base Library
+  * \ingroup OMSI
+  *  @{ */
+
 #include <omsi_utils.h>
 
 #define DEBUG_FILTER_FLUSH omsi_true
@@ -37,13 +45,26 @@
 
 #define OVERFLOW_PROTECTED omsi_false
 
-/* Filter function for logger */
-void filtered_base_logger(omsi_bool*            logCategories,      /* Array of categories, that should be logged, can be NULL */
-                          log_categories        category,           /* Category of this log call */
-                          omsi_status           status,             /* Status for logger */
-                          omsi_string           message,            /* Message for logger */
-                          ...) {                                    /* Optional arguments in message */
-
+/** \brief Filter function for logger
+ *
+ * Logs message for given logging category if `logCategories[category]` is set to `true` for
+ * that category. Otherwise nothing is logged.
+ *
+ * \param  [in]  logCategories  Array of categories, that should be logged. If
+ *                              pointer equals `NULL` function `filtered_base_logger`
+ *                              will ignore `category` and log message.
+ * \param  [in]  category       Category of this log call.
+ * \param  [in]  status         Status of OSU for logger.
+ * \param  [in]  message        Message for logger.
+ * \param  [in]  ...            Optional arguments in message.
+ */
+void filtered_base_logger(omsi_bool*            logCategories,
+                          log_categories        category,
+                          omsi_status           status,
+                          omsi_string           message,
+                          ...)
+{
+    /* Variables */
     va_list args;
     va_start(args, message);
 
@@ -94,6 +115,26 @@ omsi_bool isCategoryLogged(omsi_bool*       logCategories,
     }
     return omsi_false;
 }
+
+
+/*
+ * Returns true if vr is out of range of end and emits error message.
+ * Otherwise it returns false.
+ */
+omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
+                               omsi_string          function_name,
+                               omsi_unsigned_int    vr,
+                               omsi_int             end) {
+
+    if ((omsi_int)vr >= end) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+            "%s: Illegal value reference %u.", function_name, vr);
+
+         return omsi_true;
+    }
+    return omsi_false;
+}
+
 
 /*
  * ============================================================================
@@ -271,6 +312,19 @@ void omsu_free_omsi_function(omsi_function_t* omsi_function) {
 
 
 /*
+ * Deallocates memory of omsi_algebraic_system_t struct.
+ */
+void omsu_free_alg_system (omsi_algebraic_system_t* algebraic_system) {
+
+    global_callback->freeMemory(algebraic_system->zerocrossing_indices);
+    omsu_free_omsi_function(algebraic_system->jacobian);
+    omsu_free_omsi_function(algebraic_system->functions);
+
+    global_callback->freeMemory(algebraic_system);
+}
+
+
+/*
  * frees memory for omsi_values struct and all its components
 */
 void omsu_free_omsi_values(omsi_values* values) {
@@ -297,24 +351,6 @@ void omsu_free_omsi_values(omsi_values* values) {
     }
 
     global_callback->freeMemory(values);
-}
-
-/*
- * Returns true if vr is out of range of end and emits error message.
- * Otherwise it returns false.
- */
-omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
-                               omsi_string          function_name,
-                               omsi_unsigned_int    vr,
-                               omsi_int             end) {
-
-    if ((omsi_int)vr >= end) {
-        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-            "%s: Illegal value reference %u.", function_name, vr);
-
-         return omsi_true;
-    }
-    return omsi_false;
 }
 
 
@@ -860,3 +896,5 @@ omsi_status omsu_print_externs(void*                externs,
     printf("ERROR: omsu_print_externs not implemented yet\n");
     return omsi_error;
 }
+
+/** @} */
