@@ -51,7 +51,7 @@
 
 #include <limits.h>
 #include <float.h>
-/*#include <omsi_solver.h>*/
+#include <omsi_solver.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,6 +90,8 @@ typedef int                 omsi_bool;
 typedef char                omsi_char;
 typedef const omsi_char*    omsi_string;
 #endif
+
+#define OMSI_TYPES_DEFINED
 
 /* macros */
 #define OMSI_DBL_MAX DBL_MAX

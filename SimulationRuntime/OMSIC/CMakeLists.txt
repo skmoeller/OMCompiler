@@ -39,6 +39,7 @@ SET(OMSI_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../OMSI)
 include_directories ("${OMSI_SOURCE_DIR}/include")
 include_directories ("${OMSI_SOURCE_DIR}/include/fmi2")
 include_directories ("${OMSI_SOURCE_DIR}/base/include")
+include_directories ("${OMSI_SOURCE_DIR}/solver/include")
 
 # omsic simulation runtime
 ADD_SUBDIRECTORY(src/omsu)

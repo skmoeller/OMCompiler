@@ -74,7 +74,7 @@ extern "C" {
 /*
  * Type definitions of variables
  */
-#ifdef _OMSI_H
+#ifdef OMSI_TYPES_DEFINED
 
 typedef omsi_unsigned_int   solver_unsigned_int;
 typedef omsi_real           solver_real;

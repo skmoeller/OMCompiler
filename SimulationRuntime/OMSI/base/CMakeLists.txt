@@ -23,6 +23,8 @@ add_library(${OSUBaseName}
   src/omsi_input_model_variables.c
   src/omsi_utils.c)
 
+include_directories ("${OMSI_SOURCE_DIR}/solver/include")
+
 IF(WIN32)
     target_link_libraries(${OSUBaseName}  ${CMAKE_DL_LIBS} wsock32 ws2_32 ${expat_lib})
 ELSE(WIN32)
