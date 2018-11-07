@@ -108,7 +108,10 @@ void solver_lapack_set_b_element(void*                  solver_specififc_data,
 
 solver_state solver_lapack_solve(void* specific_data);
 
-void solver_print_lapack_data(solver_data* general_solver_data);
+void solver_print_lapack_data(solver_char*          buffer,
+                              solver_unsigned_int   buffer_size,
+                              solver_unsigned_int*  length,
+                              solver_data*          general_solver_data);
 
 
 #ifdef __cplusplus

@@ -117,8 +117,6 @@ solver_data* solver_allocate(solver_name            name,
 }
 
 
-/* Free function */
-
 /** Frees memory of struct solver_data.
  *
  * @param solver    Pointer to solver instance.
@@ -232,8 +230,6 @@ void set_matrix_A(const solver_data*            solver,
             }
         }
     }
-
-
 }
 
 
@@ -315,23 +311,81 @@ void get_matrix_A(solver_data*          solver,
  * Print and debug functions
  * ============================================================================
  */
+
+/**
+ * Print all data in solver_instance.
+ *
+ * \param [in] solver       Solver instance.
+ */
 void print_solver_data (solver_data* solver) {
 
+    /* Variables */
+    solver_char buffer[MAX_BUFFER_SIZE];
+    solver_unsigned_int length;
+    solver_linear_callbacks* lin_callbacks;
 
+    length = 0;
+    length = snprintf(buffer, MAX_BUFFER_SIZE-length,
+            "Solver data print:\n");
+    length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+            "name: \t %s\n", solver_name2string(solver->name));
+    length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+            "linear: \t %s\n", solver->linear ? solver_true:solver_false);
+    length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+            "info: \t %d\n", solver->info);
+    length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+            "dim_n: \t %u\n", solver->dim_n);
 
     switch (solver->name) {
         case solver_lapack:
-            solver_print_lapack_data(solver);
-        break;
+            solver_print_lapack_data(buffer, MAX_BUFFER_SIZE, &length, solver);
+            break;
         default:
-            ;
+            length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+                    "No solver specific data.\n");
+            break;
     }
+
+    length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+            "solver_callbacks: \t %p\n", solver->solver_callbacks);
+    switch (solver->linear) {
+        case solver_true:
+            lin_callbacks = solver->solver_callbacks;
+            length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+                    "get_A_element: \t %p\n", lin_callbacks->get_A_element);
+            length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+                    "set_A_element: \t %p\n", lin_callbacks->set_A_element);
+            length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+                    "get_b_element: \t %p\n", lin_callbacks->get_b_element);
+            length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+                    "set_b_element: \t %p\n", lin_callbacks->set_b_element);
+            length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
+                    "solve_eq_system: \t %p\n", lin_callbacks->solve_eq_system);
+            break;
+        default:
+
+            break;
+    }
+
+    /* print buffer */
+    solver_logger(buffer);
 }
 
 /*
  * ============================================================================
  * Solve call
  * ============================================================================
+ */
+
+/**
+ * \brief Calls solve function for registered solver.
+ *
+ * Checks if all necessary data is already set.
+ *
+ * \param solver    Solver instance.
+ *
+ * \return          Returns `solver_status` `solver_okay` if solved successful,
+ *                  otherwise `solver_error`.
  */
 solver_status solver_linear_solve(solver_data* solver) {
 

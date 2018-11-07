@@ -40,7 +40,9 @@
 /** \defgroup SOLVER OMSI Solver Library
  *  \ingroup OMSI
  *
- * Solver library for OpenSimultionInterface containing linear and non-linear
+ * \brief Solver library for OpenSimultionInterface.
+ *
+ *  ... containing linear and non-linear
  * solver to compute algebraic loops within OMSI.
  *
  * Can also be used as stand-alone solver library.
@@ -49,12 +51,16 @@
 /** \defgroup LIN_SOLVER Linear OMSI Solver
  *  \ingroup SOLVER
  *
+ * \brief Linear solver collection.
+ *
  * Linear solver to compute algebraic equation systems of form A*x=b.
  * A is an `n` x `n` square matrix, b is vector of dimension `n`.
  */
 
 /** \defgroup NONLIN_SOLVER Non-Linear OMSI Solver
  *  \ingroup SOLVER
+ *
+ * \brief Non-linear solver collection.
  *
  * Non-linear solver to compute algebraic equation systems of form f(x)=0.
  */
@@ -157,7 +163,7 @@ typedef enum {
     /* non-linear informations */
     solver_max_iteration_reached = 1<<2,    /**< Solver reached maximum number of iterations (only for non-linear solvers). */
     solver_min_step_size_reached = 1<<3,    /**< Solver step size has fallen below minimum step size (only for non-linear solvers). */
-    solver_got_assert            = 1<<4,    /**< Got an assert, e.g. while evaluating function f. */
+    solver_got_assert            = 1<<4     /**< Got an assert, e.g. while evaluating function f. */
 }solver_info;
 
 
