@@ -113,7 +113,8 @@ typedef enum {
     log_fmi2_call
 } log_categories;
 
-static omsi_string log_categories_names[NUMBER_OF_CATEGORIES] = {
+
+static const omsi_string log_categories_names[NUMBER_OF_CATEGORIES] = {
     "logEvents",
     "logSingularLinearSystems",
     "logNonlinearSystems",
@@ -151,9 +152,8 @@ typedef struct {
 
 
 /* forward some structs */
-typedef struct omsi_function_t omsi_function_t;
-typedef struct omsi_template_callback_functions_t omsi_template_callback_functions_t;
-/*typedef struct omsi_callback_functions omsi_callback_functions;*/
+struct omsi_function_t;
+
 
 /*
  * variable basic data type
@@ -166,7 +166,7 @@ typedef enum {
     OMSI_TYPE_STRING
 }omsi_data_type;
 
-static omsi_string omsiDataTypesNames[] = {
+static const omsi_string omsiDataTypesNames[] = {
     "Unknown",
     "Real",
     "Integer",
