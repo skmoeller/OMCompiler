@@ -28,11 +28,12 @@
  *
  */
 
-
+/** \file omsi.h
+ */
 
 /** \defgroup OMSI OpenModelica Simulation Interface
  *
- * Long description of group.
+ * Long description of OMSI group.
  */
 
 
@@ -236,22 +237,30 @@ typedef struct omsi_values {
 } omsi_values;
 
 
-/**
- * General algebraic system
+/** \brief General algebraic system.
+ *
+ *  Struct containing information for one linear or non-linear algebraic system
+ *  and solver_data to solve the described equation system.
+ *
+ *  Linear case: A*x=b
+ *
+ *  Non-linear case: f(x)=0
  */
 typedef struct omsi_algebraic_system_t {
-    omsi_unsigned_int n_iteration_vars; /* number of iteration variables */
+    omsi_unsigned_int n_iteration_vars; /**< Number of iteration variables. */
 
-    omsi_unsigned_int n_conditions;     /* number of zerocrossing conditions */
-    omsi_int* zerocrossing_indices;     /* array of zerocrossing indices */
+    omsi_unsigned_int n_conditions;     /**< Number of zerocrossing conditions. */
+    omsi_int* zerocrossing_indices;     /**< Array of zerocrossing indices of size `n_conditions`. */
 
-    omsi_bool isLinear;         /* linear system=true and non-linear system=false */
-    omsi_function_t* jacobian;  /* pointer to omsi_function for jacobian matrix
-                                 * linear case: A
-                                 * non-linear case: f' */
+    omsi_bool isLinear;                 /**< Describes if algebraic system is linear.
+                                          *    * `isLinear=true`: algebraic system is linear
+                                          *    * `isLinear=false`: algebraic system is linear. */
+    struct omsi_function_t* jacobian;          /**< Pointer to `omsi_function_t` to describe
+                                          *    * linear case: jacobian describes matrix A
+                                          *    * non-linear case: jacobian describes f' */
 
-    omsi_function_t* functions; /* pointer to omsi_function for residual function */
-    void* solver_data;          /* pointer to solver specific local data */
+    struct omsi_function_t* functions;  /**< Pointer to omsi_function for residual function. */
+    solver_data* solver_data;           /**< Pointer to solver instance. */
 }omsi_algebraic_system_t;
 
 
@@ -269,9 +278,18 @@ typedef struct omsi_function_t {
     omsi_values* function_vars;                     /**< Pointer to variables and parameters.
                                                      *   Either local copy of needed variables for evaluation or
                                                      *   pointer to next higher struct with `omsi_values` array. */
-    omsi_status (*evaluate) (omsi_function_t*   this_function,              /* read/write local vars */
-                             const omsi_values* read_only_vars_and_params,  /* read only global params and vars */
-                             void*              data);                      /* optional data for e.g residual evaluations*/
+
+    /** evaluate function
+     * \param [in,out] this_function                Pointer to this `omsi_fucntion_t` struct.
+     * \param [in]     read_only_vars_and_params    Pointer to read only struct with variables and parameters.
+     *                                              from next higher struct with `omsi_values` array.
+     * \param [in]     data                         Pointer to optional data for evaluated function. Can be `NULL`.
+     *
+     * Points to function in generated code.
+     */
+    omsi_status (*evaluate) (struct omsi_function_t*    this_function,
+                             const omsi_values*         read_only_vars_and_params,
+                             void*                      data);
     omsi_index_type* input_vars_indices;    /* index to next higher omsi_values pointer */
     omsi_index_type* output_vars_indices;   /* e.g to sim_data_t->model_vars_and_params */
 
