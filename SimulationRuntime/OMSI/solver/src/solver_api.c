@@ -38,6 +38,8 @@
 
 #include <solver_api.h>
 
+#include <solver_lapack.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
