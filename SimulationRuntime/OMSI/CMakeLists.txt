@@ -4,6 +4,12 @@ MESSAGE(STATUS "CMake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CM
 
 PROJECT(OMSIBaseSimulationRuntime)
 
+# enable warnings and use ANSI C compatible compiler
+if(CMAKE_COMPILER_IS_GNUCXX)
+    message(STATUS "GCC detected, adding compile flags")
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -Wall -Wextra -pedantic -g")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
 if(NOT PLATFORM OR PLATFORM STREQUAL "dynamic")
   set(BUILD_SHARED_LIBS ON)
 elseif(PLATFORM STREQUAL "static")
@@ -30,13 +36,6 @@ ENDIF(MSVC)
 message(STATUS "Libs will be installed in ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}")
 
 SET(OSUBaseName ${LIBPREFIX}OMSIBase${LIBSUFFIX})
-
-
-# enable warnings and use ANSI C compatible compiler
-if(CMAKE_COMPILER_IS_GNUCXX)
-    message(STATUS "GCC detected, adding compile flags")
-    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -Wall -Wextra -pedantic -g")
-endif(CMAKE_COMPILER_IS_GNUCXX)
 
 
 include_directories ("${CMAKE_SOURCE_DIR}/include")

@@ -28,32 +28,55 @@
  *
  */
 
-#ifndef _SOLVERHELPER_H_
-#define _SOLVERHELPER_H_
+/** \file solver_api.h
+ *
+ * Application interface for OMSI solver.
+ */
+
+/** @addtogroup SOLVER OMSI Solver Library
+  *  @{ */
+
+#ifndef _SOLVER_API_H
+#define _SOLVER_API_H
 
 #include <omsi_solver.h>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <solver_lapack.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* function prototypes */
-solver_bool solver_instance_correct(solver_data*    general_solver_data,
-                                    solver_name     given_name,
-                                    solver_string   function_name);
+/* Function prototypes */
+void solver_init_callbacks (solver_callback_allocate_memory allocateMemoryFunction,
+                            solver_callback_free_memory     freeMemoryFunction,
+                            solver_callback_logger          loggerFunction);
 
-solver_string solver_name2string(solver_name name);
+solver_data* solver_allocate(solver_name            name,
+                             solver_unsigned_int    dim_n);
 
-solver_bool solver_func_call_allowed (solver_data*      general_solver_data,
-                                      solver_state      expected_state,
-                                      solver_string     function_name);
+void solver_free(solver_data* solver);
 
-solver_string solver_state2string(solver_state state);
+void set_matrix_A(const solver_data*            solver,
+                  const solver_unsigned_int*    column,
+                  const solver_unsigned_int     n_column,
+                  const solver_unsigned_int*    row,
+                  const solver_unsigned_int     n_row,
+                  solver_real**                 value);
+
+void get_matrix_A(solver_data*          solver,
+                  solver_unsigned_int*  column,
+                  solver_unsigned_int   n_column,
+                  solver_unsigned_int*  row,
+                  solver_unsigned_int   n_row,
+                  solver_real**         value);
+
+void print_solver_data (solver_data* solver);
+
 #ifdef __cplusplus
-}   /* end of extern "C" { */
+}  /* end of extern "C" { */
 #endif
 
 #endif
+
+/** @} */

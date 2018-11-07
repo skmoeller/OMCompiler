@@ -28,14 +28,15 @@
  *
  */
 
-/*! \file */
+/** \file solver_api.c
+ *
+ * Application interface for OMSI solver.
+ */
 
-/** @addtogroup SOLVER  OMSI Solver Library
-  * \ingroup OMSI
+/** @addtogroup SOLVER OMSI Solver Library
   *  @{ */
 
-#include <omsi_solver.h>
-#include <solver_lapack.h>
+#include <solver_api.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,19 +46,22 @@ extern "C" {
 
 /* Set callback functions */
 void solver_init_callbacks (solver_callback_allocate_memory allocateMemoryFunction,
-                           solver_callback_free_memory     freeMemoryFunction) {
+                            solver_callback_free_memory     freeMemoryFunction,
+                            solver_callback_logger          loggerFunction) {
 
     /* set global callback functions */
     solver_allocateMemory = allocateMemoryFunction;
     solver_freeMemory = freeMemoryFunction;
+    solver_logger = loggerFunction;
 }
 
-#if 0
+
 /*
  * ============================================================================
  * Memory management
  * ============================================================================
  */
+
 
 /* Allocate function */
 solver_data* solver_allocate(solver_name            name,
@@ -65,15 +69,22 @@ solver_data* solver_allocate(solver_name            name,
 
     /* Variables */
     solver_data* solver;
+    solver_linear_callbacks* lin_callbacks;
 
     /* allocate memory */
     solver = (solver_data*) solver_allocateMemory(1, sizeof(solver_data));
 
     switch (name) {
         case solver_lapack:
-            solver->specific_data = lapack_allocate(dim_n, 1, dim_n, dim_n);
+            solver->name = solver_lapack;
+            solver->dim_n = dim_n;
+            allocate_lapack_data(solver);
+
         break;
         default:
+            solver_logger("Solver-Error in function solver_allocate: No valid solver_name given.");
+            solver_freeMemory(solver);
+            return NULL;
     }
 
     /* set dimension */
@@ -82,11 +93,24 @@ solver_data* solver_allocate(solver_name            name,
     /* set callback functions */
     switch (name) {
         case solver_lapack:
-            solver->set_A_element = NULL;
-            solver->set_F_func = NULL;
+            lin_callbacks = solver->solver_callbacks;
+
+            lin_callbacks->get_A_element = &solver_lapack_get_A_element;
+            lin_callbacks->set_A_element = &solver_lapack_set_A_element;
+
+            lin_callbacks->get_b_element = &solver_lapack_get_b_element;
+            lin_callbacks->set_b_element = &solver_lapack_set_b_element;
+
+            lin_callbacks->solve_eq_system = &solver_lapack_solve;
         break;
         default:
+            solver_logger("Solver-Error in function solver_allocate: No valid solver_name given.");
+            solver_freeMemory(solver);
+            return NULL;
     }
+
+    /* Set solver state */
+    solver->state = solver_initializated;
 
     return solver;
 
@@ -94,6 +118,11 @@ solver_data* solver_allocate(solver_name            name,
 
 
 /* Free function */
+
+/** Frees memory of struct solver_data.
+ *
+ * @param solver    Pointer to solver instance.
+ */
 void solver_free(solver_data* solver) {
 
     /* free solver specific data */
@@ -102,15 +131,15 @@ void solver_free(solver_data* solver) {
             lapack_free_data(solver->specific_data);
         break;
         default:
+            if (solver->specific_data != NULL) {
+                solver_logger("Solver-Error in function solver_free: No solver"
+                        "specified in solver_name, but solver->specific_data is not NULL");
+            }
     }
 
     solver_freeMemory(solver);
-
-
-
 }
 
-#endif
 
 /*
  * ============================================================================
@@ -119,7 +148,12 @@ void solver_free(solver_data* solver) {
  */
 
 
-/** \fn
+/** \fn void set_matrix_A(const solver_data*            solver,
+ *                const solver_unsigned_int*    column,
+ *                const solver_unsigned_int     n_column,
+ *                const solver_unsigned_int*    row,
+ *                const solver_unsigned_int     n_row,
+ *                solver_real**           value)
  * \brief Sets matrix A with values from array value.
  *
  * Sets specified columns and rows of matrix A in solver specific data to
@@ -134,26 +168,29 @@ void solver_free(solver_data* solver) {
  *     A = | a_41  a_42  a_43      |
  *         | 0.5   0.6   a_53      |
  *         \ ...               ... /
+ *
+ * \param [in,out]  solver      Struct with used solver, containing matrix A in
+ *                              solver specific format. Has to be a linear solver.
+ * \param [in]      column      Array of dimension `n_column` of unsigned integers,
+ *                              specifying which columns of matrix A to get. If
+ *                              column equals `NULL`, get the first `n_column`
+ *                              columns of A.
+ * \param [in]      n_column    Size of array `column`. Must be greater then 0
+ *                              and less or equal to number of columns of matrix A.
+ * \param [in]      row         Array of dimension `n_row` of unsigned integers,
+ *                              specifying which rows of matrix A to get. If rows
+ *                              equals `NULL`, get the first `n_row` rows of A.
+ * \param [in]      n_row       Size of array `row`. Must be greater then 0 and
+ *                              less or equal to number of rows of matrix A.
+ * \param [in]      value       Pointer to matrix with values, stored as array
+ *                              in column-major order of size `n_column*n_row`.
  */
-// Ai[N+1] = {0, 3, 6, ...}
-// Ap[NNZ] = {1, 2, 4, 1, 2, 4, ...}
-// Ax[NNZ] = {0.1, 0.3, 0.5, 0.2, 0.4, 0.6, ...}
-/*
-*         / 0   0.2   0  \
-*    A =  | 0.1  0    0  |
-*         \ 0   0.4  0.6 /
-*         / 0.2   0  \
-*   A~ =  | 0.1   0  |
-*         \ 0.4  0.6 /
-*/
-
-void set_matrix_A(const solver_data*            solver,     /* Detailed description */
+void set_matrix_A(const solver_data*            solver,
                   const solver_unsigned_int*    column,
                   const solver_unsigned_int     n_column,
                   const solver_unsigned_int*    row,
                   const solver_unsigned_int     n_row,
-                  solver_real**           value) {        /* value is array of dimension n_column*n_row
-                                                         * and stores n_column-times-n_row matrix in row-major oder */
+                  solver_real**                 value) {
 
     if (!solver->linear) {
         /* ToDo: log error, no matrix A in non-linear case */
@@ -162,33 +199,36 @@ void set_matrix_A(const solver_data*            solver,     /* Detailed descript
 
     /* Variables */
     solver_unsigned_int i, j;
+    solver_linear_callbacks* lin_callbacks;
+
+    lin_callbacks = solver->solver_callbacks;
 
     if (column==NULL && row==NULL) {
         /* copy values element wise */
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                solver->set_A_element(i, j, value[i*solver->dim_n+j]);
+                lin_callbacks->set_A_element(solver->specific_data, i, j, value[i*solver->dim_n+j]);
             }
         }
     }
     else if (column==NULL && row != NULL) {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                solver->set_A_element(i, row[j], value[i*solver->dim_n+j]);
+                lin_callbacks->set_A_element(solver->specific_data, i, row[j], value[i*solver->dim_n+j]);
             }
         }
     }
     else if (column!=NULL && row == NULL) {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                solver->set_A_element(column[i], j, value[i*solver->dim_n+j]);
+                lin_callbacks->set_A_element(solver->specific_data, column[i], j, value[i*solver->dim_n+j]);
             }
         }
     }
     else {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                solver->set_A_element(column[i], row[j], value[i*solver->dim_n+j]);
+                lin_callbacks->set_A_element(solver->specific_data, column[i], row[j], value[i*solver->dim_n+j]);
             }
         }
     }
@@ -198,59 +238,73 @@ void set_matrix_A(const solver_data*            solver,     /* Detailed descript
 
 
 /** \fn void get_matrix_A(solver_data*          solver,
-                          solver_unsigned_int*  column,
-                          solver_unsigned_int   n_column,
-                          solver_unsigned_int*  row,
-                          solver_unsigned_int   n_row,
-                          solver_real*          value)
- *  \brief Reads matrix A and saves result in array value.
+ *                        solver_unsigned_int*  column,
+ *                        solver_unsigned_int   n_column,
+ *                        solver_unsigned_int*  row,
+ *                        solver_unsigned_int   n_row,
+ *                        solver_real**         value)
  *
- *  Used for linear solvers, to get values of matrix A stored in its solver specific data.
+ *  Reads matrix A and saves result in array value.
+ *  Used for linear solvers, to get values of matrix A stored in its solver
+ *  specific data.
+ *
+ * \param [in]     solver       Struct with used solver, containing matrix A in
+ *                              solver specific format. Has to be a linear solver.
+ * \param [in]     column       Array of dimension `n_column` of unsigned integers,
+ *                              specifying which columns of matrix A to get. If
+ *                              column equals `NULL`, get the first `n_column`
+ *                              columns of A.
+ * \param [in]      n_column    Size of array `column`. Must be greater then 0
+ *                              and less or equal to number of columns of matrix A.
+ * \param [in]      row         Array of dimension `n_row` of unsigned integers,
+ *                              specifying which rows of matrix A to get. If rows
+ *                              equals `NULL`, get the first `n_row` rows of A.
+ * \param [in]      n_row       Size of array `row`. Must be greater then 0 and
+ *                              less or equal to number of rows of matrix A.
+ * \param [in,out]  value       On input: Pointer to allocated memory of size
+ *                              `sizeof(solver_real)*n_column*n_row`. <br>
+ *                              On output: Pointer to array containing specified
+ *                              columns and rows of matrix A in row-major-order.
  */
-void get_matrix_A(solver_data*          solver,     /**< [in] Struct with used solver, containing matrix A in solver specific format.
-                                                      *       Has to be a linear solver. */
-                  solver_unsigned_int*  column,     /**< [in] Array of dimension `n_column` of unsigned integers,
-                                                      *       specifying which columns of matrix A to get.
-                                                      *       If column equals `NULL`, get the first `n_column` columns of A. */
-                  solver_unsigned_int   n_column,   /**< [in] Size of array `column`. Must be greater then 0 and less
-                                                      *       or equal to number of columns of matrix A. */
-                  solver_unsigned_int*  row,        /**< [in] Array of dimension `n_row` of unsigned integers,
-                                                      *       specifying which rows of matrix A to get.
-                                                      *       If rows equals `NULL`, get the first `n_row` rows of A. */
-                  solver_unsigned_int   n_row,      /**< [in] Size of array `row`. Must be greater then 0 and less
-                                                      *       or equal to number of rows of matrix A. */
-                  solver_real**         value)      /**< [in/out] On input: Pointer to allocated memory of size `sizeof(solver_real)*n_column*n_row`.
-                                                      *           On Output: Pointer to array containing specified columns and rows of matrix A in row-major-order. */
-{
+void get_matrix_A(solver_data*          solver,
+                  solver_unsigned_int*  column,
+                  solver_unsigned_int   n_column,
+                  solver_unsigned_int*  row,
+                  solver_unsigned_int   n_row,
+                  solver_real**         value) {
+
     /* Variables */
     solver_unsigned_int i, j;
+    solver_linear_callbacks* lin_callbacks;
+
+    lin_callbacks = solver->solver_callbacks;
 
     if (column==NULL && row==NULL) {
         /* copy values element wise */
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                solver->get_A_element(i, j, value[i*solver->dim_n+j]);
+                lin_callbacks->get_A_element(solver->specific_data, i, j, value[i*solver->dim_n+j]);
             }
         }
     }
     else if (column==NULL && row != NULL) {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                solver->get_A_element(i, row[j], value[i*solver->dim_n+j]);
+                lin_callbacks->get_A_element(solver->specific_data, i, row[j], value[i*solver->dim_n+j]);
             }
         }
     }
     else if (column!=NULL && row == NULL) {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                solver->get_A_element(column[i], j, value[i*solver->dim_n+j]);
+                lin_callbacks->get_A_element(solver->specific_data, column[i], j, value[i*solver->dim_n+j]);
             }
         }
     }
     else {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                solver->get_A_element(column[i], row[j], value[i*solver->dim_n+j]);
+                lin_callbacks->get_A_element(solver->specific_data, column[i], row[j], value[i*solver->dim_n+j]);
             }
         }
     }
@@ -261,7 +315,40 @@ void get_matrix_A(solver_data*          solver,     /**< [in] Struct with used s
  * Print and debug functions
  * ============================================================================
  */
+void print_solver_data (solver_data* solver) {
 
+
+
+    switch (solver->name) {
+        case solver_lapack:
+            solver_print_lapack_data(solver);
+        break;
+        default:
+            ;
+    }
+}
+
+/*
+ * ============================================================================
+ * Solve call
+ * ============================================================================
+ */
+solver_status solver_linear_solve(solver_data* solver) {
+
+    /* Variables */
+    solver_linear_callbacks* lin_callbacks;
+
+
+    /* Check if solver is ready */
+    if (!solver_func_call_allowed (solver, solver_ready, "solver_linear_solver")) {
+        return solver_error;
+    }
+
+    lin_callbacks = solver->solver_callbacks;
+
+    /* Call solve function */
+    return lin_callbacks->solve_eq_system(solver->specific_data);
+}
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

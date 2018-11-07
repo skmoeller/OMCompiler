@@ -38,13 +38,29 @@
 
 
 /** \defgroup SOLVER OMSI Solver Library
+ *  \ingroup OMSI
  *
- * Long description of group.
+ * Solver library for OpenSimultionInterface containing linear and non-linear
+ * solver to compute algebraic loops within OMSI.
+ *
+ * Can also be used as stand-alone solver library.
+ */
+
+/** \defgroup LIN_SOLVER Linear OMSI Solver
+ *  \ingroup SOLVER
+ *
+ * Linear solver to compute algebraic equation systems of form A*x=b.
+ * A is an `n` x `n` square matrix, b is vector of dimension `n`.
+ */
+
+/** \defgroup NONLIN_SOLVER Non-Linear OMSI Solver
+ *  \ingroup SOLVER
+ *
+ * Non-linear solver to compute algebraic equation systems of form f(x)=0.
  */
 
 
-/** @addtogroup SOLVER  OMSI Solver Library
-  * \ingroup OMSI
+/** @addtogroup SOLVER OMSI Solver Library
   *  @{ */
 
 #ifndef SOLVER_API_H
@@ -87,60 +103,163 @@ typedef char                solver_char;
 typedef const solver_char*  solver_string;
 #endif
 
+/* Maximum buffer size for print functions. */
+#define MAX_BUFFER_SIZE 300
 
-/** \file solver_api.h
+
+/**
+ * Solver name to specify used solver in solver_data
  */
-
-
-/* callback functions */
-typedef void*   (*solver_callback_allocate_memory)  (solver_unsigned_int, solver_unsigned_int);
-typedef void    (*solver_callback_free_memory)      (void*);
-
-typedef void    (*solver_set_matrix_A)              (solver_unsigned_int, solver_unsigned_int, solver_real*);
-typedef void    (*solver_set_F_func)                (void);
-
-
-/* global functions */
-solver_callback_allocate_memory solver_allocateMemory;
-solver_callback_free_memory solver_freeMemory;
-
 typedef enum {
-    solver_lapack,
-    solver_newton,
-    solver_extern,
-    solver_unregistered
+    solver_unregistered, /**< No solver selected. */
+    solver_lapack,       /**< LAPACK solver using DGESV routine for generale matrices. <br>
+                              [DGESV Documentation](http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga5ee879032a8365897c3ba91e3dc8d512.html#ga5ee879032a8365897c3ba91e3dc8d512) */
+    solver_newton,       /**< solver_newton */
+    solver_extern        /**< solver_extern */
 }solver_name;
 
 
+/**
+ * Current state of solver instance.
+ */
 typedef enum {
-    solver_uninitialized,
-    solver_initialized,
-    solver_ready,
-    solver_error
+    solver_uninitialized = 0,   /**< Solver is not initialized yet. */
+    solver_instantiated,        /**< Memory for `solver_data` is allocated. */
+    solver_initializated,       /**< Solver is initialized for selected `solver_name`
+                                     and memory was allocated. */
+    solver_ready,               /**< Solver is ready to compute solution of algebraic system. */
+    solver_finished_ok,         /**< Solver computed solution successfully. */
+    solver_finished_error,      /**< Solver could not solve algebraic system successfully. */
+    solver_error_state          /**< Solver is in critical error state. */
 }solver_state;
 
+
+/**
+ * Status for error handling.
+ */
+typedef enum {
+    solver_ok,      /**< Everything is just fine. */
+    solver_warning, /**< Something is not totally correct, but carrying on. */
+    solver_error    /**< Encountered a serious problem, need to abort. */
+}solver_status;
+
+
+/** Information about solution and its quality.
+ *
+ * Multiple values are possible.
+ */
+typedef enum {
+    solver_successful_exit       = 1<<0,    /**< Solver solved algebraic system successful. */
+
+    /* linear informations */
+    solver_singular              = 1<<1,    /**< Solver encountered singularity, e.g. in LU decomposition. */
+
+    /* non-linear informations */
+    solver_max_iteration_reached = 1<<2,    /**< Solver reached maximum number of iterations (only for non-linear solvers). */
+    solver_min_step_size_reached = 1<<3,    /**< Solver step size has fallen below minimum step size (only for non-linear solvers). */
+    solver_got_assert            = 1<<4,    /**< Got an assert, e.g. while evaluating function f. */
+}solver_info;
+
+
+/* callback functions */
+/** \fn void (*solver_callback_logger) (solver_string format, ...)
+ * \brief Logger function.
+ *
+ * Used to report messages and prints.
+ * Must accept format tags in `format` in form of
+ * `%[flags][width][.precision][length]specifier` as specified for `printf` of
+ * the C standard library..
+ * E.g. use `printf` from the C standard library.
+ *
+ * \param [in] format   Text to be written. Can optionally contain embedded
+ *                      format tags similar to `printf`.
+ */
+typedef void    (*solver_callback_logger)           (solver_string, ...);
+
+
+/** \fn void* (*solver_callback_allocate_memory) (solver_unsigned_int n_objects, solver_unsigned_int size)
+ * \brief Callback function to allocate memory.
+ *
+ * The space is initialized to zero bytes. E.g. use `calloc` from the C standard
+ * library.
+ *
+ * \param   [in]    n_objects   Number of objects to allocate memory for.
+ * \param   [in]    size        Size of each object.
+ *
+ * \return          Returns pointer to allocated memory for a vector of
+ *                  `n_objects` objects, each of size `size`, or `NULL` on failure.
+ */
+typedef void*   (*solver_callback_allocate_memory)  (solver_unsigned_int, solver_unsigned_int);
+
+
+/** \fn void (*solver_callback_free_memory) (void* pointer)
+ * \brief Callback function to free memory allocated with `solver_allocate_memory`
+ * function.
+ *
+ * If a null pointer is provided as input no action is performed.
+ *
+ * \param [in] pointer  Pointer to memory allocated previously with
+ *                      `solver_allocate_memory` function or `NULL`.
+ */
+typedef void    (*solver_callback_free_memory)  (void*);
+
+typedef void    (*solver_interact_A_element)    (void*,
+                                                 solver_unsigned_int,
+                                                 solver_unsigned_int,
+                                                 solver_real*);
+
+typedef void    (*solver_interact_vector_b)     (void*,
+                                                 solver_unsigned_int,
+                                                 solver_real*);
+
+typedef void    (*solver_get_set_F_func)       (void);
+
+
+typedef solver_state (*solver_solve_func)      (void*);
+
+
+/* global functions */
+solver_callback_logger          solver_logger;
+solver_callback_allocate_memory solver_allocateMemory;
+solver_callback_free_memory     solver_freeMemory;
+
+
+/**
+ * Struct for callback functions for linear solvers.
+ */
+typedef struct solver_linear_callbacks {
+    solver_interact_A_element get_A_element;    /**< Callback function to get element `A(i,j)`. */
+    solver_interact_A_element set_A_element;    /**< Callback function to set element `À(i,j)`. */
+
+    solver_interact_vector_b get_b_element;     /**< Callback function to get element `b(i)`. */
+    solver_interact_vector_b set_b_element;     /**< Callback function to set element `b(i)`. */
+
+    solver_solve_func solve_eq_system;          /**< Callback function to solve equation system `A*x=b`. */
+}solver_linear_callbacks;
 
 
 /** \brief General solver structure.
  *
- *  Containing informations and function callbacks for a solver instance.
- *  Solver specific data is stored in `specific_data` in it's own data formats.
+ * Containing informations and function callbacks for a general solver instance.
+ * Solver specific data is stored in `specific_data` in it's own data formats.
+ *
+ *
  */
 typedef struct solver_data {
-    solver_name         name;
-    int                 linear;     /* 1 if linear, 0 if non-linear */
+    solver_name         name;           /**< Name of solver instance. */
+    solver_bool         linear;         /**< `solver_true` if linear, `solver_false` if non-linear. */
 
-    solver_state        state;
+    solver_state        state;          /**< Current state of solver instance, e.g if already initialized or finished. */
+    solver_info         info;           /**< Informations about solution quality. */
 
-    solver_unsigned_int dim_n;
-    void*               specific_data;
+    solver_unsigned_int dim_n;          /**< Dimension of algebraic loop. In linear
+                                             case dimension `n` of square matrix `A`.
+                                             For non-linear loops dimension `n` of function `f`. */
+    void*               specific_data;  /**< Solver specific data, depending on named solver.
+                                             Contains it's own data formats to save variables, settings and so on. */
 
-    solver_set_matrix_A set_A_element;
-    solver_set_matrix_A get_A_element;
-    /*solver_set_vector_b set_b_element;
-    solver_get_vector_b get_b_element;*/
-
-    solver_set_F_func   set_F_func;
+    void*               solver_callbacks;   /**< Linear case: Pointer to `solver_linear_callbacks`<br>
+                                             *   Non-linear case: Pointer to `solver_non_linear_callbacks`. */
 } solver_data;
 
 

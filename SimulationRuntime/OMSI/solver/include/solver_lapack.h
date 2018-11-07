@@ -28,13 +28,25 @@
  *
  */
 
-/*! \file linearSolverLapack.h
+/** \file linearSolverLapack.h
  */
+
+/** @addtogroup LAPACK_SOLVER LAPACK solver
+ *  \ingroup LIN_SOLVER
+ *
+ *  \brief Linear solver using LAPACK routines.
+ *
+ *  Using DGESV() function from LAPACK to solve `A*x=b` with square matrix `A`.
+ *  [DGESV Documentation](http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga5ee879032a8365897c3ba91e3dc8d512.html#ga5ee879032a8365897c3ba91e3dc8d512)
+ *
+ *  @{ */
+
 
 #ifndef _LINEARSOLVERLAPACK_H_
 #define _LINEARSOLVERLAPACK_H_
 
 #include <omsi_solver.h>
+#include <solver_api.h>
 #include <solver_helper.h>
 
 #include <stdio.h>
@@ -44,22 +56,23 @@
 extern "C" {
 #endif
 
-/*
- * Struct to store all informations for LAPACK calls
+/**
+ * Struct for LAPACK solver specific data.
  */
 typedef struct solver_data_lapack {
-    solver_int      n;      /* number of linear equations*/
-    solver_int      nrhs;   /* number of right hand sides, default =1 */
-    solver_real*    A;      /* array of dimension (lda,n) containing matrix in
-                             * row major order */
-    solver_int      lda;    /* leading dimension of array A */
-    solver_int*     ipiv;   /* array of dimension n, stores pivot indices for
-                             * permutation matrix P */
-    solver_real*    b;      /* array of dimension (ldb, nrhs), containing right
-                             * hand side of equation system in row major order on entry.
-                             * On exit if info=0 solution (n x nrhs) Matrix X */
-    solver_int      ldb;    /* leading dimension of array B */
-    solver_int      info;   /* =0 if succesfull, <0 if Info=-i the i-th */
+    solver_int      n;      /**< Number of linear equations. */
+    solver_int      nrhs;   /**< Number of right hand sides, always `1`. */
+    solver_real*    A;      /**< Array of dimension (`lda`,`n`) containing matrix in
+                             *   row major order. */
+    solver_int      lda;    /**< Leading dimension of array `A`. */
+    solver_int*     ipiv;   /**< Array of dimension `n`, stores pivot indices for
+                             *   permutation matrix `P`. */
+    solver_real*    b;      /**< Array of dimension (`ldb`, `nrhs`), containing right
+                             *   hand side of equation system in row major order on entry.
+                             *   On exit if `info=0` solution (`n` x `nrhs`) Matrix `X` */
+    solver_int      ldb;    /**< Leading dimension of array `B`. */
+    solver_int      info;   /**< `=0` if successful, `<0` if for `info=-i` the
+                             *   `i`-th diagonal element is singular. */
 } solver_data_lapack;
 
 
@@ -69,35 +82,38 @@ extern solver_int dgesv_(solver_int *n, solver_int *nrhs, solver_real *a, solver
 extern solver_real ddot_(solver_int* n, solver_real* dx, solver_int* incx, solver_real* dy, solver_int* incy);
 
 /* function prototypes */
-/*
-omsi_status solveLapack(omsi_algebraic_system_t*            linearSystem,
-                        const omsi_values*                  read_only_vars_and_params,
-                        omsi_callback_functions*            callback_functions);
+solver_status allocate_lapack_data(solver_data* general_solver_data);
 
-solver_data_lapack* set_lapack_data(const omsi_algebraic_system_t* linear_system,
-                             const omsi_values*             read_only_vars_and_params);
+solver_status lapack_free_data(solver_data* general_solver_data);
 
-omsi_status set_lapack_a (solver_data_lapack*                      lapack_data,
-                          const omsi_algebraic_system_t*    linear_system);
+solver_status set_dim_lapack_data(solver_data* general_solver_data);
 
-omsi_status set_lapack_b (solver_data_lapack*                      lapack_data,
-                          const omsi_algebraic_system_t*    linearSystem,
-                          const omsi_values*                read_only_vars_and_params);
+void solver_lapack_get_A_element(void*                  solver_specififc_data,
+                                 solver_unsigned_int    row,
+                                 solver_unsigned_int    column,
+                                 solver_real*           value);
 
-omsi_status eval_residual(solver_data_lapack*              lapack_data,
-                          omsi_algebraic_system_t*  linearSystem,
-                          const omsi_values*        read_only_vars_and_params);
+void solver_lapack_set_A_element(void*                  solver_specififc_data,
+                                 solver_unsigned_int    row,
+                                 solver_unsigned_int    column,
+                                 solver_real*           value);
 
-void get_result(omsi_function_t*                            equationSystemFunc,
-                solver_data_lapack*                                lapack_data);
+void solver_lapack_get_b_element(void*                  solver_specififc_data,
+                                 solver_unsigned_int    index,
+                                 solver_real*           value);
 
-void lapack_free_data(solver_data_lapack* lapack_data);
+void solver_lapack_set_b_element(void*                  solver_specififc_data,
+                                 solver_unsigned_int    index,
+                                 solver_real*           value);
 
-void printLapackData(solver_data_lapack*   lapack_data,
-                     omsi_string    indent);
-*/
+solver_state solver_lapack_solve(void* specific_data);
+
+void solver_print_lapack_data(solver_data* general_solver_data);
+
 
 #ifdef __cplusplus
 }   /* end of extern "C" { */
 #endif
 #endif
+
+/** @} */

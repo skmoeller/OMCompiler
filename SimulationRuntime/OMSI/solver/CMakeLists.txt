@@ -27,29 +27,25 @@ ENDIF()
 
 MESSAGE(STATUS "Lapack Libraries: ${LAPACK_LIBRARIES}")
 
-#set OMSIBase lib
-if(NOT PLATFORM OR PLATFORM STREQUAL "dynamic")
-  #set (libOMSIBase ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}/libOMSIBase${SHREXT})
-  set (libOMSIBase ${CMAKE_SOURCE_DIR}/Build_dynamic/base/libOMSIBase${SHREXT})
-elseif(PLATFORM STREQUAL "static")
-  #set (libOMSIBase ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}/libOMSIBase${LIBSUFFIX}.a)
-  set (libOMSIBase ${CMAKE_SOURCE_DIR}/Build_dynamic/base/libOMSIBase${LIBSUFFIX}.a)
-else()
-endif()
-MESSAGE(STATUS "OMSI Base Library: ${libOMSIBase}")
+
+MESSAGE(STATUS "OMSI Base Library: ${OSUBaseName}")
 
 
 include_directories ("${CMAKE_SOURCE_DIR}/solver/include")
 
 add_library(${OMSISolverName}
   src/solver_api.c
+  src/solver_lapack.c
+  src/solver_helper.c
 )
 
 
-target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} ${libOMSIBase} ${LAPACK_LIBRARIES})
+target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} ${OSUBaseName} ${LAPACK_LIBRARIES})
 
 install(TARGETS ${OMSISolverName} DESTINATION ${LIBINSTALLEXT})
 
 install(FILES
   ${CMAKE_SOURCE_DIR}/solver/include/omsi_solver.h
+  ${CMAKE_SOURCE_DIR}/solver/include/solver_api.h
+  ${CMAKE_SOURCE_DIR}/solver/include/solver_helper.h
 DESTINATION include/omc/omsi/solver)
