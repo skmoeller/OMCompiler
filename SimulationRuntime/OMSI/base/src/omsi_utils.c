@@ -45,6 +45,12 @@
 
 #define OVERFLOW_PROTECTED omsi_false
 
+
+/*
+ * ============================================================================
+ * Section for logger functions
+ * ============================================================================
+ */
 /** \brief Filter function for logger
  *
  * Logs message for given logging category if `logCategories[category]` is set to `true` for
@@ -97,6 +103,82 @@ void filtered_base_logger(omsi_bool*            logCategories,
 #endif
     va_end(args);
 
+}
+
+
+/**
+ *  \brief Wrapper for filtered_base_logger
+ *
+ *  ... to give OMSISolver Library as logger function for linear algebraic systems.
+ *
+ * \param [in] message  Message for logger.
+ * \param [in]  ...     Optional arguments in message.
+ */
+void wrapper_lin_system_logger (omsi_string message, ...) {
+
+    /* Variables */
+    va_list args;
+    va_start(args, message);
+
+#if OVERFLOW_PROTECTED
+    omsi_int size;
+    omsi_char* buffer;
+#else
+    omsi_char buffer[BUFSIZ];
+#endif
+
+#if OVERFLOW_PROTECTED
+    size = vsnprintf(NULL, 0, message, args);
+    buffer = (omsi_char*) global_callback->allocateMemory(size+1, sizeof(omsi_char));
+#endif
+
+    vsprintf(buffer, message, args);
+
+    filtered_base_logger(global_logCategories, log_linearsystems, omsi_ok, buffer);
+
+    /* free stuff */
+#if OVERFLOW_PROTECTED
+    global_callback->freeMemory(buffer);
+#endif
+    va_end(args);
+}
+
+
+/**
+ *  \brief Wrapper for filtered_base_logger
+ *
+ *  ... to give OMSISolver Library as logger function for linear algebraic systems.
+ *
+ * \param [in] message  Message for logger.
+ * \param [in]  ...     Optional arguments in message.
+ */
+void wrapper_non_lin_system_logger (omsi_string message, ...) {
+
+    /* Variables */
+    va_list args;
+    va_start(args, message);
+
+#if OVERFLOW_PROTECTED
+    omsi_int size;
+    omsi_char* buffer;
+#else
+    omsi_char buffer[BUFSIZ];
+#endif
+
+#if OVERFLOW_PROTECTED
+    size = vsnprintf(NULL, 0, message, args);
+    buffer = (omsi_char*) global_callback->allocateMemory(size+1, sizeof(omsi_char));
+#endif
+
+    vsprintf(buffer, message, args);
+
+    filtered_base_logger(global_logCategories, log_nonlinearsystems, omsi_ok, buffer);
+
+    /* free stuff */
+#if OVERFLOW_PROTECTED
+    global_callback->freeMemory(buffer);
+#endif
+    va_end(args);
 }
 
 

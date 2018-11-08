@@ -36,7 +36,7 @@ ENDIF(MSVC)
 message(STATUS "Libs will be installed in ${CMAKE_INSTALL_PREFIX}/${LIBINSTALLEXT}")
 
 SET(OSUBaseName ${LIBPREFIX}OMSIBase${LIBSUFFIX})
-
+SET(OMSISolverName ${LIBPREFIX}OMSISolver${LIBSUFFIX})
 
 include_directories ("${CMAKE_SOURCE_DIR}/include")
 # omsi base simulation runtime

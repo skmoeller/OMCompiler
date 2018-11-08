@@ -159,7 +159,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
 
   match equationSystem
   case algSystem as SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
-    let &includes += <<#include <solver_lapack.h><%\n%>>>
+    let &includes += <<#include <solver_api.h><%\n%>>>
 
     let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix, &functionPrototypes, &includes)
     let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix, "this_function", &includes, &evaluationCode, &functionCall, &residualCall, &functionPrototypes)

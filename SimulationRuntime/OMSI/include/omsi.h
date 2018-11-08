@@ -251,6 +251,8 @@ typedef struct omsi_values {
  *  Non-linear case: f(x)=0
  */
 typedef struct omsi_algebraic_system_t {
+    omsi_unsigned_int id;               /**< Unique identification for algebraic system. */
+
     omsi_unsigned_int n_iteration_vars; /**< Number of iteration variables. */
 
     omsi_unsigned_int n_conditions;     /**< Number of zerocrossing conditions. */
@@ -259,7 +261,7 @@ typedef struct omsi_algebraic_system_t {
     omsi_bool isLinear;                 /**< Describes if algebraic system is linear.
                                           *    * `isLinear=true`: algebraic system is linear
                                           *    * `isLinear=false`: algebraic system is linear. */
-    struct omsi_function_t* jacobian;          /**< Pointer to `omsi_function_t` to describe
+    struct omsi_function_t* jacobian;   /**< Pointer to `omsi_function_t` to describe
                                           *    * linear case: jacobian describes matrix A
                                           *    * non-linear case: jacobian describes f' */
 

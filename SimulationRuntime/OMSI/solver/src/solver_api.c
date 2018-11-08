@@ -46,7 +46,13 @@ extern "C" {
 
 
 
-/* Set callback functions */
+/**
+ * \brief Set callback functions for memory management and logging.
+ *
+ * \param allocateMemoryFunction    Pointer to function for memory allocation.
+ * \param freeMemoryFunction        Pointer to function for memory deallocation.
+ * \param loggerFunction            Pointer to function for logging.
+ */
 void solver_init_callbacks (solver_callback_allocate_memory allocateMemoryFunction,
                             solver_callback_free_memory     freeMemoryFunction,
                             solver_callback_logger          loggerFunction) {
@@ -65,7 +71,14 @@ void solver_init_callbacks (solver_callback_allocate_memory allocateMemoryFuncti
  */
 
 
-/* Allocate function */
+
+/**
+ * \brief Allocate memory for solver instance.
+ *
+ * \param [in]  name    Name of solver to use in this solver instance.
+ * \param [in]  dim_n   Dimension `n` of square matrix ´A´.
+ * \return              Returns newly allocated `solver_data* solver` instance.
+ */
 solver_data* solver_allocate(solver_name            name,
                              solver_unsigned_int    dim_n) {
 
@@ -121,7 +134,7 @@ solver_data* solver_allocate(solver_name            name,
 
 /** Frees memory of struct solver_data.
  *
- * @param solver    Pointer to solver instance.
+ * \param [in,out] solver   Pointer to solver instance.
  */
 void solver_free(solver_data* solver) {
 
@@ -141,12 +154,34 @@ void solver_free(solver_data* solver) {
 }
 
 
+/**
+ * \brief Prepare specific solver data.
+ *
+ * E.g. set dimensions for matrices or functions.
+ *
+ * \param [in]  solver  Pointer to solver instance.
+ * \return              Returns `solver_status` `solver_okay` if solved successful,
+ *                      otherwise `solver_error`.
+ */
+solver_status prepare_specific_solver_data (solver_data* solver) {
+
+    switch (solver->name) {
+        case solver_lapack:
+            return set_dim_lapack_data(solver);
+        break;
+        default:
+            solver_logger("Solver-Error in function prepare_specific_solver_data: No solver"
+                    "specified in solver_name.");
+            return solver_error;
+    }
+}
+
+
 /*
  * ============================================================================
  * Getters and setters
  * ============================================================================
  */
-
 
 /** \fn void set_matrix_A(const solver_data*            solver,
  *                const solver_unsigned_int*    column,
@@ -371,6 +406,18 @@ void print_solver_data (solver_data* solver) {
 
     /* print buffer */
     solver_logger(buffer);
+}
+
+
+/**
+ * \brief Returns solver name as string.
+ *
+ * \param [in] solver   Pointer to solver instance.
+ * \return              String with solver name.
+ */
+solver_string solver_get_name (solver_data* solver) {
+
+    return solver_name2string(solver->name);
 }
 
 /*

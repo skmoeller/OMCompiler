@@ -3,9 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 PROJECT(OMSISolver)
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(OMSISolverName ${LIBPREFIX}OMSISolver${LIBSUFFIX})
-
-
 # Find blas and lapack
 IF(IS_MINGW32)
   SET(LAPACK_MINGW  $ENV{OMDEV}/tools/msys/mingw32/bin/libopenblas.dll )
@@ -28,9 +25,6 @@ ENDIF()
 MESSAGE(STATUS "Lapack Libraries: ${LAPACK_LIBRARIES}")
 
 
-MESSAGE(STATUS "OMSI Base Library: ${OSUBaseName}")
-
-
 include_directories ("${CMAKE_SOURCE_DIR}/solver/include")
 
 add_library(${OMSISolverName}
@@ -40,7 +34,7 @@ add_library(${OMSISolverName}
 )
 
 
-target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} ${OSUBaseName} ${LAPACK_LIBRARIES})
+target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} ${LAPACK_LIBRARIES})
 
 install(TARGETS ${OMSISolverName} DESTINATION ${LIBINSTALLEXT})
 

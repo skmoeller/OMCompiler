@@ -110,7 +110,7 @@ typedef const solver_char*  solver_string;
 #endif
 
 /* Maximum buffer size for print functions. */
-#define MAX_BUFFER_SIZE 300
+#define MAX_BUFFER_SIZE BUFSIZ
 
 
 /**

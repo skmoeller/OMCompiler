@@ -50,6 +50,15 @@ extern "C" {
 #include <omsi_solver.h>
 
 
+/* Function prototypes */
+omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t* alg_system);
+
+omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t* alg_system);
+
+omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system);
+
+
+
 #ifdef __cplusplus
 }
 #endif

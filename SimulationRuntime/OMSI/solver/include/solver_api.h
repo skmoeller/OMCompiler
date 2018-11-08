@@ -56,6 +56,8 @@ solver_data* solver_allocate(solver_name            name,
 
 void solver_free(solver_data* solver);
 
+solver_status prepare_specific_solver_data (solver_data* solver);
+
 void set_matrix_A(const solver_data*            solver,
                   const solver_unsigned_int*    column,
                   const solver_unsigned_int     n_column,
@@ -71,6 +73,8 @@ void get_matrix_A(solver_data*          solver,
                   solver_real**         value);
 
 void print_solver_data (solver_data* solver);
+
+solver_string solver_get_name (solver_data* solver);
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

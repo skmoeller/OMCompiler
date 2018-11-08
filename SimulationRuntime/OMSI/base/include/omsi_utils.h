@@ -65,6 +65,10 @@ void filtered_base_logger(omsi_bool*            logCategories,      /* Array of 
                           omsi_string           message,            /* Message for logger */
                           ...);                                      /* Optional arguments in message */
 
+void wrapper_lin_system_logger (omsi_string message, ...);
+
+void wrapper_non_lin_system_logger (omsi_string message, ...);
+
 omsi_bool isCategoryLogged(omsi_bool*       logCategories,
                            log_categories   categoryIndex);
 
@@ -89,7 +93,10 @@ void omsu_free_alg_system (omsi_algebraic_system_t* algebraic_system);
 
 void omsu_free_omsi_values(omsi_values* values);
 
-omsi_bool omsi_vr_out_of_range(omsi_t*  omsu, omsi_string function_name,omsi_unsigned_int    vr,omsi_int             end);
+omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
+                               omsi_string          function_name,
+                               omsi_unsigned_int    vr,
+                               omsi_int             end);
 
 void omsu_print_omsi_t (omsi_t*     omsi,
                         omsi_string indent);
