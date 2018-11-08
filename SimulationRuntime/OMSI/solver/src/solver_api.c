@@ -332,7 +332,7 @@ void print_solver_data (solver_data* solver) {
     length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
             "name: \t %s\n", solver_name2string(solver->name));
     length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
-            "linear: \t %s\n", solver->linear ? solver_true:solver_false);
+            "linear: \t %s\n", solver->linear ? "solver_true":"solver_false");
     length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
             "info: \t %d\n", solver->info);
     length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
@@ -354,15 +354,15 @@ void print_solver_data (solver_data* solver) {
         case solver_true:
             lin_callbacks = solver->solver_callbacks;
             length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
-                    "get_A_element: \t %p\n", lin_callbacks->get_A_element);
+                    "get_A_element set: \t %s\n", lin_callbacks->get_A_element?"yes":"no");
             length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
-                    "set_A_element: \t %p\n", lin_callbacks->set_A_element);
+                    "set_A_element set: \t %s\n", lin_callbacks->set_A_element?"yes":"no");
             length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
-                    "get_b_element: \t %p\n", lin_callbacks->get_b_element);
+                    "get_b_element set: \t %s\n", lin_callbacks->get_b_element?"yes":"no");
             length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
-                    "set_b_element: \t %p\n", lin_callbacks->set_b_element);
+                    "set_b_element set: \t %s\n", lin_callbacks->set_b_element?"yes":"no");
             length = snprintf(buffer+length, MAX_BUFFER_SIZE-length,
-                    "solve_eq_system: \t %p\n", lin_callbacks->solve_eq_system);
+                    "solve_eq_system set: \t %s\n", lin_callbacks->solve_eq_system?"yes":"no");
             break;
         default:
 

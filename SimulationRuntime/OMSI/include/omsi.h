@@ -98,11 +98,12 @@ typedef const omsi_char*    omsi_string;
 #define OMSI_INT_MAX INT_MAX
 
 /* used for filtered_log */
-#define NUMBER_OF_CATEGORIES 11
+#define NUMBER_OF_CATEGORIES 12
 typedef enum {
     log_events,
     log_singulalinearsystems,
     log_nonlinearsystems,
+    log_linearsystems,
     log_dynamicstateselection,
     log_statuswarning,
     log_statusdiscard,
@@ -118,6 +119,7 @@ static const omsi_string log_categories_names[NUMBER_OF_CATEGORIES] = {
     "logEvents",
     "logSingularLinearSystems",
     "logNonlinearSystems",
+    "logLinearSystems",
     "logDynamicStateSelection",
     "logStatusWarning",
     "logStatusDiscard",

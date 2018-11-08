@@ -60,9 +60,8 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     /* set global callback functions */
     global_callback = (omsi_callback_functions*) functions;
     global_instance_name = instanceName;
-    global_callback->componentEnvironment = OSU;
 
-    /* allocate memory for Openmodelica Simulation Unit */
+    /* allocate memory for OpenModelica Simulation Unit */
     OSU = functions->allocateMemory(1, sizeof(osu_t));
     if (!OSU) {
         filtered_base_logger(NULL, log_statuserror, omsi_error,
@@ -71,6 +70,7 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
                 "Could not instantiate OSU component.");
         return NULL;
     }
+    global_callback->componentEnvironment = OSU;
 
     /* set general OSU data */
     OSU->GUID = (omsi_char*) functions->allocateMemory(1, strlen(fmuGUID) + 1);

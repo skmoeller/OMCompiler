@@ -42,11 +42,12 @@ extern "C" {
 /* Public OMSI headers */
 #include <omsi.h>
 #include <omsi_callbacks.h>
+#include <omsi_global.h>
 #include <omsi_utils.h>
 
 /* OMSI Solver header */
 #include <solver_api.h>
-
+#include <omsi_solver.h>
 
 
 #ifdef __cplusplus

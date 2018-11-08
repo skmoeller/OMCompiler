@@ -17,10 +17,11 @@ include_directories ("${CMAKE_SOURCE_DIR}/base/include" "${CMAKE_SOURCE_DIR}/sol
 add_library(${OSUBaseName}
   src/omsi_initialization.c
   src/omsi_input_json.c
+  src/omsi_input_model_variables.c
+  src/omsi_input_sim_data.c
   src/omsi_input_xml.c
   src/omsi_mmap.c
-  src/omsi_input_sim_data.c
-  src/omsi_input_model_variables.c
+  src/omsi_solve_alg_system.c
   src/omsi_utils.c)
 
 include_directories ("${OMSI_SOURCE_DIR}/solver/include")
