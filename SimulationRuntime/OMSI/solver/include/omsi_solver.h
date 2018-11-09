@@ -224,10 +224,7 @@ typedef void    (*solver_get_set_F_func)       (void);
 typedef solver_state (*solver_solve_func)      (void*);
 
 
-/* global functions */
-solver_callback_logger          solver_logger;
-solver_callback_allocate_memory solver_allocateMemory;
-solver_callback_free_memory     solver_freeMemory;
+
 
 
 /**

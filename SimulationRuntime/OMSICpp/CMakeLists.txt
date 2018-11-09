@@ -705,6 +705,7 @@ IF(USE_OMSI)
   MESSAGE(STATUS "${CMAKE_SOURCE_DIR}/../OMSI/base/include")
   #omsi base includes
   include_directories ("${CMAKE_SOURCE_DIR}/../OMSI/base/include")
+  #omsi solver includes
   include_directories ("${CMAKE_SOURCE_DIR}/../OMSI/solver/include")
   ADD_DEFINITIONS(-DENABLE_OMSI)
   MESSAGE(STATUS "OSI linear and nonlinear solver interface enabled")

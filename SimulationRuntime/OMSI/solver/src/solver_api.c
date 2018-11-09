@@ -44,7 +44,10 @@
 extern "C" {
 #endif
 
-
+/* global functions */
+solver_callback_logger          solver_logger;
+solver_callback_allocate_memory solver_allocateMemory;
+solver_callback_free_memory     solver_freeMemory;
 
 /**
  * \brief Set callback functions for memory management and logging.

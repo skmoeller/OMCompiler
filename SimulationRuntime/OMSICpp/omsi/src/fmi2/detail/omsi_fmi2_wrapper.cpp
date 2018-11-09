@@ -163,7 +163,7 @@ OSU::~OSU()
     delete [] _zero_funcs;
  if(_events)
     delete [] _events;
- omsi_free_model_variables(_omsu);
+ omsi_free_model_variables(_omsu->sim_data);
  free(_osu_functions);
 }
 
