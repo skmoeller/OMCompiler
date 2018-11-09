@@ -49,6 +49,10 @@
 #include "omsi_fmi2_settings.h"
  //omsi header
 #include <omsi.h>
+#include <omsi_callbacks.h>
+/* OMSIBase includes */
+#include <omsi_global.h>
+#include <omsi_utils.h>
 
 #include "fmi2Functions.h"
 
