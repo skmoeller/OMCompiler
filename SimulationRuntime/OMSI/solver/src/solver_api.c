@@ -38,16 +38,15 @@
 
 #include <solver_api.h>
 
+#include <solver_global.h>
+
 #include <solver_lapack.h>
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* global functions */
-solver_callback_logger          solver_logger;
-solver_callback_allocate_memory solver_allocateMemory;
-solver_callback_free_memory     solver_freeMemory;
 
 /**
  * \brief Set callback functions for memory management and logging.

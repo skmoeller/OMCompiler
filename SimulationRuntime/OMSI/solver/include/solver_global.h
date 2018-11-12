@@ -28,31 +28,19 @@
  *
  */
 
-#ifndef _SOLVERHELPER_H_
-#define _SOLVERHELPER_H_
-
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef _SOLVER_GLOBAL_H_
+#define _SOLVER_GLOBAL_H_
 
 #include <omsi_solver.h>
-#include <solver_global.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* function prototypes */
-solver_bool solver_instance_correct(solver_data*    general_solver_data,
-                                    solver_name     given_name,
-                                    solver_string   function_name);
-
-solver_string solver_name2string(solver_name name);
-
-solver_bool solver_func_call_allowed (solver_data*      general_solver_data,
-                                      solver_state      expected_state,
-                                      solver_string     function_name);
-
-solver_string solver_state2string(solver_state state);
+/* global functions */
+solver_callback_logger          solver_logger;
+solver_callback_allocate_memory solver_allocateMemory;
+solver_callback_free_memory     solver_freeMemory;
 
 #ifdef __cplusplus
 }   /* end of extern "C" { */
