@@ -117,6 +117,14 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
                                             const omsi_callback_functions*  functions,
                                             omsi_string                     instanceName) {
 
+    /* Variables */
+    omsi_unsigned_int n;
+    omsi_unsigned_int state, derstate;
+    omsi_unsigned_int real_algebraic, real_parameter, real_alias;
+    omsi_unsigned_int int_algebraic, int_algebraic_2;
+    omsi_unsigned_int int_parameter, int_parameter_2, int_alias;
+    omsi_unsigned_int bool_parameter, bool_parameter_2;
+    omsi_unsigned_int bool_algebraic, bool_algebraic_2;
 
 
     if(!model_variables_allocated(omsu, "fmi2Instantiate"))
@@ -139,9 +147,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     }
 
     /*Initialize state variables from init xml file values*/
-    omsi_int state;
-    omsi_int n = omsu->model_data->n_states;
-    for (state = 0; state <n; ++state) {
+    n = omsu->model_data->n_states;
+    for (state = 0; state < n; ++state) {
         real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[state].modelica_attributes);
         if (!attr) {
             filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -152,9 +159,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     }
 
     /*Initialize derivatives variables from init xml file values*/
-    omsi_int derstate;
     n = n + omsu->model_data->n_derivatives;
-    for (derstate = state; derstate <n; ++derstate) {
+    for (derstate = state; derstate < n; ++derstate) {
         real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[derstate].modelica_attributes);
         if (!attr) {
             filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -165,7 +171,6 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     }
 
     /*Initialize real algebraic variables from init xml file values*/
-    omsi_int real_algebraic;
     n = n + omsu->model_data->n_real_vars;
     for (real_algebraic = derstate; real_algebraic < n; ++real_algebraic) {
         real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[real_algebraic].modelica_attributes);
@@ -178,7 +183,6 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     }
 
     /*Initialize real parameter variables from init xml file values*/
-    omsi_int real_parameter;
     n = n + omsu->model_data->n_real_parameters;
     for (real_parameter = real_algebraic; real_parameter < n; ++real_parameter) {
         real_var_attribute_t* attr = (real_var_attribute_t*)(omsu->model_data->model_vars_info[real_parameter].modelica_attributes);
@@ -191,12 +195,10 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     }
 
     /*real alias variables are not extra included in real vars memory,therefore they are skipped*/
-    omsi_int real_alias = omsu->model_data->n_real_aliases;
+    real_alias = omsu->model_data->n_real_aliases;
     n = n + real_alias;
 
     /*Initialize int algebraic variables from init xml file values*/
-    omsi_int int_algebraic;
-    omsi_int int_algebraic_2;
     n = n + omsu->model_data->n_int_vars;
     for (int_algebraic = real_parameter+ real_alias, int_algebraic_2=0; int_algebraic < n; ++int_algebraic, ++int_algebraic_2) {
         int_var_attribute_t* attr = (int_var_attribute_t*)(omsu->model_data->model_vars_info[int_algebraic].modelica_attributes);
@@ -209,8 +211,6 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     }
 
     /*Initialize int parameter from init xml file values*/
-    omsi_int int_parameter;
-    omsi_int int_parameter_2;
     n = n + omsu->model_data->n_int_parameters;
     for (int_parameter = int_algebraic, int_parameter_2 = int_algebraic_2; int_parameter < n; ++int_parameter, ++int_parameter_2) {
         int_var_attribute_t* attr = (int_var_attribute_t*)(omsu->model_data->model_vars_info[int_parameter].modelica_attributes);
@@ -223,12 +223,10 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     }
 
     /*int alias variables are not extra included in int vars memory,therefore they are skipped*/
-    omsi_int int_alias = omsu->model_data->n_int_aliases;
+    int_alias = omsu->model_data->n_int_aliases;
     n = n + int_alias;
 
     /*Initialize bool algebraic variables from init xml file values*/
-    omsi_int bool_algebraic;
-    omsi_int bool_algebraic_2;
     n = n + omsu->model_data->n_bool_vars;
     for (bool_algebraic = int_parameter+ int_alias, bool_algebraic_2 = 0; bool_algebraic < n; ++bool_algebraic, ++bool_algebraic_2) {
         bool_var_attribute_t* attr = (bool_var_attribute_t*)(omsu->model_data->model_vars_info[bool_algebraic].modelica_attributes);
@@ -241,8 +239,6 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     }
 
     /*Initialize bool parameter  from init xml file values*/
-    omsi_int bool_parameter;
-    omsi_int bool_parameter_2;
     n = n + omsu->model_data->n_bool_parameters;
     for (bool_parameter = bool_algebraic, bool_parameter_2 = bool_algebraic_2; bool_parameter < n; ++bool_parameter, ++bool_parameter_2) {
         bool_var_attribute_t* attr = (bool_var_attribute_t*)(omsu->model_data->model_vars_info[bool_parameter].modelica_attributes);
@@ -329,13 +325,12 @@ omsi_status omsi_get_boolean(omsi_t*                    omsu,
                              omsi_unsigned_int          nvr,
                              omsi_bool                  value[]){
 
-    if (!model_variables_allocated(omsu, "fmi2GetBoolean")) {
-        return omsi_error;
-    }
-
     /* Variables */
     omsi_unsigned_int i;
 
+    if (!model_variables_allocated(omsu, "fmi2GetBoolean")) {
+        return omsi_error;
+    }
 
     if (nvr > 0 && vr==NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -365,13 +360,12 @@ omsi_status omsi_get_integer(omsi_t*                     omsu,
                              omsi_unsigned_int          nvr,
                              omsi_int                   value[]){
 
-    if (!model_variables_allocated(omsu, "fmi2GetInteger")) {
-        return omsi_error;
-    }
-
     /* Variables */
     omsi_unsigned_int i;
 
+    if (!model_variables_allocated(omsu, "fmi2GetInteger")) {
+        return omsi_error;
+    }
 
     if (nvr > 0 &&  vr==NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -401,13 +395,12 @@ omsi_status omsi_get_real(omsi_t*                    omsu,
                           omsi_unsigned_int         nvr,
                           omsi_real                 value[]){
 
-    if (!model_variables_allocated(omsu, "fmi2GetReal")) {
-        return omsi_error;
-    }
-
     /* Variables */
     omsi_unsigned_int i;
 
+    if (!model_variables_allocated(omsu, "fmi2GetReal")) {
+        return omsi_error;
+    }
 
     if (nvr > 0 && vr==NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -436,13 +429,12 @@ omsi_status omsi_get_string(omsi_t*                  omsu,
                             omsi_unsigned_int       nvr,
                             omsi_string             value[]){
 
-    if (!model_variables_allocated(omsu, "fmi2GetString")) {
-        return omsi_error;
-    }
-
     /* Variables */
     omsi_unsigned_int i;
 
+    if (!model_variables_allocated(omsu, "fmi2GetString")) {
+        return omsi_error;
+    }
 
     if (nvr>0 && vr==NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -477,11 +469,11 @@ omsi_status omsi_set_boolean(omsi_t*                    omsu,
                              omsi_unsigned_int          nvr,
                              const omsi_bool            value[]) {
 
-    if (!model_variables_allocated(omsu, "fmi2SetBoolean"))
-        return omsi_error;
-
     /* Variables */
     omsi_unsigned_int i;
+
+    if (!model_variables_allocated(omsu, "fmi2SetBoolean"))
+        return omsi_error;
 
     if (nvr>0 && vr==NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -514,11 +506,11 @@ omsi_status omsi_set_integer(omsi_t*                    omsu,
                              omsi_unsigned_int          nvr,
                              const omsi_int             value[]) {
 
-    if (!model_variables_allocated(omsu, "fmi2SetInteger"))
-        return omsi_error;
-
     /* Variables */
     omsi_unsigned_int i;
+
+    if (!model_variables_allocated(omsu, "fmi2SetInteger"))
+        return omsi_error;
 
     if (nvr>0 && vr==NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -550,10 +542,11 @@ omsi_status omsi_set_real(omsi_t*                   omsu,
                           omsi_unsigned_int         nvr,
                           const omsi_real           value[]) {
 
-    if (!model_variables_allocated(omsu, "fmi2SetReal"))
-        return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
+
+    if (!model_variables_allocated(omsu, "fmi2SetReal"))
+        return omsi_error;
 
     if (nvr>0 && vr==NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -585,11 +578,11 @@ omsi_status omsi_set_string(omsi_t*                  omsu,
                             omsi_unsigned_int                  nvr,
                             const omsi_string       value[]) {
 
-    if (!model_variables_allocated(omsu, "fmi2SetString"))
-        return omsi_error;
     /* Variables */
     omsi_unsigned_int i;
 
+    if (!model_variables_allocated(omsu, "fmi2SetString"))
+        return omsi_error;
 
     if (nvr>0 && vr==NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,

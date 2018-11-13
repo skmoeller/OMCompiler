@@ -229,14 +229,14 @@ void set_matrix_A(const solver_data*            solver,
                   const solver_unsigned_int     n_row,
                   solver_real**                 value) {
 
+    /* Variables */
+    solver_unsigned_int i, j;
+    solver_linear_callbacks* lin_callbacks;
+
     if (!solver->linear) {
         /* ToDo: log error, no matrix A in non-linear case */
         return;
     }
-
-    /* Variables */
-    solver_unsigned_int i, j;
-    solver_linear_callbacks* lin_callbacks;
 
     lin_callbacks = solver->solver_callbacks;
 

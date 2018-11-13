@@ -72,7 +72,6 @@ void filtered_base_logger(omsi_bool*            logCategories,
 {
     /* Variables */
     va_list args;
-    va_start(args, message);
 
 #if OVERFLOW_PROTECTED
     omsi_int size;
@@ -80,6 +79,8 @@ void filtered_base_logger(omsi_bool*            logCategories,
 #else
     omsi_char buffer[BUFSIZ];
 #endif
+
+    va_start(args, message);
 
 #if OVERFLOW_PROTECTED
     size = vsnprintf(NULL, 0, message, args);
@@ -118,7 +119,6 @@ void wrapper_lin_system_logger (omsi_string message, ...) {
 
     /* Variables */
     va_list args;
-    va_start(args, message);
 
 #if OVERFLOW_PROTECTED
     omsi_int size;
@@ -126,6 +126,8 @@ void wrapper_lin_system_logger (omsi_string message, ...) {
 #else
     omsi_char buffer[BUFSIZ];
 #endif
+
+    va_start(args, message);
 
 #if OVERFLOW_PROTECTED
     size = vsnprintf(NULL, 0, message, args);
@@ -156,7 +158,6 @@ void wrapper_non_lin_system_logger (omsi_string message, ...) {
 
     /* Variables */
     va_list args;
-    va_start(args, message);
 
 #if OVERFLOW_PROTECTED
     omsi_int size;
@@ -164,6 +165,8 @@ void wrapper_non_lin_system_logger (omsi_string message, ...) {
 #else
     omsi_char buffer[BUFSIZ];
 #endif
+
+    va_start(args, message);
 
 #if OVERFLOW_PROTECTED
     size = vsnprintf(NULL, 0, message, args);
@@ -287,11 +290,12 @@ void omsu_free_model_data (model_data_t* model_data) {
 void omsu_free_model_variable_info(model_variable_info_t*   model_vars_info,
                                    omsi_unsigned_int        size) {
 
+    /* Variables */
+    omsi_unsigned_int i;
+
     if (model_vars_info == NULL) {
         return;
     }
-
-    omsi_unsigned_int i;
 
     for (i=0; i<size; i++) {
         free((omsi_char *)model_vars_info[i].name);           /* can't use freeMemory function, memory was allocated in strdup */
@@ -332,13 +336,13 @@ void omsu_free_modelica_attributes(void*            modelica_attribute,
 void omsu_free_equation_info(equation_info_t*   eq_info,
                              omsi_unsigned_int  n_equations ) {
 
-    if (eq_info == NULL) {
-        return;
-    }
-
     /* Variables */
     omsi_unsigned_int i;
     omsi_int j;
+
+    if (eq_info == NULL) {
+        return;
+    }
 
     for (i=0; i<n_equations; i++) {
         for (j=0; j<eq_info[i].numVar; j++) {

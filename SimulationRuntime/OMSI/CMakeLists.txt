@@ -7,7 +7,7 @@ PROJECT(OMSIBaseSimulationRuntime)
 # enable warnings and use ANSI C compatible compiler
 if(CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "GCC detected, adding compile flags")
-    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -Wall -Wextra -pedantic -g")
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -Wall -Wextra -ansi -pedantic -g")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if(NOT PLATFORM OR PLATFORM STREQUAL "dynamic")
