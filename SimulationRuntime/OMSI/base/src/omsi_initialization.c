@@ -205,18 +205,12 @@ void XMLCALL startElement_2(void*           userData,
     modelDescriptionData* md = (modelDescriptionData*) userData;
     omsi_char* modelName;
 
-    printf("%s %s\n", attr[i], attr[i+1]); fflush(stdout);
-
     /* handle fmiModelDescription */
     if (!strcmp(name, "ModelExchange")) {
         for (i = 0; attr[i]; i += 2) {
             if (strcmp("modelIdentifier", attr[i]) == 0 ) {
                 modelName = strdup(attr[i+1]);
                 md->modelName = modelName;
-
-                printf("modelName = %s\n", modelName); fflush(stdout);
-                //printf("userData = %s\n\n", (omsi_char**)userData); fflush(stdout);
-
                 return;
             }
         }
