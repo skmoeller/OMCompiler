@@ -96,6 +96,8 @@ omsi_status omsu_copy_values(omsi_values*   target_vars,
 
 void omsu_print_osu (osu_t* OSU);
 
+omsi_real division_error_time(const char*   msg,
+                              omsi_real     time);
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

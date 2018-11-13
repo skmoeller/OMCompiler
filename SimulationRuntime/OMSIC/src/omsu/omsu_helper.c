@@ -465,11 +465,13 @@ void omsu_print_osu (osu_t* OSU) {
     printf("\n==========  omsu_print_osu end  ==========\n\n");
 }
 
+
 /*
  *  division error logging
  */
-omsi_real division_error_time(const char *msg, omsi_real time)
-{
+omsi_real division_error_time(const char*   msg,
+                              omsi_real     time) {
+
   /* call an assert after lgging */
   filtered_base_logger(global_logCategories, log_all, omsi_ok, "DIVISION: Divisor %s is zero at t = %f!", msg, time);
   return 1/0;
