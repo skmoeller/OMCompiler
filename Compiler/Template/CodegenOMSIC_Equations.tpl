@@ -139,7 +139,8 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr, String input)
     >>
   case SES_ALGEBRAIC_SYSTEM(__) then
     <<
-    status = (<%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%algSysIndex%>(<%input%>)==omsi_ok && status==omsi_ok)? omsi_ok : status;
+    new_status = <%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%algSysIndex%>(<%input%>);
+    status = (new_status==omsi_ok && status==omsi_ok) ? omsi_ok:new_status;
     >>
   else
     /* ToDo: generate Warning */

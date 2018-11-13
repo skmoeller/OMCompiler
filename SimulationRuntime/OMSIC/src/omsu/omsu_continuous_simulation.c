@@ -66,10 +66,6 @@ omsi_status omsi_new_discrete_state(osu_t*              OSU,
 
     returnValue = omsi_event_update(OSU, eventInfo);
 
-    if (returnValue == omsi_fatal) {
-        eventInfo->terminateSimulation = omsi_true;
-    }
-
     return returnValue;
 }
 
@@ -223,21 +219,23 @@ omsi_status omsi_completed_integrator_step(osu_t*       OSU,
                                            omsi_bool*   enterEventMode,
                                            omsi_bool*   terminateSimulation) {
 
+    /* Variables */
+    omsi_status status;
     /*threadData_t *threadData = OSU->threadData;*/
 
-    if (invalidState(OSU, "fmi2OSUletedIntegratorStep", modelContinuousTimeMode, ~0)) {
+    if (invalidState(OSU, "fmi2CompletedIntegratorStep", modelContinuousTimeMode, ~0)) {
         return omsi_error;
     }
-    if (nullPointer(OSU, "fmi2OSUletedIntegratorStep", "enterEventMode", enterEventMode)) {
+    if (nullPointer(OSU, "fmi2CompletedIntegratorStep", "enterEventMode", enterEventMode)) {
         return omsi_error;
     }
-    if (nullPointer(OSU, "fmi2OSUletedIntegratorStep", "terminateSimulation", terminateSimulation)) {
+    if (nullPointer(OSU, "fmi2CompletedIntegratorStep", "terminateSimulation", terminateSimulation)) {
         return omsi_error;
     }
 
     /* Log function call */
     filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
-            "fmi2OSUCompletedIntegratorStep");
+            "fmi2CompletedIntegratorStep");
 
     /* ToDo: Do something useful with noSetFMUStatePriorToCurrentPoint */
 
@@ -253,7 +251,7 @@ omsi_status omsi_completed_integrator_step(osu_t*       OSU,
     storePreValues(OSU->osu_data); */
 
     if (OSU->_need_update) {
-        OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
+        status = OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
         OSU->_need_update = omsi_false;
     }
 
@@ -277,7 +275,7 @@ omsi_status omsi_completed_integrator_step(osu_t*       OSU,
      */
 
     /* overwriteOldSimulationData(OSU->old_data); */
-    return omsi_ok;
+    return status;
 
     /* ToDo: catch */
     /* MMC_CATCH_INTERNAL (simulationJumpBuffer)

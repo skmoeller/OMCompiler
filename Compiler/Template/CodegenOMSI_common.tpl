@@ -101,9 +101,10 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params, void* data){
 
     /* Variables */
-    omsi_status status;
+    omsi_status status, new_status;
 
     status = omsi_ok;
+    new_status = omsi_ok;
 
     <%functionCall%>
 
