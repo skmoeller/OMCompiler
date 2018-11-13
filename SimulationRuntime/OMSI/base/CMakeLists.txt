@@ -42,6 +42,7 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_sim_data.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_xml.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_mmap.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_solve_alg_system.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_utils.h
   ${CMAKE_SOURCE_DIR}/base/include/uthash.h
   DESTINATION include/omc/omsi/base)

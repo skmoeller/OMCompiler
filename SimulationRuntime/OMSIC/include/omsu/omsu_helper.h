@@ -37,8 +37,6 @@
 
 #include <omsic.h>
 
-/*#include <solver_lapack.h>*/
-
 #ifdef __cplusplus
 extern "C" {
 #endif

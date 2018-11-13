@@ -41,7 +41,6 @@
 
 #include <omsi_solver.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -63,7 +62,7 @@ void set_matrix_A(const solver_data*            solver,
                   const solver_unsigned_int     n_column,
                   const solver_unsigned_int*    row,
                   const solver_unsigned_int     n_row,
-                  solver_real**                 value);
+                  solver_real*                  value);
 
 void get_matrix_A(solver_data*          solver,
                   solver_unsigned_int*  column,
