@@ -172,18 +172,6 @@ int getAnalyticalJacobianNewton(DATA* data, threadData_t *threadData, double* ja
  */
 omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system) {
 
-    /* Set callbacks */
-    if (alg_system->isLinear) {
-        solver_init_callbacks (global_callback->allocateMemory,
-                               global_callback->freeMemory,
-                               wrapper_lin_system_logger);
-    }
-    else {
-        solver_init_callbacks (global_callback->allocateMemory,
-                               global_callback->freeMemory,
-                               wrapper_non_lin_system_logger);
-    }
-
     /* Allocate memory */
     alg_system->solver_data = solver_allocate(solver_lapack, alg_system->n_iteration_vars);
     if (alg_system->solver_data == NULL) {

@@ -99,7 +99,7 @@ solver_data* solver_allocate(solver_name            name,
 
         break;
         default:
-            solver_logger("Solver-Error in function solver_allocate: No valid solver_name given.");
+            solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
             solver_freeMemory(solver);
             return NULL;
     }
@@ -121,7 +121,7 @@ solver_data* solver_allocate(solver_name            name,
             lin_callbacks->solve_eq_system = &solver_lapack_solve;
         break;
         default:
-            solver_logger("Solver-Error in function solver_allocate: No valid solver_name given.");
+            solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
             solver_freeMemory(solver);
             return NULL;
     }
@@ -147,7 +147,7 @@ void solver_free(solver_data* solver) {
         break;
         default:
             if (solver->specific_data != NULL) {
-                solver_logger("Solver-Error in function solver_free: No solver"
+                solver_logger(log_solver_error, "In function solver_free: No solver"
                         "specified in solver_name, but solver->specific_data is not NULL");
             }
     }
@@ -172,7 +172,7 @@ solver_status prepare_specific_solver_data (solver_data* solver) {
             return set_dim_lapack_data(solver);
         break;
         default:
-            solver_logger("Solver-Error in function prepare_specific_solver_data: No solver"
+            solver_logger(log_solver_error, "In function prepare_specific_solver_data: No solver"
                     "specified in solver_name.");
             return solver_error;
     }
@@ -407,7 +407,7 @@ void print_solver_data (solver_data* solver) {
     }
 
     /* print buffer */
-    solver_logger(buffer);
+    solver_logger(log_solver_all, buffer);
 }
 
 

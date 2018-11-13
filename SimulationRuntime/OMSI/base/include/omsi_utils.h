@@ -65,9 +65,8 @@ void filtered_base_logger(omsi_bool*            logCategories,      /* Array of 
                           omsi_string           message,            /* Message for logger */
                           ...);                                      /* Optional arguments in message */
 
-void wrapper_lin_system_logger (omsi_string message, ...);
-
-void wrapper_non_lin_system_logger (omsi_string message, ...);
+void wrapper_alg_system_logger (solver_log_level    log_level,
+                                omsi_string         message, ...);
 
 omsi_bool isCategoryLogged(omsi_bool*       logCategories,
                            log_categories   categoryIndex);

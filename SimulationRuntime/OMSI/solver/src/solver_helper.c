@@ -30,13 +30,12 @@
 
 #include <solver_helper.h>
 
-
 solver_bool solver_instance_correct(solver_data*    general_solver_data,
                                     solver_name     given_name,
                                     solver_string   function_name) {
 
     if (general_solver_data->name != given_name) {
-        solver_logger("Solver-Error in function %s:"
+        solver_logger(log_solver_error, "In function %s:"
                 "Solver instance is not %s.",
                 function_name,
                 solver_name2string(given_name));
@@ -70,7 +69,7 @@ solver_bool solver_func_call_allowed (solver_data*      general_solver_data,
                                       solver_string     function_name) {
 
     if (general_solver_data->state != expected_state) {
-        solver_logger("Solver-Error in function %s: "
+        solver_logger(log_solver_error, "In function %s: "
                 "Function call was not allowed for current state %s. "
                 "Expected state %s.",
                 function_name,

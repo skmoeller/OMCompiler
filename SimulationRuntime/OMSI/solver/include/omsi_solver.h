@@ -150,6 +150,15 @@ typedef enum {
 }solver_status;
 
 
+#define NUMBER_OF_SOLVER_CATEGORIES 5
+typedef enum {
+    log_solver_error,
+    log_solver_warning,
+    log_solver_nonlinear,
+    log_solver_linear,
+    log_solver_all
+}solver_log_level;
+
 /** Information about solution and its quality.
  *
  * Multiple values are possible.
@@ -177,10 +186,12 @@ typedef enum {
  * the C standard library..
  * E.g. use `printf` from the C standard library.
  *
- * \param [in] format   Text to be written. Can optionally contain embedded
- *                      format tags similar to `printf`.
+ * \param [in] log_level    Log level of current message to filter logs.
+ * \param [in] format       Text to be written. Can optionally contain embedded
+ *                          format tags similar to `printf`.
  */
-typedef void    (*solver_callback_logger)           (solver_string, ...);
+typedef void    (*solver_callback_logger)   (solver_log_level,
+                                             solver_string, ...);
 
 
 /** \fn void* (*solver_callback_allocate_memory) (solver_unsigned_int n_objects, solver_unsigned_int size)

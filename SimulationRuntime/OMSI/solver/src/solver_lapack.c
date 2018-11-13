@@ -65,7 +65,7 @@ solver_status allocate_lapack_data(solver_data* general_solver_data) {
 
     /* Check if general_solver_data has already specific data */
     if (general_solver_data->specific_data != NULL) {
-        solver_logger("Solver-Error in function allocate_lapack_data: Pointer to solver specific data is not NULL.");
+        solver_logger(log_solver_error, "In function allocate_lapack_data: Pointer to solver specific data is not NULL.");
         general_solver_data->state = solver_error_state;
         return solver_error;
     }
@@ -73,7 +73,7 @@ solver_status allocate_lapack_data(solver_data* general_solver_data) {
     /* Allocate memory */
     lapack_data = (solver_data_lapack*) solver_allocateMemory(1, sizeof(solver_data_lapack));
     if (!lapack_data) {
-        solver_logger("Solver-Error in function allocate_lapack_data: Can't allocate memory for lapack_data.");
+        solver_logger(log_solver_error, "In function allocate_lapack_data: Can't allocate memory for lapack_data.");
         general_solver_data->specific_data = NULL;
         general_solver_data->state = solver_error_state;
         return solver_error;
@@ -83,7 +83,7 @@ solver_status allocate_lapack_data(solver_data* general_solver_data) {
     lapack_data->ipiv = (solver_int*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_int));
     lapack_data->b = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
     if (!lapack_data->A || !lapack_data->ipiv || !lapack_data->b) {
-        solver_logger("Solver-Error in function allocate_lapack_data: Can't allocate memory for lapack_data.");
+        solver_logger(log_solver_error, "In function allocate_lapack_data: Can't allocate memory for lapack_data.");
         general_solver_data->specific_data = NULL;
         general_solver_data->state = solver_error_state;
         return solver_error;
@@ -289,14 +289,14 @@ solver_state solver_lapack_solve(void* specific_data) {
 
     if (lapack_data->info < 0) {
         /* ToDO: Log */
-        solver_logger("Solver-Error in function solver_lapack_solve: the %d-th argument had an illegal value.", (-1)*lapack_data->info);
+        solver_logger(log_solver_error, "In function solver_lapack_solve: the %d-th argument had an illegal value.", (-1)*lapack_data->info);
         return solver_error;
     }
     else if (lapack_data->info > 0) {
-        /* ToDo: Log */
-        solver_logger("Solver-Error in function solver_lapack_solve:  U(%d,%d) is exactly zero.\n "
+        solver_logger(log_solver_error, "In function solver_lapack_solve:  U(%d,%d) is exactly zero.\n "
                 "The factorization has been completed, but the factor U is exactly"
-                "singular, so the solution could not be computed", lapack_data->info, lapack_data->info);
+                "singular, so the solution could not be computed",
+                lapack_data->info, lapack_data->info);
         return solver_error;
     }
 
@@ -346,7 +346,7 @@ void solver_print_lapack_data(solver_char*          buffer,
 
         /* check if buffer is nearly full */
         if (*length >= buffer_size*0.9) {
-            solver_logger(buffer);
+            solver_logger(log_solver_all, buffer);
             *length = 0;
             *length = snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
         }
@@ -360,7 +360,7 @@ void solver_print_lapack_data(solver_char*          buffer,
 
         /* check if buffer is nearly full */
         if (*length >= buffer_size*0.9) {
-            solver_logger(buffer);
+            solver_logger(log_solver_all, buffer);
             *length = 0;
             *length = snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
         }
@@ -373,7 +373,7 @@ void solver_print_lapack_data(solver_char*          buffer,
 
         /* check if buffer is nearly full */
         if (*length >= buffer_size*0.9) {
-            solver_logger(buffer);
+            solver_logger(log_solver_all, buffer);
             *length = 0;
             *length = snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
         }
