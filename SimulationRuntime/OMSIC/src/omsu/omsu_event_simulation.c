@@ -124,6 +124,7 @@ omsi_status omsi_event_update(osu_t*              OSU,
 
     /* Variables */
     omsi_int i;
+    omsi_status status;
     /* threadData_t *threadData = OSU->threadData; */
 
     if (nullPointer(OSU, "fmi2EventUpdate", "eventInfo", eventInfo)) {
@@ -167,7 +168,10 @@ omsi_status omsi_event_update(osu_t*              OSU,
 #endif
 
     /*evaluate functionDAE */
-    OSU->osu_data->sim_data->simulation->evaluate(OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->simulation->function_vars, NULL);
+    status = OSU->osu_data->sim_data->simulation->evaluate(OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->simulation->function_vars, NULL);
+    if (status != omsi_ok) {
+        return status;
+    }
 
 #if 0
     /* deactivate sample events */

@@ -100,9 +100,14 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   /* Equations evaluation */
   omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params, void* data){
 
+    /* Variables */
+    omsi_status status;
+
+    status = omsi_ok;
+
     <%functionCall%>
 
-    return omsi_ok;
+    return status;
   }
 
   #if defined(__cplusplus)
@@ -174,7 +179,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     let &functionPrototypes +=
       <<
       omsi_status <%FileNamePrefix%>_resFunction_<%algSystem.algSysIndex%> (omsi_function_t* this_function, const omsi_values* model_vars_and_params, omsi_real* res);
-      omsi_status <%FileNamePrefix%>_algSystFunction_<%algSystem.algSysIndex%>(omsi_algebraic_system_t* this_alg_system, const omsi_values* model_vars_and_params, omsi_values* out_function_vars);
+      omsi_status <%FileNamePrefix%>_algSystFunction_<%algSystem.algSysIndex%>(omsi_algebraic_system_t* this_alg_system, const omsi_values* model_vars_and_params, void* data);
       >>
     let headerFileName = FileNamePrefix+"_sim_algSyst_"+algSystem.algSysIndex
     let headerFileContent = generateCodeHeader(FileNamePrefix, &includes, headerFileName, &functionPrototypes)
@@ -212,14 +217,21 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   */
   omsi_status <%FileNamePrefix%>_algSystFunction_<%algSystem.algSysIndex%>(omsi_algebraic_system_t* this_alg_system,
                             const omsi_values* model_vars_and_params,
-                            omsi_values* out_function_vars){
+                            void* data){
+
+    /* Variables */
+    omsi_status status;
+
+    /* Log function call */
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+        "fmi2Evaluate: Solve algebraic system <%algSystem.algSysIndex%>.");
 
     /* call API function something */
-    solveLapack(this_alg_system, model_vars_and_params, NULL);
+    status = omsi_solve_algebraic_system(this_alg_system, model_vars_and_params);
 
       /* ToDo: Add crazy stuff here */
 
-    return omsi_ok;
+    return status;
   }
 
   #if defined(__cplusplus)

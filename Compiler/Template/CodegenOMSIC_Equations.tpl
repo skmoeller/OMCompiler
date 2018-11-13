@@ -139,7 +139,7 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr, String input)
     >>
   case SES_ALGEBRAIC_SYSTEM(__) then
     <<
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%algSysIndex%>(<%input%>);
+    status = (<%CodegenUtil.symbolName(modelNamePrefixStr,"algSystFunction")%>_<%algSysIndex%>(<%input%>)==omsi_ok && status==omsi_ok)? omsi_ok : status;
     >>
   else
     /* ToDo: generate Warning */
@@ -246,17 +246,17 @@ template generateDereivativeMatrixColumnCall(OMSIFunction column, String modelNa
   case OMSI_FUNCTION() then
     let bodyBuffer = ( equations |> eq =>
       <<
-      <%equationCall(eq, modelName, "this_function, seed")%>
+      <%equationCall(eq, modelName, "this_function, model_vars_and_params")%>
       >>
     ;separator="\n")
 
-  let &functionPrototypes += <<omsi_status <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative);<%\n%>>>
+  let &functionPrototypes += <<omsi_status <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, const omsi_values* model_vars_and_params, void* data);<%\n%>>>
 
   <<
   /*
   Description something
   */
-  omsi_status <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, omsi_real* seed, omsi_real* dirDerivative){
+  omsi_status <%CodegenUtil.symbolName(modelName,"derivativeMatFunc")%>_<%index%>(omsi_function_t* this_function, const omsi_values* model_vars_and_params, void* data){
 
     <%bodyBuffer%>
 

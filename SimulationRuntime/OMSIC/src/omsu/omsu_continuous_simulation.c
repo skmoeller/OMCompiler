@@ -65,6 +65,11 @@ omsi_status omsi_new_discrete_state(osu_t*              OSU,
     eventInfo->nextEventTime = 0;
 
     returnValue = omsi_event_update(OSU, eventInfo);
+
+    if (returnValue == omsi_fatal) {
+        eventInfo->terminateSimulation = omsi_true;
+    }
+
     return returnValue;
 }
 

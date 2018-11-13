@@ -31,13 +31,24 @@
 #include <omsi_solve_alg_system.h>
 
 
-#if 0
 
-omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t* alg_system) {
+
+omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
+                                         const omsi_values*         read_only_model_vars_and_params) {
+
+    /* Check if solver is ready */
+    if (alg_system->solver_data == NULL ) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_fatal,
+            "fmi2Evaluate: Solver for %s system %u of size %u not set.",
+            alg_system->isLinear ? "linear":"nonlinear",
+            alg_system->id,
+            alg_system->n_iteration_vars);
+        return omsi_fatal;
+    }
 
     /* Log solver call */
     filtered_base_logger(global_logCategories, log_all, omsi_ok,
-        "fmi2Something: Solve %s system %u of size %u with solver %s.",
+        "fmi2Evaluate: Solve %s system %u of size %u with solver %s.",
         alg_system->isLinear ? "linear":"nonlinear",
         alg_system->id,
         alg_system->n_iteration_vars,
