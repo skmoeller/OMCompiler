@@ -110,7 +110,7 @@ solver_data* solver_allocate(solver_name            name,
     /* set callback functions */
     switch (name) {
         case solver_lapack:
-            lin_callbacks = solver->solver_callbacks;
+            lin_callbacks = (solver_linear_callbacks*) solver_allocateMemory(1, sizeof(solver_linear_callbacks));
 
             lin_callbacks->get_A_element = &solver_lapack_get_A_element;
             lin_callbacks->set_A_element = &solver_lapack_set_A_element;
@@ -119,6 +119,8 @@ solver_data* solver_allocate(solver_name            name,
             lin_callbacks->set_b_element = &solver_lapack_set_b_element;
 
             lin_callbacks->solve_eq_system = &solver_lapack_solve;
+
+            solver->solver_callbacks = lin_callbacks;
         break;
         default:
             solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
@@ -169,6 +171,7 @@ solver_status prepare_specific_solver_data (solver_data* solver) {
 
     switch (solver->name) {
         case solver_lapack:
+            solver->linear = solver_true;
             return set_dim_lapack_data(solver);
         break;
         default:

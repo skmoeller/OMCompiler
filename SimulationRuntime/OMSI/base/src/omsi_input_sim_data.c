@@ -42,6 +42,9 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
 
     /* set global function pointer */
     global_callback = (omsi_callback_functions*) callback_functions;
+    solver_init_callbacks (global_callback->allocateMemory,
+                           global_callback->freeMemory,
+                           wrapper_alg_system_logger);
 
     filtered_base_logger(global_logCategories, log_all, omsi_ok,
             "fmi2Instantiate: Set up sim_data structure.");
@@ -70,6 +73,12 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
         return omsi_error;
     }
 
+    /* Set default solvers for simulation problem */
+    if (omsu_set_default_solvers(omsi_data->sim_data->simulation, "simulation")) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not instantiate default solvers for algebraic loops.");
+        return omsi_error;
+    }
 
     if (omsu_instantiate_omsi_function_func_vars(omsi_data->sim_data->simulation, omsi_data->sim_data->model_vars_and_params)==omsi_error) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -182,7 +191,8 @@ omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars) {
 
     function = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
     if (!function) {
-        /* Log Error */
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+            "fmi2Instantiate: Could not allocate memory for omsi_function_t struct.");
         return NULL;
     }
 
@@ -203,11 +213,16 @@ omsi_algebraic_system_t* omsu_initialize_alg_system_array (omsi_unsigned_int n_a
     /* Variables */
     omsi_algebraic_system_t* algebraic_system;
 
+    if (n_algebraic_system==0) {
+        return NULL;
+    }
+
     /* allocate memory */
     algebraic_system = (omsi_algebraic_system_t*) global_callback->allocateMemory(n_algebraic_system, sizeof(omsi_algebraic_system_t));
 
     if (!algebraic_system) {
-        /* ToDo: Log error */
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+            "fmi2Instantiate: Could not allocate memory for omsi_algebraic_system_t struct.");
         return NULL;
     }
 
@@ -268,5 +283,61 @@ omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_fun
     /* CHECK_MEMORY_ERROR(omsi_function->output_vars_indices) */
 
     return omsi_ok;
+}
+
+
+omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
+                                      omsi_string       omsi_function_name) {
+
+    /* Variables */
+    omsi_unsigned_int i, dim_n;
+    omsi_status status;
+
+    /* Log function call */
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+        "fmi2Instantiate: Set default solver for algebraic systems in omsi_function %s.",
+        omsi_function_name);
+
+
+    if (omsi_function==NULL) {
+        return omsi_ok;
+    }
+
+    for(i=0; i<omsi_function->n_algebraic_system; i++) {
+        dim_n = omsi_function->algebraic_system_t[i].jacobian->n_output_vars;       /* Dimension of jacobian */
+        printf("dim_n = %u\n", dim_n); fflush(stdout);
+
+        /* Check if solver_data still unallocated */
+        if (omsi_function->algebraic_system_t[i].solver_data!=NULL) {
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Memory for solver_data in algebraic loop %i already allocated.",
+                i);
+            return omsi_error;
+        }
+
+        if (omsi_function->algebraic_system_t[i].isLinear) {
+            /* Set default linear solver */
+            omsi_function->algebraic_system_t[i].solver_data = solver_allocate(solver_lapack, dim_n);
+        }
+        else {
+            /* Set default non-linear solver */
+            omsi_function->algebraic_system_t[i].solver_data = solver_allocate(solver_newton, dim_n);
+        }
+
+        prepare_specific_solver_data (omsi_function->algebraic_system_t[i].solver_data);
+
+        /* recursive call for all */
+        status = omsu_set_default_solvers (omsi_function->algebraic_system_t[i].jacobian, "jacobian");
+        if (status != omsi_ok) {
+            return status;
+        }
+
+        status = omsu_set_default_solvers (omsi_function->algebraic_system_t[i].functions, "residual");
+        if (status != omsi_ok) {
+            return status;
+        }
+    }
+
+    return status;
 }
 

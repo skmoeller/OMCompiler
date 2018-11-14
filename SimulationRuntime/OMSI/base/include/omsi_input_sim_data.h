@@ -36,6 +36,9 @@
 #include <omsi_global.h>
 #include <omsi_utils.h>
 
+#include <omsi_solver.h>
+#include <solver_api.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -57,6 +60,8 @@ omsi_status omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_functi
 omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_function,
                                             omsi_values*        function_vars);
 
+omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars);
+
 omsi_algebraic_system_t* omsu_initialize_alg_system_array (omsi_unsigned_int n_algebraic_system);
 
 omsi_status omsu_set_model_vars_and_params_start (omsi_values*     model_vars_and_params,
@@ -72,6 +77,10 @@ omsi_status omsu_set_template_functions (omsi_template_callback_functions_t*  te
 omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_function,
                                                     omsi_unsigned_int   n_input_vars,
                                                     omsi_unsigned_int   n_output_vars);
+
+omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
+                                      omsi_string       omsi_function_name);
+
 #ifdef __cplusplus
 }  /* end of extern "C" { */
 #endif
