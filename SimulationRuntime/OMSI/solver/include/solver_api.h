@@ -69,14 +69,24 @@ void get_matrix_A(solver_data*          solver,
                   solver_unsigned_int   n_column,
                   solver_unsigned_int*  row,
                   solver_unsigned_int   n_row,
-                  solver_real**         value);
+                  solver_real*          value);
 
-void print_solver_data (solver_data* solver);
+void set_vector_b (solver_data*          solver,
+                   solver_unsigned_int*  index,
+                   solver_unsigned_int   size_of_b,
+                   solver_real*          value);
+
+void get_vector_b (solver_data*          solver,
+                   solver_unsigned_int*  index,
+                   solver_unsigned_int   size_of_b,
+                   solver_real*          value);
 
 void print_solver_data (solver_data*    solver,
                         solver_string   header);
 
 solver_string solver_get_name (solver_data* solver);
+
+solver_status solver_linear_solve(solver_data* solver);
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

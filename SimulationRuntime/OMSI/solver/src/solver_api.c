@@ -130,13 +130,14 @@ solver_data* solver_allocate(solver_name            name,
 
     /* Set solver state */
     solver->state = solver_initializated;
+    solver_logger(log_solver_all, "Solver instance allocated.");
 
     return solver;
 
 }
 
 
-/** Frees memory of struct solver_data.
+/** \brief Frees memory of struct solver_data.
  *
  * \param [in,out] solver   Pointer to solver instance.
  */
@@ -188,13 +189,7 @@ solver_status prepare_specific_solver_data (solver_data* solver) {
  * ============================================================================
  */
 
-/** \fn void set_matrix_A(const solver_data*            solver,
- *                const solver_unsigned_int*    column,
- *                const solver_unsigned_int     n_column,
- *                const solver_unsigned_int*    row,
- *                const solver_unsigned_int     n_row,
- *                solver_real**           value)
- * \brief Sets matrix A with values from array value.
+/** \brief Sets matrix A with values from array value.
  *
  * Sets specified columns and rows of matrix A in solver specific data to
  * values from array value. If no columns and/or rows are specified (set to
@@ -275,14 +270,8 @@ void set_matrix_A(const solver_data*            solver,
 }
 
 
-/** \fn void get_matrix_A(solver_data*          solver,
- *                        solver_unsigned_int*  column,
- *                        solver_unsigned_int   n_column,
- *                        solver_unsigned_int*  row,
- *                        solver_unsigned_int   n_row,
- *                        solver_real**         value)
+/** \brief Reads matrix A and saves result in array value.
  *
- *  Reads matrix A and saves result in array value.
  *  Used for linear solvers, to get values of matrix A stored in its solver
  *  specific data.
  *
@@ -309,7 +298,7 @@ void get_matrix_A(solver_data*          solver,
                   solver_unsigned_int   n_column,
                   solver_unsigned_int*  row,
                   solver_unsigned_int   n_row,
-                  solver_real**         value) {
+                  solver_real*          value) {
 
     /* Variables */
     solver_unsigned_int i, j;
@@ -321,29 +310,104 @@ void get_matrix_A(solver_data*          solver,
         /* copy values element wise */
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                lin_callbacks->get_A_element(solver->specific_data, i, j, value[i*solver->dim_n+j]);
+                lin_callbacks->get_A_element(solver->specific_data, i, j, &value[i*solver->dim_n+j]);
             }
         }
     }
     else if (column==NULL && row != NULL) {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                lin_callbacks->get_A_element(solver->specific_data, i, row[j], value[i*solver->dim_n+j]);
+                lin_callbacks->get_A_element(solver->specific_data, i, row[j], &value[i*solver->dim_n+j]);
             }
         }
     }
     else if (column!=NULL && row == NULL) {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                lin_callbacks->get_A_element(solver->specific_data, column[i], j, value[i*solver->dim_n+j]);
+                lin_callbacks->get_A_element(solver->specific_data, column[i], j, &value[i*solver->dim_n+j]);
             }
         }
     }
     else {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                lin_callbacks->get_A_element(solver->specific_data, column[i], row[j], value[i*solver->dim_n+j]);
+                lin_callbacks->get_A_element(solver->specific_data, column[i], row[j], &value[i*solver->dim_n+j]);
             }
+        }
+    }
+}
+
+
+
+/** \brief Sets values of vector b with values from `value`.
+ *
+ * Used for right hand side vector `b` of linear systems `A*x=b`.
+ *
+ * \param [in,out]  solver      Struct with used solver, containing vector `b` in
+ *                              solver specific format. Has to be a linear solver.
+ * \param [in]      index       Array of indices of `b` to set. If `NULL` for all
+ *                              indices up to `n_index` vector b will be returned.
+ * \param [in]      n_index     Size of index array `index`.
+ * \param [in]      value       Pointer to vector with values, stored as array
+ *                              of size `n_index`.
+ */
+void set_vector_b (solver_data*          solver,
+                   solver_unsigned_int*  index,
+                   solver_unsigned_int   size_of_b,
+                   solver_real*          value) {
+
+    /* Variables */
+    solver_unsigned_int i;
+    solver_linear_callbacks* lin_callbacks;
+
+    lin_callbacks = solver->solver_callbacks;
+
+    if (index==NULL) {
+        for (i=0; i<size_of_b; i++) {
+            lin_callbacks->set_b_element(solver->specific_data, i, &value[i]);
+        }
+    }
+    else {
+        for (i=0; i<size_of_b; i++) {
+            lin_callbacks->set_b_element(solver->specific_data, index[i], &value[i]);
+        }
+    }
+}
+
+
+/** \brief Gets values of vector b with values from `value`.
+ *
+ * Used for right hand side vector `b` of linear systems `A*x=b`.
+ *
+ * \param [in]      solver      Struct with used solver, containing vector `b` in
+ *                              solver specific format. Has to be a linear solver.
+ * \param [in]      index       Array of indices of `b` to set. If `NULL` for all
+ *                              indices up to `n_index` vector b will be set.
+ * \param [in]      n_index     Size of index array `index`.
+ * \param [in,out]  value       On input: Pointer to allocated memory of size
+ *                              `n_index`. <br>
+ *                              On output: Pointer to array containing specified
+ *                              values of vector `b`.
+ */
+void get_vector_b (solver_data*          solver,
+                   solver_unsigned_int*  index,
+                   solver_unsigned_int   size_of_b,
+                   solver_real*          value) {
+
+    /* Variables */
+    solver_unsigned_int i;
+    solver_linear_callbacks* lin_callbacks;
+
+    lin_callbacks = solver->solver_callbacks;
+
+    if (index==NULL) {
+        for (i=0; i<size_of_b; i++) {
+            lin_callbacks->get_b_element(solver->specific_data, i, &value[i]);
+        }
+    }
+    else {
+        for (i=0; i<size_of_b; i++) {
+            lin_callbacks->get_b_element(solver->specific_data, index[i], &value[i]);
         }
     }
 }

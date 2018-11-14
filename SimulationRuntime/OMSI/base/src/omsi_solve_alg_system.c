@@ -59,10 +59,16 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
 
     /* Update solver specific data */
     omsi_get_analytical_jacobian(alg_system, read_only_model_vars_and_params);
+    omsi_get_right_hand_side(alg_system, read_only_model_vars_and_params);
 
+    alg_system->solver_data->state = solver_ready;
 
     /* Call solver */
+    print_solver_data(alg_system->solver_data, "fmi2Evaluate: Debug print");          /* ToDo: delete */
 
+    solver_linear_solve(alg_system->solver_data);
+
+    print_solver_data(alg_system->solver_data, "fmi2Evaluate: Debug print");     /* ToDo: delete */
 
 
     /* Save results */
@@ -76,9 +82,8 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
                                           const omsi_values*        read_only_model_vars_and_params) {
 
     /* Variables */
-    omsi_unsigned_int i, j;
+    omsi_unsigned_int i;
     omsi_unsigned_int seed_index;
-    omsi_unsigned_int jac_index;
 
     /* Set seed vars */
     for (i=0; i<alg_system->jacobian->n_input_vars; i++) {
@@ -88,8 +93,8 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
 
 
 
-
-    for (i=0; i<alg_system->jacobian->n_input_vars; i++) {    /* ToDo: Add coloring here */
+    /* Build jacobian row wise with directional derivatives */  /* ToDo: check if realy row wise and not column wise... */
+    for (i=0; i<alg_system->jacobian->n_output_vars; i++) {    /* ToDo: Add coloring here */
         /* Activate seed for current row*/
         seed_index = alg_system->jacobian->input_vars_indices[i].index;
         alg_system->jacobian->function_vars->reals[seed_index] = 1;
@@ -99,20 +104,45 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
 
         /* Set i-th row of matrix A */
         set_matrix_A(alg_system->solver_data,
-                     NULL, alg_system->jacobian->n_input_vars,
+                     NULL, alg_system->jacobian->n_output_vars,
                      &i, 1,
-                     &alg_system->jacobian->function_vars->reals[alg_system->jacobian->input_vars_indices[0].index]);
-
-
-        for (j=0; j<alg_system->jacobian->n_output_vars; j++) {
-            jac_index = alg_system->jacobian->output_vars_indices[j].index;
-            alg_system->jacobian->function_vars->reals[jac_index] = 1;
-
-        }
+                     &alg_system->jacobian->function_vars->reals[alg_system->jacobian->output_vars_indices[0].index]);
 
         /* Reset seed vector */
         alg_system->jacobian->function_vars->reals[seed_index] = 0;
     }
+
+    return omsi_ok;
+}
+
+
+omsi_status omsi_get_right_hand_side (omsi_algebraic_system_t*  alg_system,
+                                      const omsi_values*        read_only_model_vars_and_params) {
+
+    /* Variables */
+    omsi_real* residual;
+    omsi_unsigned_int i, n_loop_iteration_vars;
+    omsi_unsigned_int loop_iter_var_index;
+
+    n_loop_iteration_vars = alg_system->jacobian->n_output_vars;
+
+    /* Allocate memory */
+    residual = global_callback->allocateMemory(alg_system->jacobian->n_input_vars, sizeof(omsi_real));
+
+    /* Set loop iteration variables zero. */
+    for (i=0; i<n_loop_iteration_vars; i++) {
+        loop_iter_var_index = alg_system->functions->output_vars_indices[i].index;
+        alg_system->functions->function_vars->reals[loop_iter_var_index] = 0;
+    }
+
+    /* Evaluate residuum function */
+    alg_system->functions->evaluate(alg_system->functions, read_only_model_vars_and_params, residual);
+
+    set_vector_b(alg_system->solver_data, NULL, alg_system->jacobian->n_input_vars, residual);
+
+
+    /* Free memory */
+    global_callback->freeMemory(residual);
 
     return omsi_ok;
 }
