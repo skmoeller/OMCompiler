@@ -288,13 +288,14 @@ solver_state solver_lapack_solve(void* specific_data) {
            &lapack_data->info);
 
     if (lapack_data->info < 0) {
-        /* ToDO: Log */
-        solver_logger(log_solver_error, "In function solver_lapack_solve: the %d-th argument had an illegal value.", (-1)*lapack_data->info);
+        solver_logger(log_solver_error,
+                "In function solver_lapack_solve: the %d-th argument had an illegal value.", (-1)*lapack_data->info);
         return solver_error;
     }
     else if (lapack_data->info > 0) {
-        solver_logger(log_solver_error, "In function solver_lapack_solve:  U(%d,%d) is exactly zero.\n "
-                "The factorization has been completed, but the factor U is exactly"
+        solver_logger(log_solver_error,
+                "In function solver_lapack_solve:  U(%d,%d) is exactly zero.\n "
+                "The factorization has been completed, but the factor U is exactly "
                 "singular, so the solution could not be computed",
                 lapack_data->info, lapack_data->info);
         return solver_error;
@@ -322,12 +323,12 @@ solver_state solver_lapack_solve(void* specific_data) {
  */
 void solver_print_lapack_data(solver_char*          buffer,
                               solver_unsigned_int   buffer_size,
-                              solver_unsigned_int*  length,
+                              solver_int*           length,
                               solver_data*          general_solver_data) {
 
     /* Variables */
     solver_data_lapack* lapack_data;
-    solver_int i;
+    solver_int i, j;
 
     lapack_data = general_solver_data->specific_data;
 
@@ -336,52 +337,54 @@ void solver_print_lapack_data(solver_char*          buffer,
         return;
     }
 
-    *length = snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
-    *length = snprintf(buffer+*length, buffer_size-*length, "Number of linear equations: %i\n", lapack_data->n);
-    *length = snprintf(buffer+*length, buffer_size-*length, "Number of right hand sides: %i\n", lapack_data->nrhs);
+    *length += snprintf(buffer+*length, buffer_size-*length, "\t Number of linear equations: %i\n", lapack_data->n);
+    *length += snprintf(buffer+*length, buffer_size-*length, "\t Number of right hand sides: %i\n", lapack_data->nrhs);
 
-    *length = snprintf(buffer+*length, buffer_size-*length, "A in row major order:\n");
-    for (i=0; i<lapack_data->lda*lapack_data->n; i++) {
-        *length = snprintf(buffer+*length, buffer_size-*length, "\t| %f\t\n", lapack_data->A[i]);
+    *length += snprintf(buffer+*length, buffer_size-*length, "\t A in row major order:\n");
+    for (i=0; i<lapack_data->lda; i++) {
+
+        *length += snprintf(buffer+*length, buffer_size-*length, "\t\t |");
+        for(j=0; j<lapack_data->n;j++) {
+            *length += snprintf(buffer+*length, buffer_size-*length, "  %.3f", lapack_data->A[i+j*lapack_data->lda]);
+        }
+        *length += snprintf(buffer+*length, buffer_size-*length, "\n");
 
         /* check if buffer is nearly full */
-        if (*length >= buffer_size*0.9) {
+        if (*length >= buffer_size*0.5) {
             solver_logger(log_solver_all, buffer);
             *length = 0;
-            *length = snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
+            *length += snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
         }
     }
-    *length = snprintf(buffer+*length, buffer_size-*length, "\n");
 
-    *length = snprintf(buffer+*length, buffer_size-*length, "Leading dimension of A: %i\n", lapack_data->lda);
-    *length = snprintf(buffer+*length, buffer_size-*length, "Pivot indices:");
+    *length += snprintf(buffer+*length, buffer_size-*length, "\t Leading dimension of A: %i\n", lapack_data->lda);
+    *length += snprintf(buffer+*length, buffer_size-*length, "\t Pivot indices:");
+    /* check if buffer is nearly full */
+    if (*length >= buffer_size*0.5) {
+        solver_logger(log_solver_all, buffer);
+        *length = 0;
+        *length += snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
+    }
     for (i=0; i<lapack_data->n; i++) {
-        *length = snprintf(buffer+*length, buffer_size-*length, " %i", lapack_data->ipiv[i]);
-
-        /* check if buffer is nearly full */
-        if (*length >= buffer_size*0.9) {
-            solver_logger(log_solver_all, buffer);
-            *length = 0;
-            *length = snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
-        }
+        *length += snprintf(buffer+*length, buffer_size-*length, " %i", lapack_data->ipiv[i]);
     }
-    *length = snprintf(buffer+*length, buffer_size-*length, "\n");
+    *length += snprintf(buffer+*length, buffer_size-*length, "\n");
 
-    *length = snprintf(buffer+*length, buffer_size-*length, "b in row major order:\n\t| ");
+    *length += snprintf(buffer+*length, buffer_size-*length, "\t b in row major order:\n");
     for (i=0; i<lapack_data->ldb*lapack_data->nrhs; i++) {
-        *length = snprintf(buffer+*length, buffer_size-*length, "\t| %f\t\n", lapack_data->b[i]);
+        *length += snprintf(buffer+*length, buffer_size-*length, "\t \t | %f\t\n", lapack_data->b[i]);
 
         /* check if buffer is nearly full */
-        if (*length >= buffer_size*0.9) {
+        if (*length >= buffer_size*0.5) {
             solver_logger(log_solver_all, buffer);
             *length = 0;
-            *length = snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
+            *length += snprintf(buffer+*length, buffer_size-*length, "Solver data print continue:\n");
         }
     }
-    *length = snprintf(buffer+*length, buffer_size-*length, "\n");
+    *length += snprintf(buffer+*length, buffer_size-*length, "\n");
 
-    *length = snprintf(buffer+*length, buffer_size-*length, "Leading dimension of b: %i\n", lapack_data->ldb);
-    *length = snprintf(buffer+*length, buffer_size-*length, "Info:%i\n", lapack_data->info);
+    *length += snprintf(buffer+*length, buffer_size-*length, "\t Leading dimension of b: %i\n", lapack_data->ldb);
+    *length += snprintf(buffer+*length, buffer_size-*length, "\t LAPACK info: %i\n", lapack_data->info);
 }
 
 

@@ -73,6 +73,9 @@ void get_matrix_A(solver_data*          solver,
 
 void print_solver_data (solver_data* solver);
 
+void print_solver_data (solver_data*    solver,
+                        solver_string   header);
+
 solver_string solver_get_name (solver_data* solver);
 
 #ifdef __cplusplus

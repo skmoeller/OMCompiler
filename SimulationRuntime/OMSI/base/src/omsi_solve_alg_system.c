@@ -39,10 +39,9 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
     /* Check if solver is ready */
     if (alg_system->solver_data == NULL ) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_fatal,
-            "fmi2Evaluate: Solver for %s system %u of size %u not set.",
+            "fmi2Evaluate: Solver for %s system %u not set.",
             alg_system->isLinear ? "linear":"nonlinear",
-            alg_system->id,
-            alg_system->n_iteration_vars);
+            alg_system->id);
         return omsi_fatal;
     }
 
