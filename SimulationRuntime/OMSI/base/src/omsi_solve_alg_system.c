@@ -88,7 +88,7 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
     /* Set seed vars */
     for (i=0; i<alg_system->jacobian->n_input_vars; i++) {
         seed_index = alg_system->jacobian->input_vars_indices[i].index;
-        alg_system->jacobian->function_vars->reals[seed_index] = 0;
+        alg_system->jacobian->local_vars->reals[seed_index] = 0;
     }
 
 
@@ -97,7 +97,7 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
     for (i=0; i<alg_system->jacobian->n_output_vars; i++) {    /* ToDo: Add coloring here */
         /* Activate seed for current row*/
         seed_index = alg_system->jacobian->input_vars_indices[i].index;
-        alg_system->jacobian->function_vars->reals[seed_index] = 1;
+        alg_system->jacobian->local_vars->reals[seed_index] = 1;
 
         /* Evaluate directional derivative */
         alg_system->jacobian->evaluate(alg_system->jacobian, read_only_model_vars_and_params, NULL);
@@ -106,10 +106,10 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
         set_matrix_A(alg_system->solver_data,
                      NULL, alg_system->jacobian->n_output_vars,
                      &i, 1,
-                     &alg_system->jacobian->function_vars->reals[alg_system->jacobian->output_vars_indices[0].index]);
+                     &alg_system->jacobian->local_vars->reals[alg_system->jacobian->output_vars_indices[0].index]);
 
         /* Reset seed vector */
-        alg_system->jacobian->function_vars->reals[seed_index] = 0;
+        alg_system->jacobian->local_vars->reals[seed_index] = 0;
     }
 
     return omsi_ok;

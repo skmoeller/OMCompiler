@@ -197,6 +197,7 @@ omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars) {
     }
 
     function->algebraic_system_t = NULL;
+    function->local_vars = NULL;
 
     omsu_instantiate_omsi_function_func_vars(function, function_vars);
 

@@ -285,6 +285,9 @@ typedef struct omsi_function_t {
                                                      *   Either local copy of needed variables for evaluation or
                                                      *   pointer to next higher struct with `omsi_values` array. */
 
+    omsi_values* local_vars;                        /**< Pointer to local variables like seed variables and
+                                                     *   and dummy derivative variables. */
+
     /** evaluate function
      * \param [in,out] this_function                Pointer to this `omsi_fucntion_t` struct.
      * \param [in]     read_only_vars_and_params    Pointer to read only struct with variables and parameters.

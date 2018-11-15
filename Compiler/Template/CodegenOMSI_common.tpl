@@ -70,7 +70,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let &functionCall = buffer ""
   let &functionPrototypes = buffer ""
 
-  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "allEqns", FileNamePrefix, &functionPrototypes, &includes)
+  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "allEqns", FileNamePrefix, &functionPrototypes, &includes, false)
   let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, "simulation", &includes, &evaluationCode, &functionCall, "", &functionPrototypes)
 
   // generate header file
@@ -292,7 +292,7 @@ template generateDerivativeFile (Option<DerivativeMatrix> matrix, String FileNam
     case SOME(derMat as DERIVATIVE_MATRIX(__)) then
     let initalizationCodeCol = (derMat.columns |> column =>
       <<
-      <%generateInitalizationOMSIFunction(column, 'derivativeMatFunc_<%index%>', FileNamePrefix, &functionPrototypes, &includes)%>
+      <%generateInitalizationOMSIFunction(column, 'derivativeMatFunc_<%index%>', FileNamePrefix, &functionPrototypes, &includes, true)%>
       >>
     ;separator="\n\n")
     <<
@@ -391,7 +391,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       return omsi_ok;
     }
 
-    <%generateInitalizationOMSIFunction (residual, 'resFunction_<%algSysIndex%>', FileNamePrefix, &functionPrototypes, &includes)%>
+    <%generateInitalizationOMSIFunction (residual, 'resFunction_<%algSysIndex%>', FileNamePrefix, &functionPrototypes, &includes, false)%>
     >>
 end generateInitalizationAlgSystem;
 
@@ -433,8 +433,8 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
     )
 
     <<
-    <%omsiFuncName%>[<%i0%>].type = <%stringType%>;
-    <%omsiFuncName%>[<%i0%>].index = <%stringIndex%>;    /* <%stringName%> <%stringVarKind%>*/
+    <%omsiFuncName%>[<%i0%>].type  = <%stringType%>;
+    <%omsiFuncName%>[<%i0%>].index = <%stringIndex%>;    /* <%stringName%> <%stringVarKind%> */
     >>
   ;separator="\n")
 
@@ -448,7 +448,7 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
 end generateOmsiIndexTypeInitialization;
 
 
-template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String functionName, String FileNamePrefix, Text &functionPrototypes, Text &includes)
+template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String functionName, String FileNamePrefix, Text &functionPrototypes, Text &includes, Boolean hasLocalVars)
 "Generates code for omsi_function_t initialization"
 ::=
   match omsiFunction
@@ -498,6 +498,13 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
         return omsi_error;
       }
 
+      <%if hasLocalVars then
+        <<
+        /* Allocate memory for local variables */
+        omsi_function->local_vars = instantiate_omsi_values(<%nAllVars%>, 0, 0, 0);
+
+        >>
+      %>
       /* fill omsi_index_type indices */
       <%generateOmsiIndexTypeInitialization(inputVars, "omsi_function->input_vars_indices", "sim_data->model_vars_and_params", "omsi_function->input_vars_indices")%>
       <%if listLength(inputVars) then "\n"%>
