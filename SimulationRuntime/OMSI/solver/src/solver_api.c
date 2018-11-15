@@ -118,6 +118,8 @@ solver_data* solver_allocate(solver_name            name,
             lin_callbacks->get_b_element = &solver_lapack_get_b_element;
             lin_callbacks->set_b_element = &solver_lapack_set_b_element;
 
+            lin_callbacks->get_x_element = &solver_lapack_get_x_element;
+
             lin_callbacks->solve_eq_system = &solver_lapack_solve;
 
             solver->solver_callbacks = lin_callbacks;
@@ -168,7 +170,7 @@ void solver_free(solver_data* solver) {
  * \return              Returns `solver_status` `solver_okay` if solved successful,
  *                      otherwise `solver_error`.
  */
-solver_status prepare_specific_solver_data (solver_data* solver) {
+solver_status solver_prepare_specific_data (solver_data* solver) {
 
     switch (solver->name) {
         case solver_lapack:
@@ -220,7 +222,7 @@ solver_status prepare_specific_solver_data (solver_data* solver) {
  * \param [in]      value       Pointer to matrix with values, stored as array
  *                              in column-major order of size `n_column*n_row`.
  */
-void set_matrix_A(const solver_data*            solver,
+void solver_set_matrix_A(const solver_data*            solver,
                   const solver_unsigned_int*    column,
                   const solver_unsigned_int     n_column,
                   const solver_unsigned_int*    row,
@@ -293,7 +295,7 @@ void set_matrix_A(const solver_data*            solver,
  *                              On output: Pointer to array containing specified
  *                              columns and rows of matrix A in row-major-order.
  */
-void get_matrix_A(solver_data*          solver,
+void solver_get_matrix_A(solver_data*          solver,
                   solver_unsigned_int*  column,
                   solver_unsigned_int   n_column,
                   solver_unsigned_int*  row,
@@ -351,7 +353,7 @@ void get_matrix_A(solver_data*          solver,
  * \param [in]      value       Pointer to vector with values, stored as array
  *                              of size `n_index`.
  */
-void set_vector_b (solver_data*          solver,
+void solver_set_vector_b (solver_data*          solver,
                    solver_unsigned_int*  index,
                    solver_unsigned_int   size_of_b,
                    solver_real*          value) {
@@ -389,10 +391,10 @@ void set_vector_b (solver_data*          solver,
  *                              On output: Pointer to array containing specified
  *                              values of vector `b`.
  */
-void get_vector_b (solver_data*          solver,
-                   solver_unsigned_int*  index,
-                   solver_unsigned_int   size_of_b,
-                   solver_real*          value) {
+void solver_get_vector_b (solver_data*          solver,
+                          solver_unsigned_int*  index,
+                          solver_unsigned_int   n_index,
+                          solver_real*          values) {
 
     /* Variables */
     solver_unsigned_int i;
@@ -401,16 +403,66 @@ void get_vector_b (solver_data*          solver,
     lin_callbacks = solver->solver_callbacks;
 
     if (index==NULL) {
-        for (i=0; i<size_of_b; i++) {
-            lin_callbacks->get_b_element(solver->specific_data, i, &value[i]);
+        for (i=0; i<n_index; i++) {
+            lin_callbacks->get_b_element(solver->specific_data, i, &values[i]);
         }
     }
     else {
-        for (i=0; i<size_of_b; i++) {
-            lin_callbacks->get_b_element(solver->specific_data, index[i], &value[i]);
+        for (i=0; i<n_index; i++) {
+            lin_callbacks->get_b_element(solver->specific_data, index[i], &values[i]);
         }
     }
 }
+
+
+/**
+ * \brief Gets solution `x` of `A*x=b`.
+ *
+ * \param [in]      solver      Struct with used solver, containing solution in
+ *                              solver specific format. Has to be a linear solver.
+ * \param [in]      index       Array of indices of `x` to get. If `NULL` for all
+ *                              indices up to `n_index` vector b will be set.
+ * \param [in]      n_index     Size of index array `index`.
+ * \param [in,out]  value       On input: Pointer to allocated memory of size
+ *                              `n_index`. <br>
+ *                              On output: Pointer to array containing specified
+ *                              values of vector `x`.
+ */
+void solver_get_vector_x(solver_data*           solver,
+                         solver_unsigned_int*   index,
+                         solver_unsigned_int    n_index,
+                         solver_real*           values) {
+
+    /* Variables */
+    solver_unsigned_int i;
+    solver_linear_callbacks* lin_callbacks;
+
+    lin_callbacks = solver->solver_callbacks;
+
+    if (index==NULL) {
+        for (i=0; i<n_index; i++) {
+            lin_callbacks->get_x_element(solver->specific_data, i, &values[i]);
+        }
+    }
+    else {
+        for (i=0; i<n_index; i++) {
+            lin_callbacks->get_x_element(solver->specific_data, index[i], &values[i]);
+        }
+    }
+}
+
+
+/**
+ * \brief Returns solver name as string.
+ *
+ * \param [in] solver   Pointer to solver instance.
+ * \return              String with solver name.
+ */
+solver_string solver_get_name (solver_data* solver) {
+
+    return solver_name2string(solver->name);
+}
+
 
 /*
  * ============================================================================
@@ -424,7 +476,7 @@ void get_vector_b (solver_data*          solver,
  * \param [in] solver       Solver instance.
  * \param [in] header       String for header of printed output. Can be NULL.
  */
-void print_solver_data (solver_data*    solver,
+void solver_print_data (solver_data*    solver,
                         solver_string   header) {
 
     /* Variables */
@@ -489,17 +541,6 @@ void print_solver_data (solver_data*    solver,
     solver_logger(log_solver_all, buffer);
 }
 
-
-/**
- * \brief Returns solver name as string.
- *
- * \param [in] solver   Pointer to solver instance.
- * \return              String with solver name.
- */
-solver_string solver_get_name (solver_data* solver) {
-
-    return solver_name2string(solver->name);
-}
 
 /*
  * ============================================================================

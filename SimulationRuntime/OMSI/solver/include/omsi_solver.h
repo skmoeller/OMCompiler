@@ -218,21 +218,21 @@ typedef void*   (*solver_callback_allocate_memory)  (solver_unsigned_int, solver
  * \param [in] pointer  Pointer to memory allocated previously with
  *                      `solver_allocate_memory` function or `NULL`.
  */
-typedef void    (*solver_callback_free_memory)  (void*);
+typedef void    (*solver_callback_free_memory)      (void*);
 
-typedef void    (*solver_interact_A_element)    (void*,
-                                                 solver_unsigned_int,
-                                                 solver_unsigned_int,
-                                                 solver_real*);
+typedef void    (*solver_interact_matrix_element)   (void*,
+                                                     solver_unsigned_int,
+                                                     solver_unsigned_int,
+                                                     solver_real*);
 
-typedef void    (*solver_interact_vector_b)     (void*,
-                                                 solver_unsigned_int,
-                                                 solver_real*);
+typedef void    (*solver_interact_vector_element)   (void*,
+                                                     solver_unsigned_int,
+                                                     solver_real*);
 
-typedef void    (*solver_get_set_F_func)       (void);
+typedef void    (*solver_get_set_F_func)            (void);
 
 
-typedef solver_state (*solver_solve_func)      (void*);
+typedef solver_state (*solver_solve_func)           (void*);
 
 
 
@@ -242,11 +242,13 @@ typedef solver_state (*solver_solve_func)      (void*);
  * Struct for callback functions for linear solvers.
  */
 typedef struct solver_linear_callbacks {
-    solver_interact_A_element get_A_element;    /**< Callback function to get element `A(i,j)`. */
-    solver_interact_A_element set_A_element;    /**< Callback function to set element `À(i,j)`. */
+    solver_interact_matrix_element get_A_element;   /**< Callback function to get element(s) of `A`. */
+    solver_interact_matrix_element set_A_element;   /**< Callback function to set element(s) of `A`. */
 
-    solver_interact_vector_b get_b_element;     /**< Callback function to get element `b(i)`. */
-    solver_interact_vector_b set_b_element;     /**< Callback function to set element `b(i)`. */
+    solver_interact_vector_element get_b_element;   /**< Callback function to get element(s) of `b`. */
+    solver_interact_vector_element set_b_element;   /**< Callback function to set element(s) of `b`. */
+
+    solver_interact_vector_element get_x_element;   /**< Callback function to get element(s) of solution vector `x`. */
 
     solver_solve_func solve_eq_system;          /**< Callback function to solve equation system `A*x=b`. */
 }solver_linear_callbacks;

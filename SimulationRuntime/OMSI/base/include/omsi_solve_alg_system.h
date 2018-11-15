@@ -60,6 +60,9 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
 omsi_status omsi_get_right_hand_side (omsi_algebraic_system_t*  alg_system,
                                       const omsi_values*        read_only_model_vars_and_params);
 
+omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
+                                   omsi_values*             vars);
+
 omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system);
 
 

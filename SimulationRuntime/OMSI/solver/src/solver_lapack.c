@@ -255,6 +255,19 @@ void solver_lapack_set_b_element(void*                  specific_data,
 }
 
 
+void solver_lapack_get_x_element(void*                  specific_data,
+                                 solver_unsigned_int    index,
+                                 solver_real*           value) {
+
+    /* Variables */
+    solver_data_lapack* lapack_data;
+
+    lapack_data = specific_data;
+
+    /* Access b(index) */
+    lapack_data->A[index*lapack_data->lda] = *value;
+}
+
 /*
  * ============================================================================
  * Solve call

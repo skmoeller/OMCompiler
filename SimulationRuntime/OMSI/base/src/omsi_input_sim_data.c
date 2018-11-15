@@ -325,7 +325,7 @@ omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
             omsi_function->algebraic_system_t[i].solver_data = solver_allocate(solver_newton, dim_n);
         }
 
-        prepare_specific_solver_data (omsi_function->algebraic_system_t[i].solver_data);
+        solver_prepare_specific_data (omsi_function->algebraic_system_t[i].solver_data);
 
         /* recursive call for all */
         status = omsu_set_default_solvers (omsi_function->algebraic_system_t[i].jacobian, "jacobian");

@@ -64,14 +64,16 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
     alg_system->solver_data->state = solver_ready;
 
     /* Call solver */
-    print_solver_data(alg_system->solver_data, "fmi2Evaluate: Debug print");          /* ToDo: delete */
+    solver_print_data(alg_system->solver_data, "fmi2Evaluate: Debug print");          /* ToDo: delete */
 
     solver_linear_solve(alg_system->solver_data);
 
-    print_solver_data(alg_system->solver_data, "fmi2Evaluate: Debug print");     /* ToDo: delete */
+    solver_print_data(alg_system->solver_data, "fmi2Evaluate: Debug print");     /* ToDo: delete */
 
 
     /* Save results */
+    omsi_get_loop_results(alg_system, alg_system->functions->function_vars);    /* ToDo: change alg_system->functions->function_vars to next higher function_vars
+                                                                                 * only works because at the moment all function vars are pointer to model_vars_and_params */
 
 
     return omsi_ok;
@@ -103,7 +105,7 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
         alg_system->jacobian->evaluate(alg_system->jacobian, read_only_model_vars_and_params, NULL);
 
         /* Set i-th row of matrix A */
-        set_matrix_A(alg_system->solver_data,
+        solver_set_matrix_A(alg_system->solver_data,
                      NULL, alg_system->jacobian->n_output_vars,
                      &i, 1,
                      &alg_system->jacobian->local_vars->reals[alg_system->jacobian->output_vars_indices[0].index]);
@@ -138,7 +140,7 @@ omsi_status omsi_get_right_hand_side (omsi_algebraic_system_t*  alg_system,
     /* Evaluate residuum function */
     alg_system->functions->evaluate(alg_system->functions, read_only_model_vars_and_params, residual);
 
-    set_vector_b(alg_system->solver_data, NULL, alg_system->jacobian->n_input_vars, residual);
+    solver_set_vector_b(alg_system->solver_data, NULL, alg_system->jacobian->n_input_vars, residual);
 
 
     /* Free memory */
@@ -148,48 +150,31 @@ omsi_status omsi_get_right_hand_side (omsi_algebraic_system_t*  alg_system,
 }
 
 
+omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
+                                   omsi_values*             vars) {
 
-#if 0
-int getAnalyticalJacobianNewton(DATA* data, threadData_t *threadData, double* jac, int sysNumber)
-{
-  int i,j,k,l,ii,currentSys = sysNumber;
-  NONLINEAR_SYSTEM_DATA* systemData = &(((DATA*)data)->simulationInfo->nonlinearSystemData[currentSys]);
-  DATA_NEWTON* solverData = (DATA_NEWTON*)(systemData->solverData);
-  const int index = systemData->jacobianIndex;
+    /* Variables */
+    omsi_unsigned_int i;
+    omsi_unsigned_int n_loop_iteration_vars;
 
-  memset(jac, 0, (solverData->n)*(solverData->n)*sizeof(double));
+    n_loop_iteration_vars = alg_system->functions->n_output_vars - alg_system->jacobian->n_output_vars;
 
-  for(i=0; i < data->simulationInfo->analyticJacobians[index].sparsePattern.maxColors; i++)
-  {
-    /* activate seed variable for the corresponding color */
-    for(ii=0; ii < data->simulationInfo->analyticJacobians[index].sizeCols; ii++)
-      if(data->simulationInfo->analyticJacobians[index].sparsePattern.colorCols[ii]-1 == i)
-        data->simulationInfo->analyticJacobians[index].seedVars[ii] = 1;
-
-    systemData->analyticalJacobianColumn(data, threadData);
-
-    for(j = 0; j < data->simulationInfo->analyticJacobians[index].sizeCols; j++)
-    {
-      if(data->simulationInfo->analyticJacobians[index].seedVars[j] == 1)
-      {
-        ii = data->simulationInfo->analyticJacobians[index].sparsePattern.leadindex[j];
-        while(ii < data->simulationInfo->analyticJacobians[index].sparsePattern.leadindex[j+1])
-        {
-          l  = data->simulationInfo->analyticJacobians[index].sparsePattern.index[ii];
-          k  = j*data->simulationInfo->analyticJacobians[index].sizeRows + l;
-          jac[k] = data->simulationInfo->analyticJacobians[index].resultVars[l];
-          ii++;
-        };
-      }
-      /* de-activate seed variable for the corresponding color */
-      if(data->simulationInfo->analyticJacobians[index].sparsePattern.colorCols[j]-1 == i)
-        data->simulationInfo->analyticJacobians[index].seedVars[j] = 0;
+    for (i=0; i<alg_system->jacobian->n_output_vars; i++) {
+        solver_get_vector_x(alg_system->solver_data,
+                            &i,
+                            1,
+                            &vars->reals[alg_system->functions->output_vars_indices[i+n_loop_iteration_vars].index]);
     }
 
-  }
-#endif
 
 
+
+
+
+
+
+    return omsi_ok;
+}
 
 /**
  * \brief Set up solver instance for one algebraic system.
@@ -210,7 +195,7 @@ omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system) {
     }
 
     /* Prepare specific solver data */
-    if(prepare_specific_solver_data(alg_system->solver_data) != solver_ok) {
+    if(solver_prepare_specific_data(alg_system->solver_data) != solver_ok) {
         solver_free(alg_system->solver_data);
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
             "fmi2Something: Could not prepare specific solver data for solver instance.");
