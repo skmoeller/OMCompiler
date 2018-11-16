@@ -40,11 +40,11 @@ extern "C" {
 #define OMSI_GLOBAL_CALLBACK
 
 /* global callback functions */
-omsi_callback_functions* global_callback;
+extern omsi_callback_functions* global_callback;
 
 /* global variables used for filtered_base_logger */
-omsi_string global_instance_name;
-omsi_bool*  global_logCategories;
+extern  omsi_string global_instance_name;
+extern omsi_bool*  global_logCategories;
 
 
 #ifdef __cplusplus

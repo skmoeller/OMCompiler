@@ -27,6 +27,8 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
+
+#include <omsi_global.h>
 #include <omsi_input_xml.h>
 
 

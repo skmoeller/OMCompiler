@@ -44,7 +44,6 @@ extern "C" {
 #include <omsi_callbacks.h>
 
 /* OMSIBase headers */
-#include <omsi_global.h>
 #include <omsi_input_xml.h>
 #include <omsi_input_json.h>
 #include <omsi_input_sim_data.h>
