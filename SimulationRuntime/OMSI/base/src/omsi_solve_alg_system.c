@@ -55,7 +55,7 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
 
 
     /* Check if it is possible to reuse matrix A or vector b */
-
+    /* ToDo */
 
     /* Update solver specific data */
     omsi_get_analytical_jacobian(alg_system, read_only_model_vars_and_params);
@@ -64,16 +64,12 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
     alg_system->solver_data->state = solver_ready;
 
     /* Call solver */
-    solver_print_data(alg_system->solver_data, "fmi2Evaluate: Debug print");          /* ToDo: delete */
-
     solver_linear_solve(alg_system->solver_data);
 
-    solver_print_data(alg_system->solver_data, "fmi2Evaluate: Debug print");     /* ToDo: delete */
-
-
     /* Save results */
-    omsi_get_loop_results(alg_system, alg_system->functions->function_vars);    /* ToDo: change alg_system->functions->function_vars to next higher function_vars
-                                                                                 * only works because at the moment all function vars are pointer to model_vars_and_params */
+    omsi_get_loop_results(alg_system, read_only_model_vars_and_params, alg_system->functions->function_vars);
+    /* ToDo: change alg_system->functions->function_vars to next higher function_vars
+     * only works because at the moment all function vars are pointer to model_vars_and_params */
 
 
     return omsi_ok;
@@ -140,6 +136,10 @@ omsi_status omsi_get_right_hand_side (omsi_algebraic_system_t*  alg_system,
     /* Evaluate residuum function */
     alg_system->functions->evaluate(alg_system->functions, read_only_model_vars_and_params, residual);
 
+    /* Flip signs of residual to get b*/
+    for (i=0; i<alg_system->jacobian->n_input_vars;i++) {
+        residual[i] = - residual[i];
+    }
     solver_set_vector_b(alg_system->solver_data, NULL, alg_system->jacobian->n_input_vars, residual);
 
 
@@ -151,29 +151,49 @@ omsi_status omsi_get_right_hand_side (omsi_algebraic_system_t*  alg_system,
 
 
 omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
+                                   const omsi_values*       read_only_model_vars_and_params,
                                    omsi_values*             vars) {
 
     /* Variables */
     omsi_unsigned_int i;
-    omsi_unsigned_int n_loop_iteration_vars;
+    omsi_unsigned_int n_loop_solved_vars;
+    omsi_real *res;
+    omsi_status status;
 
-    n_loop_iteration_vars = alg_system->functions->n_output_vars - alg_system->jacobian->n_output_vars;
+    status = omsi_ok;
+
+    /* Allocate memory */
+    n_loop_solved_vars = alg_system->n_iteration_vars - alg_system->jacobian->n_output_vars;
+    res = (omsi_real*) global_callback->allocateMemory(n_loop_solved_vars ,sizeof(omsi_real));
 
     for (i=0; i<alg_system->jacobian->n_output_vars; i++) {
         solver_get_vector_x(alg_system->solver_data,
                             &i,
                             1,
-                            &vars->reals[alg_system->functions->output_vars_indices[i+n_loop_iteration_vars].index]);
+                            &vars->reals[alg_system->functions->output_vars_indices[i].index]);
     }
 
+    /* evaluate residuum function to get LOOP_SOLVED variables */
+    alg_system->functions->evaluate(alg_system->functions, read_only_model_vars_and_params, res);
 
+    printf("res[0] = %f", res[0]); fflush(stdout);
 
+    /* Check result */
+    for (i=0; i<n_loop_solved_vars; i++) {
+        if (fabs(res[i]) > 1e-8) {
+            filtered_base_logger(global_logCategories, log_statusdiscard, omsi_warning,
+                    "fmi2Evaluate: Solution of %s system %u is not within accepted error tollerance 1e-8.",
+                    alg_system->isLinear? "linear":"non-linear",
+                    alg_system->id);
+            break;
+            status = omsi_warning;
+        }
+    }
 
+    /* Free memory */
+    global_callback->freeMemory(res);
 
-
-
-
-    return omsi_ok;
+    return status;
 }
 
 /**
