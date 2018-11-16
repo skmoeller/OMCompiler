@@ -27,7 +27,7 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
-
+#include <omsi_global.h>
 #include <omsi_initialization.h>
 
 #ifdef _WIN32
@@ -35,8 +35,9 @@
 #else
 #define ON_WINDOWS 0
 #endif
-
-
+omsi_callback_functions* global_callback;
+omsi_string global_instance_name;
+omsi_bool*  global_logCategories;
 
 /*
  * Allocates memory for the Openmodelica Simulation Unit and initializes it.

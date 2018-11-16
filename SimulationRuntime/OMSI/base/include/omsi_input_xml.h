@@ -40,7 +40,7 @@
 
 #include <omsi.h>
 #include <omsi_callbacks.h>
-#include <omsi_global.h>
+
 #include <omsi_utils.h>
 
 /* typedefs for structures */

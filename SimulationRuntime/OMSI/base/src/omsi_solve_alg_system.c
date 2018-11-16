@@ -27,7 +27,7 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
-
+#include <omsi_global.h>
 #include <omsi_solve_alg_system.h>
 
 

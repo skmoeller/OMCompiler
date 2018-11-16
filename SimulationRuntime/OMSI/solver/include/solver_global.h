@@ -38,9 +38,9 @@ extern "C" {
 #endif
 
 /* Global functions */
-solver_callback_logger          solver_logger;
-solver_callback_allocate_memory solver_allocateMemory;
-solver_callback_free_memory     solver_freeMemory;
+extern solver_callback_logger          solver_logger;
+extern solver_callback_allocate_memory solver_allocateMemory;
+extern solver_callback_free_memory     solver_freeMemory;
 
 #ifdef __cplusplus
 }   /* end of extern "C" { */

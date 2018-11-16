@@ -35,7 +35,7 @@
 /** @addtogroup OMSIBase OMSI Base Library
   * \ingroup OMSI
   *  @{ */
-
+#include <omsi_callbacks.h>
 #include <omsi_utils.h>
 
 #define DEBUG_FILTER_FLUSH omsi_true

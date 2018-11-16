@@ -29,7 +29,7 @@
  */
 
 #if !defined(OMS_NO_FILESYSTEM)
-
+#include <omsi_global.h>
 #include <omsi_mmap.h>
 
 #ifdef __cplusplus

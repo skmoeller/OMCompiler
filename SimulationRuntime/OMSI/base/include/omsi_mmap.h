@@ -33,7 +33,7 @@
 
 #include <omsi.h>
 #include <omsi_callbacks.h>
-#include <omsi_global.h>
+
 
 #include <stdio.h>
 #include <string.h>
