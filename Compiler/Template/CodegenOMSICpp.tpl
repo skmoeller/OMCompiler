@@ -795,9 +795,9 @@ case SIMCODE(modelInfo=MODELINFO(__), makefileParams=MAKEFILE_PARAMS(__), simula
   # /ZI enable Edit and Continue debug info
   CDFLAGS = /ZI
   !IF "$(PCH_FILE)" == ""
-  LDSYSTEMFLAGS=  /link /DLL  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsicpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsi/msvc"  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc/debug"  /LIBPATH:"<%makefileParams.omhome%>/bin" /LIBPATH:"$(BOOST_LIBS)"  OMCppExtensionUtilities_static.lib OMCppModelicaUtilities_static.lib  OMCppOSU.lib   OMSIBase_static.lib OMSISolver_static.lib OMCppDataExchange_static.lib  OMCppSystem_static.lib   OMCppMath_static.lib  OMCppOMCFactory.lib  libexpat.lib WSock32.lib Ws2_32.lib
+  LDSYSTEMFLAGS=  /link /DLL  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsicpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsi/msvc"  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc/debug"  /LIBPATH:"<%makefileParams.omhome%>/bin" /LIBPATH:"$(BOOST_LIBS)"  OMCppExtensionUtilities_static.lib OMCppModelicaUtilities_static.lib  OMCppOSU.lib   OMSIBase_static.lib OMSISolver_static.lib OMCppDgesv_static.lib OMCppDataExchange_static.lib  OMCppSystem_static.lib   OMCppMath_static.lib  OMCppOMCFactory.lib  libexpat.lib WSock32.lib Ws2_32.lib
   !ELSE
-  LDSYSTEMFLAGS=  /link /DLL  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsicpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsi/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc/debug"  /LIBPATH:"<%makefileParams.omhome%>/bin" /LIBPATH:"$(BOOST_LIBS)"  OMCppExtensionUtilities_static.lib OMCppModelicaUtilities_static.lib  OMCppOSU.lib   OMSIBase_static.lib OMSISolver_static.lib OMCppDataExchange_static.lib  OMCppSystem_static.lib  OMCppMath_static.lib  OMCppOMCFactory.lib   libexpat.lib $(PCH_LIB)  WSock32.lib Ws2_32.lib
+  LDSYSTEMFLAGS=  /link /DLL  /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsicpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/omsi/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc" /LIBPATH:"<%makefileParams.omhome%>/lib/<%getTriple()%>/omc/msvc/debug"  /LIBPATH:"<%makefileParams.omhome%>/bin" /LIBPATH:"$(BOOST_LIBS)"  OMCppExtensionUtilities_static.lib OMCppModelicaUtilities_static.lib  OMCppOSU.lib   OMSIBase_static.lib OMSISolver_static.lib OMCppDgesv_static.lib OMCppDataExchange_static.lib  OMCppSystem_static.lib  OMCppMath_static.lib  OMCppOMCFactory.lib   libexpat.lib $(PCH_LIB)  WSock32.lib Ws2_32.lib
   !ENDIF
   # lib names should not be appended with a d just switch to lib/omc/omsicpp
 
@@ -916,7 +916,13 @@ case "gcc" then
             OMCPP_LIBS=-lOMCppSystem_static  -lOMCppOSU -lOMSIBase_static lOMSISolver_static -lOMCppDataExchange_static -lOMCppExtensionUtilities_static -lOMCppModelicaUtilities_static    -lOMCppMath_static
             EXTRA_LIBS=<%dirExtra%> <%libsExtra%>
             LIBS=$(OMCPP_LIBS) $(MODELICA_EXTERNAL_LIBS) $(BASE_LIB) $(EXTRA_LIBS) -L$(BOOST_LIBS) -l$(BOOST_SYSTEM_LIB) -l$(BOOST_FILESYSTEM_LIB) -lexpat
-
+            # link with simple dgesv or full lapack
+            ifeq ($(USE_DGESV),ON)
+               $(eval LIBS=$(LIBS) -lOMCppDgesv_static)
+            else
+               $(eval LIBS=$(LIBS) -L$(LAPACK_LIBS) $(LAPACK_LIBRARIES))
+               $(eval BINARIES=$(BINARIES) <%lapackbins%>)
+            endif
             LDFLAGS=-L"$(OMHOME)/lib/$(TRIPLET)/omc/omsicpp" -L"$(OMHOME)/lib/$(TRIPLET)/omc/omsi" <%additionalLinkerFlags_GCC%> -Wl,--no-undefined
 
 
