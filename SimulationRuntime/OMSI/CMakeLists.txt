@@ -9,10 +9,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "GCC detected, adding compile flags")
     set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Wextra -ansi -pedantic -g")
     IF(NOT WIN32)
-        SET("${CMAKE_C_FLAGS} -fPIC")
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
     ENDIF()
 endif(CMAKE_COMPILER_IS_GNUCXX)
-
+message(STATUS "Compiling with C flags: ${CMAKE_C_FLAGS}")
 
 
 
