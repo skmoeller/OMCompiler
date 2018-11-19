@@ -33,9 +33,10 @@
 #ifndef POSIX
 
 #include <omsi_posix_func.h>
+#include <omsi_global.h>
 
-omsi_char* strdup (const omsi_char *s) {
-    omsi_char *d = malloc (strlen (s) + 1);
+omsi_char* omsi_strdup (const omsi_char *s) {
+    omsi_char* d = (omsi_char*) global_callback->allocateMemory (strlen (s) + 1, sizeof(omsi_char));
     if (d == NULL) {
         return NULL;
     }
@@ -43,7 +44,11 @@ omsi_char* strdup (const omsi_char *s) {
     return d;
 }
 
+#else
 
+omsi_char* omsi_strdup (const omsi_char *s) {
+    return strdup(s);
+}
 
 
 #endif

@@ -31,6 +31,7 @@
 #include <omsi_global.h>
 #include <omsi_input_xml.h>
 
+#include <omsi_posix_func.h>
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
@@ -183,7 +184,7 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     /*read model_vars_info inner stuff */
     omsu_read_var_infos(osu_data->model_data, &mi);
 
-    /* now all data from init_xml should be utilized */
+    /* Free stuff */
     omsu_free_ModelInput(&mi);
 
     return status;
@@ -313,6 +314,10 @@ void omsu_read_var_info (omc_ScalarVariable*    v,
     omsu_read_value_int(omsu_findHashStringString(v,"endLine"), &model_var_info->info.lineEnd, 0);
     omsu_read_value_int(omsu_findHashStringString(v,"endColumn"), &model_var_info->info.colEnd, 0);
     omsu_read_value_bool(omsu_findHashStringString(v,"fileWritable"), &model_var_info->info.fileWritable);
+
+    /* Free memory */
+    global_callback->freeMemory((omsi_char*) aliasTmp);
+
 }
 
 /*
@@ -468,8 +473,8 @@ void omsu_addHashStringString(hash_string_string**  ht,
                               omsi_string           val) {
 
     hash_string_string *v = (hash_string_string*) global_callback->allocateMemory(1, sizeof(hash_string_string));
-    v->id=strdup(key);
-    v->val=strdup(val);
+    v->id=omsi_strdup(key);
+    v->val=omsi_strdup(val);
     HASH_ADD_KEYPTR( hh, *ht, v->id, strlen(v->id), v );
 }
 
@@ -582,7 +587,7 @@ void omsu_read_value_string(omsi_string s,
         return;
     }
 
-    *str = strdup(s);
+    *str = omsi_strdup(s);
     if (str == NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Out of memory.");
@@ -759,8 +764,8 @@ void free_hash_string_string (hash_string_string* data) {
 
     HASH_ITER(hh, data, current, tmp) {
         HASH_DEL(data, current);             /* delete; current advances to next */
-        free((omsi_char *)current->id);
-        free((omsi_char *)current->val);
+        global_callback->freeMemory((omsi_char *)current->id);
+        global_callback->freeMemory((omsi_char *)current->val);
         global_callback->freeMemory(current);
     }
 }

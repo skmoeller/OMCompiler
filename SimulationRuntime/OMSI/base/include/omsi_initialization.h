@@ -50,7 +50,6 @@ extern "C" {
 #include <omsi_input_sim_data.h>
 #include <omsi_input_model_variables.h>
 #include <omsi_utils.h>
-#include <omsi_posix_func.h>
 
 typedef struct modelDescriptionData {
     omsi_char* modelName;

@@ -43,7 +43,7 @@
     }                                                                          \
 
 #include <omsu_initialization.h>
-
+#include <omsi_posix_func.h>
 
 osu_t* omsic_instantiate(omsi_string                            instanceName,
                          omsu_type                              fmuType,
@@ -84,7 +84,7 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     }
 
     strcpy(OSU->GUID, fmuGUID);
-    OSU->instanceName = strdup(instanceName);
+    OSU->instanceName = omsi_strdup((omsi_char*)instanceName);
     OSU->type = fmuType;
     OSU->fmiCallbackFunctions = functions;
 

@@ -231,7 +231,7 @@ void omsu_free_osu_data(omsi_t* omsi_data) {
 
     /* free memory for experiment data */
     if (omsi_data->experiment != NULL) {
-        free((omsi_char *)omsi_data->experiment->solver_name);      /* can't use freeMemory function, memory was allocated in strdup */
+        global_callback->freeMemory((omsi_char *)omsi_data->experiment->solver_name);
         global_callback->freeMemory(omsi_data->experiment);
     }
 
@@ -252,7 +252,7 @@ void omsu_free_model_data (model_data_t* model_data) {
         return;
     }
 
-    free((omsi_char*) model_data->modelGUID);        /* can't use freeMemory function, memory was allocated in strdup */
+    global_callback->freeMemory((omsi_char*) model_data->modelGUID);
 
     /* free model_variable_info_t */
     size = model_data->n_states + model_data->n_derivatives
@@ -282,11 +282,11 @@ void omsu_free_model_variable_info(model_variable_info_t*   model_vars_info,
     }
 
     for (i=0; i<size; i++) {
-        free((omsi_char *)model_vars_info[i].name);           /* can't use freeMemory function, memory was allocated in strdup */
-        free((omsi_char *)model_vars_info[i].comment);
+        global_callback->freeMemory((omsi_char *)model_vars_info[i].name);
+        global_callback->freeMemory((omsi_char *)model_vars_info[i].comment);
 
         omsu_free_modelica_attributes(model_vars_info[i].modelica_attributes, model_vars_info[i].type_index.type);
-        free((omsi_char *)model_vars_info[i].info.filename);
+        global_callback->freeMemory((omsi_char *)model_vars_info[i].info.filename);
     }
 
     global_callback->freeMemory (model_vars_info);
@@ -301,8 +301,8 @@ void omsu_free_modelica_attributes(void*            modelica_attribute,
     if (type==OMSI_TYPE_REAL) {
         attribute_real = modelica_attribute;
 
-        free((omsi_char *)attribute_real->unit);         /* can't use freeMemory function, memory was allocated in strdup */
-        free((omsi_char *)attribute_real->displayUnit);
+        global_callback->freeMemory((omsi_char *)attribute_real->unit);
+        global_callback->freeMemory((omsi_char *)attribute_real->displayUnit);
         global_callback->freeMemory (attribute_real);
     }
     else {

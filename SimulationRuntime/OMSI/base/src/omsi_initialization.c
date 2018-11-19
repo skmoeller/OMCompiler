@@ -28,6 +28,8 @@
  *
  */
 #include <omsi_global.h>
+#include <omsi_posix_func.h>
+
 #include <omsi_initialization.h>
 
 #ifdef _WIN32
@@ -112,7 +114,7 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     global_logCategories = osu_data->logCategories;
 
     /* check fmuResourceLocation for network path e.g. starting with "file://" */
-    omsi_resource_location = strdup(fmuResourceLocation);
+    omsi_resource_location = omsi_strdup(fmuResourceLocation);
     if (strncmp(omsi_resource_location, "file:///", 8) == 0 && ON_WINDOWS){
         memmove(omsi_resource_location, omsi_resource_location+8, strlen(omsi_resource_location) - 8 + 1);
     }
@@ -127,7 +129,7 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
                 "fmi2Instantiate: Could not read modelName from %s/modelDescription.xml.",
                 omsi_resource_location);
         omsu_free_osu_data(osu_data);
-        free(omsi_resource_location);
+        functions->freeMemory(omsi_resource_location);
         return NULL;
     }
 
@@ -139,10 +141,9 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
                 "fmi2Instantiate: Could not process %s.", initXMLFilename);
         omsu_free_osu_data(osu_data);
         functions->freeMemory(initXMLFilename);
-        free(omsi_resource_location);
+        functions->freeMemory(omsi_resource_location);
         return NULL;
     }
-    functions->freeMemory(initXMLFilename);
 
     /* process JSON file and read missing parts of model_data in osu_data */
     infoJsonFilename = functions->allocateMemory(20 + strlen(omsi_resource_location) + strlen(modelName), sizeof(omsi_char));
@@ -154,12 +155,10 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
                 "fmi2Instantiate: Could not process %s.", infoJsonFilename);
         omsu_free_osu_data(osu_data);
         functions->freeMemory(infoJsonFilename);
-        free(omsi_resource_location);
+        functions->freeMemory(omsi_resource_location);
         return NULL;
     }
     */
-    functions->freeMemory(infoJsonFilename);
-    free(omsi_resource_location);
 
     /* ************************************************************************* */
 
@@ -198,6 +197,12 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
         return NULL;
     }
 
+    /* Free local variables */
+    functions->freeMemory((omsi_char*) modelName);
+    functions->freeMemory(infoJsonFilename);
+    functions->freeMemory(omsi_resource_location);
+    functions->freeMemory(initXMLFilename);
+
     return osu_data;
 }
 
@@ -213,7 +218,7 @@ void XMLCALL startElement_2(void*           userData,
     if (!strcmp(name, "ModelExchange")) {
         for (i = 0; attr[i]; i += 2) {
             if (strcmp("modelIdentifier", attr[i]) == 0 ) {
-                modelName = strdup(attr[i+1]);
+                modelName = omsi_strdup(attr[i+1]);
                 md->modelName = modelName;
                 return;
             }

@@ -54,6 +54,7 @@ void omsu_free_osu(osu_t* OSU) {
         return;
     }
 
+    global_callback->freeMemory((omsi_char*) OSU->instanceName);
     global_callback->freeMemory(OSU->osu_functions);
     global_callback->freeMemory(OSU->vrStatesDerivatives);
     global_callback->freeMemory(OSU->vrStates);

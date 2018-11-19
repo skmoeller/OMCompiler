@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 
-omsi_char* strdup (const omsi_char *s);
+omsi_char* omsi_strdup (const omsi_char *s);
 
 #ifdef __cplusplus
 }
