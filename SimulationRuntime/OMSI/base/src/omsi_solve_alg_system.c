@@ -176,8 +176,6 @@ omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
     /* evaluate residuum function to get LOOP_SOLVED variables */
     alg_system->functions->evaluate(alg_system->functions, read_only_model_vars_and_params, res);
 
-    printf("res[0] = %f", res[0]); fflush(stdout);
-
     /* Check result */
     for (i=0; i<n_loop_solved_vars; i++) {
         if (fabs(res[i]) > 1e-8) {

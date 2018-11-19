@@ -176,6 +176,7 @@ omsi_bool isCategoryLogged(omsi_bool*       logCategories,
         return omsi_true;
     }
 
+    /* ToDo: Fix UNADRESSABLE ACCESS of freed memory error (reported with Dr. Memory on Windows */
     if (categoryIndex < NUMBER_OF_CATEGORIES && (logCategories[categoryIndex] || logCategories[log_all])) {
         return omsi_true;
     }
@@ -350,8 +351,8 @@ void omsu_free_sim_data (sim_data_t* sim_data) {
 
     omsi_free_model_variables(sim_data);        /* ToDo: free global variables first */
 
-    omsu_free_omsi_function (sim_data->initialization);
-    omsu_free_omsi_function (sim_data->simulation);
+    omsu_free_omsi_function (sim_data->initialization, omsi_true);
+    omsu_free_omsi_function (sim_data->simulation, omsi_true);
 
 
     global_callback->freeMemory(sim_data->zerocrossings_vars);          /* ToDo: free inner stuff */
@@ -364,13 +365,25 @@ void omsu_free_sim_data (sim_data_t* sim_data) {
 /*
  * frees memory for omsi_function struct and all its components
  */
-void omsu_free_omsi_function(omsi_function_t* omsi_function) {
+void omsu_free_omsi_function(omsi_function_t*   omsi_function,
+                             omsi_bool          shared_vars) {
+
+    /* Variables */
+    omsi_unsigned_int i;
 
     if (omsi_function==NULL) {
         return;
     }
 
-    /*omsu_free_omsi_values(omsi_function->function_vars);*/        /* ToDo: check function! */
+    if (!shared_vars) {
+        omsu_free_omsi_values(omsi_function->function_vars);
+    }
+    omsu_free_omsi_values(omsi_function->local_vars);
+
+    /* Free algebraic systems */
+    for(i=0; i<omsi_function->n_algebraic_system; i++) {
+        omsu_free_alg_system(&omsi_function->algebraic_system_t[i], shared_vars);
+    }
 
     global_callback->freeMemory(omsi_function->input_vars_indices);
     global_callback->freeMemory(omsi_function->output_vars_indices);
@@ -383,11 +396,14 @@ void omsu_free_omsi_function(omsi_function_t* omsi_function) {
 /*
  * Deallocates memory of omsi_algebraic_system_t struct.
  */
-void omsu_free_alg_system (omsi_algebraic_system_t* algebraic_system) {
+void omsu_free_alg_system (omsi_algebraic_system_t* algebraic_system,
+                           omsi_bool                shared_vars) {
 
     global_callback->freeMemory(algebraic_system->zerocrossing_indices);
-    omsu_free_omsi_function(algebraic_system->jacobian);
-    omsu_free_omsi_function(algebraic_system->functions);
+    omsu_free_omsi_function(algebraic_system->jacobian, shared_vars);
+    omsu_free_omsi_function(algebraic_system->functions, shared_vars);
+
+    /* ToDo: free solver data */
 
     global_callback->freeMemory(algebraic_system);
 }
@@ -442,18 +458,18 @@ void omsu_print_omsi_t (omsi_t*     omsi,
     strcat(nextIndent, "| ");
 
     /* print content of omsi_data */
-    printf("%sstruct omsi_t:\n", indent); fflush(stdout);
+    printf("%sstruct omsi_t:\n", indent);
 
     /* print model data */
-    omsu_print_model_data (omsi->model_data, nextIndent); fflush(stdout);
+    omsu_print_model_data (omsi->model_data, nextIndent);
     printf("%s\n", indent);
 
     /* print sim_data */
-    omsu_print_sim_data(omsi->sim_data, nextIndent); fflush(stdout);
+    omsu_print_sim_data(omsi->sim_data, nextIndent);
     printf("%s\n", indent);
 
     /* print experiment_data */
-    omsu_print_experiment(omsi->experiment, nextIndent); fflush(stdout);
+    omsu_print_experiment(omsi->experiment, nextIndent);
 
     /* free memory */
     global_callback->freeMemory(nextIndent);
@@ -473,7 +489,7 @@ void omsu_print_model_data(model_data_t*    model_data,
     strcat(nextIndent, "| ");
 
     /* print content */
-    printf("%sstruct model_data_t:\n", indent); fflush(stdout);
+    printf("%sstruct model_data_t:\n", indent);
     printf("%s| modelGUID:\t\t\t%s\n", indent, model_data->modelGUID);
     printf("%s| n_states:\t\t\t%d\n", indent, model_data->n_states);
     printf("%s| n_derivatives:\t\t%d\n", indent, model_data->n_derivatives);

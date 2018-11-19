@@ -86,9 +86,11 @@ void omsu_free_equation_info(equation_info_t*   eq_info,
 
 void omsu_free_sim_data (sim_data_t* sim_data);
 
-void omsu_free_omsi_function(omsi_function_t* omsi_function);
+void omsu_free_omsi_function(omsi_function_t*   omsi_function,
+                             omsi_bool          shared_vars);
 
-void omsu_free_alg_system (omsi_algebraic_system_t* algebraic_system);
+void omsu_free_alg_system (omsi_algebraic_system_t* algebraic_system,
+                           omsi_bool                shared_vars);
 
 void omsu_free_omsi_values(omsi_values* values);
 

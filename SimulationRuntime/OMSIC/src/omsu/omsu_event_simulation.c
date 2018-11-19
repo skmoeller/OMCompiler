@@ -154,7 +154,8 @@ omsi_status omsi_event_update(osu_t*              OSU,
 #endif
 #endif
 
-    omsu_storePreValues(OSU->osu_data);
+    /* ToDo: enable, when preValues are implemented */
+    /* omsu_storePreValues(OSU->osu_data); */
 
     /* ToDo: Add sample events */
 #if 0
@@ -228,7 +229,9 @@ omsi_status omsi_event_update(osu_t*              OSU,
      * in fmi2 import and export. This is an workaround,
      * since the iteration seem not starting.
      */
-    omsu_storePreValues(OSU->osu_data);
+
+    /* ToDo: enable, when preValues are implemented */
+    /* omsu_storePreValues(OSU->osu_data); */
     updateRelationsPre(OSU->old_data);
 
     //Get Next Event Time
