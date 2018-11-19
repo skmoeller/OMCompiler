@@ -126,6 +126,8 @@ omsi_status omsi_initialize_model_variables(omsi_t*                         omsu
     omsi_unsigned_int bool_parameter, bool_parameter_2;
     omsi_unsigned_int bool_algebraic, bool_algebraic_2;
 
+    UNUSED(functions);
+    UNUSED(instanceName);
 
     if(!model_variables_allocated(omsu, "fmi2Instantiate"))
         return omsi_error;
@@ -613,6 +615,9 @@ omsi_status omsi_set_string(omsi_t*                  omsu,
 /* ToDo: change message. Is also called from fmi2Get... fmi2Set... */
 omsi_bool model_variables_allocated(omsi_t*     omsu,
                                     omsi_string functionName) {
+
+    UNUSED(omsu);
+    UNUSED(functionName);
 #if 0
     /* Check inputs */
     if (!omsu->model_data) {

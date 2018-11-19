@@ -46,6 +46,8 @@
 #define OVERFLOW_PROTECTED omsi_false
 
 
+#define UNUSED(x) (void)(x)     /* ToDo: delete later */
+
 /*
  * ============================================================================
  * Section for logger functions
@@ -189,6 +191,8 @@ omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
                                omsi_string          function_name,
                                omsi_unsigned_int    vr,
                                omsi_int             end) {
+
+    UNUSED(omsu);
 
     if ((omsi_int)vr >= end) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,

@@ -39,6 +39,8 @@ omsi_callback_functions* global_callback;
 omsi_string global_instance_name;
 omsi_bool*  global_logCategories;
 
+#define UNUSED(x) (void)(x)     /* ToDo: delete later */
+
 /*
  * Allocates memory for the Openmodelica Simulation Unit and initializes it.
  */
@@ -61,6 +63,7 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     omsi_char* infoJsonFilename;
     omsi_status status;
 
+    UNUSED(fmuType);
 
     /* check all input arguments */
     /* ignoring argument: visible */

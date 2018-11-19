@@ -100,6 +100,8 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
                                    const omsi_callback_functions*   callback_functions,
                                    omsi_string                      instanceName ) {
 
+    UNUSED(instanceName);
+
     /* Set global function pointer */
     global_callback = (omsi_callback_functions*) callback_functions;
 

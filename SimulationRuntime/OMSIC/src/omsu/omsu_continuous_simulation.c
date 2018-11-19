@@ -36,6 +36,7 @@
 
 #include <omsu_continuous_simulation.h>
 
+#define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
 /*
  * The component environment is in Event Mode and the super dense time is
@@ -223,6 +224,8 @@ omsi_status omsi_completed_integrator_step(osu_t*       OSU,
     omsi_status status;
     /*threadData_t *threadData = OSU->threadData;*/
 
+    UNUSED(noSetFMUStatePriorToCurrentPoint);
+
     if (invalidState(OSU, "fmi2CompletedIntegratorStep", modelContinuousTimeMode, ~0)) {
         return omsi_error;
     }
@@ -351,6 +354,8 @@ omsi_status omsi_get_directional_derivative(osu_t*                  OSU,
                                             const omsi_real         dvKnown[],
                                             omsi_real               dvUnknown[]) {
 
+    UNUSED(vUnknown_ref); UNUSED(nUnknown); UNUSED(vKnown_ref); UNUSED(nKnown);  UNUSED(dvKnown); UNUSED(dvUnknown);
+
     if (invalidState(OSU, "fmi2GetDirectionalDerivative", modelInstantiated | modelEventMode | modelContinuousTimeMode, ~0)) {
         return omsi_error;
     }
@@ -369,7 +374,7 @@ omsi_status omsi_get_directional_derivative(osu_t*                  OSU,
     // This code assumes that the FMU variables are always sorted,
     // states first and then derivatives.
     // This is true for the actual OMC FMUs.
-    // Anyway we'll check that the references are in the valid range
+    // Anyway we will check that the references are in the valid range
     for (i = 0; i < nUnknown; i++) {
         if (vUnknown_ref[i] >= OSU->osu_data->model_data->n_states)
             // We are only computing the A part of the Jacobian for now

@@ -36,6 +36,7 @@
 
 #include <omsu_event_simulation.h>
 
+#define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
 /*
  * The model enters Event Mode from the Continuous-Time Mode and discrete-time
@@ -65,7 +66,8 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
 
     /* threadData_t *threadData = OSU->threadData; */
     /* Variables */
-    omsi_unsigned_int i;
+
+    UNUSED(eventIndicators);
 
     /* According to FMI RC2 specification fmi2GetEventIndicators should only be
      * allowed in Event Mode, Continuous-Time Mode & terminated. The following code
@@ -123,7 +125,6 @@ omsi_status omsi_event_update(osu_t*              OSU,
                               omsi_event_info*    eventInfo) {
 
     /* Variables */
-    omsi_int i;
     omsi_status status;
     /* threadData_t *threadData = OSU->threadData; */
 
