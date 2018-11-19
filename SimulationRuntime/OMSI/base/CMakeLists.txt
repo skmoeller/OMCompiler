@@ -21,6 +21,7 @@ add_library(${OSUBaseName}
   src/omsi_input_sim_data.c
   src/omsi_input_xml.c
   src/omsi_mmap.c
+  src/omsi_posix_func.c
   src/omsi_solve_alg_system.c
   src/omsi_utils.c)
 
@@ -42,6 +43,7 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_sim_data.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_xml.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_mmap.h
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_posix_func.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_solve_alg_system.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_utils.h
   ${CMAKE_SOURCE_DIR}/base/include/uthash.h

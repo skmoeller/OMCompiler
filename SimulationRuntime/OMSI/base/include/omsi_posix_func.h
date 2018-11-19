@@ -29,52 +29,28 @@
  */
 
 
-#ifndef OMSI_INITIALIZATION__H_
-#define OMSI_INITIALIZATION__H_
+#ifndef OMSI_POSIX_FUNC__H_
+#define OMSI_POSIX_FUNC__H_
+
+#ifndef POSIX
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <omsi.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-
-/* Public OMSI headers */
-#include <omsi.h>
-#include <omsi_callbacks.h>
-
-/* OMSIBase headers */
-#include <omsi_input_xml.h>
-#include <omsi_input_json.h>
-#include <omsi_input_sim_data.h>
-#include <omsi_input_model_variables.h>
-#include <omsi_utils.h>
-#include <omsi_posix_func.h>
-
-typedef struct modelDescriptionData {
-    omsi_char* modelName;
-} modelDescriptionData;
 
 
-/*! \fn omsi_me_instantiate
- *
- *  This function instantiates the osu instance.
- *
- *  \param [ref] [data]
- */
-omsi_t* omsi_instantiate(omsi_string                            instanceName,
-                         omsu_type                              fmuType,
-                         omsi_string                            fmuGUID,
-                         omsi_string                            fmuResourceLocation,
-                         const omsi_callback_functions*         functions,
-                         omsi_template_callback_functions_t*    template_functions,
-                         omsi_bool                              __attribute__((unused)) visible,
-                         omsi_bool                              loggingOn);
-
-omsi_string omsi_get_model_name(omsi_string fmuResourceLocation);
+omsi_char* strdup (const omsi_char *s);
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif
+
 #endif

@@ -41,6 +41,7 @@
 #include <omsi.h>
 #include <omsi_callbacks.h>
 
+#include <omsi_posix_func.h>
 #include <omsi_utils.h>
 
 /* typedefs for structures */

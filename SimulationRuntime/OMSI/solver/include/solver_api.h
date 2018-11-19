@@ -39,6 +39,8 @@
 #ifndef _SOLVER_API_H
 #define _SOLVER_API_H
 
+#include <stdio.h>
+
 #include <omsi_solver.h>
 
 #ifdef __cplusplus
