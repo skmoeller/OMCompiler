@@ -612,7 +612,7 @@ omsi_status omsi_set_string(omsi_t*                  omsu,
     return omsi_ok;
 }
 
-/* ToDo: change message. Is also called from fmi2Get... fmi2Set... */
+
 omsi_bool model_variables_allocated(omsi_t*     omsu,
                                     omsi_string functionName) {
 

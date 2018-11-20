@@ -228,11 +228,11 @@ solver_status solver_prepare_specific_data (solver_data* solver) {
  *                              in column-major order of size `n_column*n_row`.
  */
 void solver_set_matrix_A(const solver_data*            solver,
-                  const solver_unsigned_int*    column,
-                  const solver_unsigned_int     n_column,
-                  const solver_unsigned_int*    row,
-                  const solver_unsigned_int     n_row,
-                  solver_real*                  value) {
+                         const solver_unsigned_int*    column,
+                         const solver_unsigned_int     n_column,
+                         const solver_unsigned_int*    row,
+                         const solver_unsigned_int     n_row,
+                         solver_real*                  value) {
 
     /* Variables */
     solver_unsigned_int i, j;
@@ -249,28 +249,28 @@ void solver_set_matrix_A(const solver_data*            solver,
         /* copy values element wise */
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                lin_callbacks->set_A_element(solver->specific_data, i, j, &value[i*solver->dim_n+j]);
+                lin_callbacks->set_A_element(solver->specific_data, i, j, &value[i+j*solver->dim_n]);
             }
         }
     }
     else if (column==NULL && row != NULL) {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                lin_callbacks->set_A_element(solver->specific_data, i, row[j], &value[i*solver->dim_n+j]);
+                lin_callbacks->set_A_element(solver->specific_data, i, row[j], &value[i+j*solver->dim_n]);
             }
         }
     }
     else if (column!=NULL && row == NULL) {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                lin_callbacks->set_A_element(solver->specific_data, column[i], j, &value[i*solver->dim_n+j]);
+                lin_callbacks->set_A_element(solver->specific_data, column[i], j, &value[i+j*solver->dim_n]);
             }
         }
     }
     else {
         for (i=0; i<n_column; i++) {
             for (j=0; j<n_row; j++) {
-                lin_callbacks->set_A_element(solver->specific_data, column[i], row[j], &value[i*solver->dim_n+j]);
+                lin_callbacks->set_A_element(solver->specific_data, column[i], row[j], &value[i+j*solver->dim_n]);
             }
         }
     }

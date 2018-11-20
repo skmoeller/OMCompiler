@@ -265,7 +265,7 @@ void solver_lapack_get_x_element(void*                  specific_data,
     lapack_data = specific_data;
 
     /* Access b(index) */
-    value[0] = lapack_data->b[index*lapack_data->ldb];
+    value[0] = lapack_data->b[index];
 }
 
 /*
