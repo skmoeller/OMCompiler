@@ -46,6 +46,8 @@
 
 #include <omsi_global.h>
 
+#include <solver_api.h>
+
 #include <omsi_input_model_variables.h>
 
 

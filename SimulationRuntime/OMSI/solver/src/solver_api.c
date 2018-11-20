@@ -151,7 +151,8 @@ void solver_free(solver_data* solver) {
     /* free solver specific data */
     switch (solver->name) {
         case solver_lapack:
-            lapack_free_data(solver->specific_data);
+            lapack_free_data(solver);
+
         break;
         default:
             if (solver->specific_data != NULL) {
@@ -160,6 +161,7 @@ void solver_free(solver_data* solver) {
             }
     }
 
+    solver_freeMemory(solver->solver_callbacks);
     solver_freeMemory(solver);
 }
 

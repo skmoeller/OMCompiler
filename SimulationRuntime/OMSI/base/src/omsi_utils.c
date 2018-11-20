@@ -403,7 +403,8 @@ void omsu_free_alg_system (omsi_algebraic_system_t* algebraic_system,
     omsu_free_omsi_function(algebraic_system->jacobian, shared_vars);
     omsu_free_omsi_function(algebraic_system->functions, shared_vars);
 
-    /* ToDo: free solver data */
+    /* Free solver data */
+    solver_free(algebraic_system->solver_data);
 
     global_callback->freeMemory(algebraic_system);
 }
