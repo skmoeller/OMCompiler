@@ -254,15 +254,40 @@ omsi_values* instantiate_omsi_values (omsi_unsigned_int   n_reals,    /* length 
     /* Allocate memory */
     values = (omsi_values*) global_callback->allocateMemory(1, sizeof(omsi_values));
 
-    values->reals = (omsi_real*) global_callback->allocateMemory(n_reals, sizeof(omsi_real));
-    values->ints = (omsi_int*) global_callback->allocateMemory(n_ints, sizeof(omsi_int));
-    values->bools = (omsi_bool*) global_callback->allocateMemory(n_bools, sizeof(omsi_bool));
-
-    /* check for out of memory error */
-    if (!values || !values->reals || !values->ints || !values->bools) {
-        /* ToDo: Log error out of memory */
-        return NULL;
+    if (n_reals>0) {
+        values->reals = alignedMalloc(sizeof(omsi_real) * n_reals, 64);     /* ToDo: Switch 64 to some OS depending macro */
+        if (!values->reals) {
+            /* ToDo: log Error */
+            return NULL;
+        }
     }
+    else {
+        values->reals = NULL;
+    }
+
+    if (n_ints>0) {
+        values->ints = alignedMalloc(sizeof(omsi_int) * n_reals, 64);
+        if (!values->ints) {
+            /* ToDo: log Error */
+            return NULL;
+        }
+    }
+    else {
+        values->ints = NULL;
+    }
+
+    if (n_bools>0) {
+        values->bools = alignedMalloc(sizeof(omsi_bool) * n_reals, 64);
+        if (!values->bools) {
+            /* ToDo: log Error */
+            return NULL;
+        }
+    }
+    else {
+        values->bools = NULL;
+    }
+
+    values->externs = NULL;
 
     return values;
 }
