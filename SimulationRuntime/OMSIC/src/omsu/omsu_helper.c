@@ -41,12 +41,12 @@
 void omsu_free_osu(osu_t* OSU) {
 
     /* Log function call */
-    if (OSU->state == modelError || OSU->state == 0) {
-        filtered_base_logger(global_logCategories, log_all, omsi_error,
+    if (OSU->state == modelError || OSU->state == 0) {      /* global logCategories already freed */
+        filtered_base_logger(NULL, log_all, omsi_error,
                 "Free OSU component.");
     }
     else {
-        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+        filtered_base_logger(NULL, log_all, omsi_ok,
                 "Free OSU component.");
     }
 

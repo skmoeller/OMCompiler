@@ -323,14 +323,15 @@ omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
 
     status = omsi_ok;
 
-    /* Log function call */
-    filtered_base_logger(global_logCategories, log_all, omsi_ok,
-        "fmi2Instantiate: Set default solver for algebraic systems in omsi_function %s.",
-        omsi_function_name);
-
-
     if (omsi_function==NULL) {
         return omsi_ok;
+    }
+
+    /* Log function call */
+    if (omsi_function->n_algebraic_system > 0) {
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2Instantiate: Set default solver for algebraic systems in omsi_function %s.",
+            omsi_function_name);
     }
 
     for(i=0; i<omsi_function->n_algebraic_system; i++) {

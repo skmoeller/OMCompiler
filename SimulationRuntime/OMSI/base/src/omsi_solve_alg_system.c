@@ -156,15 +156,15 @@ omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
 
     /* Variables */
     omsi_unsigned_int i;
-    omsi_unsigned_int n_loop_solved_vars;
+    omsi_unsigned_int n_loop_iteration_vars;
     omsi_real *res;
     omsi_status status;
 
     status = omsi_ok;
 
     /* Allocate memory */
-    n_loop_solved_vars = alg_system->n_iteration_vars - alg_system->jacobian->n_output_vars;
-    res = (omsi_real*) global_callback->allocateMemory(n_loop_solved_vars ,sizeof(omsi_real));
+    n_loop_iteration_vars = alg_system->jacobian->n_output_vars;
+    res = (omsi_real*) global_callback->allocateMemory(n_loop_iteration_vars ,sizeof(omsi_real));
 
     for (i=0; i<alg_system->jacobian->n_output_vars; i++) {
         solver_get_vector_x(alg_system->solver_data,
@@ -177,7 +177,7 @@ omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
     alg_system->functions->evaluate(alg_system->functions, read_only_model_vars_and_params, res);
 
     /* Check result */
-    for (i=0; i<n_loop_solved_vars; i++) {
+    for (i=0; i<n_loop_iteration_vars; i++) {
         if (fabs(res[i]) > 1e-8) {
             filtered_base_logger(global_logCategories, log_statusdiscard, omsi_warning,
                     "fmi2Evaluate: Solution of %s system %u is not within accepted error tollerance 1e-8.",

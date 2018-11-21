@@ -28,6 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stddef.h>   /* ptrdiff_t */
 #include <stdlib.h>   /* exit() */
 
+#include <omsi_global.h>
+
 /* These macros use decltype or the earlier __typeof GNU extension.
    As decltype is only available in newer compilers (VS2010 or gcc 4.3+
    when compiling c++ source) this code uses whatever method is needed
@@ -70,10 +72,10 @@ typedef unsigned char uint8_t;
 #define uthash_fatal(msg) exit(-1)        /* fatal error (out of memory,etc) */
 #endif
 #ifndef uthash_malloc
-#define uthash_malloc(sz) malloc(sz)      /* malloc fcn                      */
+#define uthash_malloc(sz) global_callback->allocateMemory(1,sz) /* malloc fcn*/
 #endif
 #ifndef uthash_free
-#define uthash_free(ptr,sz) free(ptr)     /* free fcn                        */
+#define uthash_free(ptr,sz) global_callback->freeMemory(ptr)     /* free fcn */
 #endif
 
 #ifndef uthash_noexpand_fyi
