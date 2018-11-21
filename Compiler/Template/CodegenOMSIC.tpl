@@ -77,8 +77,8 @@ template generateOMSIC(SimCode simCode)
     /* Set function pointers for initialization in global struct. */
     void initialize_start_function (omsi_template_callback_functions_t* callback) {
 
-      callback->initialize_initialization_problem = NULL;
-      callback->initialize_simulation_problem = <%fileNamePrefix%>_initialize_allEqns_OMSIFunc;
+      callback->initialize_initialization_problem = <%fileNamePrefix%>_initialize_initEqns_OMSIFunc;
+      callback->initialize_simulation_problem = <%fileNamePrefix%>_initialize_simEqns_OMSIFunc;
 
       callback->isSet = omsi_true;
     }

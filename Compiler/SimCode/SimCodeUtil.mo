@@ -278,7 +278,7 @@ protected
   BackendDAE.Var dtVar;
   HashTableSimCodeEqCache.HashTable eqCache;
   
-  SimCode.OMSIFunction omsiAllEquations;
+  SimCode.OMSIFunction omsiAllEquations, omsiInitEquations;
   Option<SimCode.OMSIData> omsiOptData;
 
   constant Boolean debug = false;
@@ -303,21 +303,33 @@ algorithm
     // initialization stuff
     // ********************
 
-    // generate equations for initDAE
-    (initialEquations, uniqueEqIndex, tempvars) := createInitialEquations(inInitDAE, uniqueEqIndex, {});
+    if not (Config.simCodeTarget() == "omsic" or
+            Config.simCodeTarget() == "omsicpp")
+    then
+      // generate equations for initDAE
+      (initialEquations, uniqueEqIndex, tempvars) := createInitialEquations(inInitDAE, uniqueEqIndex, {});
 
-    // generate equations for initDAE_lambda0
-    if isSome(inInitDAE_lambda0) then
-      SOME(initDAE_lambda0) := inInitDAE_lambda0;
-      (initialEquations_lambda0, uniqueEqIndex, tempvars) := createInitialEquations_lambda0(initDAE_lambda0, uniqueEqIndex, tempvars);
+      // generate equations for initDAE_lambda0
+      if isSome(inInitDAE_lambda0) then
+        SOME(initDAE_lambda0) := inInitDAE_lambda0;
+        (initialEquations_lambda0, uniqueEqIndex, tempvars) := createInitialEquations_lambda0(initDAE_lambda0, uniqueEqIndex, tempvars);
+      else
+        initialEquations_lambda0 := {};
+      end if;
+
+      // generate equations for removed initial equations
+      (removedInitialEquations, uniqueEqIndex, tempvars) := createNonlinearResidualEquations(inRemovedInitialEquationLst, uniqueEqIndex, tempvars);
+
+      execStat("simCode: created initialization part");
     else
-      initialEquations_lambda0 := {};
+       initialEquations_lambda0 :={};
+       initialEquations := {};
+       removedInitialEquations := {};
+       tempvars := {};
+
+       (omsiInitEquations, uniqueEqIndex) :=
+           createAllEquationOMSI(inInitDAE.eqs, dlow.shared, {}, uniqueEqIndex);
     end if;
-
-    // generate equations for removed initial equations
-    (removedInitialEquations, uniqueEqIndex, tempvars) := createNonlinearResidualEquations(inRemovedInitialEquationLst, uniqueEqIndex, tempvars);
-
-    execStat("simCode: created initialization part");
 
     shared as BackendDAE.SHARED(globalKnownVars=globalKnownVars,
                                 constraints=constraints,
@@ -365,7 +377,7 @@ algorithm
        sccOffset := 0;
        (omsiAllEquations, uniqueEqIndex) :=
            createAllEquationOMSI(contSysts, shared, zeroCrossings, uniqueEqIndex);
-       omsiOptData := SOME(SimCode.OMSI_DATA(simulation=omsiAllEquations));
+       omsiOptData := SOME(SimCode.OMSI_DATA(simulation=omsiAllEquations, initialization=omsiInitEquations));
     end if;
 
 

@@ -50,19 +50,20 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
  Code is generated directly into files"
 ::=
   match simCode
-  case SIMCODE(omsiData=omsiData as SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__)))) then
+  case SIMCODE(omsiData=omsiData as SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__),
+                                                   initialization=initialization as OMSI_FUNCTION(__)))) then
 
     /* generate file for algebraic systems in simulation problem */
-    let content = generateOmsiFunctionCode(simulation, FileNamePrefix)
+    let content = generateOmsiFunctionCode(simulation, FileNamePrefix, "simEqns")
     let () = textFile(content, FileNamePrefix+"_sim_equations.c")
 
-    /* generate file for initialization problem */
-    /* ToDo: add */
+    let content = generateOmsiFunctionCode(initialization, FileNamePrefix, "initEqns")
+    let () = textFile(content, FileNamePrefix+"_init_equations.c")
   <<>>
 end generateEquationsCode;
 
 
-template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePrefix)
+template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePrefix, String omsiName)
 "Generates file for all equations, containing equation evaluations for all systems"
 ::=
   let &includes = buffer ""
@@ -70,12 +71,12 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let &functionCall = buffer ""
   let &functionPrototypes = buffer ""
 
-  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "allEqns", FileNamePrefix, &functionPrototypes, &includes, false)
-  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, "simulation", &includes, &evaluationCode, &functionCall, "", &functionPrototypes)
+  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, omsiName, FileNamePrefix, &functionPrototypes, &includes, false)
+  let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, omsiName, &includes, &evaluationCode, &functionCall, "", &functionPrototypes)
 
   // generate header file
-  let &functionPrototypes +=<<omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params, void* data);<%\n%>>>
-  let headerFileName = FileNamePrefix+"_sim_equations"
+  let &functionPrototypes +=<<omsi_status <%FileNamePrefix%>_<%omsiName%>(omsi_function_t* <%omsiName%>, omsi_values* model_vars_and_params, void* data);<%\n%>>>
+  let headerFileName = '<%FileNamePrefix%>_<%omsiName%>'
   let headerFileContent = generateCodeHeader(FileNamePrefix, &includes, headerFileName, &functionPrototypes)
 
   let () = textFile(headerFileContent, headerFileName+".h")
@@ -98,7 +99,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
 
 
   /* Equations evaluation */
-  omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params, void* data){
+  omsi_status <%FileNamePrefix%>_<%omsiName%>(omsi_function_t* <%omsiName%>, omsi_values* model_vars_and_params, void* data){
 
     /* Variables */
     omsi_status status, new_status;

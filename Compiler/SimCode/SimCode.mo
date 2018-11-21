@@ -294,7 +294,7 @@ end DaeModeData;
 uniontype OMSIData
   "contains data for code generation for OMSI"
   record OMSI_DATA
-    //Option<OMSIFunction> initialization "contains equations and variables for initialization problem";
+    OMSIFunction initialization "contains equations and variables for initialization problem";
     OMSIFunction simulation "contains equations and variables for simulation problem";
   end OMSI_DATA;
 end OMSIData;
@@ -311,6 +311,9 @@ uniontype OMSIFunction
     Integer nAlgebraicSystems           "number of linear and non-linear algebraic systems in OMSI_FUNCTION.equations";
   end OMSI_FUNCTION;
 end OMSIFunction; 
+
+public constant 
+OMSIFunction emptyOMSIFunction = OMSI_FUNCTION({}, {}, {}, {}, -1, SimCodeFunction.contextOMSI, -1);
   
 
 uniontype SimEqSystem

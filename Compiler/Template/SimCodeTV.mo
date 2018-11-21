@@ -419,6 +419,7 @@ package SimCode
   
   uniontype OMSIData
   record OMSI_DATA
+    OMSIFunction initialization;
     OMSIFunction simulation;
   end OMSI_DATA;
 end OMSIData;
