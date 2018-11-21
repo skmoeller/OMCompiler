@@ -211,7 +211,7 @@ omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars) {
  * Allocates memory for omsi_algebraic_system_t struct.
  * Since n_conditions is unknown memory for zerocrossing_indices is not allocated!
  */
-omsi_algebraic_system_t* omsu_initialize_alg_system_array (omsi_unsigned_int n_algebraic_system) {
+omsi_algebraic_system_t* omsu_instantiate_alg_system_array (omsi_unsigned_int n_algebraic_system) {
 
     /* Variables */
     omsi_algebraic_system_t* algebraic_system;

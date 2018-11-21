@@ -62,7 +62,7 @@ omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_f
 
 omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars);
 
-omsi_algebraic_system_t* omsu_initialize_alg_system_array (omsi_unsigned_int n_algebraic_system);
+omsi_algebraic_system_t* omsu_instantiate_alg_system_array (omsi_unsigned_int n_algebraic_system);
 
 omsi_status omsu_set_model_vars_and_params_start (omsi_values*     model_vars_and_params,
                                                   model_data_t*    model_data);

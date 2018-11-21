@@ -60,7 +60,8 @@ template generateOMSIC(SimCode simCode)
     let &functionPrototypes += <<void initialize_start_function (omsi_template_callback_functions_t* callback);<%\n%>>>
 
     // generate header file
-    let &includes += <<#include "<%fileNamePrefix%>_sim_equations.h"<%\n%>>>
+    let &includes += <<#include "<%fileNamePrefix%>_sim_eqns.h"<%\n%>>>
+    let &includes += <<#include "<%fileNamePrefix%>_init_eqns.h"<%\n%>>>
     let headerFileName = fileNamePrefix+"_omsic"
     let headerFileContent = CodegenOMSI_common.generateCodeHeader(fileNamePrefix, &includes, headerFileName, &functionPrototypes)
     let () = textFile(headerFileContent, headerFileName+".h")
@@ -77,8 +78,8 @@ template generateOMSIC(SimCode simCode)
     /* Set function pointers for initialization in global struct. */
     void initialize_start_function (omsi_template_callback_functions_t* callback) {
 
-      callback->initialize_initialization_problem = <%fileNamePrefix%>_initialize_initEqns_OMSIFunc;
-      callback->initialize_simulation_problem = <%fileNamePrefix%>_initialize_simEqns_OMSIFunc;
+      callback->initialize_initialization_problem = <%fileNamePrefix%>_instantiate_init_eqns_OMSIFunc;
+      callback->initialize_simulation_problem = <%fileNamePrefix%>_instantiate_sim_eqns_OMSIFunc;
 
       callback->isSet = omsi_true;
     }
@@ -102,16 +103,23 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
   let &SimDerMatFiles = buffer""
 
   let _ = (match simCode
-    case SIMCODE(omsiData=SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__)))) then
-      let _ = ( simulation.equations |> eq =>
+    case SIMCODE(omsiData=SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__), initialization=initialization as OMSI_FUNCTION(__)))) then
+      let _ = ( initialization.equations |> eq =>
         match eq
         case system as SES_ALGEBRAIC_SYSTEM(__) then
-          let &SimAlgSystemFiles += " " + FileNamePrefix + "_sim_algSyst_" + system.algSysIndex + ".c"
-          let &SimDerMatFiles += " " + FileNamePrefix + "_sim_derMat_" + system.algSysIndex + ".c"
+          let &InitAlgSystemFiles += " " + FileNamePrefix + "_init_eqns_algSyst_" + system.algSysIndex + ".c"
+          let &InitDerMatFiles += " " + FileNamePrefix + "_init_eqns_derMat_" + system.algSysIndex + ".c"
           <<>>
         end match
       )
-      // ToDo: Add same stuff for initialization problem
+      let _ = ( simulation.equations |> eq =>
+        match eq
+        case system as SES_ALGEBRAIC_SYSTEM(__) then
+          let &SimAlgSystemFiles += " " + FileNamePrefix + "_sim_eqns_algSyst_" + system.algSysIndex + ".c"
+          let &SimDerMatFiles += " " + FileNamePrefix + "_sim_eqns_derMat_" + system.algSysIndex + ".c"
+          <<>>
+        end match
+      )
       <<>>
   )
 
@@ -137,10 +145,10 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     # Files
     MAINFILE=<%fileNamePrefix%>_omsic.c
     MAINOBJ=<%fileNamePrefix%>_omsic.o
-    # INIT_FILES=<%fileNamePrefix%>_init_equations.c \
-    # <%&InitAlgSystemFiles%> \
-    # <%&InitDerMatFiles%>
-    SIM_FILES=<%fileNamePrefix%>_sim_equations.c $(SIM_ALGLOOP_FILES) $(SIM_DERMAT_FILES)
+    INIT_FILES=<%fileNamePrefix%>_init_eqns.c $(INIT_ALGLOOP_FILES) $(INIT_DERMAT_FILES)
+    INIT_ALGLOOP_FILES=<%&InitAlgSystemFiles%>
+    INIT_DERMAT_FILES=<%&InitDerMatFiles%>
+    SIM_FILES=<%fileNamePrefix%>_sim_eqns.c $(SIM_ALGLOOP_FILES) $(SIM_DERMAT_FILES)
     SIM_ALGLOOP_FILES=<%&SimAlgSystemFiles%>
     SIM_DERMAT_FILES=<%&SimDerMatFiles%>
     CFILES=$(MAINFILE) $(INIT_FILES) $(SIM_FILES)
@@ -229,16 +237,23 @@ template createMakefileIn(SimCode simCode, String target, String FileNamePrefix,
   let &SimDerMatFiles = buffer""
 
   let _ = (match simCode
-    case SIMCODE(omsiData=SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__)))) then
-      let _ = ( simulation.equations |> eq =>
+    case SIMCODE(omsiData=SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__), initialization=initialization as OMSI_FUNCTION(__)))) then
+      let _ = ( initialization.equations |> eq =>
         match eq
         case system as SES_ALGEBRAIC_SYSTEM(__) then
-          let &SimAlgSystemFiles += " " + FileNamePrefix + "_sim_algSyst_" + system.algSysIndex + ".c"
-          let &SimDerMatFiles += " " + FileNamePrefix + "_sim_derMat_" + system.algSysIndex + ".c"
+          let &InitAlgSystemFiles += " " + FileNamePrefix + "_init_eqns_algSyst_" + system.algSysIndex + ".c"
+          let &InitDerMatFiles += " " + FileNamePrefix + "_init_eqns_derMat_" + system.algSysIndex + ".c"
           <<>>
         end match
       )
-      // ToDo: Add same stuff for initialization problem
+      let _ = ( simulation.equations |> eq =>
+        match eq
+        case system as SES_ALGEBRAIC_SYSTEM(__) then
+          let &SimAlgSystemFiles += " " + FileNamePrefix + "_sim_eqns_algSyst_" + system.algSysIndex + ".c"
+          let &SimDerMatFiles += " " + FileNamePrefix + "_sim_eqns_derMat_" + system.algSysIndex + ".c"
+          <<>>
+        end match
+      )
       <<>>
   )
 
@@ -247,12 +262,12 @@ template createMakefileIn(SimCode simCode, String target, String FileNamePrefix,
         <<
         MAINFILE=<%fileNamePrefix%>_omsic.c
         MAINOBJ=<%fileNamePrefix%>_omsic.o
-        # INIT_FILES=<%fileNamePrefix%>_init_equations.c \
-        # <%&InitAlgSystemFiles%> \
-        # <%&InitDerMatFiles%>
-        SIM_FILES=<%fileNamePrefix%>_sim_equations.c \
-        <%&SimAlgSystemFiles%> \
-        <%&SimDerMatFiles%>
+        INIT_FILES=<%fileNamePrefix%>_init_eqns.c $(INIT_ALGLOOP_FILES) $(INIT_DERMAT_FILES)
+        INIT_ALGLOOP_FILES=<%&InitAlgSystemFiles%>
+        INIT_DERMAT_FILES=<%&InitDerMatFiles%>
+        SIM_FILES=<%fileNamePrefix%>_sim_eqns.c $(SIM_ALGLOOP_FILES) $(SIM_DERMAT_FILES)
+        SIM_ALGLOOP_FILES=<%&SimAlgSystemFiles%>
+        SIM_DERMAT_FILES=<%&SimDerMatFiles%>
         CFILES= $(INIT_FILES) $(SIM_FILES)
         OFILES=$(CFILES:.c=.o)
         GENERATEDFILES=$(MAINFILE) <%fileNamePrefix%>_FMU.makefile # ...
