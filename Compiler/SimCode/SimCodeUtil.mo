@@ -378,6 +378,16 @@ algorithm
        (omsiAllEquations, uniqueEqIndex) :=
            createAllEquationOMSI(contSysts, shared, zeroCrossings, uniqueEqIndex);
        omsiOptData := SOME(SimCode.OMSI_DATA(simulation=omsiAllEquations, initialization=omsiInitEquations));
+
+      // debug print
+      _ := match omsiOptData
+        local
+          SimCode.OMSIData omsiData;
+        case SOME(omsiData as SimCode.OMSI_DATA(__))
+          algorithm
+            dumpOMSIData(omsiData, "Dump OMSI Data");
+          then ();
+      end match;
     end if;
 
 
@@ -3959,9 +3969,9 @@ algorithm
                                             nAlgebraicSystems = nAlgebraicSystems);
   if debug then
     print("Function SimCodeUtil.generateEquationsForComponentsAlgSystem:\n");
-    dumpVarLst(inputVars, "Simulation inputVars");
-    dumpVarLst(innerVars, "Simulation innerVars");
-    dumpVarLst(outputVars, "Simulation outputVars");
+    dumpVarLst(inputVars, "InputVars");
+    dumpVarLst(innerVars, "InnerVars");
+    dumpVarLst(outputVars, "OutputVars");
     end if;
 end generateEquationsForComponents;
 
@@ -8015,7 +8025,7 @@ author:Waurich TUD 2016-04"
 algorithm
   str := matchcontinue(eqSysIn)
     local
-      Boolean partMixed,lin,initCall;
+      Boolean partMixed,lin,initCall,torn;
       Integer idx,idxLS,idxNLS,idx2,idxLS2,idxNLS2,idxMS;
       String s,s1,s2,s3,s4,s5,s6;
       list<String> sLst;
@@ -8142,6 +8152,23 @@ algorithm
     case SimCode.SES_ALIAS()
       equation
         s = String(eqSysIn.index) +": alias of "+ String(eqSysIn.aliasOf);
+    then s;
+
+    case SimCode.SES_ALGEBRAIC_SYSTEM(index=idx, algSysIndex=idx2, partOfMixed=partMixed, tornSystem=torn , linearSystem=lin)
+      algorithm
+        s := intString(idx) +": "+ " (ALGEBRAIC_SYSTEM) algSysIndex: "+intString(idx2)+"\n";
+        s := s+"\tpartOfMixed system: " + boolString(partMixed) + ", tornSystem: " + boolString(torn) + ", linearSystem: "+ boolString(lin) +"\n";
+
+        s := s+omsiFuncEqnString(eqSysIn.residual);
+        _ := match eqSysIn.matrix
+          local
+            SimCode.DerivativeMatrix matrix;
+          case SOME(matrix as SimCode.DERIVATIVE_MATRIX(__))
+            algorithm
+             s := s+derivativeMatrixString(matrix);
+            then ();
+        end match;
+        s := s+"\n";
     then s;
 
     else
@@ -12562,6 +12589,22 @@ algorithm
 end dumpVarMappingTuple;
 
 
+public function dumpOMSIData
+"Outputs a SimCode.OMSIData"
+  input SimCode.OMSIData omsiData;
+  input String head;
+algorithm
+  print(head+"\n");
+
+  print("OMSIFunction initialization:\n");
+  dumpOMSIFunc(omsiData.initialization,"");
+
+  print("----------------------\n");
+  print("OMSIFunction simulation:\n");
+  dumpOMSIFunc(omsiData.simulation,"");
+end dumpOMSIData;
+
+
 public function dumpOMSIFunc
 "Outputs a SimCode.OMSIFunction"
   input SimCode.OMSIFunction omsiFunc;
@@ -12575,12 +12618,35 @@ algorithm
     dumpVarLst(omsiFunc.inputVars,"inputVars");
     dumpVarLst(omsiFunc.innerVars,"innerVars");
     dumpVarLst(omsiFunc.outputVars,"outputVars");
-    print("nAllVars = " + String(omsiFunc.nAllVars)+"\n");
+    print("numer of all vars: " + String(omsiFunc.nAllVars)+"\n");
     print("Context\n");    // ToDo: add dump context
+    print("number of algebraic systems: " + String(omsiFunc.nAlgebraicSystems)+"\n");
     else
       print("ERROR in dumpOMSIFunc\n");
   end try;
 end dumpOMSIFunc;
+
+
+public function omsiFuncEqnString
+"Outputs a string containing SimCode.OMSIFunction informations"
+  input SimCode.OMSIFunction omsiFunc;
+  output String s="";
+algorithm
+  for eqs in omsiFunc.equations loop
+    s := s+simEqSystemString(eqs) + "\n";
+  end for;
+end omsiFuncEqnString;
+
+
+public function derivativeMatrixString
+"Outputs a string containing SimCode.OMSIFunction informations"
+  input SimCode.DerivativeMatrix matrix;
+  output String s="";
+algorithm
+  for col in matrix.columns loop
+    s := s+omsiFuncEqnString(col);
+  end for;
+end derivativeMatrixString;
 
 
 public function createFMIModelStructure
