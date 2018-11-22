@@ -3738,6 +3738,16 @@ protected
   list<BackendDAE.Var> varlst;
   BackendDAE.Equation eqn;
   BackendDAE.Var var;
+
+  SimCode.OMSIFunction newAllEquations;
+  list<SimCode.SimEqSystem> equations={};
+  list<SimCodeVar.SimVar> inputVars={};
+  list<SimCodeVar.SimVar> outputVars={};
+  list<SimCodeVar.SimVar> innerVars={};
+  HashTableCrefSimVar.HashTable hashTable;
+  Integer nAllVars=0;
+
+  Integer nAlgebraicSystems=0;
 algorithm
   for constSyst in constSysts loop
     try 
@@ -3747,8 +3757,29 @@ algorithm
       fail();
     end try;
 
-    (omsiAllEquations, uniqueEqIndex) := generateEquationsForComponents(components, constSyst, shared, uniqueEqIndex);
+    (newAllEquations, uniqueEqIndex) := generateEquationsForComponents(components, constSyst, shared, uniqueEqIndex);
+
+    // Update omsiAllEquations
+    equations := listAppend(newAllEquations.equations, listReverse(equations));
+    inputVars := listAppend(newAllEquations.inputVars, listReverse(inputVars));
+    outputVars := listAppend(newAllEquations.outputVars, listReverse(outputVars));
+    innerVars := listAppend(newAllEquations.innerVars, listReverse(innerVars));
+    nAllVars := nAllVars + newAllEquations.nAllVars;
+    nAlgebraicSystems := nAlgebraicSystems + newAllEquations.nAlgebraicSystems;
   end for;
+
+  // Create hash table
+  hashTable := fillLocalHashTable({inputVars, innerVars, outputVars}, nAllVars);
+
+  // Create output OMSI Function
+  omsiAllEquations := SimCode.OMSI_FUNCTION(equations=equations,
+                                            inputVars=inputVars,
+                                            outputVars=outputVars,
+                                            innerVars=innerVars,
+                                            nAllVars=nAllVars,
+                                            context=SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
+                                            nAlgebraicSystems=nAlgebraicSystems);
+
 end createAllEquationOMSI;
 
 
@@ -3956,16 +3987,12 @@ algorithm
   (innerVars, index) := rewriteIndex(innerVars, index);
   (outputVars, index) := rewriteIndex(outputVars, index);
 
-  // create hash table with global index
-  nAllVars := listLength(inputVars)+listLength(outputVars)+listLength(innerVars);
-  hashTable := fillLocalHashTable({inputVars, innerVars, outputVars}, nAllVars);
-
   omsiFuncEquations := SimCode.OMSI_FUNCTION(equations =  listReverse(equations),
                                             inputVars = inputVars,
                                             outputVars = outputVars,
                                             innerVars =  innerVars,
                                             nAllVars = nAllVars,
-                                            context = SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
+                                            context = SimCodeFunction.OMSI_CONTEXT(NONE()),  // hash table with global index will be set in createAllEquationOMSI
                                             nAlgebraicSystems = nAlgebraicSystems);
   if debug then
     print("Function SimCodeUtil.generateEquationsForComponentsAlgSystem:\n");
