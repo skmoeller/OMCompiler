@@ -3537,50 +3537,64 @@ template crefOMSI(ComponentRef cref, Context context)
     match context
     // cref in default omsi context
     case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable)) then
-        '<%getLocalSimVar(cref, hashTable)%>'
+        '<%crefToOMSICStr(cref, hashTable)%>'
     case jacobianContext as JACOBIAN_CONTEXT(hashTable=SOME(hashTable)) then
-        '<%getLocalSimVar(cref, hashTable)%>'
+        '<%crefToOMSICStr(cref, hashTable)%>'
     // error case
     else "ERROR in crefOMSI: No valid SimCodeFunction.Context"
     end match
 end crefOMSI;
 
 
-template getLocalSimVar(ComponentRef cref, HashTableCrefSimVar.HashTable hashTable)
-"Helper function for crefOMSI to generate code for "
+template crefToOMSICStr(ComponentRef cref, HashTableCrefSimVar.HashTable hashTable)
+"Helper function for crefOMSI to generate code for variable access"
 ::=
-  match localCref2SimVar(cref, hashTable)
 
-    // Parameters are read from model_vars_and_params
-    case v as SIMVAR(index=-2) then
-      match cref2simvar(cref, getSimCode())
-        case v as SIMVAR(__) then
+  match cref
+    // Check ident
+    case CREF_QUAL(ident="$START") then
+      <<
+      <%crefToOMSICStr(componentRef, hashTable)%>
+      >>
+    else
+      match localCref2SimVar(cref, hashTable)
+
+      // Parameters are read from model_vars_and_params
+      case v as SIMVAR(index=-2) then
+        match cref2simvar(cref, getSimCode())
+          case v as SIMVAR(__) then
+
+          //let bla = crefToCStr(cref, index, false, false)
+
+          let index = getValueReference(v, getSimCode(), false)
+          let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
+           <<
+           model_vars_and_params-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
+           >>
+        end match
+
+      // For jacobian variables and seed variables only local vars exist
+      case v as SIMVAR(varKind=JAC_VAR(__))
+      case v as SIMVAR(varKind=JAC_DIFF_VAR(__))
+      case v as SIMVAR(varKind=SEED_VAR(__)) then
+        let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(v.varKind)%> */'
+        <<
+        this_function->local_vars-><%crefTypeOMSIC(name)%>[<%v.index%>] <%c_comment%>
+        >>
+
+      case v as SIMVAR(__) then
+        let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(v.varKind)%> */'
         let index = getValueReference(v, getSimCode(), false)
-        let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
-         <<
-         model_vars_and_params-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
-         >>
-      end match
+        <<
+        this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
+        >>
 
-    // For jacobian variables and seed variables only local vars exist
-    case v as SIMVAR(varKind=JAC_VAR(__))
-    case v as SIMVAR(varKind=JAC_DIFF_VAR(__))
-    case v as SIMVAR(varKind=SEED_VAR(__)) then
-      let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(v.varKind)%> */'
-      <<
-      this_function->local_vars-><%crefTypeOMSIC(name)%>[<%v.index%>] <%c_comment%>
-      >>
+      else "CREF_NOT_FOUND"
+    end match
 
-    case v as SIMVAR(__) then
-      let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(v.varKind)%> */'
-      let index = getValueReference(v, getSimCode(), false)
-      <<
-      this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] <%c_comment%>
-      >>
-
-    else "CREF_NOT_FOUND"
   end match
-end getLocalSimVar;
+
+end crefToOMSICStr;
 
 template expTypeRW(DAE.Type type)
  "Helper to writeOutVarRecordMembers."
