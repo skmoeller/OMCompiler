@@ -380,14 +380,16 @@ algorithm
        omsiOptData := SOME(SimCode.OMSI_DATA(simulation=omsiAllEquations, initialization=omsiInitEquations));
 
       // debug print
-      _ := match omsiOptData
-        local
-          SimCode.OMSIData omsiData;
-        case SOME(omsiData as SimCode.OMSI_DATA(__))
-          algorithm
-            dumpOMSIData(omsiData, "Dump OMSI Data");
-          then ();
-      end match;
+      if debug then
+        _ := match omsiOptData
+          local
+            SimCode.OMSIData omsiData;
+          case SOME(omsiData as SimCode.OMSI_DATA(__))
+            algorithm
+              dumpOMSIData(omsiData, "Dump OMSI Data");
+            then ();
+        end match;
+      end if;
     end if;
 
 
