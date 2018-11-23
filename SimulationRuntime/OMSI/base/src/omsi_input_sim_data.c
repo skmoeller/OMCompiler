@@ -63,34 +63,78 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
         return omsi_error;
     }
 
-    /* Call generated initialization function for initialization problem */
-    /* osu_functions->initialize_initialization_problem(omsi_data->sim_data->initialization); */ /* ToDo: not implemented yet */
+    /* Set up initialization problem */
+    omsu_setup_sim_data_omsi_function(omsi_data->sim_data,
+                             "initialization",
+                             template_function->initialize_initialization_problem,
+                             omsi_data->sim_data->model_vars_and_params);
 
-    /* Call generated initialization function for initialization problem */
-    if (template_function->initialize_simulation_problem(omsi_data->sim_data->simulation)==omsi_error) {
+    /* Set up simulation problem
+    omsu_setup_sim_data_omsi_function(omsi_data->sim_data,
+                             "simulation",
+                             template_function->initialize_simulation_problem,
+                             omsi_data->sim_data->model_vars_and_params);*/
+
+    return omsi_ok;
+}
+
+
+/**
+ * \brief Set up omsi_function_t struct for initialization or simulation problem.
+ *
+ * \param sim_data
+ * \param function_name
+ * \param template_instantiate_function
+ * \param function_vars
+ * \return
+ */
+omsi_status omsu_setup_sim_data_omsi_function(sim_data_t*                   sim_data,
+                                              omsi_string                   function_name,
+                                              omsu_initialize_omsi_function template_instantiate_function,
+                                              omsi_values*                  function_vars) {
+
+    /* Variables */
+    omsi_function_t* omsi_function;
+
+    /* Set initialization or simulation problem */
+    if (strcmp(function_name, "initialization")==0) {
+        omsi_function = sim_data->initialization;
+    }
+    else if (strcmp(function_name, "simulation")==0) {
+        omsi_function = sim_data->simulation;
+    }
+    else {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Error while instantiating initialization problem with generated code.");
         return omsi_error;
     }
 
-    /* Set default solvers for simulation problem */
-    if (omsu_set_default_solvers(omsi_data->sim_data->simulation, "simulation")) {
+    /* Call generated initialization function for initialization problem */
+    if (template_instantiate_function(omsi_function)==omsi_error) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-                "fmi2Instantiate: Could not instantiate default solvers for algebraic loops.");
+                "fmi2Instantiate: Error while instantiating initialization problem with generated code.");
         return omsi_error;
     }
 
-    if (omsu_instantiate_omsi_function_func_vars(omsi_data->sim_data->simulation, omsi_data->sim_data->model_vars_and_params)==omsi_error) {
+    /* Set default solvers for omsi_function */
+    if (omsu_set_default_solvers(omsi_function, function_name)) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Could not instantiate default solvers for algebraic loops in %s problem.",
+                function_name);
+        return omsi_error;
+    }
+
+    /* Set function variables. Either local copy or pointer to global model_vars_and_params*/
+    if (omsu_instantiate_omsi_function_func_vars(omsi_function, function_vars)==omsi_error) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Error while instantiating function variables of sim_data->simulation.");
         return omsi_error;
     }
 
-
-    /* Set model_vars_and_params */
-
     return omsi_ok;
 }
+
+
 
 /*
  * Allocates memory for sim_data_t struct.
@@ -130,17 +174,18 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
         return omsi_error;
     }
 
-
-    omsu->sim_data->initialization = NULL;
-    /*omsi_data->sim_data->initialization = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
-    if (!omsi_data->sim_data->initialization) {
+    /* Allocate memory for initialization problem */
+    omsu->sim_data->initialization = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
+    if (!omsu->sim_data->initialization) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Instantiate: In omsu_allocate_sim_data: Not enough memory.");
         return omsi_error;
-    }*/
+    }
 
     omsu->sim_data->simulation = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
     if (!omsu->sim_data->simulation) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-                        "fmi2Instantiate: In omsu_allocate_sim_data: Not enough memory.");
+                    "fmi2Instantiate: In omsu_allocate_sim_data: Not enough memory.");
         return omsi_error;
     }
 

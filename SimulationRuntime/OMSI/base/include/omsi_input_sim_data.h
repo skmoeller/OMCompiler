@@ -55,6 +55,11 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
                                 omsi_template_callback_functions_t* template_function,
                                 const omsi_callback_functions*      callback_functions);
 
+omsi_status omsu_setup_sim_data_omsi_function(sim_data_t*                   sim_data,
+                                              omsi_string                   function_name,
+                                              omsu_initialize_omsi_function template_instantiate_function,
+                                              omsi_values*                  function_vars);
+
 omsi_status omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_functions*      callback_functions, omsi_string                     instanceName);
 
 omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_function,

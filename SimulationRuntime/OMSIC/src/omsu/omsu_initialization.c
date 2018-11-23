@@ -149,6 +149,9 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
  */
 omsi_status omsi_enter_initialization_mode(osu_t* OSU) {
 
+    /* Variables */
+    omsi_status status;
+
     if (invalidState(OSU, "fmi2EnterInitializationMode", modelInstantiated, ~0)) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2EnterInitializationMode: Call was not allowed.");
@@ -157,15 +160,27 @@ omsi_status omsi_enter_initialization_mode(osu_t* OSU) {
 
     /* Log function call */
     filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
-            "fmi2EnterInitializationMode: Successful.");
+            "fmi2EnterInitializationMode: Initialize model.");
 
     OSU->state = modelInitializationMode;
+
+    /* ToDo: Is this the right location to solve initialization problem */
+    /* Evaluate functionDAE for initialization problem */
+    status = OSU->osu_data->sim_data->initialization->evaluate(OSU->osu_data->sim_data->initialization, OSU->osu_data->sim_data->initialization->function_vars, NULL);
+    if (status != omsi_ok) {
+        filtered_base_logger(global_logCategories, log_fmi2_call, status,
+                    "fmi2EnterInitializationMode: Could not solve initialization problem.");
+        return status;
+
+    }
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2EnterInitializationMode: Solved initialization problem successfully.");
 
     return omsi_ok;
 }
 
 /*
- * Informs the OpenNodelica Simulation Unit to exit initialization mode.
+ * Informs the OpenModelica Simulation Unit to exit initialization mode.
  */
 omsi_status omsi_exit_initialization_mode(osu_t* OSU) {
 
@@ -174,8 +189,14 @@ omsi_status omsi_exit_initialization_mode(osu_t* OSU) {
     filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
             "fmi2ExitInitializationMode: ....");
 
-    /* ToDo: free OSU->omsi_data->initialization */
-    /* ToDo: allocate OSU->omsi_data->simulation here to save some memory? */
+    /* Free OSU->omsi_data->initialization */
+    omsu_free_omsi_function(OSU->osu_data->sim_data->initialization, omsi_true);
+
+    /* Set up simulation problem */
+    omsu_setup_sim_data_omsi_function(OSU->osu_data->sim_data,
+                             "simulation",
+                             OSU->osu_functions->initialize_simulation_problem,
+                             OSU->osu_data->sim_data->model_vars_and_params);
 
     OSU->state = modelEventMode;
     filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
