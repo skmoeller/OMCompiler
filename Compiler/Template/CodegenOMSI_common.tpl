@@ -349,7 +349,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
   match equationSystem
   case SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__)) then
 
-    let &functionPrototypes += <<omsi_status <%FileNamePrefix%><%omsiName%>__instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars);<%\n%>>>
+    let &functionPrototypes += <<omsi_status <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars);<%\n%>>>
 
     let zeroCrossingIndices = (zeroCrossingConditions |> cond =>
       '<%cond%>'
