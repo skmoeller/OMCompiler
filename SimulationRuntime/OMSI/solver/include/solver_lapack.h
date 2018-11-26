@@ -28,7 +28,7 @@
  *
  */
 
-/** \file linearSolverLapack.h
+/** \file solver_newton.h
  */
 
 /** @addtogroup LAPACK_SOLVER LAPACK solver

@@ -54,6 +54,8 @@ solver_string solver_name2string(solver_name name) {
         return "LAPACK";
     case solver_newton:
         return "Newton";
+    case solver_kinsol:
+        return "SUNDIALS KINSOL";
     case solver_extern:
         return "Extern solver";
     case solver_unregistered:

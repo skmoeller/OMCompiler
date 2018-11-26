@@ -97,9 +97,11 @@ solver_data* solver_allocate(solver_name            name,
     switch (name) {
         case solver_lapack:
             solver->name = solver_lapack;
-            solver->dim_n = dim_n;
             allocate_lapack_data(solver);
-
+        break;
+        case solver_kinsol:
+            solver->name = solver_kinsol;
+            allocate_kinsol_data(solver);
         break;
         default:
             solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");

@@ -121,6 +121,7 @@ typedef enum {
     solver_lapack,       /**< LAPACK solver using DGESV routine for generale matrices. <br>
                               [DGESV Documentation](http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga5ee879032a8365897c3ba91e3dc8d512.html#ga5ee879032a8365897c3ba91e3dc8d512) */
     solver_newton,       /**< solver_newton */
+    solver_kinsol,       /**< SUNDIALS KINSOL solver */
     solver_extern        /**< solver_extern */
 }solver_name;
 

@@ -28,7 +28,7 @@
  *
  */
 
-/** \file solver_api.c
+/** \file solver_lapack.c
  *
  * Solver specific functions for LAPACK solver.
  */
@@ -58,7 +58,7 @@ solver_status allocate_lapack_data(solver_data* general_solver_data) {
     /* Variables */
     solver_data_lapack* lapack_data;
 
-    /* check for correct solver */
+    /* Check for correct solver */
     if (!solver_instance_correct(general_solver_data, solver_lapack, "allocate_lapack_data")) {
         return solver_error;
     }
