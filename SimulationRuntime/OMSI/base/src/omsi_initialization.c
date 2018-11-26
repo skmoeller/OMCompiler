@@ -27,6 +27,20 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
+
+/** \file omsi_initialization.c
+ */
+
+/** \defgroup Initialization
+ *  \ingroup OMSIBase
+ *
+ * Defines basic functions for creating and setting up an OSU_data instance of
+ * type `struct omsi_t`.
+ */
+
+/** @addtogroup Initialization
+  *  @{ */
+
 #include <omsi_global.h>
 #include <omsi_posix_func.h>
 
@@ -42,6 +56,7 @@ omsi_string global_instance_name;
 omsi_bool*  global_logCategories;
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
+
 
 /**
  * \brief Allocates memory for omsi_t struct
@@ -64,7 +79,7 @@ omsi_bool*  global_logCategories;
  * \param [in] loggingOn            If `loggingOn=omsi_true` debug loggin is enabled.
  *                                  If `loggingIn=omsi_false` debug loggin is disabled.
  *
- * \return  omsi_t*                 Poiner to newly created struct of type omsi_t.
+ * \return  omsi_t*                 Pointer to newly created struct of type omsi_t.
  */
 omsi_t* omsi_instantiate(omsi_string                            instanceName,
                          omsu_type                              fmuType,
@@ -226,6 +241,11 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     return osu_data;
 }
 
+
+/*
+ * Helper function for XML parser.
+ * Defines what happens on start tag in XML files.
+ */
 void XMLCALL startElement_2(void*           userData,
                             omsi_string     name,
                             omsi_string*    attr) {
@@ -318,3 +338,5 @@ omsi_string omsi_get_model_name(omsi_string fmuResourceLocation) {
 
     return md.modelName;
 }
+
+/** @} */

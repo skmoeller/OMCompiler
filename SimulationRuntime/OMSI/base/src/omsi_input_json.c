@@ -27,6 +27,22 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
+
+/** \file omsi_input_json.c
+ */
+
+/** \defgroup initJson Initialize JSON
+ * \ingroup Initialization
+ *
+ * \brief Process modelName_info.json file
+ *
+ * Functions to process informations from optional modelName_info.json file in
+ * resources folder.
+ */
+
+/** \addtogroup initJson
+  *  \{ */
+
 #include <omsi_global.h>
 #include <omsi_input_json.h>
 
@@ -60,9 +76,17 @@ static void readInfoJson(omsi_string    str,
                          model_data_t*  model_data);
 
 
-/* Entry point.
- * Processes all informations from input.json file.
+/**
+ * \brief Processes all informations from input.json file.
+ *
  * Reads values, allocates memory and writes everything in model_data->equation_info.
+ *
+ * \param osu_data
+ * \param fileName
+ * \param fmuGUID
+ * \param instanceName
+ * \param functions
+ * \return
  */
 omsi_status omsu_process_input_json(omsi_t*                         osu_data,
                                     omsi_string                     fileName,

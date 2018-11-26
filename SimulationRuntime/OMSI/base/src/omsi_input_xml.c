@@ -28,6 +28,22 @@
  *
  */
 
+/** \file omsi_input_xml.c
+ */
+
+/** \defgroup initXML Initialize XML
+ * \ingroup Initialization
+ *
+ * \brief Process modelName_init.xml file
+ *
+ * Functions to process informations from <modelName>_init.xml file in
+ * resources folder.
+ */
+
+/** \addtogroup initXML
+  *  \{ */
+
+
 #include <omsi_global.h>
 #include <omsi_input_xml.h>
 
@@ -36,10 +52,21 @@
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
 
-
-/*
- * Reads input values from a xml file and allocates memory for osu_data struct.
- * Entry point for all other functions in this file
+/**
+ * \brief Processes modelName_init.xml file to get additional model infos.
+ *
+ * Reads input values from input xml file and allocates memory for
+ * `osu_data->experiment`and `osu_data->model_data` struct.
+ *
+ * \param [in] osu_data     Pointer to OSU data.
+ * \param filename          Absolute path to modelName_init.xml file
+ * \param fmuGUID           Globally unique identifier to check that modelName_init.xml
+ *                          and generated code are compatible.
+ * \param instanceName      Unique identifier for OMSU instance.
+ * \param functions         Callback functions to be used from OMSI functions, e.g for
+ *                          memory management or logging.
+ * \return                  `omsi_status omsi_ok` if successful <br>
+ *                          `omsi_status omsi_error` if something went wrong.
  */
 omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
                                    omsi_string                     filename,
@@ -782,3 +809,5 @@ void free_hash_long_var (hash_long_var* data) {
         global_callback->freeMemory(current);
     }
 }
+
+/** @} */

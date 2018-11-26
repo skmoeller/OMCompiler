@@ -41,7 +41,12 @@
 /** @addtogroup OMSIBase OMSI Base Library
   * \ingroup OMSI
   *
-  * Detailed OMSIBase description here!
+  * \brief Base functionalities used by OMSIC and OMSICpp runtimes.
+  *
+  * Basic data types for representing OMSI structure and functions to operate
+  * on OMSU data. Mostly memory management functions, functions to call OMSI
+  * Solver Library for solving algebraic systems and operate directly on
+  * simulation data.
   *  @{ */
 
 

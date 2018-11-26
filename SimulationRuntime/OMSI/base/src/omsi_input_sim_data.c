@@ -28,13 +28,39 @@
  *
  */
 
+/** \file omsi_input_sim_data.c
+ */
+
+/** \defgroup initSimData Set SimData
+ * \ingroup Initialization
+ *
+ * \brief Set `sim_data_t` struct with functions from generated code.
+ *
+ * Allocate memory for omsi_data->sim_data. Set up variables and parameters,
+ * create data for initialization and simulation problem and all containg
+ * algebraic systems.
+ */
+
+/** \addtogroup initSimData
+  *  \{ */
+
+
 #include <omsi_input_sim_data.h>
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
-/*
- * Allocates memory and initializes sim_data_t struct with functions from generated code.
+
+/**
+ * \brief Allocates memory and initializes sim_data_t struct with functions from generated code.
+ *
  * Assumes memory is already allocated for omsi_data->sim_data.
+ *
+ * \param omsi_data             Pointer to OMSU data
+ * \param template_function     Pointer to struct of callback functions in generated code.
+ * \param callback_functions    Callback functions to be used from OMSI functions, e.g for
+ *                              memory management or logging.
+ * \return                      `omsi_status omsi_ok` if successful <br>
+ *                              `omsi_status omsi_error` if something went wrong.
  */
 omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
                                 omsi_template_callback_functions_t* template_function,
@@ -63,17 +89,12 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
         return omsi_error;
     }
 
-    /* Set up initialization problem */
+    /* Set up initialization problem.
+     * Simulation problem gets set after initialization is finished. */
     omsu_setup_sim_data_omsi_function(omsi_data->sim_data,
                              "initialization",
                              template_function->initialize_initialization_problem,
                              omsi_data->sim_data->model_vars_and_params);
-
-    /* Set up simulation problem
-    omsu_setup_sim_data_omsi_function(omsi_data->sim_data,
-                             "simulation",
-                             template_function->initialize_simulation_problem,
-                             omsi_data->sim_data->model_vars_and_params);*/
 
     return omsi_ok;
 }
