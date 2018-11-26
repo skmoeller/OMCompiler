@@ -43,8 +43,28 @@ omsi_bool*  global_logCategories;
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
-/*
- * Allocates memory for the Openmodelica Simulation Unit and initializes it.
+/**
+ * \brief Allocates memory for omsi_t struct
+ *
+ * containing all informations for simulation, the experiment data and model
+ * infos. Processes modelDescription,  init-XML file and optional JASON file
+ * to allocate memory and initialize structs with constant values.
+ *
+ * \param [in] instanceName         Unique identifier for OMSU instance, e.g. the model name.
+ * \param [in] fmuType              Type of OMSU: ModelExchange or CoSimulation.
+ * \param [in] fmuGUID              Globally unique identifier to check that modelDescription.xml
+ *                                  and generated code are compatible.
+ * \param [in] fmuResourceLocation  URI to get "resources" directory of unzipped OMSU archive.
+ * \param [in] functions            Callback functions to be used from OMSI functions, e.g for
+ *                                  memory management or logging.
+ * \param [in] template_functions   Callback functions for functions in generated code.
+ * \param [in] visible              Defines, if interaction with user should be minimal or
+ *                                  OMSU is executed in interactive mode.
+ *                                  Parameter is ignored at the moment.
+ * \param [in] loggingOn            If `loggingOn=omsi_true` debug loggin is enabled.
+ *                                  If `loggingIn=omsi_false` debug loggin is disabled.
+ *
+ * \return  omsi_t*                 Poiner to newly created struct of type omsi_t.
  */
 omsi_t* omsi_instantiate(omsi_string                            instanceName,
                          omsu_type                              fmuType,
