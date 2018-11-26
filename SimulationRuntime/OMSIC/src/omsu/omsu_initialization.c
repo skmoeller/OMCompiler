@@ -191,6 +191,7 @@ omsi_status omsi_exit_initialization_mode(osu_t* OSU) {
 
     /* Free OSU->omsi_data->initialization */
     omsu_free_omsi_function(OSU->osu_data->sim_data->initialization, omsi_true);
+    OSU->osu_data->sim_data->initialization = NULL;
 
     /* Set up simulation problem */
     omsu_setup_sim_data_omsi_function(OSU->osu_data->sim_data,

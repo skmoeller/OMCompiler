@@ -349,7 +349,7 @@ void omsu_free_sim_data (sim_data_t* sim_data) {
         return;
     }
 
-    omsi_free_model_variables(sim_data);        /* ToDo: free global variables first */
+    omsi_free_model_variables(sim_data);
 
     omsu_free_omsi_function (sim_data->initialization, omsi_true);
     omsu_free_omsi_function (sim_data->simulation, omsi_true);

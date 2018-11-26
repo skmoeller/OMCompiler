@@ -207,22 +207,25 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
 
 
 /*
- * Instantiate omsi_function_t function_vars..
+ * Instantiate omsi_function_t function_vars.
  */
 omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_function,
                                                       omsi_values*        function_vars) {
 
-    /* Allocate memory */
-
+    /* Variables */
+    omsi_unsigned_int i;
 
     /* Set function_vars */
-    if (function_vars==NULL) {  /* allocate memory for own copy function_vars */
-        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-                "fmi2Instantiate: Dedicated memory for OMSI function variables not implemented.");
-        return omsi_error;
+    if (function_vars==NULL) {
+        omsi_function->function_vars = NULL;
     }
     else {  /* share function_vars with sim_data->global model_vars_and_params */
         omsi_function->function_vars = function_vars;
+        /* Set function_vars recursive on all sub omsi_functions. */
+        for(i=0; i<omsi_function->n_algebraic_system; i++) {
+            omsu_instantiate_omsi_function_func_vars(omsi_function->algebraic_system_t[i].jacobian, function_vars);
+            omsu_instantiate_omsi_function_func_vars(omsi_function->algebraic_system_t[i].functions, function_vars);
+        }
     }
 
     return omsi_ok;
