@@ -39,6 +39,8 @@
 
 #include <solver_kinsol.h>
 
+
+solver_int kinsol_residual_wrapper(N_Vector x, N_Vector fval, void *userData);
 /*
  * ============================================================================
  * Allocaten, Initialization and freeing of solver_specific_data
