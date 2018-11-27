@@ -53,7 +53,7 @@
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status allocate_kinsol_data(solver_data* general_solver_data) {
+solver_status kinsol_allocate_data(solver_data* general_solver_data) {
 
     /* Variables */
     solver_data_kinsol* kinsol_data;
@@ -139,7 +139,7 @@ solver_status kinsol_free_data(solver_data* general_solver_data) {
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status set_dim_kinsol_data(solver_data* general_solver_data) {
+solver_status kinsol_set_dim_data(solver_data* general_solver_data) {
 
 
     return solver_ok;

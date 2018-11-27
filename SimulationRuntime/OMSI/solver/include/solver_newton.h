@@ -51,11 +51,11 @@ extern "C" {
 #endif
 
 /* Function prototypes */
-solver_status allocate_newton_data(solver_data* general_solver_data);
+solver_status newton_allocate_data(solver_data* general_solver_data);
 
 solver_status newton_free_data(solver_data* general_solver_data);
 
-solver_status set_dim_newton_data(solver_data* general_solver_data);
+solver_status newton_set_dim_data(solver_data* general_solver_data);
 
 #ifdef __cplusplus
 }   /* end of extern "C" { */

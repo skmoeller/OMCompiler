@@ -98,11 +98,11 @@ solver_data* solver_allocate(solver_name            name,
     switch (name) {
         case solver_lapack:
             solver->name = solver_lapack;
-            allocate_lapack_data(solver);
+            lapack_allocate_data(solver);
         break;
         case solver_kinsol:
             solver->name = solver_kinsol;
-            allocate_kinsol_data(solver);
+            kinsol_allocate_data(solver);
         break;
         default:
             solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
@@ -183,7 +183,7 @@ solver_status solver_prepare_specific_data (solver_data* solver) {
     switch (solver->name) {
         case solver_lapack:
             solver->linear = solver_true;
-            return set_dim_lapack_data(solver);
+            return lapack_set_dim_data(solver);
         break;
         default:
             solver_logger(log_solver_error, "In function prepare_specific_solver_data: No solver"
