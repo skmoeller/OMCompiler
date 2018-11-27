@@ -236,6 +236,14 @@ typedef void    (*solver_get_set_F_func)            (void);
 typedef solver_state (*solver_solve_func)           (void*);
 
 
+/** \fn solver_status (*evaluate_res_func) (void* data);
+ * \brief Evaluate residuum function `f(x)` for non-linear equation systems.
+ *
+ * \param [in]  x_vector    Vector x
+ * \param [out] fval        Function value `f(x)`
+ */
+typedef void (*evaluate_res_func)                   (solver_real* x_vector,
+                                                     solver_real* fval);
 
 
 

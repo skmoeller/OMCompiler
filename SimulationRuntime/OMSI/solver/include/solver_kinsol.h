@@ -56,8 +56,17 @@ extern "C" {
 #endif
 
 
+
+
+
+
+
 typedef struct solver_data_kinsol {
-    void* kinsol_solver_object;  /**< KINSOL memory block */
+    void* kinsol_solver_object;         /**< KINSOL memory block */
+
+    evaluate_res_func f_function_eval;  /**< Pointer to function to evaluate residual of `f` */
+
+    N_Vector initial_guess;             /**< Initial guess for first solver call */
 }solver_data_kinsol;
 
 

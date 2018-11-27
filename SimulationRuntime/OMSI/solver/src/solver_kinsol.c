@@ -58,8 +58,6 @@ solver_status kinsol_allocate_data(solver_data* general_solver_data) {
     /* Variables */
     solver_data_kinsol* kinsol_data;
     solver_int flag;
-    KINSysFn func;
-    N_Vector tmpl;
 
     /* Check for correct solver */
     if (!solver_instance_correct(general_solver_data, solver_kinsol, "allocate_kinsol_data")) {
@@ -92,7 +90,9 @@ solver_status kinsol_allocate_data(solver_data* general_solver_data) {
     }
 
     /* Set problem-defining function and initialize KINSOL*/
-    flag = KINInit(kinsol_data->kinsol_solver_object, func, tmpl);
+    flag = KINInit(kinsol_data->kinsol_solver_object,
+            kinsol_residual_wrapper,
+            kinsol_data->initial_guess);
     if (flag != KIN_SUCCESS) {
         solver_logger(log_solver_error, "In function allocate_kinsol_data: Could not initialize KINSOL solver object.");
                     general_solver_data->state = solver_error_state;
@@ -145,5 +145,48 @@ solver_status kinsol_set_dim_data(solver_data* general_solver_data) {
     return solver_ok;
 }
 
+
+
+/*
+ * ============================================================================
+ * Kinsol wrapper functions
+ * ============================================================================
+ */
+
+/**
+ * \brief Computes system function `f` of non-linear problem.
+ *
+ * This function is of type `KINSysFn` and will be used by Kinsol solver
+ * to evaluate `f(x)`
+ *
+ * \param [in]      x           Dependent variable vector `x`
+ * \param [out]     fval        Set fval to `f(x)`.
+ * \param [in,out]  userData
+ * \return          solver_int  Return value is ignored from Kinsol.
+ */
+solver_int kinsol_residual_wrapper(N_Vector x,
+                                   N_Vector fval,
+                                   void *userData) {
+
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+    solver_real* x_data;
+    solver_real* fval_data;
+
+
+    /* Access input data */
+    kinsol_data = userData;
+    x_data = NV_DATA_S(x);
+    fval_data = NV_DATA_S(fval);
+
+
+  /* Call residual function */
+  kinsol_data->f_function_eval(x_data, fval_data);
+
+  /* Log function call */
+
+
+  return 0; /* Return value is ignored by Kinsol */
+}
 
 /** @} */
