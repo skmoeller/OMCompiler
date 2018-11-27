@@ -41,6 +41,7 @@
 #include <solver_global.h>
 
 #include <solver_lapack.h>
+#include <solver_kinsol.h>
 
 
 #ifdef __cplusplus

@@ -46,8 +46,6 @@
 #define OVERFLOW_PROTECTED omsi_false
 
 
-#define UNUSED(x) (void)(x)     /* ToDo: delete later */
-
 /*
  * ============================================================================
  * Section for logger functions
@@ -211,8 +209,10 @@ omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
  * ============================================================================
  */
 
-/*
- * frees memory for omsi_t struct and all its components
+/**
+ * \brief Frees memory for `omsi_t` struct and all its components.
+ *
+ * \param omsi_data [in,out] Pointer to OMSI data.
  */
 void omsu_free_osu_data(omsi_t* omsi_data) {
 
@@ -296,6 +296,7 @@ void omsu_free_model_variable_info(model_variable_info_t*   model_vars_info,
 void omsu_free_modelica_attributes(void*            modelica_attribute,
                                    omsi_data_type  type) {
 
+    /* Variables */
     real_var_attribute_t* attribute_real;
 
     if (type==OMSI_TYPE_REAL) {
@@ -306,16 +307,13 @@ void omsu_free_modelica_attributes(void*            modelica_attribute,
         global_callback->freeMemory (attribute_real);
     }
     else {
-
         global_callback->freeMemory (modelica_attribute);
     }
-
-    /* else: nothing to free manually */
 }
 
 
 /*
- *
+ * Frees memory of array of equation_info_t structs.
  */
 void omsu_free_equation_info(equation_info_t*   eq_info,
                              omsi_unsigned_int  n_equations ) {

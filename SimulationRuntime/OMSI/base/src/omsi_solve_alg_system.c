@@ -27,12 +27,37 @@
  * CONDITIONS OF OSMC-PL.
  *
  */
+
+/** \file omsi_solve_alg_system.c
+ */
+
+/** \defgroup AlgSyst Algebraic system evaluation
+ *  \ingroup OMSIBase
+ *
+ * Functions and wrapper to use OMSISolver library with OMSI structure from
+ * generated code functions.
+ */
+
+/** @addtogroup AlgSyst
+  *  @{ */
+
 #include <omsi_global.h>
 #include <omsi_solve_alg_system.h>
 
 
-
-
+/**
+ * \brief Solve algebraic system defined in `omsi_algebraic_system_t alg_system`
+ *
+ * Evaluates jacobi matrix and residual function to get all informations needed
+ * for linear or non-linear solver.
+ * Gets called from generated code equation evaluation function.
+ *
+ * \param [in,out]  alg_system                          Pointer to struct containing algebraic system.
+ * \param [in]      read_only_model_vars_and_params     Pointer to read only `model_vars_and_params`
+ *                                                      to forward to next equation function in generated code.
+ * \return                                              Returns `omsi_fatal` on critical error<br>
+ *                                                      and returns `omsi_ok` otherwise.
+ */
 omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
                                          const omsi_values*         read_only_model_vars_and_params) {
 
@@ -53,7 +78,6 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
         alg_system->n_iteration_vars,
         solver_get_name(alg_system->solver_data));
 
-
     /* Check if it is possible to reuse matrix A or vector b */
     /* ToDo */
 
@@ -71,11 +95,21 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
     /* ToDo: change alg_system->functions->function_vars to next higher function_vars
      * only works because at the moment all function vars are pointer to model_vars_and_params */
 
-
     return omsi_ok;
 }
 
 
+/**
+ * \brief Evaluate `omsi_function` jacobian to get the analytical jacobian.
+ *
+ * Build jacobian row wise with directional derivatives.
+ *
+ * \param [in,out] alg_system                   Pointer to struct containing algebraic system.
+ * \param [in] read_only_model_vars_and_params  Pointer to read only `model_vars_and_params`
+ *                                              to forward to next equation function in generated code.
+ * \return                                      Returns `omsi_fatal` on critical error<br>
+ *                                              and returns `omsi_ok` otherwise.
+ */
 omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
                                           const omsi_values*        read_only_model_vars_and_params) {
 
@@ -88,8 +122,6 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
         seed_index = alg_system->jacobian->input_vars_indices[i].index;
         alg_system->jacobian->local_vars->reals[seed_index] = 0;
     }
-
-
 
     /* Build jacobian row wise with directional derivatives */  /* ToDo: check if realy row wise and not column wise... */
     for (i=0; i<alg_system->jacobian->n_output_vars; i++) {    /* ToDo: Add coloring here */
@@ -114,6 +146,17 @@ omsi_status omsi_get_analytical_jacobian (omsi_algebraic_system_t*  alg_system,
 }
 
 
+/**
+ * \brief Get right hand side `b` of linear equation system `A*x=b`.
+ *
+ * Evaluate residual function with loop iteration variables set to zero to get `-b`.
+ *
+ * \param [in,out] alg_system                   Pointer to struct containing algebraic system.
+ * \param [in] read_only_model_vars_and_params  Pointer to read only `model_vars_and_params`
+ *                                              to forward to next equation function in generated code.
+ * \return                                      Returns `omsi_fatal` on critical error<br>
+ *                                              and returns `omsi_ok` otherwise.
+ */
 omsi_status omsi_get_right_hand_side (omsi_algebraic_system_t*  alg_system,
                                       const omsi_values*        read_only_model_vars_and_params) {
 
@@ -150,6 +193,19 @@ omsi_status omsi_get_right_hand_side (omsi_algebraic_system_t*  alg_system,
 }
 
 
+/**
+ *
+ * \param [in,out] alg_system                   Pointer to struct containing algebraic system.
+ * \param [in] read_only_model_vars_and_params  Pointer to read only `model_vars_and_params`
+ *                                              to forward to next equation function in generated code.
+ * \param [in, out] vars                        On input pointer to `omsi_values`. <br>
+ *                                              Contains result of algebraic system evaluation on exit.
+ *                                              Overwrites information in `vars` with indices saved in
+ *                                              `alg_system->functions->output_vars_indices`.
+ * \return                                      Returns `omsi_fatal` on critical error,<br>
+ *                                              `omsi_warning` if the solution is not within error tolerance<br>
+ *                                              and returns `omsi_ok` otherwise.
+ */
 omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
                                    const omsi_values*       read_only_model_vars_and_params,
                                    omsi_values*             vars) {
@@ -165,6 +221,11 @@ omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
     /* Allocate memory */
     n_loop_iteration_vars = alg_system->jacobian->n_output_vars;
     res = (omsi_real*) global_callback->allocateMemory(n_loop_iteration_vars ,sizeof(omsi_real));
+    if (res == NULL) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                        "fmi2Evaluate: Could not allocate memory.");
+        return omsi_fatal;
+    }
 
     for (i=0; i<alg_system->jacobian->n_output_vars; i++) {
         solver_get_vector_x(alg_system->solver_data,
@@ -199,8 +260,8 @@ omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
  *
  * Allocate memory and set constant data like dimensions.
  *
- * \param [in]  alg_system  Algebraic system instance.
- * \return                  Returns `omsi_ok` on success, otherwise `omsi_error`.
+ * \param [in, out]  alg_system     Algebraic system instance.
+ * \return                          Returns `omsi_ok` on success, otherwise `omsi_error`.
  */
 omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system) {
 
@@ -223,8 +284,4 @@ omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system) {
     return omsi_ok;
 }
 
-
-/* ToDo: Add function to free solver instance */
-void omsi_free_solver () {
-
-}
+/** @} */
