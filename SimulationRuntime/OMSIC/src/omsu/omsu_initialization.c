@@ -70,7 +70,7 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
                 "Could not instantiate OSU component.");
         return NULL;
     }
-    global_callback->componentEnvironment = OSU;
+    global_callback->componentEnvironment = functions->componentEnvironment;
 
     /* set general OSU data */
     OSU->GUID = (omsi_char*) functions->allocateMemory(1, strlen(fmuGUID) + 1);
