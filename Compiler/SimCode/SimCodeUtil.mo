@@ -327,6 +327,7 @@ algorithm
        removedInitialEquations := {};
        tempvars := {};
 
+       // TODO: check createInitialEquations to create additional equations for knownVars, alias, etc.
        (omsiInitEquations, uniqueEqIndex) :=
            createAllEquationOMSI(inInitDAE.eqs, dlow.shared, {}, uniqueEqIndex);
     end if;
@@ -3803,7 +3804,7 @@ protected
   list<SimCodeVar.SimVar> tmpInputVars = {}, tmpOutputVars = {}, tmpInnerVars = {};
   list<SimCodeVar.SimVar> tempVars;
   Integer nAlgebraicSystems = 0;
-  Integer index, nAllVars;
+  Integer index, nAllVars = 0;
   Boolean debug=false;
 algorithm
   for component in components loop
@@ -4129,37 +4130,21 @@ end generateInnerEqns;
 
 protected function fillLocalHashTable
 "Generates new hashTable filled with all SimVars from input lists."
-  input list<list<SimCodeVar.SimVar>> VarListList;
+  input list<list<SimCodeVar.SimVar>> varListList;
   input Integer numberOfElements "number of all elemtens of VarListList";
   output HashTableCrefSimVar.HashTable hashTable;
 protected
-  Integer HTsize;
+  Integer sizeHT;
 algorithm
   // generate empty hashTable
-  HTsize := max(1013, Util.nextPrime(numberOfElements*2));   // chose big enough prime for hash table
-  hashTable := HashTableCrefSimVar.emptyHashTableSized(HTsize);
+  sizeHT := max(1013, Util.nextPrime(numberOfElements*2));   // chose big enough prime for hash table
+  hashTable := HashTableCrefSimVar.emptyHashTableSized(sizeHT);
 
   // fill hashTable
-  for simVarList in VarListList loop
-    hashTable := appendCrefToSimVarHT(simVarList, hashTable);
+  for simVarList in varListList loop
+    hashTable := List.fold(simVarList, HashTableCrefSimVar.addSimVarToHashTable, hashTable);
   end for;
-
 end fillLocalHashTable;
-
-
-protected function appendCrefToSimVarHT
-"Appends list of SimVar to hash table."
-  input list<SimCodeVar.SimVar> vars   "list of simcode variables ";
-  input output HashTableCrefSimVar.HashTable hashTable;
-algorithm
-  try
-    hashTable := List.fold(vars,
-                           HashTableCrefSimVar.addSimVarToHashTable,
-                           hashTable);
-  else
-    Error.addInternalError("function appendCrefToSimVarHT failed", sourceInfo());
-  end try;
-end appendCrefToSimVarHT;
 
 
 // =============================================================================

@@ -434,7 +434,7 @@ uniontype OMSIFunction
     SimCodeFunction.Context context;
     Integer nAlgebraicSystems;
   end OMSI_FUNCTION;
-end OMSIFunction; 
+end OMSIFunction;
 
   uniontype SimEqSystem
     record SES_RESIDUAL
