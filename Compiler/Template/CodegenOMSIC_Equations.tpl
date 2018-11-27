@@ -55,7 +55,7 @@ template equationFunctionPrototypes(SimEqSystem eq, String modelNamePrefixStr)
 end equationFunctionPrototypes;
 
 
-template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, SimCodeFunction.Context context, Text &functionPrototypes)
+template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr,String modelFunctionnamePrefixStr, SimCodeFunction.Context context, Text &functionPrototypes)
  "Generates C-function for an equation evaluation"
 ::=
   let ix = CodegenUtilSimulation.equationIndex(eq)
@@ -71,8 +71,14 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, Sim
     case SES_ALGEBRAIC_SYSTEM(__) then
       "algSystFunction"
     else
+    match  Config.simCodeTarget()
+    case "omsic" then
       "eqFunction"
-  )
+    case "omsicpp" then
+      "omsi_" + modelFunctionnamePrefixStr
+    end match
+    )
+
 
   let funcArguments = (match eq
     case SES_RESIDUAL(__) then
@@ -83,13 +89,24 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr, Sim
       "omsi_function_t* this_function, const omsi_values* model_vars_and_params"
   )
 
-  let &functionPrototypes += <<void <%CodegenUtil.symbolName(modelNamePrefixStr,funcName)%>_<%ix%>(<%funcArguments%>);<%\n%>>>
+  let &functionPrototypes +=  match  Config.simCodeTarget()
+    case "omsic" then
+       <<void <%CodegenUtil.symbolName(modelNamePrefixStr,funcName)%>_<%ix%>(<%funcArguments%>);<%\n%>>>
+    case "omsicpp" then
+       <<void <%funcName%>_<%ix%>(<%funcArguments%>);<%\n%>>>
+    end match
+
 
   <<
   /*
   <%equationInfos%>
   */
-  void <%CodegenUtil.symbolName(modelNamePrefixStr,funcName)%>_<%ix%>(<%funcArguments%>){
+  <%match  Config.simCodeTarget()
+  case "omsic" then
+  'void <%CodegenUtil.symbolName(modelNamePrefixStr,funcName)%>_<%ix%>(<%funcArguments%>){'
+  case "omsicpp" then
+   'void <%modelNamePrefixStr%>::<%funcName%>_<%ix%>(<%funcArguments%>){'
+   end match%>
     <%varDecls%>
     <%auxFunction%>
     <%equationCode%>
@@ -125,14 +142,22 @@ template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction, Context
 end equationCStr;
 
 
-template equationCall(SimEqSystem eq, String modelNamePrefixStr, String input, String omsiName)
+template equationCall(SimEqSystem eq, String modelNamePrefixStr,String modelFunctionnamePrefixStr, String input, String omsiName)
  "Generates call function for evaluating functions"
 ::=
   match eq
   case SES_SIMPLE_ASSIGN(__) then
+    let i = index
+    match  Config.simCodeTarget()
+    case "omsic" then
     <<
-    <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%index%>(<%input%>);
+      <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%i%>(<%input%>);
     >>
+    case "omsicpp" then
+    <<
+     omsi_<%modelFunctionnamePrefixStr%>_<%i%>(<%input%>);
+    >>
+    end match
   case SES_RESIDUAL(__) then
     <<
     <%CodegenUtil.symbolName(modelNamePrefixStr,"resFunction")%>_<%index%>(<%input%>);
@@ -225,7 +250,7 @@ template generateDereivativeMatrixColumnFunction(OMSIFunction column, String mod
   case omsiFunction as OMSI_FUNCTION(__) then
     let bodyBuffer = ( equations |> eq=>
       <<
-      <%generateEquationFunction(eq, modelName, omsiFunction.context, &functionPrototypes)%>
+      <%generateEquationFunction(eq, modelName,"",omsiFunction.context, &functionPrototypes)%>
       >>
     ;separator="\n")
 
@@ -247,7 +272,7 @@ template generateDereivativeMatrixColumnCall(OMSIFunction column, String modelNa
   case OMSI_FUNCTION() then
     let bodyBuffer = ( equations |> eq =>
       <<
-      <%equationCall(eq, modelName, "this_function, model_vars_and_params", omsiName)%>
+      <%equationCall(eq, modelName,"", "this_function, model_vars_and_params", omsiName)%>
       >>
     ;separator="\n")
 

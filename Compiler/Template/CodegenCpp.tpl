@@ -2,6 +2,7 @@ package CodegenCpp
 
 import interface SimCodeTV;
 import CodegenCppCommon.*;
+import CodegenOMSI_common;
 import CodegenUtil.*;
 import CodegenUtilSimulation.*;
 import CodegenCppInit.*;
@@ -140,8 +141,16 @@ template simulationInitHeaderFile(SimCode simCode ,Text& extraFuncs,Text& extraF
  "Generates code for header file for simulation target."
 ::=
 match simCode
-case SIMCODE(modelInfo=MODELINFO(vars=SIMVARS(__)),fileNamePrefix=fileNamePrefix) then
-let initeqs = generateEquationMemberFuncDecls(initialEquations,"initEquation")
+case SIMCODE(modelInfo=MODELINFO(__),initialEquations=initialequations,fileNamePrefix=fileNamePrefix,omsiData=omsiData as SOME(OMSI_DATA(initialization=initialization as OMSI_FUNCTION(__)))) then
+
+let initeqs = match  Config.simCodeTarget()
+      case "Cpp" then
+         generateEquationMemberFuncDecls(initialequations,"initEquation")
+      case "omsicpp" then
+       CodegenOMSI_common.generateOmsiMemberFunction(initialization,fileNamePrefix+"Initialize","initialize")
+end match
+
+
 let initparameqs = generateEquationMemberFuncDecls(parameterEquations,"initParameterEquation")
   match modelInfo
     case modelInfo as MODELINFO(vars=SIMVARS(__)) then
@@ -6888,7 +6897,7 @@ template generateClassDeclarationCode(SimCode simCode,Context context,Text& extr
  "Generates class declarations."
 ::=
 match simCode
-case SIMCODE(modelInfo = MODELINFO(__)) then
+case SIMCODE(modelInfo = MODELINFO(__),omsiData=omsiData as SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__)))) then
 
 let friendclasses = generatefriendAlgloops(listAppend(listAppend(allEquations, initialEquations), getClockedEquations(getSubPartitions(clockedPartitions))), simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace)
 let algloopsolvers = generateAlgloopsolverVariables(modelInfo,simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace)
@@ -6898,7 +6907,14 @@ let jacalgloopsystems =  (jacobianMatrixes |> JAC_MATRIX(columns=mat) hasindex i
                         (mat |> JAC_COLUMN(columnEqns=eqs) =>  generateAlgloopsSystemVariables(eqs,simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace) ;separator="\n")
                         ;separator="")
 
-let memberfuncs = generateEquationMemberFuncDecls(allEquations,"evaluate")
+
+let memberfuncs = match  Config.simCodeTarget()
+      case "Cpp" then
+        generateEquationMemberFuncDecls(allEquations,"evaluate")
+      case "omsicpp" then
+       CodegenOMSI_common.generateOmsiMemberFunction(simulation,lastIdentOfPath(modelInfo.name),"evaluate")
+      end match
+
 let clockedfuncs = generateClockedFuncDecls(getSubPartitions(clockedPartitions), "evaluate")
 let conditionvariables =  conditionvariable(zeroCrossings,simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace)
 
@@ -9944,11 +9960,38 @@ template equationString(SimEqSystem eq, Context context, Text &varDecls, SimCode
     <<
     FOR LOOPS ARE NOT IMPLEMENTED
     >>
-  case e as SES_IFEQUATION(__)
-    then
+  case SES_IFEQUATION(ifbranches=ifbranches, elsebranch=elsebranch) then
+  let &preExp = buffer ""
+  let IfEquation = (ifbranches |> (e, eqns) hasindex index0 =>
+    let condition = daeExp(e, context, &preExp, &varDecls, simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation)
+    let ifequations = (eqns |> eqn =>
+      let eqnStr = equation_(eqn, context, &varDecls, simCode, &extraFuncs, &extraFuncsDecl, &extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation)
+      <<
+      <%eqnStr%>
+      >>
+      ; separator="\n")
+    let conditionline = if index0 then 'else if(<%condition%>)' else 'if(<%condition%>)'
     <<
-    IF EQUATIONS ARE NOT IMPLEMENTED
+    <%conditionline%>
+    {
+      <%ifequations%>
+    }
     >>
+    ; separator="\n")
+  let elseequations = (elsebranch |> eqn =>
+    let eqnStr = equation_(eqn, context, &varDecls, simCode, &extraFuncs, &extraFuncsDecl, &extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation)
+    <<
+    <%eqnStr%>
+    >>
+    ; separator="\n")
+  <<
+  <%preExp%>
+  <%IfEquation%>
+  else
+  {
+    <%elseequations%>
+  }
+  >>
   else
     error(sourceInfo(),"NOT IMPLEMENTED EQUATION 2")
 end equationString;
