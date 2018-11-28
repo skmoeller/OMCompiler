@@ -253,10 +253,18 @@ omsi_status omsi_completed_integrator_step(osu_t*       OSU,
 
     storePreValues(OSU->osu_data); */
 
-    if (OSU->_need_update) {
-        status = OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
-        OSU->_need_update = omsi_false;
-    }
+  if (OSU->_need_update)
+  {
+    status = OSU->osu_data->sim_data->simulation->evaluate (
+        OSU->osu_data->sim_data->simulation,
+        OSU->osu_data->sim_data->model_vars_and_params, NULL);
+    OSU->_need_update = omsi_false;
+  }
+  else
+  {
+    status = omsi_ok;
+  }
+
 
     *enterEventMode = omsi_false;
     *terminateSimulation = omsi_false;
