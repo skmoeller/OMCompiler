@@ -284,4 +284,59 @@ omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system) {
     return omsi_ok;
 }
 
+
+/**
+ * \brief Callback function for OMSISolver of function type `evaluate_res_func`.
+ *
+ * Maps input vector `x_data` to `alg_system->residual->function_vars` and vice
+ * versa residual to `fval_data`.
+ *
+ * @param x_data
+ * @param fval_data
+ * @return
+ */
+omsi_status omsi_residual_wrapper (omsi_real*   x_data,
+                                   omsi_real*   fval_data,
+                                   void*        data) {
+
+    /* Variables */
+    omsi_unsigned_int i, index;
+    omsi_algebraic_system_t* alg_system_data;
+    omsi_function_t* residual;
+
+    alg_system_data = (omsi_algebraic_system_t*) data;
+    residual->algebraic_system_t->functions;
+
+    /* Copy x_data to residuum->function_vars */
+    for (i=0; i<residual->n_input_vars; i++) {
+
+        switch (residual->input_vars_indices[i].type) {
+            case OMSI_TYPE_REAL:
+                index = residual->input_vars_indices[i].index;
+                residual->function_vars->reals[index] = x_data[i];
+            break;
+            default:
+                filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                    "fmi2Evaluate: Could not copy data for residual evaluation."
+                    "Data type was not a real.");
+                return omsi_error;
+        }
+
+
+    }
+
+    /* Evaluate residum */
+    residual->evaluate(residual, residual->function_vars, fval_data);
+
+
+    return omsi_ok;
+}
+
+
+
+
+
+
+
+
 /** @} */

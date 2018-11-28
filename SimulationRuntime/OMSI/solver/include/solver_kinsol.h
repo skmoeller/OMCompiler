@@ -57,8 +57,12 @@ extern "C" {
 
 
 
+struct solver_data_kinsol;
 
-
+typedef struct kinsol_user_data {
+    void*                           user_data;
+    struct solver_data_kinsol*      kinsol_data;
+}kinsol_user_data;
 
 
 typedef struct solver_data_kinsol {

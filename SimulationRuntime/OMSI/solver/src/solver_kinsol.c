@@ -168,27 +168,28 @@ solver_status kinsol_set_dim_data(solver_data* general_solver_data) {
  */
 solver_int kinsol_residual_wrapper(N_Vector x,
                                    N_Vector fval,
-                                   void *userData) {
+                                   void*    user_data_in) {
 
     /* Variables */
     solver_data_kinsol* kinsol_data;
     solver_real* x_data;
     solver_real* fval_data;
-
+    kinsol_user_data* user_data;
 
     /* Access input data */
-    kinsol_data = userData;
+    user_data = (kinsol_user_data*) user_data_in;
+    kinsol_data = user_data->kinsol_data;
     x_data = NV_DATA_S(x);
     fval_data = NV_DATA_S(fval);
 
 
-  /* Call residual function */
-  kinsol_data->f_function_eval(x_data, fval_data);
+    /* Call residual function */
+    kinsol_data->f_function_eval(x_data, fval_data, user_data->user_data);
 
-  /* Log function call */
+    /* Log function call */
 
 
-  return 0; /* Return value is ignored by Kinsol */
+    return 0; /* Return value is ignored by Kinsol */
 }
 
 /** @} */

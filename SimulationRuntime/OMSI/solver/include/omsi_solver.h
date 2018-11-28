@@ -242,8 +242,9 @@ typedef solver_state (*solver_solve_func)           (void*);
  * \param [in]  x_vector    Vector x
  * \param [out] fval        Function value `f(x)`
  */
-typedef void (*evaluate_res_func)                   (solver_real* x_vector,
-                                                     solver_real* fval);
+typedef void (*evaluate_res_func)                   (solver_real*   x_vector,
+                                                     solver_real*   fval,
+                                                     void*          data);
 
 
 
