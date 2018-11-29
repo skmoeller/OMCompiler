@@ -95,6 +95,9 @@ solver_data* solver_allocate(solver_name            name,
     /* allocate memory */
     solver = (solver_data*) solver_allocateMemory(1, sizeof(solver_data));
 
+    /* set dimension */
+    solver->dim_n = dim_n;
+
     switch (name) {
         case solver_lapack:
             solver->name = solver_lapack;
@@ -109,9 +112,6 @@ solver_data* solver_allocate(solver_name            name,
             solver_freeMemory(solver);
             return NULL;
     }
-
-    /* set dimension */
-    solver->dim_n = dim_n;
 
     /* set callback functions */
     switch (name) {
