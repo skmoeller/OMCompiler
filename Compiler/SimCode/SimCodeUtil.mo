@@ -3733,7 +3733,7 @@ protected function createAllEquationOMSI
   input BackendDAE.EqSystems constSysts;
   input BackendDAE.Shared shared;
   input list<BackendDAE.ZeroCrossing> inZeroCrossings;
-  output SimCode.OMSIFunction omsiAllEquations;
+  output SimCode.OMSIFunction omsiAllEquations = SimCode.emptyOMSIFunction;
   input output Integer uniqueEqIndex;
 protected
   BackendDAE.StrongComponents components;
@@ -3743,15 +3743,10 @@ protected
   BackendDAE.Var var;
 
   SimCode.OMSIFunction newAllEquations;
-  list<SimCode.SimEqSystem> equations={};
-  list<SimCodeVar.SimVar> inputVars={};
-  list<SimCodeVar.SimVar> outputVars={};
-  list<SimCodeVar.SimVar> innerVars={};
-  HashTableCrefSimVar.HashTable hashTable;
-  Integer nAllVars=0;
-
-  Integer nAlgebraicSystems=0;
 algorithm
+  // Add empty hash table to omsiAllEquations
+  omsiAllEquations.context := SimCodeFunction.OMSI_CONTEXT(SOME(HashTableCrefSimVar.emptyHashTableSized(1013)));
+
   for constSyst in constSysts loop
     try 
       BackendDAE.MATCHING(comps=components) := constSyst.matching;
@@ -3763,25 +3758,8 @@ algorithm
     (newAllEquations, uniqueEqIndex) := generateEquationsForComponents(components, constSyst, shared, uniqueEqIndex);
 
     // Update omsiAllEquations
-    equations := listAppend(newAllEquations.equations, listReverse(equations));
-    inputVars := listAppend(newAllEquations.inputVars, listReverse(inputVars));
-    outputVars := listAppend(newAllEquations.outputVars, listReverse(outputVars));
-    innerVars := listAppend(newAllEquations.innerVars, listReverse(innerVars));
-    nAllVars := nAllVars + newAllEquations.nAllVars;
-    nAlgebraicSystems := nAlgebraicSystems + newAllEquations.nAlgebraicSystems;
+    omsiAllEquations := appendOMSIFunction(omsiAllEquations, newAllEquations);
   end for;
-
-  // Create hash table
-  hashTable := fillLocalHashTable({inputVars, innerVars, outputVars}, nAllVars);
-
-  // Create output OMSI Function
-  omsiAllEquations := SimCode.OMSI_FUNCTION(equations=equations,
-                                            inputVars=inputVars,
-                                            outputVars=outputVars,
-                                            innerVars=innerVars,
-                                            nAllVars=nAllVars,
-                                            context=SimCodeFunction.OMSI_CONTEXT(SOME(hashTable)),
-                                            nAlgebraicSystems=nAlgebraicSystems);
 
 end createAllEquationOMSI;
 
@@ -4127,6 +4105,37 @@ algorithm
   equations := DoubleEndedList.toListAndClear(dblLstEqns);
 end generateInnerEqns;
 
+
+protected function appendOMSIFunction
+"Append omsiFunction_2 to omsiFunction_1 and return omsiFunction_1."
+  input output SimCode.OMSIFunction omsiFunction_1;
+  input SimCode.OMSIFunction omsiFunction_2;
+algorithm
+    omsiFunction_1.equations := listAppend(omsiFunction_1.equations, omsiFunction_2.equations);
+
+    omsiFunction_1.inputVars := listAppend(omsiFunction_1.inputVars, omsiFunction_2.inputVars);
+    omsiFunction_1.outputVars := listAppend(omsiFunction_1.outputVars, omsiFunction_2.outputVars);
+    omsiFunction_1.innerVars := listAppend(omsiFunction_1.innerVars, omsiFunction_2.innerVars);
+    omsiFunction_1.nAllVars := omsiFunction_1.nAllVars + omsiFunction_2.nAllVars;
+
+    // Update hashTable
+    omsiFunction_1.context := match omsiFunction_1.context
+      local
+        HashTableCrefSimVar.HashTable hashTable;
+      case SimCodeFunction.OMSI_CONTEXT(SOME(hashTable))
+        algorithm
+          hashTable := List.fold(omsiFunction_2.inputVars, HashTableCrefSimVar.addSimVarToHashTable, hashTable);
+        for simVar in omsiFunction_2.outputVars loop
+          hashTable := HashTableCrefSimVar.addSimVarToHashTable(simVar, hashTable);
+        end for;
+        for simVar in omsiFunction_2.innerVars loop
+          hashTable := HashTableCrefSimVar.addSimVarToHashTable(simVar, hashTable);
+        end for;
+        then SimCodeFunction.OMSI_CONTEXT(SOME(hashTable));
+    end match;
+
+    omsiFunction_1.nAlgebraicSystems := omsiFunction_1.nAlgebraicSystems + omsiFunction_2.nAlgebraicSystems;
+end appendOMSIFunction;
 
 protected function fillLocalHashTable
 "Generates new hashTable filled with all SimVars from input lists."

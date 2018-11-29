@@ -313,7 +313,13 @@ uniontype OMSIFunction
 end OMSIFunction; 
 
 public constant 
-OMSIFunction emptyOMSIFunction = OMSI_FUNCTION({}, {}, {}, {}, -1, SimCodeFunction.contextOMSI, -1);
+OMSIFunction emptyOMSIFunction = OMSI_FUNCTION(equations = {},
+                                               inputVars = {},
+                                               outputVars = {},
+                                               innerVars = {},
+                                               nAllVars = 0,
+                                               context = SimCodeFunction.contextOMSI,
+                                               nAlgebraicSystems = 0);
   
 
 uniontype SimEqSystem
