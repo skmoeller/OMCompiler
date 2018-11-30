@@ -24,12 +24,12 @@ ENDIF()
 MESSAGE(STATUS "Lapack Libraries: ${LAPACK_LIBRARIES}")
 
 # Find SUNDIALS KINSOL
-FIND_LIBRARY(KINSOL_LIBRARIES sundials_kinsol
-             PATH ${CMAKE_INSTALL_PREFIX}/lib/omc)
-MESSAGE(STATUS "KINSOL Libraries: ${KINSOL_LIBRARIES}")
+#FIND_LIBRARY(KINSOL_LIBRARIES sundials_kinsol
+#             PATH ${CMAKE_INSTALL_PREFIX}/lib/omc)
+#MESSAGE(STATUS "KINSOL Libraries: ${KINSOL_LIBRARIES}")
 
-include_directories ("${CMAKE_INSTALL_PREFIX}/include/omc/c/sundials")
-MESSAGE(STATUS "Location of SUNDIALS headers: ${CMAKE_INSTALL_PREFIX}/include/omc/c/sundials")
+#include_directories ("${CMAKE_INSTALL_PREFIX}/include/omc/c/sundials")
+#MESSAGE(STATUS "Location of SUNDIALS headers: ${CMAKE_INSTALL_PREFIX}/include/omc/c/sundials")
 
 # OMSISolver includes
 include_directories ("${CMAKE_SOURCE_DIR}/solver/include")
@@ -37,7 +37,7 @@ include_directories ("${CMAKE_SOURCE_DIR}/solver/include")
 add_library(${OMSISolverName}
   src/solver_api.c
   src/solver_helper.c
-  src/solver_kinsol.c
+#  src/solver_kinsol.c
   src/solver_lapack.c
   src/solver_newton.c
 )

@@ -41,7 +41,7 @@
 #include <solver_global.h>
 
 #include <solver_lapack.h>
-#include <solver_kinsol.h>
+/*#include <solver_kinsol.h>*/
 
 
 #ifdef __cplusplus
@@ -105,7 +105,7 @@ solver_data* solver_allocate(solver_name            name,
         break;
         case solver_kinsol:
             solver->name = solver_kinsol;
-            kinsol_allocate_data(solver);
+            /*kinsol_allocate_data(solver);*/
         break;
         default:
             solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
