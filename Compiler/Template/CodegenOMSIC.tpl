@@ -172,8 +172,8 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     LAPACK_LIBDIR=<%lapackDirWin%>
     LAPACK_LIB=-lopenblas
 
-    #KINSOL_LIBDIR=-L$(OMHOME)/lib/omc/
-    #KINSOL_LIB=-lsundials_kinsol -lsundials_nvecserial
+    KINSOL_LIBDIR=-L$(OMHOME)/lib/omc/
+    KINSOL_LIB=-lsundials_kinsol -lsundials_nvecserial
 
     OMSU_STATIC_LIB=-Wl,--whole-archive -lOMSISolver_static -lOMSIBase_static -lOMSU_static -Wl,--no-whole-archive
     OMSU_STATIC_LIBDIR=-L$(OMLIB)/omc/omsi

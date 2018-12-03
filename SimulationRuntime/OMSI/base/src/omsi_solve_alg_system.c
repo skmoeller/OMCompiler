@@ -82,13 +82,20 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
     /* ToDo */
 
     /* Update solver specific data */
-    omsi_get_analytical_jacobian(alg_system, read_only_model_vars_and_params);
-    omsi_get_right_hand_side(alg_system, read_only_model_vars_and_params);
+    if (alg_system->isLinear) {
+        omsi_get_analytical_jacobian(alg_system, read_only_model_vars_and_params);
+        omsi_get_right_hand_side(alg_system, read_only_model_vars_and_params);
+    }
 
     alg_system->solver_data->state = solver_ready;
 
     /* Call solver */
-    solver_linear_solve(alg_system->solver_data);
+    if (alg_system->isLinear) {
+        solver_linear_solve(alg_system->solver_data);
+    } else {
+        solver_non_linear_solve(alg_system->solver_data);
+    }
+
 
     /* Save results */
     omsi_get_loop_results(alg_system, read_only_model_vars_and_params, alg_system->functions->function_vars);
@@ -305,7 +312,7 @@ omsi_status omsi_residual_wrapper (omsi_real*   x_data,
     omsi_function_t* residual;
 
     alg_system_data = (omsi_algebraic_system_t*) data;
-    residual->algebraic_system_t->functions;
+    residual = alg_system_data->functions;
 
     /* Copy x_data to residuum->function_vars */
     for (i=0; i<residual->n_input_vars; i++) {
@@ -321,8 +328,6 @@ omsi_status omsi_residual_wrapper (omsi_real*   x_data,
                     "Data type was not a real.");
                 return omsi_error;
         }
-
-
     }
 
     /* Evaluate residum */
@@ -333,7 +338,34 @@ omsi_status omsi_residual_wrapper (omsi_real*   x_data,
 }
 
 
+omsi_int omsi_intial_guess_wrapper (omsi_real*  initial_guess,
+                                    void*       data) {
 
+    /* Variables */
+    omsi_unsigned_int i, index, n_loop_iteration_vars;
+    omsi_algebraic_system_t* alg_system_data;
+
+    alg_system_data = (omsi_algebraic_system_t*) data;
+
+    n_loop_iteration_vars = alg_system_data->jacobian->n_output_vars;
+
+    for (i=0; i<n_loop_iteration_vars; i++) {
+        switch (alg_system_data->functions->input_vars_indices[i].type) {
+            case OMSI_TYPE_REAL:
+                index = alg_system_data->functions->output_vars_indices[i].index;
+            break;
+        default:
+            filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Evaluate: Could not copy data for initial guess."
+                "Data type was not a real.");
+            return -1;
+        }
+        initial_guess[i] = alg_system_data->functions->function_vars->reals[index];
+    }
+
+
+    return 0;
+}
 
 
 

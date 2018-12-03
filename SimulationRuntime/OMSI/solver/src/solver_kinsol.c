@@ -40,7 +40,6 @@
 #include <solver_kinsol.h>
 
 
-solver_int kinsol_residual_wrapper(N_Vector x, N_Vector fval, void *userData);
 /*
  * ============================================================================
  * Allocaten, Initialization and freeing of solver_specific_data
@@ -55,11 +54,10 @@ solver_int kinsol_residual_wrapper(N_Vector x, N_Vector fval, void *userData);
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status kinsol_allocate_data(solver_data* general_solver_data) {
-
+solver_status solver_kinsol_allocate_data(solver_data* general_solver_data)
+{
     /* Variables */
     solver_data_kinsol* kinsol_data;
-    solver_int flag;
 
     /* Check for correct solver */
     if (!solver_instance_correct(general_solver_data, solver_kinsol, "allocate_kinsol_data")) {
@@ -86,37 +84,31 @@ solver_status kinsol_allocate_data(solver_data* general_solver_data) {
     kinsol_data->kinsol_solver_object = KINCreate();
     if (kinsol_data->kinsol_solver_object == NULL) {
         solver_logger(log_solver_error, "In function allocate_kinsol_data: Could not create KINSOL solver object.");
-                    general_solver_data->state = solver_error_state;
+        solver_freeMemory(kinsol_data);
+        general_solver_data->specific_data = NULL;
         general_solver_data->state = solver_error_state;
         return solver_error;
     }
 
-    /* Set problem-defining function and initialize KINSOL*/
-    flag = KINInit(kinsol_data->kinsol_solver_object,
-            kinsol_residual_wrapper,
-            kinsol_data->initial_guess);
-    if (flag != KIN_SUCCESS) {
-        solver_logger(log_solver_error, "In function allocate_kinsol_data: Could not initialize KINSOL solver object.");
-                    general_solver_data->state = solver_error_state;
-        general_solver_data->state = solver_error_state;
-        return solver_error;
-    }
+    kinsol_data->f_function_eval = NULL;
+    kinsol_data->initial_guess = NULL;
 
     general_solver_data->specific_data = kinsol_data;
+    general_solver_data->state = solver_instantiated;
 
     return solver_ok;
 }
 
 
 /**
- *  Frees kinsol specific solver data.
+ *  \brief Frees kinsol specific solver data.
  *
  * \param [in,out]  general_solver_data     Solver instance.
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status kinsol_free_data(solver_data* general_solver_data) {
-
+solver_status solver_kinsol_free_data(solver_data* general_solver_data)
+{
     /* Variables */
     solver_data_kinsol* kinsol_data;
 
@@ -130,6 +122,36 @@ solver_status kinsol_free_data(solver_data* general_solver_data) {
     /* Free KINSOL solver object */
     KINFree((void*)kinsol_data);
 
+    general_solver_data->state = solver_uninitialized;
+
+    return solver_ok;
+}
+
+
+/**
+ * \brief Set initial guess for vector `x`.
+ *
+ * \param [in,out]  general_solver_data     Solver instance.
+ * \param [in]      initial_guess           Array with initial guess for vector `x` to start iteration.
+ *                                          Has length general_solver_data->dim_n
+ * \return          solver_status           solver_ok on success and
+ *                                          solver_error on failure.
+ */
+solver_status solver_kinsol_set_start_vector (solver_data*  general_solver_data,
+                                              solver_real*  initial_guess)
+{
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+
+    /* check for correct solver */
+    if (!solver_instance_correct(general_solver_data, solver_kinsol, "solver_kinsol_free_data")) {
+        return solver_error;
+    }
+
+    kinsol_data = general_solver_data->specific_data;
+
+    /* Create initial_guess vector */
+    kinsol_data->initial_guess = N_VMake_Serial(general_solver_data->dim_n, initial_guess);
     return solver_ok;
 }
 
@@ -141,11 +163,70 @@ solver_status kinsol_free_data(solver_data* general_solver_data) {
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status kinsol_set_dim_data(solver_data* general_solver_data) {
+solver_status solver_kinsol_init_data(solver_data* general_solver_data)
+{
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+    solver_int flag;
+    solver_unsigned_int i;
+    solver_real* u_scale;
+    solver_real* f_scale;
+
+    /* check for correct solver */
+    if (!solver_instance_correct(general_solver_data, solver_kinsol, "solver_kinsol_free_data")) {
+        return solver_error;
+    }
+
+    /* Access data */
+    kinsol_data = general_solver_data->specific_data;
+
+    if (kinsol_data->initial_guess == NULL) {
+        solver_logger(log_solver_error, "In function kinsol_init_data: Initial guess not set. "
+                "Use API function solver_set_start_vector to set initial guess..");
+        general_solver_data->state = solver_error_state;
+        return solver_error;
+    }
+
+    /* Set problem-defining function and initialize KINSOL*/
+    flag = KINInit(kinsol_data->kinsol_solver_object,
+                   solver_kinsol_residual_wrapper,
+                   kinsol_data->initial_guess);
+    if (flag != KIN_SUCCESS) {
+        solver_logger(log_solver_error, "In function kinsol_init_data: Could not initialize KINSOL solver object.");
+        general_solver_data->state = solver_error_state;
+        return solver_error;
+    }
+
+    /* Set KINSOL strategy */
+    kinsol_data->strategy = KIN_FP;
+
+    /* Create Jacobian matrix object */
 
 
+
+    /* Create linear solver object */
+
+
+
+    /* Attach linear solver module */
+
+
+    /* Set scaling vectors */
+    u_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
+    f_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
+    for (i=0; i<general_solver_data->dim_n; i++) {
+        u_scale[i] = 1;
+        f_scale[i] = 1;
+    }
+    kinsol_data->u_scale = N_VMake_Serial(general_solver_data->dim_n, u_scale);
+    kinsol_data->f_scale = N_VMake_Serial(general_solver_data->dim_n, f_scale);
+
+
+    /* Set state and exit*/
+    general_solver_data->state = solver_initializated;
     return solver_ok;
 }
+
 
 
 
@@ -166,9 +247,9 @@ solver_status kinsol_set_dim_data(solver_data* general_solver_data) {
  * \param [in,out]  userData
  * \return          solver_int  Return value is ignored from Kinsol.
  */
-solver_int kinsol_residual_wrapper(N_Vector x,
-                                   N_Vector fval,
-                                   void*    user_data_in) {
+solver_int solver_kinsol_residual_wrapper(N_Vector  x,
+                                          N_Vector  fval,
+                                          void*     user_data_in) {
 
     /* Variables */
     solver_data_kinsol* kinsol_data;
@@ -190,6 +271,61 @@ solver_int kinsol_residual_wrapper(N_Vector x,
 
 
     return 0; /* Return value is ignored by Kinsol */
+}
+
+
+
+
+
+
+
+solver_state solver_kinsol_solve(void* specific_data)
+{
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+    solver_int flag;
+
+    kinsol_data = specific_data;
+
+    /* Solver call */
+    flag = KINSol(kinsol_data->kinsol_solver_object,
+                  kinsol_data->initial_guess,
+                  kinsol_data->strategy,
+                  kinsol_data->u_scale,
+                  kinsol_data->f_scale);
+
+
+    switch (flag) {
+        case KIN_STEP_LT_STPTOL:
+            solver_logger(log_solver_error,
+                    "In function solver_kinsol_solve: Kinsol stopped based on scaled step length. "
+                    "It is possible that the solution is within tolerances specified or the algorithm is stalled near an invalid solution "
+                    "or that scalar scsteptol is too large.");
+            return solver_warning;
+        case KIN_MEM_NULL:
+            solver_logger(log_solver_error,
+                    "In function solver_kinsol_solve: The Kinsol memory block pointer was NULL.");
+            return solver_error;
+        case KIN_ILL_INPUT:
+            solver_logger(log_solver_error,
+                    "In function solver_kinsol_solve: An input parameter was invalid.");
+            return solver_error;
+        case KIN_NO_MALLOC:
+            solver_logger(log_solver_error,
+                    "In function solver_kinsol_solve: The KINSOL memory was not allocated by a call to KINCreate.");
+            return solver_error;
+        case KIN_MEM_FAIL:
+            solver_logger(log_solver_error,
+                    "In function solver_kinsol_solve: A memory allocation failed.");
+            return solver_error;
+        default:
+            solver_logger(log_solver_error,
+                    "In function solver_kinsol_solve: A memory allocation failed.");
+            return solver_error;
+        /* ToDo: Add more error cases */
+    }
+
+    return solver_ok;
 }
 
 /** @} */
