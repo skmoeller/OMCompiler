@@ -334,7 +334,7 @@ solver_state solver_lapack_solve(void* specific_data) {
  * \param [in] length               Pointer to current position on buffer to write.
  * \param [in] general_solver_data  Solver instance.
  */
-void solver_print_lapack_data(solver_char*          buffer,
+void solver_lapack_print_data(solver_char*          buffer,
                               solver_unsigned_int   buffer_size,
                               solver_int*           length,
                               solver_data*          general_solver_data) {

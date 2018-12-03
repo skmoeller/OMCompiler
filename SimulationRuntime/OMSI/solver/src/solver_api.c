@@ -41,7 +41,7 @@
 #include <solver_global.h>
 
 #include <solver_lapack.h>
-/*#include <solver_kinsol.h>*/
+#include <solver_kinsol.h>
 
 
 #ifdef __cplusplus
@@ -91,6 +91,7 @@ solver_data* solver_allocate(solver_name            name,
     /* Variables */
     solver_data* solver;
     solver_linear_callbacks* lin_callbacks;
+    solver_non_linear_callbacks* non_lin_callbacks;
 
     /* allocate memory */
     solver = (solver_data*) solver_allocateMemory(1, sizeof(solver_data));
@@ -98,6 +99,7 @@ solver_data* solver_allocate(solver_name            name,
     /* set dimension */
     solver->dim_n = dim_n;
 
+    /* Set solver specific data */
     switch (name) {
         case solver_lapack:
             solver->name = solver_lapack;
@@ -105,7 +107,7 @@ solver_data* solver_allocate(solver_name            name,
         break;
         case solver_kinsol:
             solver->name = solver_kinsol;
-            /*kinsol_allocate_data(solver);*/
+            solver_kinsol_allocate_data(solver);
         break;
         default:
             solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
@@ -129,7 +131,11 @@ solver_data* solver_allocate(solver_name            name,
             lin_callbacks->solve_eq_system = &solver_lapack_solve;
 
             solver->solver_callbacks = lin_callbacks;
-        break;
+            break;
+        case solver_kinsol:
+            non_lin_callbacks = (solver_non_linear_callbacks*) solver_allocateMemory(1, sizeof(solver_non_linear_callbacks));
+            solver->solver_callbacks = non_lin_callbacks;
+            break;
         default:
             solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
             solver_freeMemory(solver);
@@ -184,13 +190,45 @@ solver_status solver_prepare_specific_data (solver_data* solver) {
         case solver_lapack:
             solver->linear = solver_true;
             return lapack_set_dim_data(solver);
-        break;
+        case solver_kinsol:
+            solver->linear = solver_false;
+            return solver_kinsol_init_data(solver);
         default:
-            solver_logger(log_solver_error, "In function prepare_specific_solver_data: No solver"
-                    "specified in solver_name.");
+            solver_logger(log_solver_error, "In function prepare_specific_solver_data:"
+                    "No solver specified in solver_name.");
             return solver_error;
     }
 }
+
+
+/**
+ * \brief Set initial guess for start vector for non-linear solver.
+ *
+ * \param [in]  solver          Pointer to solver instance.
+ * \param [in]  initial_guess   Array of length solver->dim_n containing initial guess.
+ * \return                      Returns `solver_status` `solver_okay` if solved successful,
+ *                              otherwise `solver_error`.
+ */
+solver_status solver_set_start_vector (solver_data* solver,
+                                       solver_real* initial_guess) {
+
+    switch (solver->name) {
+        case solver_lapack:
+            solver_logger(log_solver_warning, "In function solver_set_start_vector:"
+                    "Linear solver LAPACK does not need a start vector. Ignoring function call.");
+            return solver_warning;
+        case solver_kinsol:
+            solver_kinsol_set_start_vector (solver, initial_guess);
+            break;
+        default:
+            solver_logger(log_solver_error, "In function solver_set_start_vector:"
+                    "No solver specified in solver_name.");
+            return solver_error;
+    }
+
+    return solver_ok;
+}
+
 
 
 /*
@@ -510,7 +548,7 @@ void solver_print_data (solver_data*    solver,
 
     switch (solver->name) {
         case solver_lapack:
-            solver_print_lapack_data(buffer, MAX_BUFFER_SIZE, &length, solver);
+            solver_lapack_print_data(buffer, MAX_BUFFER_SIZE, &length, solver);
             break;
         default:
             length += snprintf(buffer+length, MAX_BUFFER_SIZE-length,
@@ -557,12 +595,11 @@ void solver_print_data (solver_data*    solver,
  */
 
 /**
- * \brief Calls solve function for registered solver.
+ * \brief Calls solve function for registered linear solver.
  *
  * Checks if all necessary data is already set.
  *
  * \param solver    Solver instance.
- *
  * \return          Returns `solver_status` `solver_okay` if solved successful,
  *                  otherwise `solver_error`.
  */
@@ -581,6 +618,33 @@ solver_status solver_linear_solve(solver_data* solver) {
 
     /* Call solve function */
     return lin_callbacks->solve_eq_system(solver->specific_data);
+}
+
+
+/**
+ * \brief Calls solve function for registered non-linear solver.
+ *
+ * Checks if all necessary data is already set.
+ *
+ * \param solver    Solver instance.
+ * \return          Returns `solver_status` `solver_okay` if solved successful,
+ *                  otherwise `solver_error`.
+ */
+solver_status solver_non_linear_solve(solver_data* solver) {
+
+    /* Variables */
+    solver_non_linear_callbacks* non_lin_callbacks;
+
+
+    /* Check if solver is ready */
+    if (!solver_func_call_allowed (solver, solver_ready, "solver_non_linear_solver")) {
+        return solver_error;
+    }
+
+    non_lin_callbacks = solver->solver_callbacks;
+
+    /* Call solve function */
+    return non_lin_callbacks->solve_eq_system(solver->specific_data);
 }
 
 #ifdef __cplusplus

@@ -246,8 +246,6 @@ typedef void (*evaluate_res_func)                   (solver_real*   x_vector,
                                                      solver_real*   fval,
                                                      void*          data);
 
-
-
 /**
  * Struct for callback functions for linear solvers.
  */
@@ -260,8 +258,17 @@ typedef struct solver_linear_callbacks {
 
     solver_interact_vector_element get_x_element;   /**< Callback function to get element(s) of solution vector `x`. */
 
-    solver_solve_func solve_eq_system;          /**< Callback function to solve equation system `A*x=b`. */
-}solver_linear_callbacks;
+    solver_solve_func solve_eq_system;              /**< Callback function to solve equation system `A*x=b`. */
+} solver_linear_callbacks;
+
+
+/**
+ * Struct for callback functions for non-linear solvers.
+ */
+typedef struct solver_non_linear_callbacks {
+    evaluate_res_func get_residuum_func;
+    solver_solve_func solve_eq_system;
+} solver_non_linear_callbacks;
 
 
 /** \brief General solver structure.
@@ -273,7 +280,8 @@ typedef struct solver_linear_callbacks {
  */
 typedef struct solver_data {
     solver_name         name;           /**< Name of solver instance. */
-    solver_bool         linear;         /**< `solver_true` if linear, `solver_false` if non-linear. */
+    solver_bool         linear;         /**< `solver_true` if solver can only solve linear problems,
+                                         *   `solver_false` if non-linear. */
 
     solver_state        state;          /**< Current state of solver instance, e.g if already initialized or finished. */
     solver_info         info;           /**< Informations about solution quality. */

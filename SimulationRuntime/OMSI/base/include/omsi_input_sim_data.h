@@ -86,6 +86,8 @@ omsi_status instantiate_input_inner_output_indices (omsi_function_t*    omsi_fun
 omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
                                       omsi_string       omsi_function_name);
 
+void omsu_set_initial_guess (omsi_algebraic_system_t* algebraic_system);
+
 #ifdef __cplusplus
 }  /* end of extern "C" { */
 #endif
