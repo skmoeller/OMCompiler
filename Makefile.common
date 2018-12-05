@@ -204,7 +204,7 @@ all-runtimeCPPinstall: mkbuilddirs CMinpack sundials
 omc-and-runtimeCPPinstall: mkbuilddirs CMinpack sundials
 	$(MAKE) omc runtimeCPPinstall OMBUILDDIR=$(OMBUILDDIR)
 
-runtimeCPP: CMinpack sundials antlr-copy $(MINGW_EXTRA_LIBS) OMSIBaseInstall
+runtimeCPP: CMinpack sundials antlr-copy $(MINGW_EXTRA_LIBS) OMSI
 	$(MAKE) -C SimulationRuntime/OMSICpp/ -f $(defaultMakefileTarget) OMBUILDDIR=$(OMBUILDDIR)
 
 CMAKE_ARGS=$(filter CMAKE_%, $(MAKEFLAGS))
@@ -212,7 +212,8 @@ CMAKE_ARGS=$(filter CMAKE_%, $(MAKEFLAGS))
 
 omcCAPIinstall:
 	$(MAKE) -C SimulationRuntime/OMSICpp/ -f $(defaultMakefileTarget) omcCAPIinstall CC="$(CC)" CXX="$(CXX)"  $(CMAKE_ARGS) OMBUILDDIR=$(OMBUILDDIR)
-runtimeCPPinstall: CMinpack $(MINGW_EXTRA_LIBS) copycppheader runtimeCPP
+
+runtimeCPPinstall: CMinpack $(MINGW_EXTRA_LIBS) copycppheader fmil runtimeCPP
 	# cpp runtime needs fmilib as shared library
 	test -f 3rdParty/FMIL/build/libfmilib_shared.* || rm -rf 3rdParty/FMIL/build/*
 	$(MAKE)  -f $(defaultMakefileTarget) fmil FMILIB_SHARED="ON"
@@ -238,7 +239,7 @@ testlibrariemsl32cpp:
 runtimeCPPclean:
 	$(MAKE) -C SimulationRuntime/OMSICpp/ -f $(defaultMakefileTarget) clean OMBUILDDIR=$(OMBUILDDIR)
 
-fmil:
+fmil: mkbuilddirs
 	test -d 3rdParty/FMIL
 	mkdir -p 3rdParty/FMIL/build
 	(cd 3rdParty/FMIL/build && test -f Makefile || CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" $(CMAKE) -D CMAKE_AR:String="$(AR)" $(MINGW_FMIL_FLAGS) -D FMILIB_BUILD_SHARED_LIB:Bool=$(FMILIB_SHARED) -D FMILIB_BUILD_TESTS:Bool=OFF -D FMILIB_GENERATE_DOXYGEN_DOC:Bool=OFF -DCMAKE_COLOR_MAKEFILE:Bool=OFF -DFMILIB_INSTALL_PREFIX:String=../install .. -G $(CMAKE_TARGET))
