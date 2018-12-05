@@ -1,4 +1,4 @@
-all: omc
+all: omc OMSICInstall
 
 autoconfGeneratedFiles = @GENERATED_AUTOCONF_FILES@
 
