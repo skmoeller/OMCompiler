@@ -74,7 +74,7 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
        let () = textFile(content, FileNamePrefix+"_init_eqns.c")
         <<>>
     case "omsicpp" then
-        let content = generateOmsiFunctionCode(initialization, FileNamePrefix,"initialize" ,"init_eqns")
+        let content = generateOmsiFunctionCode(initialization, FileNamePrefix+"Initialize","initialize" ,"init_eqns")
         let () = textFile(content, 'OMCpp<%FileNamePrefix%>OMSIInitEquations.cpp')
         <<>>
     end match
@@ -91,7 +91,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let &functionCall = buffer ""
   let &functionPrototypes = buffer ""
 
-  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "allEqns", FileNamePrefix, &functionPrototypes, &includes, false, omsiName)
+  let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "allEqns", FileNamePrefix,modelFunctionnamePrefixStr, &functionPrototypes, &includes, false, omsiName)
   let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, modelFunctionnamePrefixStr,omsiName, &includes, &evaluationCode, &functionCall, "", &functionPrototypes, omsiName)
 
   // generate header file
@@ -232,7 +232,7 @@ template generateOmsiMemberFunction(OMSIFunction omsiFunction, String FileNamePr
     )
 
   <<
-    omsi_status initialize_omsi_functions (omsi_function_t* omsi_function);
+    omsi_status initialize_omsi_<%FunctionnamePrefix%>_functions (omsi_function_t* omsi_function);
     omsi_status omsi_<%FunctionnamePrefix%>All(omsi_function_t* simulation, omsi_values* model_vars_and_params, void* data);
     <%functionPrototypes%>
   >>
@@ -378,7 +378,7 @@ template generateDerivativeFile (Option<DerivativeMatrix> matrix, String FileNam
     case SOME(derMat as DERIVATIVE_MATRIX(__)) then
     let initalizationCodeCol = (derMat.columns |> column =>
       <<
-      <%generateInitalizationOMSIFunction(column, 'derivativeMatFunc_<%index%>', FileNamePrefix, &functionPrototypes, &includes, true, omsiName)%>
+      <%generateInitalizationOMSIFunction(column, 'derivativeMatFunc_<%index%>', FileNamePrefix,"", &functionPrototypes, &includes, true, omsiName)%>
       >>
     ;separator="\n\n")
     <<
@@ -478,7 +478,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       return omsi_ok;
     }
 
-    <%generateInitalizationOMSIFunction (residual, 'resFunction_<%algSysIndex%>', FileNamePrefix, &functionPrototypes, &includes, false, omsiName)%>
+    <%generateInitalizationOMSIFunction (residual, 'resFunction_<%algSysIndex%>', FileNamePrefix,"", &functionPrototypes, &includes, false, omsiName)%>
     >>
 end generateInitalizationAlgSystem;
 
@@ -535,7 +535,7 @@ template generateOmsiIndexTypeInitialization (list<SimVar> variables, String Str
 end generateOmsiIndexTypeInitialization;
 
 
-template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String functionName, String FileNamePrefix, Text &functionPrototypes, Text &includes, Boolean hasLocalVars, String omsiName)
+template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String functionName, String FileNamePrefix,String modelFunctionnamePrefixStr, Text &functionPrototypes, Text &includes, Boolean hasLocalVars, String omsiName)
 "Generates code for omsi_function_t initialization"
 ::=
   match omsiFunction
@@ -564,7 +564,7 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
     >>
     case "omsicpp" then
     <<
-    omsi_status <%FileNamePrefix%>::initialize_omsi_functions(omsi_function_t* omsi_function) {
+    omsi_status <%FileNamePrefix%>::initialize_omsi_<%modelFunctionnamePrefixStr%>_functions(omsi_function_t* omsi_function) {
     >>
     end match%>
 
