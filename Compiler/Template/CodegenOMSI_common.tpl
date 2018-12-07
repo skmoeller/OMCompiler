@@ -133,6 +133,8 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
     #include <omsi_callbacks.h>
     #include <omsi_global.h>
     #include <omsi_utils.h>
+    #include <omsi_input_sim_data.h>
+    #include <Core/System/IOMSI.h>
 
     >>
     end match%>
@@ -542,7 +544,12 @@ template generateInitalizationOMSIFunction (OMSIFunction omsiFunction, String fu
   case func as OMSI_FUNCTION(__) then
     let &functionPrototypes += "omsi_status " + FileNamePrefix + "_" + omsiName + "_instantiate_" + functionName + "_OMSIFunc (omsi_function_t* omsi_function);\n"
 
-    let evaluationTarget = FileNamePrefix+"_"+omsiName+"_"+functionName
+    let evaluationTarget = match  Config.simCodeTarget()
+    case "omsic" then
+        FileNamePrefix+"_"+omsiName+"_"+functionName
+    case "omsicpp" then
+         "&OMSICallBackWrapper::" +modelFunctionnamePrefixStr
+    end match
     let algSystemInit = generateAlgebraicSystemInstantiation (FileNamePrefix, nAlgebraicSystems, equations, omsiName)
 
     let &includes +=

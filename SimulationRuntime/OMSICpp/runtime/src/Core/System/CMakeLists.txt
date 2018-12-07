@@ -59,5 +59,6 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/System/IStateSelection.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/System/ISimVars.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/System/ISimObjects.h
+  ${CMAKE_SOURCE_DIR}/runtime/include/Core/System/IOMSI.h
   ${CMAKE_SOURCE_DIR}/runtime/include/Core/System/OSUSystem.h
   DESTINATION include/omc/omsicpp/Core/System)

@@ -178,6 +178,9 @@ class OSU
   omsi_t* _omsu;
 };
 
+
+
+
 /** @} */ // end of fmu2
 
 
