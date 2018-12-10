@@ -171,7 +171,8 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     EXPAT_LIB=expat
 
     LAPACK_LIBDIR=<%lapackDirWin%>
-    LAPACK_LIB=<%match makefileParams.platform case "win32" case "win64" then '-lopenblas' else '-llapack -lblas'%>
+    LAPACK_LIB=<%match makefileParams.platform case "win32" case "win64" then 'openblas' else 'lapack'%>
+    BLAS_LIB=<%match makefileParams.platform case "win32" case "win64" then '' else 'blas'%>
 
     KINSOL_LIBDIR=$(OMLIB)/omc
     KINSOL_LIB=sundials_kinsol
@@ -179,7 +180,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
 
     OMSU_STATIC_LIB=-Wl,--whole-archive -lOMSISolver_static -lOMSIBase_static -lOMSU_static -Wl,--no-whole-archive
     OMSU_STATIC_LIBDIR=-L$(OMLIB)/omc/omsi
-    LIBS = $(OMSU_STATIC_LIB) -Wl,-Bdynamic -l$(EXPAT_LIB) -l$(LAPACK_LIB) -l$(KINSOL_LIB) -l$(SUNDIALS_NVECSERIAL)
+    LIBS = $(OMSU_STATIC_LIB) -Wl,-Bdynamic -l$(EXPAT_LIB) -l$(LAPACK_LIB) -l$(BLAS_LIB)  -l$(KINSOL_LIB) -l$(SUNDIALS_NVECSERIAL)
     LIBSDIR= $(OMSU_STATIC_LIBDIR) -L$(EXPAT_LIBDIR) -L$(LAPACK_LIBDIR) -L$(KINSOL_LIBDIR)
 
     THIRD_PARTY_DYNAMIC_LIBS =<%match makefileParams.platform case "win32" case "win64" then
