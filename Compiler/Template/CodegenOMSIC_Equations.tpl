@@ -107,7 +107,13 @@ template generateEquationFunction(SimEqSystem eq, String modelNamePrefixStr,Stri
   case "omsicpp" then
    'void <%modelNamePrefixStr%>::<%funcName%>_<%ix%>(<%funcArguments%>){'
    end match%>
-    <%varDecls%>
+    <%if not stringEq(varDecls, "") then
+      <<
+      /* Variables */
+      <%varDecls%>
+
+      >>
+    %>
     <%auxFunction%>
     <%equationCode%>
   }<%"\n"%>
@@ -124,20 +130,18 @@ template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction, Context
     let crefStr = CodegenCFunctions.crefOMSI(cref, context)
     let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
     <<
+    <%preExp%>
     <%crefStr%> = <%expPart%>;
-    >>
-  case SES_ALGEBRAIC_SYSTEM(__) then
-    <<
-    /* Add stuff here*/
     >>
   case SES_RESIDUAL(__) then
     let expPart = CodegenCFunctions.daeExp(exp, context, &preExp, &varDecls, &auxFunction)
     <<
+    <%preExp%>
     *res = <%expPart%>;
     >>
   else
     <<
-    NOT IMPLEMENTED YET
+    NOT IMPLEMENTED YET Error in function equationCStr in template CodegenOMSIC_Equations
     >>
 end equationCStr;
 
