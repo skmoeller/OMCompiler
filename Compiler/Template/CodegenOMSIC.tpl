@@ -170,7 +170,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     EXPAT_LIB=-lexpat
 
     LAPACK_LIBDIR=<%lapackDirWin%>
-    LAPACK_LIB=-lopenblas
+    LAPACK_LIB=<%match makefileParams.platform case "win32" case "win64" then '-lopenblas' else '-llapack -lblas'%>
 
     #KINSOL_LIBDIR=-L$(OMHOME)/lib/omc/
     #KINSOL_LIB=-lsundials_kinsol -lsundials_nvecserial
