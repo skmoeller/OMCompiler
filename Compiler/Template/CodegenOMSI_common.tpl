@@ -318,8 +318,6 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     /* call API function something */
     status = omsi_solve_algebraic_system(this_alg_system, model_vars_and_params);
 
-      /* ToDo: Add crazy stuff here */
-
     return status;
   }
 

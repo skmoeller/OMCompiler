@@ -1,5 +1,5 @@
 # makefile for Windows MinGW OMDev
-all : .testvariables settings mkbuilddirs omc
+all : .testvariables settings mkbuilddirs omc OMSICInstall
 
 autoconfGeneratedFiles =
 

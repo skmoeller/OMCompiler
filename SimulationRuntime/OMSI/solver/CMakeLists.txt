@@ -23,13 +23,24 @@ IF (LAPACK_FOUND STREQUAL "NOTFOUND")
 ENDIF()
 MESSAGE(STATUS "Lapack Libraries: ${LAPACK_LIBRARIES}")
 
-# Find SUNDIALS KINSOL
-#FIND_LIBRARY(KINSOL_LIBRARIES sundials_kinsol
-#             PATH ${CMAKE_INSTALL_PREFIX}/lib/omc)
-#MESSAGE(STATUS "KINSOL Libraries: ${KINSOL_LIBRARIES}")
+# Find SUNDIALS KINSOL libraries
+FIND_LIBRARY(KINSOL_LIBRARIE sundials_kinsol
+             PATH ${CMAKE_INSTALL_PREFIX}/lib/omc)
+IF (NOT KINSOL_LIBRARIE)
+  MESSAGE(FATAL_ERROR "Error: SUNDIALS KINSOL library not found!")
+ENDIF()
 
-#include_directories ("${CMAKE_INSTALL_PREFIX}/include/omc/c/sundials")
-#MESSAGE(STATUS "Location of SUNDIALS headers: ${CMAKE_INSTALL_PREFIX}/include/omc/c/sundials")
+FIND_LIBRARY(SUNDIALS_NVEC_LIBRARIE sundials_nvecserial
+             PATH ${CMAKE_INSTALL_PREFIX}/lib/omc)
+IF(NOT SUNDIALS_NVEC_LIBRARIE)
+  MESSAGE(FATAL_ERROR "Error: sundials_nvec_serial library not found!")
+ENDIF()
+
+include_directories ("${CMAKE_INSTALL_PREFIX}/include/omc/c/sundials")
+MESSAGE(STATUS "Location of SUNDIALS headers: ${CMAKE_INSTALL_PREFIX}/include/omc/c/sundials")
+
+SET(SUNDIALS_LIBRARIES ${KINSOL_LIBRARIE} ${SUNDIALS_NVEC_LIBRARIE})
+MESSAGE(STATUS "KINSOL Libraries: ${SUNDIALS_LIBRARIES}")
 
 # OMSISolver includes
 include_directories ("${CMAKE_SOURCE_DIR}/solver/include")
@@ -37,13 +48,13 @@ include_directories ("${CMAKE_SOURCE_DIR}/solver/include")
 add_library(${OMSISolverName}
   src/solver_api.c
   src/solver_helper.c
-#  src/solver_kinsol.c
+  src/solver_kinsol.c
   src/solver_lapack.c
   src/solver_newton.c
 )
 
 
-target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} ${LAPACK_LIBRARIES} ${KINSOL_LIBRARIES})
+target_link_libraries(${OMSISolverName} ${CMAKE_DL_LIBS} ${LAPACK_LIBRARIES} ${SUNDIALS_LIBRARIES})
 
 install(TARGETS ${OMSISolverName} DESTINATION ${LIBINSTALLEXT})
 
