@@ -59,7 +59,7 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
     let omsi_equations = match  Config.simCodeTarget()
     case "omsic" then
         let content = generateOmsiFunctionCode(simulation, FileNamePrefix,"","sim_eqns")
-        let () = textFile(content, FileNamePrefix+"_sim_equations.c")
+        let () = textFile(content, FileNamePrefix+"_sim_eqns.c")
         <<>>
     case "omsicpp" then
         let content = generateOmsiFunctionCode(simulation, FileNamePrefix,"evaluate","sim_eqns")
@@ -97,7 +97,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   // generate header file
   let &functionPrototypes += match  Config.simCodeTarget()
     case "omsic" then
-        <<omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params, void* data);<%\n%>>>
+        <<omsi_status <%FileNamePrefix%>_<%omsiName%>_allEqns(omsi_function_t* simulation, omsi_values* model_vars_and_params, void* data);<%\n%>>>
     end match
 
   let headerFileName =     match  Config.simCodeTarget()
@@ -154,7 +154,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   /* Equations evaluation */
   <%match  Config.simCodeTarget()
     case "omsic" then
-      'omsi_status <%FileNamePrefix%>_allEqns(omsi_function_t* <%omsiName%>, omsi_values* model_vars_and_params, void* data){'
+      'omsi_status <%FileNamePrefix%>_<%omsiName%>_allEqns(omsi_function_t* <%omsiName%>, omsi_values* model_vars_and_params, void* data){'
     case "omsicpp" then
       'omsi_status <%FileNamePrefix%>::omsi_<%modelFunctionnamePrefixStr%>All(omsi_function_t* <%omsiName%>, omsi_values* model_vars_and_params, void* data){'
    end match%>
