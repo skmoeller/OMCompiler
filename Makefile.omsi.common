@@ -111,7 +111,7 @@ OMSI-clean: OMSIBaseClean OMSICClean
 # Rules for OMSIBase library
 #############################
 
-OMSIBase: $(SUNDIALS_TARGET)  $(UMFPACK_TARGET) fmil Cdaskr CMinpack
+OMSIBase: sundials umfpack fmil Cdaskr CMinpack
 	cd SimulationRuntime/OMSI; \
 	$(foreach PLATFORM, $(PLATFORMS), \
 	  mkdir -p Build_$(PLATFORM); \
