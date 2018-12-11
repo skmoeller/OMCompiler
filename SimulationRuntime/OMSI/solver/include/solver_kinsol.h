@@ -74,9 +74,9 @@ typedef struct kinsol_user_data {
 typedef struct solver_data_kinsol {
     void* kinsol_solver_object;             /**< KINSOL memory block */
 
-    evaluate_res_func f_function_eval;      /**< Pointer to function to evaluate residual of `f` */
+    residual_wrapper_func f_function_eval;  /**< Pointer to function to evaluate residual of `f` */
 
-    N_Vector initial_guess;                 /**< Initial guess for first solver call */
+    N_Vector initial_guess;                 /**< Initial guess for first solver call, containing solution after solver call. */
     N_Vector u_scale;
     N_Vector f_scale;
 
@@ -91,7 +91,9 @@ solver_status solver_kinsol_allocate_data(solver_data* general_solver_data);
 
 solver_status solver_kinsol_free_data(solver_data* general_solver_data);
 
-solver_status solver_kinsol_init_data(solver_data* general_solver_data);
+solver_status solver_kinsol_init_data(solver_data*              general_solver_data,
+                                      residual_wrapper_func     user_wrapper_res_function,
+                                      void*                     user_data);
 
 solver_status solver_kinsol_set_start_vector (solver_data*  general_solver_data,
                                               solver_real*  initial_guess);
@@ -99,6 +101,13 @@ solver_status solver_kinsol_set_start_vector (solver_data*  general_solver_data,
 solver_int solver_kinsol_residual_wrapper(N_Vector  x,
                                           N_Vector  fval,
                                           void*     user_data_in);
+
+solver_state solver_kinsol_solve(void* specific_data);
+
+void solver_kinsol_get_x_element(void*                  specific_data,
+                                 solver_unsigned_int    index,
+                                 solver_real*           value);
+
 #ifdef __cplusplus
 }   /* end of extern "C" { */
 #endif

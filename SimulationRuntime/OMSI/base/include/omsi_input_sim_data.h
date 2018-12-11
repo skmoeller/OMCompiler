@@ -38,6 +38,7 @@
 
 #include <omsi_solver.h>
 #include <solver_api.h>
+#include <omsi_solve_alg_system.h>
 
 #include <stdio.h>
 #include <stdlib.h>

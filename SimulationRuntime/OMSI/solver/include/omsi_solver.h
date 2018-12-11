@@ -246,6 +246,10 @@ typedef void (*evaluate_res_func)                   (solver_real*   x_vector,
                                                      solver_real*   fval,
                                                      void*          data);
 
+typedef solver_int (*residual_wrapper_func)         (solver_real*,
+                                                     solver_real*,
+                                                     void*);
+
 /**
  * Struct for callback functions for linear solvers.
  */
@@ -266,8 +270,9 @@ typedef struct solver_linear_callbacks {
  * Struct for callback functions for non-linear solvers.
  */
 typedef struct solver_non_linear_callbacks {
-    evaluate_res_func get_residuum_func;
     solver_solve_func solve_eq_system;
+
+    solver_interact_vector_element get_x_element;   /**< Callback function to get element(s) of solution vector `x`. */
 } solver_non_linear_callbacks;
 
 

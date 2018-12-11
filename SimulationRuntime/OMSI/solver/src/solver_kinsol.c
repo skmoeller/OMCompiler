@@ -160,13 +160,18 @@ solver_status solver_kinsol_set_start_vector (solver_data*  general_solver_data,
  * Set dimension `dim_n` of function `f` in kinsol specific solver data.
  *
  * \param [in,out]  general_solver_data     Solver instance.
+ * \param [in]      user_data               Pointer to user_data needed in user provided
+ *                                          residual wrapper function. Can be `NULL`.
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status solver_kinsol_init_data(solver_data* general_solver_data)
+solver_status solver_kinsol_init_data(solver_data*              general_solver_data,
+                                      residual_wrapper_func     user_wrapper_res_function,
+                                      void*                     user_data)
 {
     /* Variables */
     solver_data_kinsol* kinsol_data;
+    kinsol_user_data* kin_user_data;
     solver_int flag;
     solver_unsigned_int i;
     solver_real* u_scale;
@@ -186,6 +191,15 @@ solver_status solver_kinsol_init_data(solver_data* general_solver_data)
         general_solver_data->state = solver_error_state;
         return solver_error;
     }
+
+    /* Set KINSOL user data */
+    kin_user_data = (kinsol_user_data*) solver_allocateMemory(1, sizeof(kinsol_user_data));
+    kin_user_data->user_data = user_data;
+    kin_user_data->kinsol_data = kinsol_data;
+    flag = KINSetUserData(kinsol_data->kinsol_solver_object, kin_user_data);
+
+    /* Set user supplied wrapper function */
+    kinsol_data->f_function_eval = user_wrapper_res_function;
 
     /* Set problem-defining function and initialize KINSOL*/
     flag = KINInit(kinsol_data->kinsol_solver_object,
@@ -215,7 +229,7 @@ solver_status solver_kinsol_init_data(solver_data* general_solver_data)
     u_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
     f_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
     for (i=0; i<general_solver_data->dim_n; i++) {
-        u_scale[i] = 1;
+        u_scale[i] = 1;                 /* ToDo: Do smarter stuff here */
         f_scale[i] = 1;
     }
     kinsol_data->u_scale = N_VMake_Serial(general_solver_data->dim_n, u_scale);
@@ -270,14 +284,15 @@ solver_int solver_kinsol_residual_wrapper(N_Vector  x,
     /* Log function call */
 
 
-    return 0; /* Return value is ignored by Kinsol */
+    return 0;
 }
 
 
-
-
-
-
+/*
+ * ============================================================================
+ * Solve call
+ * ============================================================================
+ */
 
 solver_state solver_kinsol_solve(void* specific_data)
 {
@@ -294,38 +309,111 @@ solver_state solver_kinsol_solve(void* specific_data)
                   kinsol_data->u_scale,
                   kinsol_data->f_scale);
 
-
     switch (flag) {
+        case KIN_SUCCESS:
+            return solver_ok;
+        case KIN_INITIAL_GUESS_OK:
+            return solver_ok;
         case KIN_STEP_LT_STPTOL:
             solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: Kinsol stopped based on scaled step length. "
-                    "It is possible that the solution is within tolerances specified or the algorithm is stalled near an invalid solution "
-                    "or that scalar scsteptol is too large.");
+                    "In function solver_kinsol_solve: Kinsol stopped based on "
+                    "scaled step length. It is possible that the solution is "
+                    "within tolerances specified or the algorithm is stalled "
+                    "near an invalid solution or that scalar scsteptol is too "
+                    "large.");
             return solver_warning;
         case KIN_MEM_NULL:
             solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: The Kinsol memory block pointer was NULL.");
+                    "In function solver_kinsol_solve: The Kinsol memory block "
+                    "pointer was NULL.");
             return solver_error;
         case KIN_ILL_INPUT:
             solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: An input parameter was invalid.");
+                    "In function solver_kinsol_solve: An input parameter was "
+                    "invalid.");
             return solver_error;
         case KIN_NO_MALLOC:
             solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: The KINSOL memory was not allocated by a call to KINCreate.");
+                    "In function solver_kinsol_solve: The KINSOL memory was not "
+                    "allocated by a call to KINCreate.");
             return solver_error;
         case KIN_MEM_FAIL:
             solver_logger(log_solver_error,
                     "In function solver_kinsol_solve: A memory allocation failed.");
             return solver_error;
+        case KIN_LINESEARCH_NONCONV:
+            solver_logger(log_solver_error,
+                    "In function solver_kinsol_solve: The line search algorithm "
+                    "was unable to find an iterate sufficiently distinct from "
+                    "current iterate, or could not find an iterate satisfying "
+                    "the sufficient decrease condition.");
+            return solver_error;
+        case KIN_MAXITER_REACHED:
+            solver_logger(log_solver_error,
+                    "In function solver_kinsol_solve: The maximum number of "
+                    "nonlinear iterations has been reached.");
+            return solver_error;
+        case KIN_MXNEWT_5X_EXCEEDED:
+            solver_logger(log_solver_error,
+                "In function solver_kinsol_solve: Five consecutive steps have "
+                "been taken with L2_norm(D_u*p)>0.99*mxnewstep");
+            return solver_error;
+        case KIN_LINESEARCH_BCFAIL:
+            solver_logger(log_solver_error,
+                "In function solver_kinsol_solve: Linear search was unable to "
+                "satisfy beta-condition. Algorithm may is making poor progress.");
+            return solver_warning;
+        case KIN_LINSOLV_NO_RECOVERY:
+            return solver_error;
+        case KIN_LINIT_FAIL:
+            return solver_error;
+        case KIN_LSETUP_FAIL:
+            return solver_error;
+        case KIN_LSOLVE_FAIL:
+            return solver_error;
+        case KIN_SYSFUNC_FAIL:
+            return solver_error;
+        case KIN_FIRST_SYSFUNC_ERR:
+            return solver_warning;
+        case KIN_REPTD_SYSFUNC_ERR:
+            return solver_error;
         default:
             solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: A memory allocation failed.");
+                    "In function solver_kinsol_solve: Something went wrong...");
             return solver_error;
         /* ToDo: Add more error cases */
     }
-
-    return solver_ok;
 }
+
+
+
+/*
+ * ============================================================================
+ * Getters and setters
+ * ============================================================================
+ */
+
+void solver_kinsol_get_x_element(void*                  specific_data,
+                                 solver_unsigned_int    index,
+                                 solver_real*           value)
+{
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+    solver_real* x_vector;
+
+    kinsol_data = specific_data;
+
+    /* Access initial_guess(index) */
+    x_vector = N_VGetArrayPointer(kinsol_data->initial_guess);
+    value[0]=x_vector[index];
+}
+
+
+
+
+
+
+
+
 
 /** @} */

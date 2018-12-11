@@ -234,11 +234,20 @@ omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
         return omsi_fatal;
     }
 
-    for (i=0; i<alg_system->jacobian->n_output_vars; i++) {
-        solver_get_vector_x(alg_system->solver_data,
-                            &i,
-                            1,
-                            &vars->reals[alg_system->functions->output_vars_indices[i].index]);
+    if (alg_system->isLinear) {
+        for (i=0; i<alg_system->jacobian->n_output_vars; i++) {
+            solver_get_lin_solution(alg_system->solver_data,
+                &i,
+                1,
+                &vars->reals[alg_system->functions->output_vars_indices[i].index]);
+        }
+    } else {
+        for (i=0; i<alg_system->jacobian->n_output_vars; i++) {
+            solver_get_nonlin_solution(alg_system->solver_data,
+                &i,
+                1,
+                &vars->reals[alg_system->functions->output_vars_indices[i].index]);
+        }
     }
 
     /* evaluate residuum function to get LOOP_SOLVED variables */
@@ -281,7 +290,7 @@ omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system) {
     }
 
     /* Prepare specific solver data */
-    if(solver_prepare_specific_data(alg_system->solver_data) != solver_ok) {
+    if(solver_prepare_specific_data(alg_system->solver_data, omsi_residual_wrapper, alg_system) != solver_ok) {
         solver_free(alg_system->solver_data);
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
             "fmi2Something: Could not prepare specific solver data for solver instance.");
@@ -302,9 +311,9 @@ omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system) {
  * @param fval_data
  * @return
  */
-omsi_status omsi_residual_wrapper (omsi_real*   x_data,
-                                   omsi_real*   fval_data,
-                                   void*        data) {
+omsi_int omsi_residual_wrapper (omsi_real*   x_data,
+                                omsi_real*   fval_data,
+                                void*        data) {
 
     /* Variables */
     omsi_unsigned_int i, index;
@@ -315,11 +324,11 @@ omsi_status omsi_residual_wrapper (omsi_real*   x_data,
     residual = alg_system_data->functions;
 
     /* Copy x_data to residuum->function_vars */
-    for (i=0; i<residual->n_input_vars; i++) {
+    for (i=0; i<alg_system_data->jacobian->n_input_vars; i++) {      /* ToDo: Count number of loop_iteration_vars of residuum function */
 
-        switch (residual->input_vars_indices[i].type) {
+        switch (residual->output_vars_indices[i].type) {
             case OMSI_TYPE_REAL:
-                index = residual->input_vars_indices[i].index;
+                index = residual->output_vars_indices[i].index;
                 residual->function_vars->reals[index] = x_data[i];
             break;
             default:

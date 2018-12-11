@@ -134,6 +134,8 @@ solver_data* solver_allocate(solver_name            name,
             break;
         case solver_kinsol:
             non_lin_callbacks = (solver_non_linear_callbacks*) solver_allocateMemory(1, sizeof(solver_non_linear_callbacks));
+            non_lin_callbacks->solve_eq_system = solver_kinsol_solve;
+            non_lin_callbacks->get_x_element = solver_kinsol_get_x_element;
             solver->solver_callbacks = non_lin_callbacks;
             break;
         default:
@@ -184,7 +186,9 @@ void solver_free(solver_data* solver) {
  * \return              Returns `solver_status` `solver_okay` if solved successful,
  *                      otherwise `solver_error`.
  */
-solver_status solver_prepare_specific_data (solver_data* solver) {
+solver_status solver_prepare_specific_data (solver_data*            solver,
+                                            residual_wrapper_func   user_wrapper_res_function,
+                                            void*                   user_data) {
 
     switch (solver->name) {
         case solver_lapack:
@@ -192,7 +196,7 @@ solver_status solver_prepare_specific_data (solver_data* solver) {
             return lapack_set_dim_data(solver);
         case solver_kinsol:
             solver->linear = solver_false;
-            return solver_kinsol_init_data(solver);
+            return solver_kinsol_init_data(solver, user_wrapper_res_function, user_data);
         default:
             solver_logger(log_solver_error, "In function prepare_specific_solver_data:"
                     "No solver specified in solver_name.");
@@ -474,10 +478,10 @@ void solver_get_vector_b (solver_data*          solver,
  *                              On output: Pointer to array containing specified
  *                              values of vector `x`.
  */
-void solver_get_vector_x(solver_data*           solver,
-                         solver_unsigned_int*   index,
-                         solver_unsigned_int    n_index,
-                         solver_real*           values) {
+void solver_get_lin_solution(solver_data*           solver,
+                             solver_unsigned_int*   index,
+                             solver_unsigned_int    n_index,
+                             solver_real*           values) {
 
     /* Variables */
     solver_unsigned_int i;
@@ -496,6 +500,31 @@ void solver_get_vector_x(solver_data*           solver,
         }
     }
 }
+
+
+void solver_get_nonlin_solution(solver_data*           solver,
+                                solver_unsigned_int*   index,
+                                solver_unsigned_int    n_index,
+                                solver_real*           values) {
+
+   /* Variables */
+    solver_unsigned_int i;
+   solver_non_linear_callbacks* callbacks;
+
+   callbacks = solver->solver_callbacks;
+
+   if (index==NULL) {
+       for (i=0; i<n_index; i++) {
+           callbacks->get_x_element(solver->specific_data, i, &values[i]);
+       }
+   }
+   else {
+       for (i=0; i<n_index; i++) {
+           callbacks->get_x_element(solver->specific_data, index[i], &values[i]);
+       }
+   }
+}
+
 
 
 /**

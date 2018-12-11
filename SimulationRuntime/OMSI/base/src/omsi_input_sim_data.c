@@ -425,8 +425,15 @@ omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
 
         if (!omsi_function->algebraic_system_t[i].isLinear) {
             omsu_set_initial_guess(&omsi_function->algebraic_system_t[i]);
+            solver_prepare_specific_data(omsi_function->algebraic_system_t[i].solver_data,
+                    omsi_residual_wrapper,
+                    &omsi_function->algebraic_system_t[i]);
         }
-        solver_prepare_specific_data(omsi_function->algebraic_system_t[i].solver_data);
+        else {
+            solver_prepare_specific_data(omsi_function->algebraic_system_t[i].solver_data,
+                    NULL,
+                    NULL);
+        }
 
         /* recursive call for all */
         status = omsu_set_default_solvers (omsi_function->algebraic_system_t[i].jacobian, "jacobian");
