@@ -142,12 +142,14 @@ class OSU
  private:
   shared_ptr<OMSIGlobalSettings> _global_settings;
   Logger *_logger;
-  shared_ptr<IMixedSystem>  _model;
-  shared_ptr<ISystemInitialization>  _initialize_model;
-  shared_ptr<IContinuous> _continuous_model;
-  shared_ptr<ITime> _time_event_model;
-  shared_ptr<IEvent> _event_model;
-  shared_ptr<IStepEvent> _step_event_system;
+  shared_ptr<IMixedSystem>  _model; ///System for DAE and event handling
+  shared_ptr<ISystemInitialization>  _initialize_model; /// Inittialization system
+  shared_ptr<IContinuous> _continuous_model; /// ODE equation system
+  shared_ptr<ITime> _time_event_model;  /// System for time event handling
+  shared_ptr<IEvent> _event_model; /// System for state event handling
+  shared_ptr<IStepEvent> _step_event_system; /// System for step event handling
+  shared_ptr<IOMSI> _omsu_system;
+  shared_ptr<IOMSIInitialize> _omsu_initialize;
   std::vector<string> _string_buffer;
   bool *_clockTick;
   bool *_clockSubactive;

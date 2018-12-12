@@ -173,6 +173,7 @@ template fmuCalcHelperMainfile(SimCode simCode)
     #include "OMCpp<%fileNamePrefix%>OMSU.cpp"
     #include "OMCpp<%fileNamePrefix%>FactoryExport.cpp"
     #include "OMCpp<%fileNamePrefix%>OMSIEquations.cpp"
+    #include "OMCpp<%fileNamePrefix%>OMSIInitEquations.cpp"
     >>
 end fmuCalcHelperMainfile;
 

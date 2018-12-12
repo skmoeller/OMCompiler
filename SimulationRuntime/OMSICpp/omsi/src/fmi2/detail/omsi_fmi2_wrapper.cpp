@@ -40,12 +40,13 @@
 #include <Core/SimController/ISimController.h>
 #include <Core/System/FactoryExport.h>
 #include <Core/Utils/extension/logger.hpp>
-
+#include <Core/System/IOMSI.h>
 //omsi cpp inlcudes
 #include <omsi_global_settings.h>
 #include "omsi_fmi2_log.h"
 #include "omsi_fmi2_wrapper.h"
 #include "omsi_factory.h"
+
 
 
 
@@ -71,6 +72,8 @@ static fmi2String const _LogCategoryFMUNames[] = {
   "logFmi2Call"
 };
 
+ IOMSI*  OMSICallBackWrapper::_omsu_system;
+ IOMSIInitialize* OMSICallBackWrapper::_omsu_initialize;
 
 fmi2String OSU::LogCategoryFMUName(LogCategoryFMU category) {
   return _LogCategoryFMUNames[category];
@@ -113,24 +116,42 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   global_callback = (omsi_callback_functions*)functions;
   global_instance_name = _instanceName.c_str();
   global_callback->componentEnvironment = this;
-  //_omsu = instantiate_omsi(omsu_name.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, visible, loggingOn);
+  //setup omsi callback functions
   _osu_functions = (omsi_template_callback_functions_t*)functions->allocateMemory(1, sizeof(omsi_template_callback_functions_t));
-  _omsu = omsi_instantiate(_instanceName.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, _osu_functions,visible, loggingOn);
+  _osu_functions->initialize_initialization_problem = &OMSICallBackWrapper::setUpInitializeFunction;
+  _osu_functions->initialize_simulation_problem = &OMSICallBackWrapper::setUpEvaluateFunction;
+  _osu_functions->isSet = omsi_true;
 
+  //instantiate omsi_t data structure
+  _omsu = omsi_instantiate(_instanceName.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, _osu_functions, visible, loggingOn);
+  //instantiate Modelica system
   _model = createOSUSystem(_global_settings, _instanceName,_omsu);
+  //initialize omsi callbacks for right hand side function (evaluate) and initialization function
+  if (_omsu_system = dynamic_pointer_cast<IOMSI>(_model))
+  {
+	  OMSICallBackWrapper::setOMSISystem(*(_omsu_system.get()));
+  }
+  else
+	  throw std::invalid_argument("Could not initilize OMSI callbacks");
+  if (shared_ptr<IOMSIInitialize> omsu_initilize = dynamic_pointer_cast<IOMSIInitialize>(_model))
+  {
+	  OMSICallBackWrapper::setOMSIInitialize(*(omsu_initilize.get()));
+  }
+  else
+	  throw std::invalid_argument("Could not initilize OMSI callbacks");
+  //initialize omsi function callbacks
+  omsi_intialize_callbacks(_omsu, _osu_functions);
+
+  //Initilize systems:
   _initialize_model = dynamic_pointer_cast<ISystemInitialization>(_model);
   _continuous_model  = dynamic_pointer_cast<IContinuous>(_model);
   _time_event_model =  dynamic_pointer_cast<ITime>(_model);
   _event_model = dynamic_pointer_cast<IEvent>(_model);
   _step_event_system = dynamic_pointer_cast<IStepEvent>(_model);
 
-
-
-  _initialize_model->initializeMemory();
+  //start intialisation of Modelica system
+   _initialize_model->initializeMemory();
   _initialize_model->initializeFreeVariables();
-
-
-
 
    _string_buffer.resize(_continuous_model->getDimString());
   _clockTick = new bool[_event_model->getDimClock()];

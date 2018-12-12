@@ -156,7 +156,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
     case "omsic" then
       'omsi_status <%FileNamePrefix%>_<%omsiName%>_allEqns(omsi_function_t* <%omsiName%>, omsi_values* model_vars_and_params, void* data){'
     case "omsicpp" then
-      'omsi_status <%FileNamePrefix%>::omsi_<%modelFunctionnamePrefixStr%>All(omsi_function_t* <%omsiName%>, omsi_values* model_vars_and_params, void* data){'
+      'omsi_status <%FileNamePrefix%>::omsi_<%modelFunctionnamePrefixStr%>All(omsi_function_t* <%omsiName%>, const omsi_values* model_vars_and_params, void* data){'
    end match%>
 
     /* Variables */
@@ -234,8 +234,8 @@ template generateOmsiMemberFunction(OMSIFunction omsiFunction, String FileNamePr
     )
 
   <<
-    omsi_status initialize_omsi_<%FunctionnamePrefix%>_functions (omsi_function_t* omsi_function);
-    omsi_status omsi_<%FunctionnamePrefix%>All(omsi_function_t* simulation, omsi_values* model_vars_and_params, void* data);
+    virtual omsi_status initialize_omsi_<%FunctionnamePrefix%>_functions (omsi_function_t* omsi_function);
+    virtual omsi_status omsi_<%FunctionnamePrefix%>All(omsi_function_t* simulation, const omsi_values* model_vars_and_params, void* data);
     <%functionPrototypes%>
   >>
 end generateOmsiMemberFunction;

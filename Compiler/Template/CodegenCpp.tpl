@@ -164,7 +164,7 @@ let initparameqs = generateEquationMemberFuncDecls(parameterEquations,"initParam
     *
     *****************************************************************************/
 
-    class <%lastIdentOfPath(modelInfo.name)%>Initialize : public ISystemInitialization, public <%lastIdentOfPath(modelInfo.name)%>WriteOutput
+    class <%lastIdentOfPath(modelInfo.name)%>Initialize : public ISystemInitialization <%match  Config.simCodeTarget() case "omsicpp" then ', public IOMSIInitialize' %> , public <%lastIdentOfPath(modelInfo.name)%>WriteOutput
     {
      public:
 
@@ -6858,6 +6858,7 @@ case SIMCODE(modelInfo=MODELINFO(__), extObjInfo=EXTOBJINFO(__)) then
   class Functions;
   class EventHandling;
   class DiscreteEvents;
+
   <%algloopForwardDeclaration(listAppend(listAppend(allEquations, initialEquations), getClockedEquations(getSubPartitions(clockedPartitions))), simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace)%>
 
   /*****************************************************************************
@@ -6934,7 +6935,7 @@ match modelInfo
   #define MEASURETIME_MODELFUNCTIONS
   >>%>
 
-  class <%lastIdentOfPath(modelInfo.name)%>: public IContinuous, public IEvent, public IStepEvent, public ITime, public ISystemProperties <%if Flags.isSet(Flags.WRITE_TO_BUFFER) then ', public IReduceDAE'%>, public SystemDefaultImplementation
+  class <%lastIdentOfPath(modelInfo.name)%>: public IContinuous, public IEvent, public IStepEvent, public ITime, public ISystemProperties <%if Flags.isSet(Flags.WRITE_TO_BUFFER) then ', public IReduceDAE'%>  <%match  Config.simCodeTarget() case "omsicpp" then ', public IOMSI' %> ,public SystemDefaultImplementation
   {
   <%friendclasses%>
   public:
@@ -12684,9 +12685,15 @@ match simCode
 case SIMCODE(modelInfo = MODELINFO(__)) then
   let className = lastIdentOfPathFromSimCode(simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace)
 
-  let equation_all_func_calls = (List.partition(allEquationsPlusWhen, 100) |> eqs hasindex i0 =>
+  let equation_all_func_calls =
+  match  Config.simCodeTarget()
+      case "Cpp" then
+        (List.partition(allEquationsPlusWhen, 100) |> eqs hasindex i0 =>
                                  createEvaluateWithSplit(i0, context, eqs, "evaluateAll","evaluate", className, simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace)
                                  ;separator="\n")
+      case "omsicpp" then
+       "omsi_evaluateAll(_omsu->sim_data->simulation,_omsu->sim_data->model_vars_and_params,NULL);"
+      end match
 
   <<
   bool <%className%>::evaluateAll(const UPDATETYPE command)
