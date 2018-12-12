@@ -150,8 +150,7 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _step_event_system = dynamic_pointer_cast<IStepEvent>(_model);
 
   //start intialisation of Modelica system
-   _initialize_model->initializeMemory();
-  _initialize_model->initializeFreeVariables();
+  _initialize_model->initialize();
 
    _string_buffer.resize(_continuous_model->getDimString());
   _clockTick = new bool[_event_model->getDimClock()];

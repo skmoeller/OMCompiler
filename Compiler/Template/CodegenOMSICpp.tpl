@@ -915,7 +915,7 @@ case "gcc" then
 
             MINGW_EXTRA_LIBS=<%if boolOr(stringEq(makefileParams.platform, "win32"),stringEq(makefileParams.platform, "win64")) then ' -lz -lhdf5 ' else ''%>
             MODELICA_EXTERNAL_LIBS=-L$(LAPACK_LIBS) $(LAPACK_LIBRARIES) $(MINGW_EXTRA_LIBS)
-            OMCPP_LIBS=-lOMCppSystem_static  -lOMCppOSU -lOMSIBase_static lOMSISolver_static -lOMCppDataExchange_static -lOMCppExtensionUtilities_static -lOMCppModelicaUtilities_static    -lOMCppMath_static
+            OMCPP_LIBS=-lOMCppSystem_static  -lOMCppOSU -lOMSIBase_static -lOMSISolver_static -lOMCppDataExchange_static -lOMCppExtensionUtilities_static -lOMCppModelicaUtilities_static    -lOMCppMath_static
             EXTRA_LIBS=<%dirExtra%> <%libsExtra%>
             LIBS=$(OMCPP_LIBS) $(MODELICA_EXTERNAL_LIBS) $(BASE_LIB) $(EXTRA_LIBS) -L$(BOOST_LIBS) -l$(BOOST_SYSTEM_LIB) -l$(BOOST_FILESYSTEM_LIB) -lexpat
             # link with simple dgesv or full lapack
