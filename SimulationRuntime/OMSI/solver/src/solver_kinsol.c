@@ -190,7 +190,7 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
     }
 
     /* Set KINSOL strategy */
-    kinsol_data->strategy = KIN_FP;
+    kinsol_data->strategy = KIN_LINESEARCH;
 
     /* Create Jacobian matrix object */
 
@@ -201,7 +201,13 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
 
 
     /* Attach linear solver module */
-
+    flag = KINDense(kinsol_data->kinsol_solver_object, general_solver_data->dim_n);
+    if (flag != KIN_SUCCESS) {
+        solver_logger(log_solver_error, "In function kinsol_init_data: Could "
+                "not initialize KINSOL solver object.");
+        general_solver_data->state = solver_error_state;
+        return solver_error;
+    }
 
     /* Set scaling vectors */
     u_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
@@ -386,8 +392,12 @@ solver_state solver_kinsol_solve(void* specific_data)
         case KIN_LINIT_FAIL:
             return solver_error;
         case KIN_LSETUP_FAIL:
+            solver_logger(log_solver_error,
+                "In function solver_kinsol_solve: KIN_LSETUP_FAIL ");
             return solver_error;
         case KIN_LSOLVE_FAIL:
+          solver_logger(log_solver_error,
+              "In function solver_kinsol_solve: KIN_LSOLVE_FAIL ");
             return solver_error;
         case KIN_SYSFUNC_FAIL:
             return solver_error;
