@@ -53,7 +53,7 @@
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status lapack_allocate_data(solver_data* general_solver_data) {
+solver_status solver_lapack_allocate_data(solver_data* general_solver_data) {
 
     /* Variables */
     solver_data_lapack* lapack_data;
@@ -104,7 +104,7 @@ solver_status lapack_allocate_data(solver_data* general_solver_data) {
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status lapack_free_data(solver_data* general_solver_data) {
+solver_status solver_lapack_free_data(solver_data* general_solver_data) {
 
     /* Variables */
     solver_data_lapack* lapack_data;
@@ -134,7 +134,7 @@ solver_status lapack_free_data(solver_data* general_solver_data) {
  * \return          solver_status           solver_ok on success and
  *                                          solver_error on failure.
  */
-solver_status lapack_set_dim_data(solver_data* general_solver_data) {
+solver_status solver_lapack_set_dim_data(solver_data* general_solver_data) {
 
     /* Variables */
     solver_data_lapack* lapack_data;

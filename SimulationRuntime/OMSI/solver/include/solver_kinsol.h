@@ -73,6 +73,7 @@ typedef struct kinsol_user_data {
  */
 typedef struct solver_data_kinsol {
     void* kinsol_solver_object;             /**< KINSOL memory block */
+    kinsol_user_data* kin_user_data;        /**< Pointer to user_data given to all kinsol functions */
 
     residual_wrapper_func f_function_eval;  /**< Pointer to function to evaluate residual of `f` */
 
@@ -82,7 +83,6 @@ typedef struct solver_data_kinsol {
 
     solver_int strategy;                    /**< Strategy used by KINSOL solver. Possible values:
                                                  `KIN_NONE`, `KIN_LINESEARCH`, `KIN_FP` or `KIN_PICARD` */
-
 }solver_data_kinsol;
 
 

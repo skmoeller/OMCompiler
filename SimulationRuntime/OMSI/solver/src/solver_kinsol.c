@@ -101,34 +101,6 @@ solver_status solver_kinsol_allocate_data(solver_data* general_solver_data)
 
 
 /**
- *  \brief Frees kinsol specific solver data.
- *
- * \param [in,out]  general_solver_data     Solver instance.
- * \return          solver_status           solver_ok on success and
- *                                          solver_error on failure.
- */
-solver_status solver_kinsol_free_data(solver_data* general_solver_data)
-{
-    /* Variables */
-    solver_data_kinsol* kinsol_data;
-
-    /* check for correct solver */
-    if (!solver_instance_correct(general_solver_data, solver_kinsol, "kinsol_free_data")) {
-        return solver_error;
-    }
-
-    kinsol_data = general_solver_data->specific_data;
-
-    /* Free KINSOL solver object */
-    KINFree((void*)kinsol_data);
-
-    general_solver_data->state = solver_uninitialized;
-
-    return solver_ok;
-}
-
-
-/**
  * \brief Set initial guess for vector `x`.
  *
  * \param [in,out]  general_solver_data     Solver instance.
@@ -171,7 +143,6 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
 {
     /* Variables */
     solver_data_kinsol* kinsol_data;
-    kinsol_user_data* kin_user_data;
     solver_int flag;
     solver_unsigned_int i;
     solver_real* u_scale;
@@ -193,10 +164,16 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
     }
 
     /* Set KINSOL user data */
-    kin_user_data = (kinsol_user_data*) solver_allocateMemory(1, sizeof(kinsol_user_data));
-    kin_user_data->user_data = user_data;
-    kin_user_data->kinsol_data = kinsol_data;
-    flag = KINSetUserData(kinsol_data->kinsol_solver_object, kin_user_data);
+    kinsol_data->kin_user_data = (kinsol_user_data*) solver_allocateMemory(1, sizeof(kinsol_user_data));
+    kinsol_data->kin_user_data->user_data = user_data;
+    kinsol_data->kin_user_data->kinsol_data = kinsol_data;
+    flag = KINSetUserData(kinsol_data->kinsol_solver_object, kinsol_data->kin_user_data);
+    if (flag != KIN_SUCCESS) {
+        solver_logger(log_solver_error, "In function kinsol_init_data: Could "
+                "not set KINSOL user data.");
+        general_solver_data->state = solver_error_state;
+        return solver_error;
+    }
 
     /* Set user supplied wrapper function */
     kinsol_data->f_function_eval = user_wrapper_res_function;
@@ -206,7 +183,8 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
                    solver_kinsol_residual_wrapper,
                    kinsol_data->initial_guess);
     if (flag != KIN_SUCCESS) {
-        solver_logger(log_solver_error, "In function kinsol_init_data: Could not initialize KINSOL solver object.");
+        solver_logger(log_solver_error, "In function kinsol_init_data: Could "
+                "not initialize KINSOL solver object.");
         general_solver_data->state = solver_error_state;
         return solver_error;
     }
@@ -242,6 +220,46 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
 }
 
 
+/**
+ *  \brief Frees kinsol specific solver data.
+ *
+ * \param [in,out]  general_solver_data     Solver instance.
+ * \return          solver_status           solver_ok on success and
+ *                                          solver_error on failure.
+ */
+solver_status solver_kinsol_free_data(solver_data* general_solver_data)
+{
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+
+    /* check for correct solver */
+    if (!solver_instance_correct(general_solver_data, solver_kinsol, "kinsol_free_data")) {
+        return solver_error;
+    }
+
+    kinsol_data = general_solver_data->specific_data;
+
+    /* Free data */
+    KINFree((void*)kinsol_data);
+    solver_freeMemory(kinsol_data->kin_user_data);
+
+    solver_freeMemory(NV_DATA_S(kinsol_data->initial_guess));       /* ToDo: Is it smart to free a user supplied aray???
+                                                                       Well the free Function is also provided by user, so it should work any way...
+                                                                       Maybe... */
+    N_VDestroy_Serial(kinsol_data->initial_guess);
+
+    solver_freeMemory(NV_DATA_S(kinsol_data->u_scale));
+    N_VDestroy_Serial(kinsol_data->u_scale);
+
+    solver_freeMemory(NV_DATA_S(kinsol_data->f_scale));
+    N_VDestroy_Serial(kinsol_data->f_scale);
+
+    solver_freeMemory(kinsol_data);
+
+    /* Set solver state */
+    general_solver_data->state = solver_uninitialized;
+    return solver_ok;
+}
 
 
 /*

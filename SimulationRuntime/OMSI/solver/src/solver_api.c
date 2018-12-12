@@ -103,7 +103,7 @@ solver_data* solver_allocate(solver_name            name,
     switch (name) {
         case solver_lapack:
             solver->name = solver_lapack;
-            lapack_allocate_data(solver);
+            solver_lapack_allocate_data(solver);
         break;
         case solver_kinsol:
             solver->name = solver_kinsol;
@@ -162,8 +162,10 @@ void solver_free(solver_data* solver) {
     /* free solver specific data */
     switch (solver->name) {
         case solver_lapack:
-            lapack_free_data(solver);
-
+            solver_lapack_free_data(solver);
+        break;
+        case solver_kinsol:
+            solver_kinsol_free_data(solver);
         break;
         default:
             if (solver->specific_data != NULL) {
@@ -193,7 +195,7 @@ solver_status solver_prepare_specific_data (solver_data*            solver,
     switch (solver->name) {
         case solver_lapack:
             solver->linear = solver_true;
-            return lapack_set_dim_data(solver);
+            return solver_lapack_set_dim_data(solver);
         case solver_kinsol:
             solver->linear = solver_false;
             return solver_kinsol_init_data(solver, user_wrapper_res_function, user_data);
