@@ -156,6 +156,8 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     OFILES=$(CFILES:.c=.o)
     HFILES=$(CFILES:.c=.h)
 
+    RESOURCE_FILES=<%fileNamePrefix%>_info.json <%fileNamePrefix%>_init.xml
+
     GENERATEDFILES=$(MAINFILE) <%fileNamePrefix%>_FMU.makefile # ...
 
     # Includes
@@ -229,11 +231,20 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     <%\t%>$(CC) $(CFLAGS) -I$(INCLUDE_DIR_OMSI)  -I$(INCLUDE_DIR_OMSI_BASE) -I$(INCLUDE_DIR_OMSI_SOLVER) -I$(INCLUDE_DIR_OMSI_FMI2) -I$(INCLUDE_DIR_OMSIC) -I$(INCLUDE_DIR_OMSIC_FMI2) -c $<
 
     clean:
-    <%\t%>rm -f *.o
+    <%\t%>rm -f <%fileNamePrefix%><%makefileParams.dllext%>
+    <%\t%>rm -f $(OFILES)
     <%\t%>rm -Rf helloWorld.fmutmp
+    <%\t%>rm -f <%fileNamePrefix%>_FMU.libs <%fileNamePrefix%>_FMU.log
+
+    purge: clean
+    <%\t%>rm -f $(CFILES)
+    <%\t%>rm -f $(HFILES)
+    <%\t%>rm -f modelDescription.xml $(RESOURCE_FILES)
+    <%\t%>rm -f <%fileNamePrefix%>_FMU.makefile
 
     distclean:
     <%\t%>rm -f -R <%fileNamePrefix%>.fmutmp
+
     >>
 end createMakefile;
 
