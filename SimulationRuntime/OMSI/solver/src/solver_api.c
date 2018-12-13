@@ -236,6 +236,22 @@ solver_status solver_set_start_vector (solver_data* solver,
 }
 
 
+solver_real* solver_get_start_vector (solver_data* solver)
+{
+    switch (solver->name) {
+        case solver_lapack:
+            solver_logger(log_solver_warning, "In function solver_set_start_vector:"
+                    "Linear solver LAPACK does not need a start vector. Ignoring function call.");
+            return NULL;
+        case solver_kinsol:
+            return solver_kinsol_get_start_vector(solver);
+        default:
+            solver_logger(log_solver_error, "In function solver_set_start_vector:"
+                    "No solver specified in solver_name.");
+            return NULL;
+    }
+}
+
 
 /*
  * ============================================================================

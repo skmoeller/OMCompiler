@@ -128,6 +128,17 @@ solver_status solver_kinsol_set_start_vector (solver_data*  general_solver_data,
 }
 
 
+solver_real* solver_kinsol_get_start_vector (solver_data*  general_solver_data)
+{
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+
+    kinsol_data = general_solver_data->specific_data;
+
+    return NV_DATA_S(kinsol_data->initial_guess);
+}
+
+
 /**
  * Set dimension `dim_n` of function `f` in kinsol specific solver data.
  *
@@ -164,7 +175,7 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
     }
 
     /* Set Kinsol print level */
-    flag = KINSetPrintLevel(kinsol_data->kinsol_solver_object, 3);
+    flag = KINSetPrintLevel(kinsol_data->kinsol_solver_object, 0);
     if (flag != KIN_SUCCESS) {
         return solver_kinsol_error_handler(general_solver_data, flag,
                 "kinsol_init_data",

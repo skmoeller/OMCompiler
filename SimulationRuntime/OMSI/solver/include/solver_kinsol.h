@@ -98,6 +98,8 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
 solver_status solver_kinsol_set_start_vector (solver_data*  general_solver_data,
                                               solver_real*  initial_guess);
 
+solver_real* solver_kinsol_get_start_vector (solver_data*  general_solver_data);
+
 solver_int solver_kinsol_residual_wrapper(N_Vector  x,
                                           N_Vector  fval,
                                           void*     user_data_in);

@@ -88,6 +88,8 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
     if (alg_system->isLinear) {
         omsi_get_analytical_jacobian(alg_system, read_only_model_vars_and_params);
         omsi_get_right_hand_side(alg_system, read_only_model_vars_and_params);
+    } else {
+        omsi_update_guess(alg_system->solver_data, alg_system);
     }
 
     alg_system->solver_data->state = solver_ready;
@@ -356,19 +358,20 @@ omsi_int omsi_residual_wrapper (omsi_real*   x_data,
 }
 
 
-omsi_int omsi_intial_guess_wrapper (omsi_real*  initial_guess,
-                                    void*       data) {
+omsi_int omsi_update_guess (solver_data*                solver,
+                            omsi_algebraic_system_t*    alg_system_data) {
 
     /* Variables */
     omsi_unsigned_int i, index, n_loop_iteration_vars;
-    omsi_algebraic_system_t* alg_system_data;
+    omsi_real* initial_guess;
 
-    alg_system_data = (omsi_algebraic_system_t*) data;
+    /* Get pointer to initial_guess */
+    initial_guess = solver_get_start_vector(solver);
 
     n_loop_iteration_vars = alg_system_data->jacobian->n_output_vars;
 
     for (i=0; i<n_loop_iteration_vars; i++) {
-        switch (alg_system_data->functions->input_vars_indices[i].type) {
+        switch (alg_system_data->functions->output_vars_indices[i].type) {
             case OMSI_TYPE_REAL:
                 index = alg_system_data->functions->output_vars_indices[i].index;
             break;
@@ -378,8 +381,10 @@ omsi_int omsi_intial_guess_wrapper (omsi_real*  initial_guess,
                 "Data type was not a real.");
             return -1;
         }
-        initial_guess[i] = alg_system_data->functions->function_vars->reals[index];
+        initial_guess[i] = alg_system_data->functions->function_vars->reals[index]; /* ToDo: Set start values for those variables!!*/
     }
+
+    solver_set_start_vector(solver, initial_guess);
 
 
     return 0;

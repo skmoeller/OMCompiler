@@ -64,6 +64,8 @@ solver_status solver_prepare_specific_data (solver_data*            solver,
 solver_status solver_set_start_vector (solver_data* solver,
                                        solver_real* initial_guess);
 
+solver_real* solver_get_start_vector (solver_data* solver);
+
 void solver_set_matrix_A(const solver_data*            solver,
                          const solver_unsigned_int*    column,
                          const solver_unsigned_int     n_column,
