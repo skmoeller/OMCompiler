@@ -61,6 +61,9 @@
 omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
                                          const omsi_values*         read_only_model_vars_and_params) {
 
+    /* Variables */
+    omsi_int status;
+
     /* Check if solver is ready */
     if (alg_system->solver_data == NULL ) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_fatal,
@@ -91,18 +94,24 @@ omsi_status omsi_solve_algebraic_system (omsi_algebraic_system_t*   alg_system,
 
     /* Call solver */
     if (alg_system->isLinear) {
-        solver_linear_solve(alg_system->solver_data);
+        status = solver_linear_solve(alg_system->solver_data);
     } else {
-        solver_non_linear_solve(alg_system->solver_data);
+        status = solver_non_linear_solve(alg_system->solver_data);
+    }
+
+    if (status == solver_error) {
+        return omsi_error;
+    } else if (status == solver_warning) {
+        return omsi_warning;
     }
 
 
     /* Save results */
-    omsi_get_loop_results(alg_system, read_only_model_vars_and_params, alg_system->functions->function_vars);
+    status = omsi_get_loop_results(alg_system, read_only_model_vars_and_params, alg_system->functions->function_vars);
     /* ToDo: change alg_system->functions->function_vars to next higher function_vars
      * only works because at the moment all function vars are pointer to model_vars_and_params */
 
-    return omsi_ok;
+    return status;
 }
 
 
@@ -261,7 +270,7 @@ omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
                     alg_system->isLinear? "linear":"non-linear",
                     alg_system->id);
             break;
-            status = omsi_warning;
+            status = omsi_error;
         }
     }
 
