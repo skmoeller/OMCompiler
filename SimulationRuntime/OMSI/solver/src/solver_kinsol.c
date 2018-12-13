@@ -163,16 +163,23 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
         return solver_error;
     }
 
+    /* Set Kinsol print level */
+    flag = KINSetPrintLevel(kinsol_data->kinsol_solver_object, 3);
+    if (flag != KIN_SUCCESS) {
+        return solver_kinsol_error_handler(general_solver_data, flag,
+                "kinsol_init_data",
+                "Could not set print level.");
+    }
+
     /* Set KINSOL user data */
     kinsol_data->kin_user_data = (kinsol_user_data*) solver_allocateMemory(1, sizeof(kinsol_user_data));
     kinsol_data->kin_user_data->user_data = user_data;
     kinsol_data->kin_user_data->kinsol_data = kinsol_data;
     flag = KINSetUserData(kinsol_data->kinsol_solver_object, kinsol_data->kin_user_data);
     if (flag != KIN_SUCCESS) {
-        solver_logger(log_solver_error, "In function kinsol_init_data: Could "
-                "not set KINSOL user data.");
-        general_solver_data->state = solver_error_state;
-        return solver_error;
+        return solver_kinsol_error_handler(general_solver_data, flag,
+                "kinsol_init_data",
+                "Could not set KINSOL user data.");
     }
 
     /* Set user supplied wrapper function */
@@ -183,10 +190,9 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
                    solver_kinsol_residual_wrapper,
                    kinsol_data->initial_guess);
     if (flag != KIN_SUCCESS) {
-        solver_logger(log_solver_error, "In function kinsol_init_data: Could "
-                "not initialize KINSOL solver object.");
-        general_solver_data->state = solver_error_state;
-        return solver_error;
+        return solver_kinsol_error_handler(general_solver_data, flag,
+                "kinsol_init_data",
+                "Could not initialize KINSOL solver object.");
     }
 
     /* Set KINSOL strategy */
@@ -203,10 +209,9 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
     /* Attach linear solver module */
     flag = KINDense(kinsol_data->kinsol_solver_object, general_solver_data->dim_n);
     if (flag != KIN_SUCCESS) {
-        solver_logger(log_solver_error, "In function kinsol_init_data: Could "
-                "not initialize KINSOL solver object.");
-        general_solver_data->state = solver_error_state;
-        return solver_error;
+        return solver_kinsol_error_handler(general_solver_data, flag,
+                "kinsol_init_data",
+                "Could not initialize KINSOL solver object.");
     }
 
     /* Set scaling vectors */
@@ -333,84 +338,13 @@ solver_state solver_kinsol_solve(void* specific_data)
                   kinsol_data->u_scale,
                   kinsol_data->f_scale);
 
-    switch (flag) {
-        case KIN_SUCCESS:
-            return solver_ok;
-        case KIN_INITIAL_GUESS_OK:
-            return solver_ok;
-        case KIN_STEP_LT_STPTOL:
-            solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: Kinsol stopped based on "
-                    "scaled step length. It is possible that the solution is "
-                    "within tolerances specified or the algorithm is stalled "
-                    "near an invalid solution or that scalar scsteptol is too "
-                    "large.");
-            return solver_warning;
-        case KIN_MEM_NULL:
-            solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: The Kinsol memory block "
-                    "pointer was NULL.");
-            return solver_error;
-        case KIN_ILL_INPUT:
-            solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: An input parameter was "
-                    "invalid.");
-            return solver_error;
-        case KIN_NO_MALLOC:
-            solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: The KINSOL memory was not "
-                    "allocated by a call to KINCreate.");
-            return solver_error;
-        case KIN_MEM_FAIL:
-            solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: A memory allocation failed.");
-            return solver_error;
-        case KIN_LINESEARCH_NONCONV:
-            solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: The line search algorithm "
-                    "was unable to find an iterate sufficiently distinct from "
-                    "current iterate, or could not find an iterate satisfying "
-                    "the sufficient decrease condition.");
-            return solver_error;
-        case KIN_MAXITER_REACHED:
-            solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: The maximum number of "
-                    "nonlinear iterations has been reached.");
-            return solver_error;
-        case KIN_MXNEWT_5X_EXCEEDED:
-            solver_logger(log_solver_error,
-                "In function solver_kinsol_solve: Five consecutive steps have "
-                "been taken with L2_norm(D_u*p)>0.99*mxnewstep");
-            return solver_error;
-        case KIN_LINESEARCH_BCFAIL:
-            solver_logger(log_solver_error,
-                "In function solver_kinsol_solve: Linear search was unable to "
-                "satisfy beta-condition. Algorithm may is making poor progress.");
-            return solver_warning;
-        case KIN_LINSOLV_NO_RECOVERY:
-            return solver_error;
-        case KIN_LINIT_FAIL:
-            return solver_error;
-        case KIN_LSETUP_FAIL:
-            solver_logger(log_solver_error,
-                "In function solver_kinsol_solve: KIN_LSETUP_FAIL ");
-            return solver_error;
-        case KIN_LSOLVE_FAIL:
-          solver_logger(log_solver_error,
-              "In function solver_kinsol_solve: KIN_LSOLVE_FAIL ");
-            return solver_error;
-        case KIN_SYSFUNC_FAIL:
-            return solver_error;
-        case KIN_FIRST_SYSFUNC_ERR:
-            return solver_warning;
-        case KIN_REPTD_SYSFUNC_ERR:
-            return solver_error;
-        default:
-            solver_logger(log_solver_error,
-                    "In function solver_kinsol_solve: Something went wrong...");
-            return solver_error;
-        /* ToDo: Add more error cases */
+    if (flag != KIN_SUCCESS) {
+        return solver_kinsol_error_handler(NULL, flag,
+                "solver_kinsol_solve",
+                "Error while solving equation system.");
     }
+
+    return solver_ok;
 }
 
 
@@ -437,11 +371,153 @@ void solver_kinsol_get_x_element(void*                  specific_data,
 }
 
 
+/*
+ * ============================================================================
+ * Helper functions
+ * ============================================================================
+ */
+solver_status solver_kinsol_error_handler(solver_data*  solver,
+                                          solver_int    flag,
+                                          solver_string function_name,
+                                          solver_string message) {
 
+    /* Set error state */
+    if (solver != NULL) {
+        if (flag < 0) {
+                solver->state = solver_error_state;
+        }
+    }
 
+    /* Log error message */
+    switch (flag) {
+        case KIN_SUCCESS:
+            return solver_ok;
 
+        case KIN_INITIAL_GUESS_OK:
+            return solver_ok;
 
+        case KIN_STEP_LT_STPTOL:
+            solver_logger(log_solver_warning,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_STEP_LT_STPTOL",
+                    function_name, message);
+            return solver_warning;
 
+        case KIN_MEM_NULL:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_MEM_NULL",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_ILL_INPUT:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_ILL_INPUT",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_NO_MALLOC:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_NO_MALLOC",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_MEM_FAIL:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_MEM_FAIL",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_LINESEARCH_NONCONV:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_LINESEARCH_NONCONV",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_MAXITER_REACHED:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_MAXITER_REACHED",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_MXNEWT_5X_EXCEEDED:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_MXNEWT_5X_EXCEEDED",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_LINESEARCH_BCFAIL:
+            solver_logger(log_solver_warning,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_LINESEARCH_BCFAIL",
+                    function_name, message);
+            return solver_warning;
+
+        case KIN_LINSOLV_NO_RECOVERY:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_LINSOLV_NO_RECOVERY",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_LINIT_FAIL:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_LINIT_FAIL",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_LSETUP_FAIL:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_LSETUP_FAIL",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_LSOLVE_FAIL:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_LSOLVE_FAIL",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_SYSFUNC_FAIL:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_SYSFUNC_FAIL",
+                    function_name, message);
+            return solver_error;
+
+        case KIN_FIRST_SYSFUNC_ERR:
+            solver_logger(log_solver_warning,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_FIRST_SYSFUNC_ERR",
+                    function_name, message);
+            return solver_warning;
+
+        case KIN_REPTD_SYSFUNC_ERR:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: KIN_REPTD_SYSFUNC_ERR",
+                    function_name, message);
+            return solver_error;
+
+        default:
+            solver_logger(log_solver_error,
+                    "Warning in function %s: %s\n"
+                    "\tKINSOL_ERROR: unknown ERROR",
+                    function_name, message);
+            return solver_error;
+
+        /* ToDo: Add more error cases */
+    }
+}
 
 
 /** @} */

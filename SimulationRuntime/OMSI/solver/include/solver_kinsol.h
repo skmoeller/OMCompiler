@@ -49,7 +49,7 @@
 /* Headers for sundials kinsol */
 #include <kinsol/kinsol.h>
 #include <nvector/nvector_serial.h>
-#include <kinsol/kinsol_direct.h>
+#include <kinsol/kinsol_dense.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -107,6 +107,11 @@ solver_state solver_kinsol_solve(void* specific_data);
 void solver_kinsol_get_x_element(void*                  specific_data,
                                  solver_unsigned_int    index,
                                  solver_real*           value);
+
+solver_status solver_kinsol_error_handler(solver_data*  solver,
+                                          solver_int    flag,
+                                          solver_string function_name,
+                                          solver_string message);
 
 #ifdef __cplusplus
 }   /* end of extern "C" { */
