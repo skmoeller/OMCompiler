@@ -58,6 +58,8 @@ solver_status solver_kinsol_allocate_data(solver_data* general_solver_data)
 {
     /* Variables */
     solver_data_kinsol* kinsol_data;
+    solver_real* u_scale;
+    solver_real* f_scale;
 
     /* Check for correct solver */
     if (!solver_instance_correct(general_solver_data, solver_kinsol, "allocate_kinsol_data")) {
@@ -91,7 +93,14 @@ solver_status solver_kinsol_allocate_data(solver_data* general_solver_data)
     }
 
     kinsol_data->f_function_eval = NULL;
-    kinsol_data->initial_guess = NULL;
+
+    kinsol_data->initial_guess = N_VNewEmpty_Serial(general_solver_data->dim_n);
+
+    u_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
+    kinsol_data->u_scale = N_VMake_Serial(general_solver_data->dim_n, u_scale);
+
+    f_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
+    kinsol_data->f_scale = N_VMake_Serial(general_solver_data->dim_n, f_scale);
 
     general_solver_data->specific_data = kinsol_data;
     general_solver_data->state = solver_instantiated;
@@ -122,8 +131,9 @@ solver_status solver_kinsol_set_start_vector (solver_data*  general_solver_data,
 
     kinsol_data = general_solver_data->specific_data;
 
-    /* Create initial_guess vector */
-    kinsol_data->initial_guess = N_VMake_Serial(general_solver_data->dim_n, initial_guess);
+    /* Set initial_guess vector */
+    NV_DATA_S(kinsol_data->initial_guess) = initial_guess;
+
     return solver_ok;
 }
 
@@ -155,9 +165,6 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
     /* Variables */
     solver_data_kinsol* kinsol_data;
     solver_int flag;
-    solver_unsigned_int i;
-    solver_real* u_scale;
-    solver_real* f_scale;
 
     /* check for correct solver */
     if (!solver_instance_correct(general_solver_data, solver_kinsol, "solver_kinsol_free_data")) {
@@ -226,15 +233,7 @@ solver_status solver_kinsol_init_data(solver_data*              general_solver_d
     }
 
     /* Set scaling vectors */
-    u_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
-    f_scale = (solver_real*) solver_allocateMemory(general_solver_data->dim_n, sizeof(solver_real));
-    for (i=0; i<general_solver_data->dim_n; i++) {
-        u_scale[i] = 1;                 /* ToDo: Do smarter stuff here */
-        f_scale[i] = 1;
-    }
-    kinsol_data->u_scale = N_VMake_Serial(general_solver_data->dim_n, u_scale);
-    kinsol_data->f_scale = N_VMake_Serial(general_solver_data->dim_n, f_scale);
-
+    solver_kinsol_scaling(general_solver_data);
 
     /* Set state and exit*/
     general_solver_data->state = solver_initializated;
@@ -303,8 +302,8 @@ solver_status solver_kinsol_free_data(solver_data* general_solver_data)
  */
 solver_int solver_kinsol_residual_wrapper(N_Vector  x,
                                           N_Vector  fval,
-                                          void*     user_data_in) {
-
+                                          void*     user_data_in)
+{
     /* Variables */
     solver_data_kinsol* kinsol_data;
     solver_real* x_data;
@@ -317,7 +316,6 @@ solver_int solver_kinsol_residual_wrapper(N_Vector  x,
     x_data = NV_DATA_S(x);
     fval_data = NV_DATA_S(fval);
 
-
     /* Call residual function */
     kinsol_data->f_function_eval(x_data, fval_data, user_data->user_data);
 
@@ -326,6 +324,43 @@ solver_int solver_kinsol_residual_wrapper(N_Vector  x,
 
     return 0;
 }
+
+
+/**
+ * \brief Wrapper function for KINSOL to compute dense Jacobian
+ *
+ * Computes dense Jacobian `J(u)` using `omsi_function`
+ * `algebraic_system_t->jacobian`.
+ *
+ * @param N
+ * @param u
+ * @param fu
+ * @param J
+ * @param user_data
+ * @param tmp1
+ * @param tmp2
+ * @return
+ */
+solver_int solver_kinsol_jacobian_wrapper(long int N,
+                                          N_Vector u,
+                                          N_Vector fu,
+                                          DlsMat J,
+                                          void* user_data,
+                                          N_Vector tmp1,
+                                          N_Vector tmp2)
+{
+
+    /* ToDo: Insert smart stuff here */
+
+
+    return -1;
+}
+
+
+
+
+
+
 
 
 /*
@@ -341,6 +376,8 @@ solver_state solver_kinsol_solve(void* specific_data)
     solver_int flag;
 
     kinsol_data = specific_data;
+
+    /* ToDo: Scale f and x */
 
     /* Solver call */
     flag = KINSol(kinsol_data->kinsol_solver_object,
@@ -366,7 +403,7 @@ solver_state solver_kinsol_solve(void* specific_data)
  * ============================================================================
  */
 
-void solver_kinsol_get_x_element(void*                  specific_data,
+void solver_kinsol_get_x_element(void*                  solver_specififc_data,
                                  solver_unsigned_int    index,
                                  solver_real*           value)
 {
@@ -374,11 +411,26 @@ void solver_kinsol_get_x_element(void*                  specific_data,
     solver_data_kinsol* kinsol_data;
     solver_real* x_vector;
 
-    kinsol_data = specific_data;
+    kinsol_data = solver_specififc_data;
 
     /* Access initial_guess(index) */
     x_vector = N_VGetArrayPointer(kinsol_data->initial_guess);
     value[0]=x_vector[index];
+}
+
+
+void solver_kinsol_set_jacobian_element(void*                  solver_specififc_data,
+                                        solver_unsigned_int    row,
+                                        solver_unsigned_int    column,
+                                        solver_real*           value)
+{
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+
+    kinsol_data = solver_specififc_data;
+
+    /* Set element Jacobian(row,column) to value */
+    DENSE_ELEM(kinsol_data->Jacobian, row, column)=*value;
 }
 
 
@@ -387,6 +439,36 @@ void solver_kinsol_get_x_element(void*                  specific_data,
  * Helper functions
  * ============================================================================
  */
+
+solver_status solver_kinsol_scaling(solver_data* general_solver_data)
+{
+    /* Variables */
+    solver_data_kinsol* kinsol_data;
+    solver_real* u_scale_data;
+    solver_real* f_scale_data;
+
+    solver_unsigned_int i;
+
+    kinsol_data = general_solver_data->specific_data;
+
+    f_scale_data = NV_DATA_S(kinsol_data->f_scale);
+    u_scale_data = NV_DATA_S(kinsol_data->u_scale);
+
+    for (i=0; i<general_solver_data->dim_n; i++) {
+        u_scale_data[i] = 1;                 /* ToDo: Do smarter stuff here */
+        f_scale_data[i] = 1;
+    }
+
+    return solver_ok;
+}
+
+
+
+
+
+
+
+
 solver_status solver_kinsol_error_handler(solver_data*  solver,
                                           solver_int    flag,
                                           solver_string function_name,

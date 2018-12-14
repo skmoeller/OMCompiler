@@ -272,7 +272,9 @@ typedef struct solver_linear_callbacks {
 typedef struct solver_non_linear_callbacks {
     solver_solve_func solve_eq_system;
 
-    solver_interact_vector_element get_x_element;   /**< Callback function to get element(s) of solution vector `x`. */
+    solver_interact_vector_element get_x_element;           /**< Callback function to get element(s) of solution vector `x`. */
+
+    solver_interact_matrix_element set_jacobian_element;    /**< Callback function to set element of Jacobian matrix*/
 } solver_non_linear_callbacks;
 
 

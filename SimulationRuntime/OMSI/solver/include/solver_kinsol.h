@@ -81,6 +81,8 @@ typedef struct solver_data_kinsol {
     N_Vector u_scale;
     N_Vector f_scale;
 
+    DlsMat Jacobian;                        /**< Optional Jacobian matrix used by Kinsol. */
+
     solver_int strategy;                    /**< Strategy used by KINSOL solver. Possible values:
                                                  `KIN_NONE`, `KIN_LINESEARCH`, `KIN_FP` or `KIN_PICARD` */
 }solver_data_kinsol;
@@ -106,9 +108,16 @@ solver_int solver_kinsol_residual_wrapper(N_Vector  x,
 
 solver_state solver_kinsol_solve(void* specific_data);
 
-void solver_kinsol_get_x_element(void*                  specific_data,
+void solver_kinsol_get_x_element(void*                  solver_specififc_data,
                                  solver_unsigned_int    index,
                                  solver_real*           value);
+
+void solver_kinsol_set_jacobian_element(void*                  solver_specififc_data,
+                                        solver_unsigned_int    row,
+                                        solver_unsigned_int    column,
+                                        solver_real*           value);
+
+solver_status solver_kinsol_scaling (solver_data* general_solver_data);
 
 solver_status solver_kinsol_error_handler(solver_data*  solver,
                                           solver_int    flag,

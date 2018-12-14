@@ -381,7 +381,7 @@ omsi_int omsi_update_guess (solver_data*                solver,
                 "Data type was not a real.");
             return -1;
         }
-        initial_guess[i] = alg_system_data->functions->function_vars->reals[index]; /* ToDo: Set start values for those variables!!*/
+        initial_guess[i] = alg_system_data->functions->function_vars->reals[index];
     }
 
     solver_set_start_vector(solver, initial_guess);

@@ -136,6 +136,7 @@ solver_data* solver_allocate(solver_name            name,
             non_lin_callbacks = (solver_non_linear_callbacks*) solver_allocateMemory(1, sizeof(solver_non_linear_callbacks));
             non_lin_callbacks->solve_eq_system = solver_kinsol_solve;
             non_lin_callbacks->get_x_element = solver_kinsol_get_x_element;
+            non_lin_callbacks->set_jacobian_element = solver_kinsol_set_jacobian_element;
             solver->solver_callbacks = non_lin_callbacks;
             break;
         default:
@@ -207,6 +208,12 @@ solver_status solver_prepare_specific_data (solver_data*            solver,
 }
 
 
+/*
+ * ============================================================================
+ * Getters and setters
+ * ============================================================================
+ */
+
 /**
  * \brief Set initial guess for start vector for non-linear solver.
  *
@@ -236,6 +243,13 @@ solver_status solver_set_start_vector (solver_data* solver,
 }
 
 
+/**
+ * \brief Gets pointer to initial guess for start vector for non-linear solver.
+ *
+ * \param [in]  solver          Pointer to solver instance.
+ * \return      `solver_real *` Returns pointer to initial_guess if successful,
+ *                              otherwise `NULL`.
+ */
 solver_real* solver_get_start_vector (solver_data* solver)
 {
     switch (solver->name) {
@@ -253,12 +267,6 @@ solver_real* solver_get_start_vector (solver_data* solver)
 }
 
 
-/*
- * ============================================================================
- * Getters and setters
- * ============================================================================
- */
-
 /** \brief Sets matrix A with values from array value.
  *
  * Sets specified columns and rows of matrix A in solver specific data to
@@ -266,13 +274,13 @@ solver_real* solver_get_start_vector (solver_data* solver)
  * NULL) all elements in those rows / columns are set to given values.
  *
  *   e.g set_matrix_A(solver, [1,2], 2, [2,3,5], 3, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]);
- *   will set n-times-n matrix A, for some n>= 5, to something like:
- *         / a_11  a_12  a_13  ... \
- *         | 0.1   0.2   a_23      |
- *         | 0.3   0.4   a_33      |
- *     A = | a_41  a_42  a_43      |
- *         | 0.5   0.6   a_53      |
- *         \ ...               ... /
+ *   will set n-times-n matrix A, for some n>= 5, to something like:<br>
+ *         / a_11  a_12  a_13  ... \<br>
+ *         | 0.1   0.2   a_23      |<br>
+ *         | 0.3   0.4   a_33      |<br>
+ *     A = | a_41  a_42  a_43      |<br>
+ *         | 0.5   0.6   a_53      |<br>
+ *         \ ...               ... /<br>
  *
  * \param [in,out]  solver      Struct with used solver, containing matrix A in
  *                              solver specific format. Has to be a linear solver.
@@ -295,8 +303,8 @@ void solver_set_matrix_A(const solver_data*            solver,
                          const solver_unsigned_int     n_column,
                          const solver_unsigned_int*    row,
                          const solver_unsigned_int     n_row,
-                         solver_real*                  value) {
-
+                         solver_real*                  value)
+{
     /* Variables */
     solver_unsigned_int i, j;
     solver_linear_callbacks* lin_callbacks;
@@ -364,12 +372,12 @@ void solver_set_matrix_A(const solver_data*            solver,
  *                              columns and rows of matrix A in row-major-order.
  */
 void solver_get_matrix_A(solver_data*          solver,
-                  solver_unsigned_int*  column,
-                  solver_unsigned_int   n_column,
-                  solver_unsigned_int*  row,
-                  solver_unsigned_int   n_row,
-                  solver_real*          value) {
-
+                         solver_unsigned_int*  column,
+                         solver_unsigned_int   n_column,
+                         solver_unsigned_int*  row,
+                         solver_unsigned_int   n_row,
+                         solver_real*          value)
+{
     /* Variables */
     solver_unsigned_int i, j;
     solver_linear_callbacks* lin_callbacks;
@@ -481,6 +489,79 @@ void solver_get_vector_b (solver_data*          solver,
         }
     }
 }
+
+
+/** \brief Sets Jacobian matrix with values from array value.
+ *
+ * Sets specified columns and rows of Jacobian matrix in solver specific data to
+ * values from array value. If no columns and/or rows are specified (set to
+ * NULL) all elements in those rows / columns are set to given values.
+ *
+ * \param [in,out]  solver      Struct with used solver, containing Jacobian matrix in
+ *                              solver specific format. Has to be a linear solver.
+ * \param [in]      column      Array of dimension `n_column` of unsigned integers,
+ *                              specifying which columns of Jacobian matrix to get. If
+ *                              column equals `NULL`, get the first `n_column`
+ *                              columns of Jacobian.
+ * \param [in]      n_column    Size of array `column`. Must be greater then 0
+ *                              and less or equal to number of columns of Jacobian matrix.
+ * \param [in]      row         Array of dimension `n_row` of unsigned integers,
+ *                              specifying which rows of Jacobian matrix to get. If rows
+ *                              equals `NULL`, get the first `n_row` rows of Jacobian.
+ * \param [in]      n_row       Size of array `row`. Must be greater then 0 and
+ *                              less or equal to number of rows of Jacobian matrix.
+ * \param [in]      value       Pointer to matrix with values, stored as array
+ *                              in column-major order of size `n_column*n_row`.
+ */
+void solver_set_Jacobian(const solver_data*            solver,
+                         const solver_unsigned_int*    column,
+                         const solver_unsigned_int     n_column,
+                         const solver_unsigned_int*    row,
+                         const solver_unsigned_int     n_row,
+                         solver_real*                  value)
+{
+    /* Variables */
+    solver_unsigned_int i, j;
+    solver_non_linear_callbacks* non_lin_callbacks;
+
+    if (solver->linear) {
+        /* ToDo: log error, no Jacobian in linear case */
+        return;
+    }
+
+    non_lin_callbacks = solver->solver_callbacks;
+
+    if (column==NULL && row==NULL) {
+        /* copy values element wise */
+        for (i=0; i<n_column; i++) {
+            for (j=0; j<n_row; j++) {
+                non_lin_callbacks->set_jacobian_element(solver->specific_data, i, j, &value[i+j*solver->dim_n]);
+            }
+        }
+    }
+    else if (column==NULL && row != NULL) {
+        for (i=0; i<n_column; i++) {
+            for (j=0; j<n_row; j++) {
+                non_lin_callbacks->set_jacobian_element(solver->specific_data, i, row[j], &value[i+j*solver->dim_n]);
+            }
+        }
+    }
+    else if (column!=NULL && row == NULL) {
+        for (i=0; i<n_column; i++) {
+            for (j=0; j<n_row; j++) {
+                non_lin_callbacks->set_jacobian_element(solver->specific_data, column[i], j, &value[i+j*solver->dim_n]);
+            }
+        }
+    }
+    else {
+        for (i=0; i<n_column; i++) {
+            for (j=0; j<n_row; j++) {
+                non_lin_callbacks->set_jacobian_element(solver->specific_data, column[i], row[j], &value[i+j*solver->dim_n]);
+            }
+        }
+    }
+}
+
 
 
 /**
