@@ -155,6 +155,7 @@ runtimeCpp: omcCAPIinstall
 	  (cd ./Build_$(PLATFORM); echo "change to Build_$(PLATFORM)"; \
 	   cmake -G "MSYS Makefiles" -DPLATFORM=$(PLATFORM) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" MAKE_CXX_COMPILER=g++ ../; \
 	   $(MAKE));)
+
 omcCAPImsvc: getMSVCversion
 	test -f """${VSCOMNTOOLS}/../../VC/vcvarsall.bat"""
 	echo 'Build the cppRuntime with MSVC' buildtype: $(BUILDTYPE)
@@ -207,6 +208,7 @@ runtimeCPPmsvc: getMSVCversion
 	# move folder to build dir
 	cp -R --verbose Build_MSVC/tmp/* $(builddir_build)
 	cp -R --verbose Build_MSVC_static/tmp/lib/* $(builddir_build)/lib
+
 omcCAPIinstall:
 	mkdir -p Build_CAPI;
 	(cd ./Build_CAPI; echo "change to Build_CAPI"; \
