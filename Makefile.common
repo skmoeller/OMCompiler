@@ -250,10 +250,23 @@ fmil: mkbuilddirs
 	mkdir -p $(builddir_inc)/fmil/
 	cp -pPR 3rdParty/FMIL/install/include/* $(builddir_inc)/fmil/
 
-fmil_shared: fmil
-	# cpp runtime needs fmilib as shared library
-	test -f 3rdParty/FMIL/build/libfmilib_shared.* || rm -rf 3rdParty/FMIL/build/*
-	$(MAKE)  -f $(defaultMakefileTarget) fmil FMILIB_SHARED="ON"
+# OMSICPP needs shared FMIL
+fmil_shared: mkbuilddirs
+	test -f $(OMBUILDDIR)/$(LIB_OMC)/libfmilib_shared$(SHREXT) || $(MAKE) -f $(defaultMakefileTarget) fmil_shared_install
+
+fmil_shared_install:
+	test -d 3rdParty/FMIL
+	mkdir -p 3rdParty/FMIL/build_shared
+	(cd 3rdParty/FMIL/build_shared && test -f Makefile || CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" $(CMAKE) -D CMAKE_AR:String="$(AR)" $(MINGW_FMIL_FLAGS) -D FMILIB_BUILD_SHARED_LIB:Bool=ON -D FMILIB_BUILD_TESTS:Bool=OFF -D FMILIB_GENERATE_DOXYGEN_DOC:Bool=OFF -DCMAKE_COLOR_MAKEFILE:Bool=OFF -DFMILIB_INSTALL_PREFIX:String=../install_shared .. -G $(CMAKE_TARGET))
+	@# Pass CC/CFLAGS/CPPFLAGS because FMIL does not configure subprojects with the selected CC. Shocking; a cmake project not working the way it should.
+	test -f 3rdParty/FMIL/build_shared/libfmilib_shared$(SHREXT) || CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" $(MAKE) -C 3rdParty/FMIL/build_shared
+	test -d 3rdParty/FMIL/install_shared || $(MAKE) -C 3rdParty/FMIL/build_shared install
+	test "(" ! `uname` = Darwin ")" -o "(" ! -f 3rdParty/FMIL/build_shared/libfmilib_shared$(SHREXT) ")" || install_name_tool -id @rpath/libfmilib_shared$(SHREXT) 3rdParty/FMIL/build_shared/libfmilib_shared$(SHREXT)
+	cp -pPR 3rdParty/FMIL/build_shared/libfmilib_shared$(SHREXT) $(builddir_lib_omc)
+	test ! -f $(OMBUILDDIR)/$(LIB_OMC)/libfmilib_shared$(SHREXT) || ln -sf libfmilib_shared$(SHREXT) $(OMBUILDDIR)/$(LIB_OMC)/libfmilib$(SHREXT)
+	#TODO: Only copy required headers, add them in omc/fmi subfolder, and do not copy c/txt-files
+	mkdir -p $(builddir_inc)/fmil/
+	cp -pPR 3rdParty/FMIL/install_shared/include/* $(builddir_inc)/fmil/
 
 qjson:
 	test -d 3rdParty/qjson-0.8.1
