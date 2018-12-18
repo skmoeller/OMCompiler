@@ -72,7 +72,9 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
                          omsi_bool                              loggingOn);
 
 omsi_string omsi_get_model_name(omsi_string fmuResourceLocation);
-omsi_status omsi_intialize_callbacks(omsi_t*  omsu, omsi_template_callback_functions_t*    template_functions);
+
+omsi_status omsi_intialize_callbacks(omsi_t*                                omsu,
+                                     omsi_template_callback_functions_t*    template_functions );
 #ifdef __cplusplus
 }
 #endif

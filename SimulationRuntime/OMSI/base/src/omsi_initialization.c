@@ -240,18 +240,23 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
 
     return osu_data;
 }
-omsi_status omsi_intialize_callbacks(omsi_t*  omsu,
-							omsi_template_callback_functions_t*    template_functions )
+omsi_status omsi_intialize_callbacks(omsi_t*                                omsu,
+                                     omsi_template_callback_functions_t*    template_functions )
 {
 
-	/* Set up initialization problem.
-	 * Simulation problem gets set after initialization is finished. */
-	omsu_setup_sim_data_omsi_function(omsu->sim_data,
-	                         "initialization",
-	                         template_functions->initialize_initialization_problem,
-		omsu->sim_data->model_vars_and_params);
+    /* Set up initialization problem. */
+    omsu_setup_sim_data_omsi_function(omsu->sim_data,
+                                      "initialization",
+                                      template_functions->initialize_initialization_problem,
+                                      omsu->sim_data->model_vars_and_params);
 
-	return omsi_ok;
+    /* Set up simulation problem */
+    omsu_setup_sim_data_omsi_function(omsu->sim_data,
+                                      "simulation",
+                                      template_functions->initialize_simulation_problem,
+                                      omsu->sim_data->model_vars_and_params);
+
+    return omsi_ok;
 }
 
 /*

@@ -103,7 +103,6 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
             "fmi2Instantiate: Set callback functions from generated C-Code");
     initialize_start_function(OSU->osu_functions);      /* ToDo: At the moment only for static compilation */
 
-
     /* Call OMSIBase function for initialization of osu_data */
     OSU->osu_data = omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, OSU->osu_functions, visible, loggingOn);
     if (OSU->osu_data == NULL) {
@@ -112,6 +111,9 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
                 "Could not instantiate OSU component.");
         return NULL;
     }
+
+    /* Initialize callbacks for initialization and simulation omsi_functions */
+    omsi_intialize_callbacks(OSU->osu_data, OSU->osu_functions);
 
     OSU->vrStates = (omsi_unsigned_int *) functions->allocateMemory(OSU->osu_data->model_data->n_states, sizeof(omsi_unsigned_int));
     OSU->vrStatesDerivatives = (omsi_unsigned_int *) functions->allocateMemory(OSU->osu_data->model_data->n_states, sizeof(omsi_unsigned_int));
@@ -188,16 +190,6 @@ omsi_status omsi_exit_initialization_mode(osu_t* OSU) {
         return omsi_error;
     filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
             "fmi2ExitInitializationMode: ....");
-
-    /* Free OSU->omsi_data->initialization */
-    omsu_free_omsi_function(OSU->osu_data->sim_data->initialization, omsi_true);
-    OSU->osu_data->sim_data->initialization = NULL;
-
-    /* Set up simulation problem */
-    omsu_setup_sim_data_omsi_function(OSU->osu_data->sim_data,
-                             "simulation",
-                             OSU->osu_functions->initialize_simulation_problem,
-                             OSU->osu_data->sim_data->model_vars_and_params);
 
     OSU->state = modelEventMode;
     filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
