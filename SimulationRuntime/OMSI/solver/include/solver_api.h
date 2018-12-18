@@ -57,45 +57,57 @@ solver_data* solver_allocate(solver_name            name,
 
 void solver_free(solver_data* solver);
 
-solver_status solver_prepare_specific_data (solver_data* solver);
+solver_status solver_prepare_specific_data (solver_data*            solver,
+                                            residual_wrapper_func   user_wrapper_res_function,
+                                            void*                   user_data);
+
+solver_status solver_set_start_vector (solver_data* solver,
+                                       solver_real* initial_guess);
+
+solver_real* solver_get_start_vector (solver_data* solver);
 
 void solver_set_matrix_A(const solver_data*            solver,
-                  const solver_unsigned_int*    column,
-                  const solver_unsigned_int     n_column,
-                  const solver_unsigned_int*    row,
-                  const solver_unsigned_int     n_row,
-                  solver_real*                  value);
+                         const solver_unsigned_int*    column,
+                         const solver_unsigned_int     n_column,
+                         const solver_unsigned_int*    row,
+                         const solver_unsigned_int     n_row,
+                         solver_real*                  value);
 
 void solver_get_matrix_A(solver_data*          solver,
-                  solver_unsigned_int*  column,
-                  solver_unsigned_int   n_column,
-                  solver_unsigned_int*  row,
-                  solver_unsigned_int   n_row,
-                  solver_real*          value);
+                         solver_unsigned_int*  column,
+                         solver_unsigned_int   n_column,
+                         solver_unsigned_int*  row,
+                         solver_unsigned_int   n_row,
+                         solver_real*          value);
 
 void solver_set_vector_b (solver_data*          solver,
-                   solver_unsigned_int*  index,
-                   solver_unsigned_int   size_of_b,
-                   solver_real*          value);
+                          solver_unsigned_int*  index,
+                          solver_unsigned_int   size_of_b,
+                          solver_real*          value);
 
 void solver_get_vector_b (solver_data*          solver,
-                   solver_unsigned_int*  index,
-                   solver_unsigned_int   size_of_b,
-                   solver_real*          value);
+                          solver_unsigned_int*  index,
+                          solver_unsigned_int   size_of_b,
+                          solver_real*          value);
 
-void solver_get_vector_x(solver_data*           solver,
-                         solver_unsigned_int*   index,
-                         solver_unsigned_int    n_index,
-                         solver_real*           values);
+void solver_get_lin_solution(solver_data*           solver,
+                             solver_unsigned_int*   index,
+                             solver_unsigned_int    n_index,
+                             solver_real*           values);
+
+void solver_get_nonlin_solution(solver_data*           solver,
+                                solver_unsigned_int*   index,
+                                solver_unsigned_int    n_index,
+                                solver_real*           values);
 
 solver_string solver_get_name (solver_data* solver);
 
 void solver_print_data (solver_data*    solver,
                         solver_string   header);
 
-
-
 solver_status solver_linear_solve(solver_data* solver);
+
+solver_status solver_non_linear_solve(solver_data* solver);
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

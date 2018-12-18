@@ -41,7 +41,7 @@
 #include <solver_global.h>
 
 #include <solver_lapack.h>
-/*#include <solver_kinsol.h>*/
+#include <solver_kinsol.h>
 
 
 #ifdef __cplusplus
@@ -91,6 +91,7 @@ solver_data* solver_allocate(solver_name            name,
     /* Variables */
     solver_data* solver;
     solver_linear_callbacks* lin_callbacks;
+    solver_non_linear_callbacks* non_lin_callbacks;
 
     /* allocate memory */
     solver = (solver_data*) solver_allocateMemory(1, sizeof(solver_data));
@@ -98,14 +99,15 @@ solver_data* solver_allocate(solver_name            name,
     /* set dimension */
     solver->dim_n = dim_n;
 
+    /* Set solver specific data */
     switch (name) {
         case solver_lapack:
             solver->name = solver_lapack;
-            lapack_allocate_data(solver);
+            solver_lapack_allocate_data(solver);
         break;
         case solver_kinsol:
             solver->name = solver_kinsol;
-            /*kinsol_allocate_data(solver);*/
+            solver_kinsol_allocate_data(solver);
         break;
         default:
             solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
@@ -129,7 +131,14 @@ solver_data* solver_allocate(solver_name            name,
             lin_callbacks->solve_eq_system = &solver_lapack_solve;
 
             solver->solver_callbacks = lin_callbacks;
-        break;
+            break;
+        case solver_kinsol:
+            non_lin_callbacks = (solver_non_linear_callbacks*) solver_allocateMemory(1, sizeof(solver_non_linear_callbacks));
+            non_lin_callbacks->solve_eq_system = solver_kinsol_solve;
+            non_lin_callbacks->get_x_element = solver_kinsol_get_x_element;
+            non_lin_callbacks->set_jacobian_element = solver_kinsol_set_jacobian_element;
+            solver->solver_callbacks = non_lin_callbacks;
+            break;
         default:
             solver_logger(log_solver_error, "In function solver_allocate: No valid solver_name given.");
             solver_freeMemory(solver);
@@ -154,8 +163,10 @@ void solver_free(solver_data* solver) {
     /* free solver specific data */
     switch (solver->name) {
         case solver_lapack:
-            lapack_free_data(solver);
-
+            solver_lapack_free_data(solver);
+        break;
+        case solver_kinsol:
+            solver_kinsol_free_data(solver);
         break;
         default:
             if (solver->specific_data != NULL) {
@@ -178,16 +189,20 @@ void solver_free(solver_data* solver) {
  * \return              Returns `solver_status` `solver_okay` if solved successful,
  *                      otherwise `solver_error`.
  */
-solver_status solver_prepare_specific_data (solver_data* solver) {
+solver_status solver_prepare_specific_data (solver_data*            solver,
+                                            residual_wrapper_func   user_wrapper_res_function,
+                                            void*                   user_data) {
 
     switch (solver->name) {
         case solver_lapack:
             solver->linear = solver_true;
-            return lapack_set_dim_data(solver);
-        break;
+            return solver_lapack_set_dim_data(solver);
+        case solver_kinsol:
+            solver->linear = solver_false;
+            return solver_kinsol_init_data(solver, user_wrapper_res_function, user_data);
         default:
-            solver_logger(log_solver_error, "In function prepare_specific_solver_data: No solver"
-                    "specified in solver_name.");
+            solver_logger(log_solver_error, "In function prepare_specific_solver_data:"
+                    "No solver specified in solver_name.");
             return solver_error;
     }
 }
@@ -199,6 +214,59 @@ solver_status solver_prepare_specific_data (solver_data* solver) {
  * ============================================================================
  */
 
+/**
+ * \brief Set initial guess for start vector for non-linear solver.
+ *
+ * \param [in]  solver          Pointer to solver instance.
+ * \param [in]  initial_guess   Array of length solver->dim_n containing initial guess.
+ * \return                      Returns `solver_status` `solver_okay` if solved successful,
+ *                              otherwise `solver_error`.
+ */
+solver_status solver_set_start_vector (solver_data* solver,
+                                       solver_real* initial_guess) {
+
+    switch (solver->name) {
+        case solver_lapack:
+            solver_logger(log_solver_warning, "In function solver_set_start_vector:"
+                    "Linear solver LAPACK does not need a start vector. Ignoring function call.");
+            return solver_warning;
+        case solver_kinsol:
+            solver_kinsol_set_start_vector (solver, initial_guess);
+            break;
+        default:
+            solver_logger(log_solver_error, "In function solver_set_start_vector:"
+                    "No solver specified in solver_name.");
+            return solver_error;
+    }
+
+    return solver_ok;
+}
+
+
+/**
+ * \brief Gets pointer to initial guess for start vector for non-linear solver.
+ *
+ * \param [in]  solver          Pointer to solver instance.
+ * \return      `solver_real *` Returns pointer to initial_guess if successful,
+ *                              otherwise `NULL`.
+ */
+solver_real* solver_get_start_vector (solver_data* solver)
+{
+    switch (solver->name) {
+        case solver_lapack:
+            solver_logger(log_solver_warning, "In function solver_set_start_vector:"
+                    "Linear solver LAPACK does not need a start vector. Ignoring function call.");
+            return NULL;
+        case solver_kinsol:
+            return solver_kinsol_get_start_vector(solver);
+        default:
+            solver_logger(log_solver_error, "In function solver_set_start_vector:"
+                    "No solver specified in solver_name.");
+            return NULL;
+    }
+}
+
+
 /** \brief Sets matrix A with values from array value.
  *
  * Sets specified columns and rows of matrix A in solver specific data to
@@ -206,13 +274,13 @@ solver_status solver_prepare_specific_data (solver_data* solver) {
  * NULL) all elements in those rows / columns are set to given values.
  *
  *   e.g set_matrix_A(solver, [1,2], 2, [2,3,5], 3, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]);
- *   will set n-times-n matrix A, for some n>= 5, to something like:
- *         / a_11  a_12  a_13  ... \
- *         | 0.1   0.2   a_23      |
- *         | 0.3   0.4   a_33      |
- *     A = | a_41  a_42  a_43      |
- *         | 0.5   0.6   a_53      |
- *         \ ...               ... /
+ *   will set n-times-n matrix A, for some n>= 5, to something like:<br>
+ *         / a_11  a_12  a_13  ... \<br>
+ *         | 0.1   0.2   a_23      |<br>
+ *         | 0.3   0.4   a_33      |<br>
+ *     A = | a_41  a_42  a_43      |<br>
+ *         | 0.5   0.6   a_53      |<br>
+ *         \ ...               ... /<br>
  *
  * \param [in,out]  solver      Struct with used solver, containing matrix A in
  *                              solver specific format. Has to be a linear solver.
@@ -235,8 +303,8 @@ void solver_set_matrix_A(const solver_data*            solver,
                          const solver_unsigned_int     n_column,
                          const solver_unsigned_int*    row,
                          const solver_unsigned_int     n_row,
-                         solver_real*                  value) {
-
+                         solver_real*                  value)
+{
     /* Variables */
     solver_unsigned_int i, j;
     solver_linear_callbacks* lin_callbacks;
@@ -304,12 +372,12 @@ void solver_set_matrix_A(const solver_data*            solver,
  *                              columns and rows of matrix A in row-major-order.
  */
 void solver_get_matrix_A(solver_data*          solver,
-                  solver_unsigned_int*  column,
-                  solver_unsigned_int   n_column,
-                  solver_unsigned_int*  row,
-                  solver_unsigned_int   n_row,
-                  solver_real*          value) {
-
+                         solver_unsigned_int*  column,
+                         solver_unsigned_int   n_column,
+                         solver_unsigned_int*  row,
+                         solver_unsigned_int   n_row,
+                         solver_real*          value)
+{
     /* Variables */
     solver_unsigned_int i, j;
     solver_linear_callbacks* lin_callbacks;
@@ -423,6 +491,79 @@ void solver_get_vector_b (solver_data*          solver,
 }
 
 
+/** \brief Sets Jacobian matrix with values from array value.
+ *
+ * Sets specified columns and rows of Jacobian matrix in solver specific data to
+ * values from array value. If no columns and/or rows are specified (set to
+ * NULL) all elements in those rows / columns are set to given values.
+ *
+ * \param [in,out]  solver      Struct with used solver, containing Jacobian matrix in
+ *                              solver specific format. Has to be a linear solver.
+ * \param [in]      column      Array of dimension `n_column` of unsigned integers,
+ *                              specifying which columns of Jacobian matrix to get. If
+ *                              column equals `NULL`, get the first `n_column`
+ *                              columns of Jacobian.
+ * \param [in]      n_column    Size of array `column`. Must be greater then 0
+ *                              and less or equal to number of columns of Jacobian matrix.
+ * \param [in]      row         Array of dimension `n_row` of unsigned integers,
+ *                              specifying which rows of Jacobian matrix to get. If rows
+ *                              equals `NULL`, get the first `n_row` rows of Jacobian.
+ * \param [in]      n_row       Size of array `row`. Must be greater then 0 and
+ *                              less or equal to number of rows of Jacobian matrix.
+ * \param [in]      value       Pointer to matrix with values, stored as array
+ *                              in column-major order of size `n_column*n_row`.
+ */
+void solver_set_Jacobian(const solver_data*            solver,
+                         const solver_unsigned_int*    column,
+                         const solver_unsigned_int     n_column,
+                         const solver_unsigned_int*    row,
+                         const solver_unsigned_int     n_row,
+                         solver_real*                  value)
+{
+    /* Variables */
+    solver_unsigned_int i, j;
+    solver_non_linear_callbacks* non_lin_callbacks;
+
+    if (solver->linear) {
+        /* ToDo: log error, no Jacobian in linear case */
+        return;
+    }
+
+    non_lin_callbacks = solver->solver_callbacks;
+
+    if (column==NULL && row==NULL) {
+        /* copy values element wise */
+        for (i=0; i<n_column; i++) {
+            for (j=0; j<n_row; j++) {
+                non_lin_callbacks->set_jacobian_element(solver->specific_data, i, j, &value[i+j*solver->dim_n]);
+            }
+        }
+    }
+    else if (column==NULL && row != NULL) {
+        for (i=0; i<n_column; i++) {
+            for (j=0; j<n_row; j++) {
+                non_lin_callbacks->set_jacobian_element(solver->specific_data, i, row[j], &value[i+j*solver->dim_n]);
+            }
+        }
+    }
+    else if (column!=NULL && row == NULL) {
+        for (i=0; i<n_column; i++) {
+            for (j=0; j<n_row; j++) {
+                non_lin_callbacks->set_jacobian_element(solver->specific_data, column[i], j, &value[i+j*solver->dim_n]);
+            }
+        }
+    }
+    else {
+        for (i=0; i<n_column; i++) {
+            for (j=0; j<n_row; j++) {
+                non_lin_callbacks->set_jacobian_element(solver->specific_data, column[i], row[j], &value[i+j*solver->dim_n]);
+            }
+        }
+    }
+}
+
+
+
 /**
  * \brief Gets solution `x` of `A*x=b`.
  *
@@ -436,10 +577,10 @@ void solver_get_vector_b (solver_data*          solver,
  *                              On output: Pointer to array containing specified
  *                              values of vector `x`.
  */
-void solver_get_vector_x(solver_data*           solver,
-                         solver_unsigned_int*   index,
-                         solver_unsigned_int    n_index,
-                         solver_real*           values) {
+void solver_get_lin_solution(solver_data*           solver,
+                             solver_unsigned_int*   index,
+                             solver_unsigned_int    n_index,
+                             solver_real*           values) {
 
     /* Variables */
     solver_unsigned_int i;
@@ -458,6 +599,31 @@ void solver_get_vector_x(solver_data*           solver,
         }
     }
 }
+
+
+void solver_get_nonlin_solution(solver_data*           solver,
+                                solver_unsigned_int*   index,
+                                solver_unsigned_int    n_index,
+                                solver_real*           values) {
+
+   /* Variables */
+    solver_unsigned_int i;
+   solver_non_linear_callbacks* callbacks;
+
+   callbacks = solver->solver_callbacks;
+
+   if (index==NULL) {
+       for (i=0; i<n_index; i++) {
+           callbacks->get_x_element(solver->specific_data, i, &values[i]);
+       }
+   }
+   else {
+       for (i=0; i<n_index; i++) {
+           callbacks->get_x_element(solver->specific_data, index[i], &values[i]);
+       }
+   }
+}
+
 
 
 /**
@@ -510,7 +676,7 @@ void solver_print_data (solver_data*    solver,
 
     switch (solver->name) {
         case solver_lapack:
-            solver_print_lapack_data(buffer, MAX_BUFFER_SIZE, &length, solver);
+            solver_lapack_print_data(buffer, MAX_BUFFER_SIZE, &length, solver);
             break;
         default:
             length += snprintf(buffer+length, MAX_BUFFER_SIZE-length,
@@ -557,12 +723,11 @@ void solver_print_data (solver_data*    solver,
  */
 
 /**
- * \brief Calls solve function for registered solver.
+ * \brief Calls solve function for registered linear solver.
  *
  * Checks if all necessary data is already set.
  *
  * \param solver    Solver instance.
- *
  * \return          Returns `solver_status` `solver_okay` if solved successful,
  *                  otherwise `solver_error`.
  */
@@ -581,6 +746,33 @@ solver_status solver_linear_solve(solver_data* solver) {
 
     /* Call solve function */
     return lin_callbacks->solve_eq_system(solver->specific_data);
+}
+
+
+/**
+ * \brief Calls solve function for registered non-linear solver.
+ *
+ * Checks if all necessary data is already set.
+ *
+ * \param solver    Solver instance.
+ * \return          Returns `solver_status` `solver_okay` if solved successful,
+ *                  otherwise `solver_error`.
+ */
+solver_status solver_non_linear_solve(solver_data* solver) {
+
+    /* Variables */
+    solver_non_linear_callbacks* non_lin_callbacks;
+
+
+    /* Check if solver is ready */
+    if (!solver_func_call_allowed (solver, solver_ready, "solver_non_linear_solver")) {
+        return solver_error;
+    }
+
+    non_lin_callbacks = solver->solver_callbacks;
+
+    /* Call solve function */
+    return non_lin_callbacks->solve_eq_system(solver->specific_data);
 }
 
 #ifdef __cplusplus

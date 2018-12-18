@@ -132,18 +132,18 @@ omsi_status omsu_setup_sim_data_omsi_function(sim_data_t*                   sim_
         return omsi_error;
     }
 
+    /* Set function variables. Either local copy or pointer to global model_vars_and_params*/
+    if (omsu_instantiate_omsi_function_func_vars(omsi_function, function_vars)==omsi_error) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Error while instantiating function variables of sim_data->simulation.");
+        return omsi_error;
+    }
+
     /* Set default solvers for omsi_function */
     if (omsu_set_default_solvers(omsi_function, function_name)) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Could not instantiate default solvers for algebraic loops in %s problem.",
                 function_name);
-        return omsi_error;
-    }
-
-    /* Set function variables. Either local copy or pointer to global model_vars_and_params*/
-    if (omsu_instantiate_omsi_function_func_vars(omsi_function, function_vars)==omsi_error) {
-        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
-                "fmi2Instantiate: Error while instantiating function variables of sim_data->simulation.");
         return omsi_error;
     }
 
@@ -415,10 +415,20 @@ omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
         }
         else {
             /* Set default non-linear solver */
-            omsi_function->algebraic_system_t[i].solver_data = solver_allocate(solver_newton, dim_n);
+            omsi_function->algebraic_system_t[i].solver_data = solver_allocate(solver_kinsol, dim_n);
         }
 
-        solver_prepare_specific_data (omsi_function->algebraic_system_t[i].solver_data);
+        if (!omsi_function->algebraic_system_t[i].isLinear) {
+            omsu_set_initial_guess(&omsi_function->algebraic_system_t[i]);
+            solver_prepare_specific_data(omsi_function->algebraic_system_t[i].solver_data,
+                    omsi_residual_wrapper,
+                    &omsi_function->algebraic_system_t[i]);
+        }
+        else {
+            solver_prepare_specific_data(omsi_function->algebraic_system_t[i].solver_data,
+                    NULL,
+                    NULL);
+        }
 
         /* recursive call for all */
         status = omsu_set_default_solvers (omsi_function->algebraic_system_t[i].jacobian, "jacobian");
@@ -435,3 +445,21 @@ omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
     return status;
 }
 
+void omsu_set_initial_guess (omsi_algebraic_system_t* algebraic_system)
+{
+    /* Variables */
+    omsi_real* initial_guess;
+    omsi_unsigned_int i, index;
+
+    /* Allocate memory */
+    initial_guess = (omsi_real*) global_callback->allocateMemory(algebraic_system->solver_data->dim_n, sizeof(omsi_real));
+
+    /* Read start values for initial guess */
+    for (i=0; i<algebraic_system->solver_data->dim_n; i++) {
+        index = algebraic_system->functions->output_vars_indices[i].index;
+        initial_guess[i] = algebraic_system->functions->function_vars->reals[index];
+    }
+
+    /* Set initial guess in solver data */
+    solver_set_start_vector(algebraic_system->solver_data, initial_guess);
+}

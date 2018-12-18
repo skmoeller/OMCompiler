@@ -66,7 +66,9 @@ omsi_status omsi_get_loop_results (omsi_algebraic_system_t* alg_system,
 
 omsi_status omsi_set_up_solver (omsi_algebraic_system_t* alg_system);
 
-
+omsi_int omsi_residual_wrapper (omsi_real*   x_data,
+                                   omsi_real*   fval_data,
+                                   void*        data);
 
 #ifdef __cplusplus
 }

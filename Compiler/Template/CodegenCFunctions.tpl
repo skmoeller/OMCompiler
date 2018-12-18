@@ -5324,6 +5324,28 @@ template daeExpRelationSim(Exp exp, Context context, Text &preExp,
 match exp
 case rel as RELATION(__) then
   match context
+  case OMSI_CONTEXT(__) then
+      let e1 = daeExp(rel.exp1, context, &preExp, &varDecls, &auxFunction)
+      let e2 = daeExp(rel.exp2, context, &preExp, &varDecls, &auxFunction)
+      let res = tempDecl("omsi_bool", &varDecls)
+      let _ = match rel.operator
+        case LESS(__) then
+          let &preExp += '<%res%> = <%e1%> < <%e2%>;<%\n%>'
+          <<>>
+        case LESSEQ(__) then
+          let &preExp += '<%res%> = <%e1%> <= <%e2%>;<%\n%>'
+          <<>>
+        case GREATER(__) then
+          let &preExp += '<%res%> = <%e1%> > <%e2%>;<%\n%>'
+          <<>>
+        case GREATEREQ(__) then
+          let &preExp += '<%res%> = <%e1%> >= <%e2%>;<%\n%>'
+          <<>>
+        end match 
+      if intEq(rel.index,-1) then
+        res
+      else
+        'functionZC(this_function, <%res%>, <%rel.index%>, eventMode)'
   case DAE_MODE_CONTEXT(__)
   case SIMULATION_CONTEXT(__) then
     match rel.optionExpisASUB
@@ -5469,7 +5491,7 @@ case rel as RELATION(__) then
           let &preExp += '<%res%> = <%hysteresisfunction%>;<%\n%>'
           res
         case LESSEQ(__) then
-          let hysteresisfunction = if isReal then 'LessEqZC(<%e1%>, <%e2%>, data->simulationInfo->storedRelations[<%rel.index%>])' else 'LessEq(<%e1%>,<%e2%>)'
+          let hysteresisfunction = if isReal then 'LessEqZC(<%e1%>, <%e2%>, dataLess->simulationInfo->storedRelations[<%rel.index%>])' else 'LessEq(<%e1%>,<%e2%>)'
           let &preExp += '<%res%> = <%hysteresisfunction%>;<%\n%>'
           res
         case GREATER(__) then

@@ -98,6 +98,16 @@ typedef const omsi_char*    omsi_string;
 
 #define OMSI_TYPES_DEFINED
 
+
+/* Typedef modelica types, so we don't need to change so much in CodegenCFunctions..tpl */
+/* ToDo: Change */
+#ifndef MODELICATYPES_TYPEDEF
+#define MODELICATYPES_TYPEDEF
+typedef omsi_real           modelica_real;
+typedef omsi_int            modelica_int;
+#endif
+
+
 /* macros */
 #define OMSI_DBL_MAX DBL_MAX
 #define OMSI_INT_MAX INT_MAX
@@ -292,6 +302,10 @@ typedef struct omsi_function_t {
 
     omsi_values* local_vars;                        /**< Pointer to local variables like seed variables and
                                                      *   and dummy derivative variables. */
+
+    omsi_bool* zerocrossings_vars;                  /**< Conditions of zerocrossing functions. */
+    omsi_bool* pre_zerocrossings_vars;              /**< Pre conditions of zerocrossing functions. */
+
 
     /** evaluate function
      * \param [in,out] this_function                Pointer to this `omsi_fucntion_t` struct.

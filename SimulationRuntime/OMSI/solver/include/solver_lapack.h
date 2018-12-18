@@ -82,11 +82,11 @@ extern solver_int dgesv_(solver_int *n, solver_int *nrhs, solver_real *a, solver
 extern solver_real ddot_(solver_int* n, solver_real* dx, solver_int* incx, solver_real* dy, solver_int* incy);
 
 /* function prototypes */
-solver_status lapack_allocate_data(solver_data* general_solver_data);
+solver_status solver_lapack_allocate_data(solver_data* general_solver_data);
 
-solver_status lapack_free_data(solver_data* general_solver_data);
+solver_status solver_lapack_free_data(solver_data* general_solver_data);
 
-solver_status lapack_set_dim_data(solver_data* general_solver_data);
+solver_status solver_lapack_set_dim_data(solver_data* general_solver_data);
 
 void solver_lapack_get_A_element(void*                  solver_specififc_data,
                                  solver_unsigned_int    row,
@@ -112,7 +112,7 @@ void solver_lapack_get_x_element(void*                  specific_data,
 
 solver_state solver_lapack_solve(void* specific_data);
 
-void solver_print_lapack_data(solver_char*          buffer,
+void solver_lapack_print_data(solver_char*          buffer,
                               solver_unsigned_int   buffer_size,
                               solver_int*           length,
                               solver_data*          general_solver_data);
