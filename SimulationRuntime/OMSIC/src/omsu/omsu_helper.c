@@ -281,16 +281,16 @@ void omsu_storePreValues(omsi_t* omsi_data) {
 
 
 /**
- * \breif Update values of `pre_zero_crossing` array.
+ * \brief Update values of `pre_zero_crossing` array.
  *
  * \param sim_data
  * \param n_zero_crossings
  */
 void omsu_update_pre_zero_crossings(sim_data_t*          sim_data,
-                                   omsi_unsigned_int    n_zero_crossings)
+                                    omsi_unsigned_int    n_zero_crossings)
 {
     /* Variables */
-    omsi_int i;
+    omsi_unsigned_int i;
 
     for (i=0; i<n_zero_crossings; i++) {
         sim_data->pre_zerocrossings_vars[i] = sim_data->zerocrossings_vars[i];
