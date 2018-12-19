@@ -54,6 +54,7 @@
 omsi_callback_functions* global_callback;
 omsi_string global_instance_name;
 omsi_bool*  global_logCategories;
+ModelState* global_model_state;
 
 #define UNUSED(x) (void)(x)     /* ToDo: delete later */
 
@@ -88,7 +89,8 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
                          const omsi_callback_functions*         functions,
                          omsi_template_callback_functions_t*    template_functions,
                          omsi_bool                              __attribute__((unused)) visible,
-                         omsi_bool                              loggingOn)
+                         omsi_bool                              loggingOn,
+                         ModelState*                            model_state)
 {
     /* Variables */
     omsi_int i;
@@ -137,6 +139,9 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
         return NULL;
     }
 
+    /* Set model state to be pointer to OSU model state */
+    osu_data->state = model_state;
+
     /* Set logCategories an loggingOn*/
     for (i = 0; i < NUMBER_OF_CATEGORIES; i++) { /* set all categories to on or off */
         osu_data->logCategories[i] = loggingOn;
@@ -147,6 +152,7 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
     global_callback = (omsi_callback_functions*) functions;
     global_instance_name = instanceName;
     global_logCategories = osu_data->logCategories;
+    global_model_state = osu_data->state;
 
     /* check fmuResourceLocation for network path e.g. starting with "file://" */
     omsi_resource_location = omsi_strdup(fmuResourceLocation);

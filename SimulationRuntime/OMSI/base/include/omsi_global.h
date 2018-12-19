@@ -46,6 +46,8 @@ extern omsi_callback_functions* global_callback;
 extern  omsi_string global_instance_name;
 extern omsi_bool*  global_logCategories;
 
+/* global pointer to model state */
+extern ModelState* global_model_state;
 
 #ifdef __cplusplus
 }  /* end of extern "C" { */

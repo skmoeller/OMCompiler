@@ -118,7 +118,7 @@ typedef struct omsi_callback_functions{
     const omsi_callback_allocate_memory allocateMemory;         /**< Allocate memory function */
     const omsi_callback_free_memory     freeMemory;             /**< Free memory function */
     const omsi_step_finished            stepFinished;           /**< Communication function for slaves */
-    void*                               componentEnvironment;   /**< Pointer to OMSU component environment. */
+    void*                               componentEnvironment;   /**< Pointer to component environment (not the OSU) */
 }omsi_callback_functions;
 
 

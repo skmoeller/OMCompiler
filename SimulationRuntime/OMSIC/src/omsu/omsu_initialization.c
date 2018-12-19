@@ -104,8 +104,8 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     initialize_start_function(OSU->osu_functions);      /* ToDo: At the moment only for static compilation */
 
     /* Call OMSIBase function for initialization of osu_data */
-    OSU->osu_data = omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, OSU->osu_functions, visible, loggingOn);
-    if (OSU->osu_data == NULL) {
+    OSU->osu_data = omsi_instantiate(instanceName, fmuType, fmuGUID, fmuResourceLocation, functions, OSU->osu_functions, visible, loggingOn, &OSU->state);
+    if (OSU->osu_data == NULL || OSU->state==modelError) {
         omsu_free_osu(OSU);
         filtered_base_logger(global_logCategories, log_statusfatal, omsi_error,
                 "Could not instantiate OSU component.");
@@ -135,6 +135,7 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     OSU->loggingOn = &OSU->osu_data->loggingOn;
 
     /* Set state and log informations */
+    OSU->osu_data->state = &OSU->state;
     OSU->state = modelInstantiated;
     filtered_base_logger(global_logCategories, log_all, omsi_ok,
             "fmi2Instantiate: GUID=%s", fmuGUID);
@@ -190,6 +191,9 @@ omsi_status omsi_exit_initialization_mode(osu_t* OSU) {
         return omsi_error;
     filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
             "fmi2ExitInitializationMode: ....");
+
+    /* Set zero crossings */
+    OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
 
     OSU->state = modelEventMode;
     filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,

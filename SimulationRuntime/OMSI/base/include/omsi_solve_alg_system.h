@@ -70,6 +70,9 @@ omsi_int omsi_residual_wrapper (omsi_real*   x_data,
                                    omsi_real*   fval_data,
                                    void*        data);
 
+omsi_int omsi_update_guess (solver_data*                solver,
+                            omsi_algebraic_system_t*    alg_system_data);
+
 #ifdef __cplusplus
 }
 #endif

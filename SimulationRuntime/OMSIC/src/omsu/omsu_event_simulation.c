@@ -61,24 +61,25 @@ omsi_status omsi_enter_event_mode(osu_t* OSU) {
  * Computes event indicators at current time instant and for the current states.
  */
 omsi_status omsi_get_event_indicators(osu_t*            OSU,
-                                      omsi_real         eventIndicators[],
-                                      omsi_unsigned_int ni) {               /* number of event indicators */
-
-    /* threadData_t *threadData = OSU->threadData; */
+                                      omsi_real*        event_indicators,
+                                      omsi_unsigned_int n_event_indicators)
+{
     /* Variables */
-
-    UNUSED(eventIndicators);
+    omsi_unsigned_int i;
 
     /* According to FMI RC2 specification fmi2GetEventIndicators should only be
      * allowed in Event Mode, Continuous-Time Mode & terminated. The following code
      * is done only to make the FMUs compatible with Dymola because Dymola is
      * trying to call fmi2GetEventIndicators after fmi2EnterInitializationMode.
      */
-    if (invalidState(OSU, "fmi2GetEventIndicators", modelInstantiated|modelInitializationMode|modelEventMode|modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
+    if (invalidState(OSU, "fmi2GetEventIndicators",
+            modelInstantiated|modelInitializationMode|modelEventMode|
+            modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
         return omsi_error;
     }
     /* Check if number of event indicators ni is valid */
-    if (invalidNumber(OSU, "fmi2GetEventIndicators", "ni", ni, OSU->osu_data->model_data->n_zerocrossings)) {
+    if (invalidNumber(OSU, "fmi2GetEventIndicators", "n_event_indicators",
+            n_event_indicators, OSU->osu_data->model_data->n_zerocrossings)) {
         return omsi_error;
     }
 
@@ -94,22 +95,20 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
     /* ToDo: try */
     /* MMC_TRY_INTERNAL(simulationJumpBuffer)*/
 
-    /* Evaluate needed equations ToDo: is in FMI Standard but not really needed...
+    /* Evaluate needed equations */
     if (OSU->_need_update) {
         OSU->osu_data->sim_data->simulation->evaluate (OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
         OSU->_need_update = omsi_false;
-    }*/
-
-#if 0       /* ToDo: Add stuff */
-    /* Get event indicators */
-    OSU->osu_functions->function_ZeroCrossings(OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);
-    for (i = 0; i < ni; i++) {
-        eventIndicators[i] = OSU->osu_data->sim_data->zerocrossings_vars[i];
-        LOG_FILTER(OSU, LOG_ALL,
-            global_callback->logger(OSU, global_instance_name, omsi_ok, logCategoriesNames[LOG_ALL],
-            "fmi2GetEventIndicators: z%d = %.16g", i, eventIndicators[i]))
     }
-#endif
+
+    /* Get event indicators */
+    /*OSU->osu_functions->function_ZeroCrossings(OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->model_vars_and_params, NULL);*/
+    for (i=0; i<n_event_indicators; i++) {
+        event_indicators[i] = OSU->osu_data->sim_data->zerocrossings_vars[i];
+        filtered_base_logger(global_logCategories, log_events, omsi_ok,
+                        "fmi2GetEventIndicators: z%d = %.16g", i, event_indicators[i]);
+    }
+
     return omsi_ok;
 
     /* ToDo: catch */
@@ -126,7 +125,6 @@ omsi_status omsi_event_update(osu_t*              OSU,
 
     /* Variables */
     omsi_status status;
-    /* threadData_t *threadData = OSU->threadData; */
 
     if (nullPointer(OSU, "fmi2EventUpdate", "eventInfo", eventInfo)) {
         return omsi_error;
@@ -156,6 +154,7 @@ omsi_status omsi_event_update(osu_t*              OSU,
 
     /* ToDo: enable, when preValues are implemented */
     /* omsu_storePreValues(OSU->osu_data); */
+    omsu_update_pre_zero_crossings(OSU->osu_data->sim_data, OSU->osu_data->model_data->n_zerocrossings);
 
     /* ToDo: Add sample events */
 #if 0

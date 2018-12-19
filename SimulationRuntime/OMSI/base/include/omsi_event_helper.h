@@ -29,54 +29,30 @@
  */
 
 
-#ifndef OMSI_INITIALIZATION__H_
-#define OMSI_INITIALIZATION__H_
+#ifndef OMSI_EVENT_HELPER__H_
+#define OMSI_EVENT_HELPER__H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
+#include <assert.h>
 
 /* Public OMSI headers */
 #include <omsi.h>
-#include <omsi_callbacks.h>
-
-/* OMSIBase headers */
-#include <omsi_input_xml.h>
-#include <omsi_input_json.h>
-#include <omsi_input_sim_data.h>
-#include <omsi_input_model_variables.h>
 #include <omsi_utils.h>
 
-typedef struct modelDescriptionData {
-    omsi_char* modelName;
-} modelDescriptionData;
+
+/* Function prototypes */
+omsi_bool omsi_function_zero_crossings (omsi_function_t*    this_function,
+                                        omsi_bool           new_zero_crossing,
+                                        omsi_unsigned_int   index,
+                                        ModelState          model_state);
 
 
-/*! \fn omsi_me_instantiate
- *
- *  This function instantiates the osu instance.
- *
- *  \param [ref] [data]
- */
-omsi_t* omsi_instantiate(omsi_string                            instanceName,
-                         omsu_type                              fmuType,
-                         omsi_string                            fmuGUID,
-                         omsi_string                            fmuResourceLocation,
-                         const omsi_callback_functions*         functions,
-                         omsi_template_callback_functions_t*    template_functions,
-                         omsi_bool                              __attribute__((unused)) visible,
-                         omsi_bool                              loggingOn,
-                         ModelState*                            model_state);
-
-omsi_string omsi_get_model_name(omsi_string fmuResourceLocation);
-
-omsi_status omsi_intialize_callbacks(omsi_t*                                omsu,
-                                     omsi_template_callback_functions_t*    template_functions );
 #ifdef __cplusplus
 }
 #endif
 #endif
+

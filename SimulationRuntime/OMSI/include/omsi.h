@@ -303,9 +303,8 @@ typedef struct omsi_function_t {
     omsi_values* local_vars;                        /**< Pointer to local variables like seed variables and
                                                      *   and dummy derivative variables. */
 
-    omsi_bool* zerocrossings_vars;                  /**< Conditions of zerocrossing functions. */
-    omsi_bool* pre_zerocrossings_vars;              /**< Pre conditions of zerocrossing functions. */
-
+    omsi_real* zerocrossings_vars;                  /**< Conditions of zerocrossing functions. */
+    omsi_real* pre_zerocrossings_vars;              /**< Pre conditions of zerocrossing functions. */
 
     /** evaluate function
      * \param [in,out] this_function                Pointer to this `omsi_fucntion_t` struct.
@@ -318,6 +317,7 @@ typedef struct omsi_function_t {
     omsi_status (*evaluate) (struct omsi_function_t*    this_function,
                              const omsi_values*         read_only_vars_and_params,
                              void*                      data);
+
     omsi_index_type* input_vars_indices;    /* index to next higher omsi_values pointer */
     omsi_index_type* output_vars_indices;   /* e.g to sim_data_t->model_vars_and_params */
 
@@ -343,8 +343,8 @@ typedef struct sim_data_t{
     omsi_index_type* pre_vars_mapping;  /**< Mapping pre_vars to corresponding
                                          * variables in model_vars_and_params. */
 
-    omsi_bool* zerocrossings_vars;      /**< Conditions of zerocrossing functions. */
-    omsi_bool* pre_zerocrossings_vars;  /**< Pre conditions of zerocrossing functions. */
+    omsi_real* zerocrossings_vars;      /**< Conditions of zerocrossing functions. */
+    omsi_real* pre_zerocrossings_vars;  /**< Pre conditions of zerocrossing functions. */
 
     /* start indices to model_vars_and_params */
     omsi_unsigned_int inputs_real_index;    /*start index of input real variables */
@@ -514,6 +514,7 @@ typedef struct omsi_t {
 
     omsi_bool           logCategories[NUMBER_OF_CATEGORIES];    /* Containing information for filtered logger */
     omsi_bool           loggingOn;                              /* Set logging on or off*/
+    ModelState*         state;                                  /** Pointer to model state of OSU*/
 } omsi_t;
 
 

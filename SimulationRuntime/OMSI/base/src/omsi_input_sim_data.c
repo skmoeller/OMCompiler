@@ -190,7 +190,7 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
         return omsi_error;
     }
 
-    /* Allocate memory for initialization problem */
+    /* Allocate memory for initialization and simulation problem */
     omsu->sim_data->initialization = (omsi_function_t*) global_callback->allocateMemory(1, sizeof(omsi_function_t));
     if (!omsu->sim_data->initialization) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
@@ -205,17 +205,25 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
         return omsi_error;
     }
 
+    /* Instantiate function_vars in all omsi_functions */
     if (omsu_instantiate_omsi_function_func_vars(omsu->sim_data->simulation, omsu->sim_data->model_vars_and_params) != omsi_ok) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: in omsu_allocate_sim_data: Could not instantiate omsi_function variables.");
         return omsi_error;
     }
 
-
-    omsu->sim_data->zerocrossings_vars = NULL;
-    /*omsi_data->sim_data->zerocrossings_vars = (omsi_bool *) global_callback->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));*/
-    omsu->sim_data->pre_zerocrossings_vars = NULL;
-    /*omsi_data->sim_data->pre_zerocrossings_vars = (omsi_bool *) global_callback->allocateMemory(omsi_data->model_data->n_zerocrossings, sizeof(omsi_bool));*/
+    /* Allocate memory for zero crossings and set pointers in omsi_functions */
+    omsu->sim_data->zerocrossings_vars = (omsi_real *) global_callback->allocateMemory(omsu->model_data->n_zerocrossings, sizeof(omsi_real));
+    omsu->sim_data->pre_zerocrossings_vars = (omsi_real *) global_callback->allocateMemory(omsu->model_data->n_zerocrossings, sizeof(omsi_real));
+    if (!omsu->sim_data->zerocrossings_vars || !omsu->sim_data->pre_zerocrossings_vars) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory.");
+        return omsi_error;
+    }
+    omsu_set_zerocrossings_omsi_functions(omsu->sim_data->initialization,
+            omsu->sim_data->zerocrossings_vars, omsu->sim_data->pre_zerocrossings_vars);
+    omsu_set_zerocrossings_omsi_functions(omsu->sim_data->simulation,
+                omsu->sim_data->zerocrossings_vars, omsu->sim_data->pre_zerocrossings_vars);
 
     /* ToDo: Add error cases */
     return omsi_ok;
@@ -243,6 +251,37 @@ omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_f
             omsu_instantiate_omsi_function_func_vars(omsi_function->algebraic_system_t[i].functions, function_vars);
         }
     }
+
+    return omsi_ok;
+}
+
+
+omsi_status omsu_set_zerocrossings_omsi_functions (omsi_function_t* omsi_function,
+                                                   omsi_real*       pointer_to_zerocrossings_vars,
+                                                   omsi_real*       pointer_to_pre_zerocrossings_vars)
+{
+    /* Variables */
+    omsi_unsigned_int i;
+
+    if (omsi_function==NULL) {
+        filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
+                "fmi2Instantiate: Error in function omsu_set_zerocrossings_omsi_functions.");
+        return omsi_error;
+    }
+
+    omsi_function->zerocrossings_vars = pointer_to_zerocrossings_vars;
+    omsi_function->pre_zerocrossings_vars = pointer_to_pre_zerocrossings_vars;
+
+    /* ToDo: Do for all alg systesm recursevly */
+    for (i=0; i<omsi_function->n_algebraic_system; i++){
+        omsu_set_zerocrossings_omsi_functions (omsi_function->algebraic_system_t[i].functions,
+                pointer_to_zerocrossings_vars,
+                pointer_to_pre_zerocrossings_vars);
+        omsu_set_zerocrossings_omsi_functions (omsi_function->algebraic_system_t[i].jacobian,
+                pointer_to_zerocrossings_vars,
+                pointer_to_pre_zerocrossings_vars);
+    }
+
 
     return omsi_ok;
 }

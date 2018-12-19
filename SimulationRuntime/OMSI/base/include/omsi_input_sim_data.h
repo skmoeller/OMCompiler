@@ -66,6 +66,10 @@ omsi_status omsu_allocate_sim_data(omsi_t* omsi_data, const omsi_callback_functi
 omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_function,
                                             omsi_values*        function_vars);
 
+omsi_status omsu_set_zerocrossings_omsi_functions (omsi_function_t* omsi_function,
+                                                   omsi_real*       pointer_to_zerocrossings_vars,
+                                                   omsi_real*       pointer_to_pre_zerocrossings_vars);
+
 omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars);
 
 omsi_algebraic_system_t* omsu_instantiate_alg_system_array (omsi_unsigned_int n_algebraic_system);

@@ -240,6 +240,16 @@ omsi_status omsi_set_debug_logging(osu_t*               OSU,
     return omsi_ok;
 }
 
+/**
+ * \brief Returns model state of OSU.
+ *
+ * @return
+ */
+ModelState omsic_get_model_state (void)
+{
+    return *global_model_state;
+}
+
 
 /*
  * Checks for discrete changes.
@@ -267,6 +277,26 @@ omsi_bool omsu_discrete_changes(osu_t*  OSU,
 void omsu_storePreValues(omsi_t* omsi_data) {
 
     omsu_copy_values(omsi_data->sim_data->pre_vars, omsi_data->sim_data->model_vars_and_params);
+}
+
+
+/**
+ * \breif Update values of `pre_zero_crossing` array.
+ *
+ * \param sim_data
+ * \param n_zero_crossings
+ */
+void omsu_update_pre_zero_crossings(sim_data_t*          sim_data,
+                                   omsi_unsigned_int    n_zero_crossings)
+{
+    /* Variables */
+    omsi_int i;
+
+    for (i=0; i<n_zero_crossings; i++) {
+        sim_data->pre_zerocrossings_vars[i] = sim_data->zerocrossings_vars[i];
+    }
+
+
 }
 
 

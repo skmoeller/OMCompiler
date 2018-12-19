@@ -83,10 +83,15 @@ omsi_status omsi_set_debug_logging(osu_t*               OSU,
                                    omsi_unsigned_int    nCategories,
                                    const omsi_string    categories[]);
 
+ModelState omsic_get_model_state (void);
+
 omsi_bool omsu_discrete_changes(osu_t*  OSU,
                                 void*   threadData);
 
 void omsu_storePreValues(omsi_t* omsi_data);
+
+void omsu_update_pre_zero_crossings(sim_data_t*          sim_data,
+                                   omsi_unsigned_int    n_zero_crossings);
 
 omsi_bool omsu_values_equal(omsi_values*    vars_1,
                             omsi_values*    vars_2);

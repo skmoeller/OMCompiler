@@ -15,6 +15,7 @@ ENDIF(MSVC)
 
 include_directories ("${CMAKE_SOURCE_DIR}/base/include" "${CMAKE_SOURCE_DIR}/solver/include")
 add_library(${OSUBaseName}
+  src/omsi_event_helper.c
   src/omsi_initialization.c
   src/omsi_input_json.c
   src/omsi_input_model_variables.c
@@ -36,6 +37,7 @@ ENDIF(WIN32)
 install(TARGETS ${OSUBaseName} DESTINATION ${LIBINSTALLEXT})
 
 install(FILES
+  ${CMAKE_SOURCE_DIR}/base/include/omsi_event_helper.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_global.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_initialization.h
   ${CMAKE_SOURCE_DIR}/base/include/omsi_input_json.h

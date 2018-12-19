@@ -5345,7 +5345,12 @@ case rel as RELATION(__) then
       if intEq(rel.index,-1) then
         res
       else
-        'functionZC(this_function, <%res%>, <%rel.index%>, eventMode)'
+        match  Config.simCodeTarget()
+          case "omsic" then
+            'omsi_function_zero_crossings(this_function, <%res%>, <%rel.index%>, omsic_get_model_state())'
+          case "omsicpp" then
+            'omsi_function_zero_crossings(this_function, <%res%>, <%rel.index%>, omsicpp_get_event_mode())'
+        end match
   case DAE_MODE_CONTEXT(__)
   case SIMULATION_CONTEXT(__) then
     match rel.optionExpisASUB
