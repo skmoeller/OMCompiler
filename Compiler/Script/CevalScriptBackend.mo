@@ -3536,10 +3536,16 @@ algorithm
   logfile := filenameprefix + ".log";
   dir := fmutmp+"/sources/";
 
-  for platform in platforms loop
-    configureFMU(platform, fmutmp, System.realpath(fmutmp)+"/resources/"+System.stringReplace(listGet(Util.stringSplitAtChar(platform," "),1),"/","-")+".log", isWindows);
-    ExecStat.execStat("buildModelFMU: Generate platform " + platform);
-  end for;
+  if not Config.simCodeTarget() == "omsic" then
+    for platform in platforms loop
+      try
+        configureFMU(platform, fmutmp, System.realpath(fmutmp)+"/resources/"+System.stringReplace(listGet(Util.stringSplitAtChar(platform," "),1),"/","-")+".log", isWindows);
+        ExecStat.execStat("buildModelFMU: Generate platform " + platform);
+      else
+        Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Configure for platform:\"" + platform + "\" does not exist"});
+      end try;
+    end for;
+  end if;
 
   cmd := "rm -f \"" + fmuTargetName + ".fmu\" && cd \"" +  fmutmp + "\" && zip -r \"../" + fmuTargetName + ".fmu\" *";
   if 0 <> System.systemCall(cmd, outFile=logfile) then
@@ -5035,7 +5041,12 @@ algorithm
         end if;
         if success then
           try
-            CevalScript.compileModel(filenameprefix, libs);
+            if Config.simCodeTarget() == "omsic" then
+              CevalScript.compileModel(filenameprefix + "_FMU", libs);
+              filenameprefix := filenameprefix + "_me_FMU";
+            else
+              CevalScript.compileModel(filenameprefix, libs);
+            end if;
           else
             success := false;
           end try;

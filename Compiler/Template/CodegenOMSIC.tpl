@@ -194,14 +194,12 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
 
     .PHONY: clean
 
-    all: <%fileNamePrefix%>_FMU
+    all: compile
 
     <%fileNamePrefix%>_FMU : compile
     <%\t%>cd <%fileNamePrefix%>.fmutmp; \
     <%\t%>zip<%makefileParams.exeext%> -r ../<%fileNamePrefix%>.fmu *;\
     <%\t%>cd ..;\
-    <%\t%>rm -rf <%fileNamePrefix%>.fmutmp
-
 
     copyFiles: makeStructure
     <%\t%># Basic OMSI and OMSIC files
@@ -231,6 +229,9 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
 
     %.o : %.c copyFiles
     <%\t%>$(CC) $(CFLAGS) -I$(INCLUDE_DIR_OMSI)  -I$(INCLUDE_DIR_OMSI_BASE) -I$(INCLUDE_DIR_OMSI_SOLVER) -I$(INCLUDE_DIR_OMSI_FMI2) -I$(INCLUDE_DIR_OMSIC) -I$(INCLUDE_DIR_OMSIC_FMI2) -c $<
+
+    createSimulation: <%fileNamePrefix%>_FMU
+    <%\t%>omc <%fileNamePrefix%>_simulation.mos
 
     clean:
     <%\t%>rm -f <%fileNamePrefix%><%makefileParams.dllext%>
@@ -437,6 +438,22 @@ template createMakefileIn(SimCode simCode, String target, String FileNamePrefix,
 
 end createMakefileIn;
 
+
+template createSimulationScript(String FileNamePrefix)
+""
+::=
+<<
+importFMU("<%FileNamePrefix%>.fmu");
+getErrorString();
+setCommandLineOptions("--simCodeTarget=C");
+
+loadFile("<%FileNamePrefix%>_me_FMU.mo");
+getErrorString();
+buildModel(<%FileNamePrefix%>_me_FMU);
+getErrorString();
+
+>>
+end createSimulationScript;
 
 annotation(__OpenModelica_Interface="backend");
 end CodegenOMSIC;

@@ -3580,9 +3580,6 @@ template crefToOMSICStr(ComponentRef cref, HashTableCrefSimVar.HashTable hashTab
       case v as SIMVAR(index=-2) then
         match cref2simvar(cref, getSimCode())
           case v as SIMVAR(__) then
-
-          //let bla = crefToCStr(cref, index, false, false)
-
           let index = getValueReference(v, getSimCode(), false)
           let c_comment = '/* <%CodegenUtil.escapeCComments(CodegenUtil.crefStrNoUnderscore(v.name))%> <%CodegenUtil.variabilityString(varKind)%> */'
            <<

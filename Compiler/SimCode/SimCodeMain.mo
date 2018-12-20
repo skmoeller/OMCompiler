@@ -542,13 +542,21 @@ algorithm
           generatedObjects := AvlSetString.add(generatedObjects, "OMCpp" + simCode.fileNamePrefix + str);
         end for;
       then ();
-   case "omsicpp"
+
+    case "omsicpp"
       algorithm
         callTargetTemplatesOMSICpp(simCode);
         for str in {"CalcHelperMain.o\n",".so\n"} loop
           generatedObjects := AvlSetString.add(generatedObjects, "OMCpp" + simCode.fileNamePrefix + str);
         end for;
       then ();
+
+    case "omsic"
+      algorithm
+        runTplWriteFile(func = function CodegenOMSIC.createSimulationScript(a_FileNamePrefix=simCode.fileNamePrefix), file=simCode.fileNamePrefix+"_simulation.mos");
+        callTargetTemplatesFMU(simCode, target, "2.0", "me");
+      then ();
+
     case "Adevs" equation
       Tpl.tplNoret(CodegenAdevs.translateModel, simCode);
     then ();
