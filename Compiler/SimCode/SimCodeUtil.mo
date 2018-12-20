@@ -4003,7 +4003,7 @@ function generateSingleEquation
   output list<SimCodeVar.SimVar> innerVars = {};
   input output Integer uniqueEqIndex;
 protected
-  constant Boolean debug = true;
+  constant Boolean debug = false;
 algorithm
   _ := match (eqn)
     local
@@ -4074,17 +4074,17 @@ algorithm
 
     // when equation
     case BackendDAE.WHEN_EQUATION(whenEquation=whenEquation, source=source, attr=eqAttr) algorithm
-      BackendDump.printEquation(eqn);
       BackendDAE.WHEN_STMTS(cond, whenStmtLst, oelseWhen) := whenEquation;
       if isSome(oelseWhen) then /* else when not suported */
         Error.addInternalError("Else when equation not implemented in SimCodeUtil.generateSingleEquation", sourceInfo());
         fail();
       end if;
-      uniqueEqIndex := uniqueEqIndex+1;
+
       (conditions, initialCall) := BackendDAEUtil.getConditionList(cond);
 
       tmpSimEqLst := {SimCode.SES_WHEN(uniqueEqIndex, conditions, initialCall,
                                     whenStmtLst, NONE(), source, eqAttr)};
+      uniqueEqIndex := uniqueEqIndex+1;
       newSimVar := dlowvarToSimvar(var, NONE(), BackendVariable.emptyVars(0));
 
       if debug then

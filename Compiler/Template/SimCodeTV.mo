@@ -3358,6 +3358,11 @@ package ComponentReference
     output DAE.ComponentRef outCref;
   end crefPrefixPrevious;
 
+  function crefPrefixPre
+    input DAE.ComponentRef inCref;
+    output DAE.ComponentRef outCref;
+  end crefPrefixPre;
+
   function crefPrefixDer
     input DAE.ComponentRef inCref;
     output DAE.ComponentRef outCref;

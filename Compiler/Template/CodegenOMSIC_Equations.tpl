@@ -139,6 +139,11 @@ template equationCStr(SimEqSystem eq, Text &varDecls, Text &auxFunction, Context
     <%preExp%>
     *res = <%expPart%>;
     >>
+  case SES_WHEN(__) then
+    let whenEq = equationWhen(eq, context, &varDecls, &auxFunction)
+    <<
+    <%whenEq%>
+    >>
   else
     <<
     NOT IMPLEMENTED YET Error in function equationCStr in template CodegenOMSIC_Equations
@@ -150,7 +155,8 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr,String modelFunc
  "Generates call function for evaluating functions"
 ::=
   match eq
-  case SES_SIMPLE_ASSIGN(__) then
+  case SES_SIMPLE_ASSIGN(__)
+  case SES_WHEN(__) then
     let i = index
     match  Config.simCodeTarget()
     case "omsic" then
@@ -294,6 +300,49 @@ template generateDereivativeMatrixColumnCall(OMSIFunction column, String modelNa
   }
   >>
 end generateDereivativeMatrixColumnCall;
+
+/***************************************
+*
+* Handling of When-Equations
+*
+****************************************/
+
+template equationWhen(SimEqSystem eq, Context context, Text &varDecls, Text &auxFunction)
+ "Generates a when equation."
+::=
+  match eq
+    case SES_WHEN(whenStmtLst = whenStmtLst, conditions=conditions, elseWhen=NONE()) then
+      let helpIf = if not listEmpty(conditions) then (conditions |> cr =>
+            '(<%CodegenCFunctions.crefOMSI(cr, context)%> && !<%CodegenCFunctions.crefOMSI(ComponentReference.crefPrefixPre(cr), context)%> /* edge */)'
+            ;separator=" || ") else '0'
+      // TODO: convert whenOperators to SImEqSystems
+      let assign = ( whenStmtLst |>  stmt =>
+                match stmt
+                case ASSIGN(left=left, right=right) then
+                  let &preExp = buffer ""
+                  let lhs = CodegenCFunctions.daeExp(left, context, &preExp, &varDecls, &auxFunction)
+                  let rhs = CodegenCFunctions.daeExp(right, context, &preExp, &varDecls, &auxFunction)
+                  <<
+                    <%preExp%>
+                    <%lhs%> = <%rhs%>;
+                  >>
+                else
+                  <<
+                  TODO: when expression not supported yet
+                  >>
+                //end match
+              ;separator="\n")
+      <<
+      if(<%helpIf%>)
+      {
+        <%assign%>
+      }
+      >>
+    else
+      <<
+      TODO: Implement elsewhen
+      >>
+end equationWhen;
 
 
 annotation(__OpenModelica_Interface="backend");

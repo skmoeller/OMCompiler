@@ -202,10 +202,16 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix, omsiName)
         let () = textFile(content, FileNamePrefix+"_"+omsiName+"_algSyst_"+ algSystem.algSysIndex + ".c")
         <<>>
+      case whenEq as SES_WHEN(__) then
+        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix,modelFunctionnamePrefixStr, context, &functionPrototypes) +"\n"
+        let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix,modelFunctionnamePrefixStr, '<%funcCallArgName%>, model_vars_and_params', omsiName) +"\n"
+        <<>>
       else
         // NOT IMPLEMENTED YET
         // ToDo: add yl
-        <<>>
+        <<
+        TODO: Equation not implemented
+        >>
       end match
     )
 
@@ -228,8 +234,7 @@ template generateOmsiMemberFunction(OMSIFunction omsiFunction, String FileNamePr
         ""
       else
         // NOT IMPLEMENTED YET
-        // ToDo: add Error
-        ""
+        "ToDo: Fix this ERROR!"
       end match
     )
 
