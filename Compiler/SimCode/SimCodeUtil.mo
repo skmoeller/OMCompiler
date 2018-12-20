@@ -3817,6 +3817,13 @@ algorithm
         generateSingleEquation(eqn, var, shared.functionTree, uniqueEqIndex);
     then ();
 
+    // case for singe when equations
+    case BackendDAE.SINGLEWHENEQUATION() equation
+      ({eqn}, {var}, _) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
+      (tmpEqns, tmpInputVars, tmpOutputVars, tmpInnerVars, uniqueEqIndex) =
+        generateSingleEquation(eqn, var, shared.functionTree, uniqueEqIndex);
+    then();
+
     // case for torn systems of equations
     case BackendDAE.TORNSYSTEM(strictTearingSet = 
            BackendDAE.TEARINGSET(tearingvars=tearingVars, residualequations=residualEqns, innerEquations=innerEquations, jac=jacobian),
@@ -3953,7 +3960,8 @@ algorithm
     // error case
     else algorithm
       Error.addInternalError(" - case for component "+ BackendDump.printComponent(component) + " not implemented in SimCodeUtil.createAllEquationOMSI", sourceInfo());
-      then ();
+      fail();
+      then();
     end match;
 
     // append OMSI_FUNCTION data
@@ -3995,22 +4003,27 @@ function generateSingleEquation
   output list<SimCodeVar.SimVar> innerVars = {};
   input output Integer uniqueEqIndex;
 protected
-  constant Boolean debug = false;
+  constant Boolean debug = true;
 algorithm
   _ := match (eqn)
     local
       DAE.Exp lhs, rhs, resolvedExp, varExp;
       DAE.ElementSource source;
       BackendDAE.EquationAttributes eqAttr;
+      BackendDAE.WhenEquation whenEquation;
+      DAE.Exp cond;
+      list<BackendDAE.WhenOperator> whenStmtLst;
+      Option<BackendDAE.WhenEquation> oelseWhen;
 
       list<SimCode.SimEqSystem> tmpSimEqLst;
       SimCodeVar.SimVar newSimVar;
       list<BackendDAE.Equation> solveEqns;
       list<DAE.Statement> asserts;
-      list<DAE.ComponentRef> solveCr;
+      list<DAE.ComponentRef> solveCr, conditions;
       DAE.ComponentRef cr;
 
       String str;
+      Boolean initialCall;
 
     // single equation
     case BackendDAE.EQUATION(exp=lhs, scalar=rhs, source=source, attr=eqAttr)
@@ -4046,10 +4059,10 @@ algorithm
 
           // add der(newSimVar) to outputVars if newSimVar is state
           if BackendVariable.isStateVar(var) then
-            outputVars :=  listAppend({derVarFromStateVar(newSimVar)}, outputVars);
+            outputVars := listAppend({derVarFromStateVar(newSimVar)}, outputVars);
             inputVars := listAppend({newSimVar}, inputVars);
           else
-            outputVars :=  listAppend({newSimVar}, outputVars);
+            outputVars := listAppend({newSimVar}, outputVars);
           end if;
 
         else
@@ -4058,6 +4071,33 @@ algorithm
           fail();
         end try;
     then ();
+
+    // when equation
+    case BackendDAE.WHEN_EQUATION(whenEquation=whenEquation, source=source, attr=eqAttr) algorithm
+      BackendDump.printEquation(eqn);
+      BackendDAE.WHEN_STMTS(cond, whenStmtLst, oelseWhen) := whenEquation;
+      if isSome(oelseWhen) then /* else when not suported */
+        Error.addInternalError("Else when equation not implemented in SimCodeUtil.generateSingleEquation", sourceInfo());
+        fail();
+      end if;
+      uniqueEqIndex := uniqueEqIndex+1;
+      (conditions, initialCall) := BackendDAEUtil.getConditionList(cond);
+
+      tmpSimEqLst := {SimCode.SES_WHEN(uniqueEqIndex, conditions, initialCall,
+                                    whenStmtLst, NONE(), source, eqAttr)};
+      newSimVar := dlowvarToSimvar(var, NONE(), BackendVariable.emptyVars(0));
+
+      if debug then
+        print("generateWhenEquation:\n");
+        dumpSimEqSystemLst(tmpSimEqLst, "\n");
+        dumpVarLst({newSimVar},"newSimVar");
+      end if;
+
+      equations := listAppend(equations, tmpSimEqLst);
+      outputVars := listAppend({newSimVar}, outputVars);
+    then();
+
+    // no matched equation
     else equation
       str = BackendDump.equationString(eqn);
       Error.addInternalError("- " + str + " not implemented SimCodeUtil.generateSingleEquation", sourceInfo());
