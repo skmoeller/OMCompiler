@@ -253,14 +253,12 @@ omsi_status omsi_intialize_callbacks(omsi_t*                                omsu
     /* Set up initialization problem. */
     omsu_setup_sim_data_omsi_function(omsu->sim_data,
                                       "initialization",
-                                      template_functions->initialize_initialization_problem,
-                                      omsu->sim_data->model_vars_and_params);
+                                      template_functions->initialize_initialization_problem);
 
     /* Set up simulation problem */
     omsu_setup_sim_data_omsi_function(omsu->sim_data,
                                       "simulation",
-                                      template_functions->initialize_simulation_problem,
-                                      omsu->sim_data->model_vars_and_params);
+                                      template_functions->initialize_simulation_problem);
 
     return omsi_ok;
 }

@@ -106,8 +106,7 @@ omsi_status omsu_setup_sim_data(omsi_t*                             omsi_data,
  */
 omsi_status omsu_setup_sim_data_omsi_function(sim_data_t*                   sim_data,
                                               omsi_string                   function_name,
-                                              omsu_initialize_omsi_function template_instantiate_function,
-                                              omsi_values*                  function_vars) {
+                                              omsu_initialize_omsi_function template_instantiate_function) {
 
     /* Variables */
     omsi_function_t* omsi_function;
@@ -133,7 +132,7 @@ omsi_status omsu_setup_sim_data_omsi_function(sim_data_t*                   sim_
     }
 
     /* Set function variables. Either local copy or pointer to global model_vars_and_params*/
-    if (omsu_instantiate_omsi_function_func_vars(omsi_function, function_vars)==omsi_error) {
+    if (omsu_instantiate_omsi_function_func_vars(omsi_function, sim_data->model_vars_and_params, sim_data->pre_vars)==omsi_error) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Error while instantiating function variables of sim_data->simulation.");
         return omsi_error;
@@ -205,8 +204,8 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
         return omsi_error;
     }
 
-    /* Instantiate function_vars in all omsi_functions */
-    if (omsu_instantiate_omsi_function_func_vars(omsu->sim_data->simulation, omsu->sim_data->model_vars_and_params) != omsi_ok) {
+    /* Instantiate function_vars and pre_vars in all omsi_functions */
+    if (omsu_instantiate_omsi_function_func_vars(omsu->sim_data->simulation, omsu->sim_data->model_vars_and_params, omsu->sim_data->pre_vars) != omsi_ok) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: in omsu_allocate_sim_data: Could not instantiate omsi_function variables.");
         return omsi_error;
@@ -234,7 +233,8 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
  * Instantiate omsi_function_t function_vars.
  */
 omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_function,
-                                                      omsi_values*        function_vars) {
+                                                      omsi_values*        function_vars,
+                                                      omsi_values*        pre_vars) {
 
     /* Variables */
     omsi_unsigned_int i;
@@ -243,12 +243,16 @@ omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_f
     if (function_vars==NULL) {
         omsi_function->function_vars = NULL;
     }
-    else {  /* share function_vars with sim_data->global model_vars_and_params */
+    else if (pre_vars==NULL) {
+        omsi_function->pre_vars = NULL;
+    }
+    else {  /* share function_vars with sim_data->model_vars_and_params and pre_vars with sim_data->pre_vars */
         omsi_function->function_vars = function_vars;
-        /* Set function_vars recursive on all sub omsi_functions. */
+        omsi_function->pre_vars = pre_vars;
+        /* Set function_vars and pre_vars recursive on all sub omsi_functions. */
         for(i=0; i<omsi_function->n_algebraic_system; i++) {
-            omsu_instantiate_omsi_function_func_vars(omsi_function->algebraic_system_t[i].jacobian, function_vars);
-            omsu_instantiate_omsi_function_func_vars(omsi_function->algebraic_system_t[i].functions, function_vars);
+            omsu_instantiate_omsi_function_func_vars(omsi_function->algebraic_system_t[i].jacobian, function_vars, pre_vars);
+            omsu_instantiate_omsi_function_func_vars(omsi_function->algebraic_system_t[i].functions, function_vars, pre_vars);
         }
     }
 
@@ -290,7 +294,8 @@ omsi_status omsu_set_zerocrossings_omsi_functions (omsi_function_t* omsi_functio
  * Allocates memory for omsi_function_t struct without inner algebraic system.
  * Called from generated code.
  */
-omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars) {
+omsi_function_t* omsu_instantiate_omsi_function (omsi_values*   function_vars,
+                                                 omsi_values*   pre_vars) {
 
     omsi_function_t* function;
 
@@ -304,7 +309,7 @@ omsi_function_t* omsu_instantiate_omsi_function (omsi_values* function_vars) {
     function->algebraic_system_t = NULL;
     function->local_vars = NULL;
 
-    omsu_instantiate_omsi_function_func_vars(function, function_vars);
+    omsu_instantiate_omsi_function_func_vars(function, function_vars, pre_vars);
 
     return function;
 }

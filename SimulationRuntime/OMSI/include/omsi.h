@@ -300,6 +300,10 @@ typedef struct omsi_function_t {
                                                      *   Either local copy of needed variables for evaluation or
                                                      *   pointer to next higher struct with `omsi_values` array. */
 
+    omsi_values* pre_vars;                          /**< Pointer to pre values of `function_vars`
+                                                     *   Either local copy of needed variables for evaluation or
+                                                     *   pointer to next higher struct with `omsi_values` array. */
+
     omsi_values* local_vars;                        /**< Pointer to local variables like seed variables and
                                                      *   and dummy derivative variables. */
 

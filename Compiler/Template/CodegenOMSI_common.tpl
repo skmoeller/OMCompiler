@@ -437,14 +437,14 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
   match equationSystem
   case SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__)) then
 
-    let &functionPrototypes += <<omsi_status <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars);<%\n%>>>
+    let &functionPrototypes += <<omsi_status <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars, omsi_values* pre_vars);<%\n%>>>
 
     let zeroCrossingIndices = (zeroCrossingConditions |> cond =>
       '<%cond%>'
     ;separator=", ")
     <<
     /* Function instantiate omsi_algebraic_system_t struct */
-    omsi_status <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars) {
+    omsi_status <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars, omsi_values* pre_vars) {
       algSystem->n_iteration_vars = <%listLength(residual.outputVars)%>;
 
       algSystem->n_conditions = <%listLength(zeroCrossingConditions)%>;
@@ -457,7 +457,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       algSystem->isLinear = <% if linearSystem then 'omsi_true' else 'omsi_false'%>;
 
       /* Instantiate omsi_function_t jacobian */
-      algSystem->jacobian = omsu_instantiate_omsi_function (function_vars);
+      algSystem->jacobian = omsu_instantiate_omsi_function (function_vars, pre_vars);
       if (!algSystem->jacobian) {
         return omsi_error;
       }
@@ -466,7 +466,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       }
 
       /* Instantiate omsi_function_t function */
-      algSystem->functions = omsu_instantiate_omsi_function (function_vars);
+      algSystem->functions = omsu_instantiate_omsi_function (function_vars, pre_vars);
       if (!algSystem->functions) {
         return omsi_error;
       }
@@ -634,7 +634,7 @@ template generateAlgebraicSystemInstantiation (String FileNamePrefix, Integer nA
     match equation
       case SES_ALGEBRAIC_SYSTEM(__) then
       <<
-      <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(&(omsi_function->algebraic_system_t[<%i0%>]), omsi_function->function_vars);
+      <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(&(omsi_function->algebraic_system_t[<%i0%>]), omsi_function->function_vars, omsi_function->pre_vars);
       if (!&omsi_function->algebraic_system_t[<%i0%>]) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
             "fmi2Instantiate: Function <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%> failed.");
