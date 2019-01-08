@@ -12980,12 +12980,18 @@ algorithm
       // resolve aliases to get multi-dimensional arrays right
       // (this should possibly be done in getVarIndexByMapping?)
       simVar := match inSimVar
+        local
+          DAE.ComponentRef componentRef;
         case SimCodeVar.SIMVAR(aliasvar = SimCodeVar.ALIAS(varName = cref))
           then cref2simvar(cref, inSimCode);
         case SimCodeVar.SIMVAR(aliasvar = SimCodeVar.NEGATEDALIAS(varName = cref))
           then cref2simvar(cref, inSimCode);
+        // resolve pre vars
+        case SimCodeVar.SIMVAR(name = DAE.CREF_QUAL(ident=DAE.preNamePrefix, componentRef=componentRef))
+          then cref2simvar(componentRef, inSimCode);
         else inSimVar;
       end match;
+
       valueReference := getVarIndexByMapping(inSimCode.varToArrayIndexMapping, simVar.name, true, "-1");
       if stringEqual(valueReference, "-1") then
         Error.addInternalError("invalid return value from getVarIndexByMapping for " + simVarString(simVar), sourceInfo());
