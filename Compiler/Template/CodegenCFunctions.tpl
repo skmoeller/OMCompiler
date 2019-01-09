@@ -6075,7 +6075,13 @@ simple_alloc_1d_base_array(&<%tvar%>, <%nElts%>, <%tvardata%>);
     daeExp(e1, context, &preExp, &varDecls, &auxFunction)
 
   case CALL(path=IDENT(name="sample"), expLst={ICONST(integer=index), _, _}) then
-    'data->simulationInfo->samples[<%intSub(index, 1)%>]'
+    match Config.simCodeTarget()
+      case "omsic"
+      case "omsicpp" then
+        'omsi_on_sample_event(this_function->function_vars->time_value, &this_function->sample_events[<%intSub(index,1)%>])'
+      else
+        'data->simulationInfo->samples[<%intSub(index, 1)%>]'
+    end match
 
   case CALL(path=IDENT(name="anyString"), expLst={e1}) then
     'mmc_anyString(<%daeExp(e1, context, &preExp, &varDecls, &auxFunction)%>)'
