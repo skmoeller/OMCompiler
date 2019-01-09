@@ -4485,7 +4485,13 @@ end daeExp;
  "Generates code for a simple literal expression."
 ::=
   match exp
-  case e as ICONST(__)          then '((modelica_integer) <%integer%>)' /* Yes, we need to cast int to long on 64-bit arch... */
+  case e as ICONST(__)          then
+     let int_type = match Config.simCodeTarget()
+         case "omsic"
+         case "omsicpp" then "omsi_int"
+         else "modelica_integer"
+       end match
+     '((<%int_type%>) <%integer%>)' /* Yes, we need to cast int to long on 64-bit arch... */
   case e as RCONST(__)          then real
   case e as BCONST(__)          then boolStrC(bool)
   case e as ENUM_LITERAL(__)    then index
@@ -7100,12 +7106,35 @@ end crefShortType;
 
 template varArrayNameValues(SimVar var, Integer ix, Boolean isPre, Boolean isStart)
 ::=
-  match var
-  case SIMVAR(varKind=PARAM())
-  case SIMVAR(varKind=OPT_TGRID())
-  then 'data->simulationInfo-><%crefShortType(name)%>Parameter[<%index%>]'
-  case SIMVAR(varKind=EXTOBJ()) then 'data->simulationInfo->extObjs[<%index%>]'
-  case SIMVAR(__) then '<%if isStart then '<%varAttributes(var)%>.start' else if isPre then 'data->simulationInfo-><%crefShortType(name)%>VarsPre[<%index%>] /* <%escapeCComments(crefStrNoUnderscore(name))%> <%variabilityString(varKind)%> */' else 'data->localData[<%ix%>]-><%crefShortType(name)%>Vars[<%index%>] /* <%escapeCComments(crefStrNoUnderscore(name))%> <%variabilityString(varKind)%> */'%>'
+
+  match Config.simCodeTarget()
+    case "omsic"
+    case "omsicpp" then
+      match var
+        case SIMVAR(varKind=PARAM())
+        case SIMVAR(varKind=OPT_TGRID())
+        case SIMVAR(varKind=EXTOBJ()) then
+          "ERROR: Not implemented in varArrayNameValues"
+        case SIMVAR(__) then
+          let c_comment = escapeCComments(crefStrNoUnderscore(name))
+          <<
+          <%if isStart then '<%varAttributes(var)%>.start'
+             else if isPre then 'this_function->pre_vars-><%crefTypeOMSIC(name)%>[<%index%>] /* <%c_comment%> <%variabilityString(varKind)%> */'
+             else 'this_function->function_vars[<%ix%>]-><%crefTypeOMSIC(name)%>[<%index%>] /* <%c_comment%> <%variabilityString(varKind)%> */'
+          %>
+          >>
+      end match
+    else
+      match var
+        case SIMVAR(varKind=PARAM())
+        case SIMVAR(varKind=OPT_TGRID()) then
+          'data->simulationInfo-><%crefShortType(name)%>Parameter[<%index%>]'
+        case SIMVAR(varKind=EXTOBJ()) then
+          'data->simulationInfo->extObjs[<%index%>]'
+        case SIMVAR(__) then
+          '<%if isStart then '<%varAttributes(var)%>.start' else if isPre then 'data->simulationInfo-><%crefShortType(name)%>VarsPre[<%index%>] /* <%escapeCComments(crefStrNoUnderscore(name))%> <%variabilityString(varKind)%> */' else 'data->localData[<%ix%>]-><%crefShortType(name)%>Vars[<%index%>] /* <%escapeCComments(crefStrNoUnderscore(name))%> <%variabilityString(varKind)%> */'%>'
+      end match
+  end match
 end varArrayNameValues;
 
 template varArrayName(SimVar var)
