@@ -123,7 +123,7 @@ OSU::OSU(fmi2String instanceName, fmi2String GUID,
   _osu_functions->isSet = omsi_true;
 
   //instantiate omsi_t data structure
-  _omsu = omsi_instantiate(_instanceName.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, _osu_functions, visible, loggingOn);
+  _omsu = omsi_instantiate(_instanceName.c_str(), omsi_model_exchange, GUID, fmuResourceLocations, (omsi_callback_functions *)functions, _osu_functions, visible, loggingOn, &_state);
   //instantiate Modelica system
   _model = createOSUSystem(_global_settings, _instanceName,_omsu);
   //initialize omsi callbacks for right hand side function (evaluate) and initialization function

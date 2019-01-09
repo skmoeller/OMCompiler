@@ -159,15 +159,6 @@ class OSU
   bool* _conditions;
   double* _zero_funcs;
   bool* _events;
-  typedef enum {
-    Instantiated       = 1 << 0,
-    InitializationMode = 1 << 1,
-    EventMode          = 1 << 2,
-    ContinuousTimeMode = 1 << 3,
-    Terminated         = 1 << 4,
-    Error              = 1 << 5,
-    Fatal              = 1 << 6
-  } ModelState;
 
   unsigned int _logCategories;
   string _instanceName;
