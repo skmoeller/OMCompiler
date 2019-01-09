@@ -62,6 +62,8 @@ template generateOMSIC(SimCode simCode)
     // generate header file
     let &includes += <<#include "<%fileNamePrefix%>_sim_eqns.h"<%\n%>>>
     let &includes += <<#include "<%fileNamePrefix%>_init_eqns.h"<%\n%>>>
+    let &includes += if varInfo.numZeroCrossings then <<#include <omsi_event_helper.h><%\n%>>>
+
     let headerFileName = fileNamePrefix+"_omsic"
     let headerFileContent = CodegenOMSI_common.generateCodeHeader(fileNamePrefix, &includes, headerFileName, &functionPrototypes)
     let () = textFile(headerFileContent, headerFileName+".h")

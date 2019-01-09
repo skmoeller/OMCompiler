@@ -80,3 +80,69 @@ omsi_bool omsi_function_zero_crossings (omsi_function_t*    this_function,
         return this_function->zerocrossings_vars[index]>0;
     }
 }
+
+
+/**
+ * \brief Helper function for sample events
+ *
+ * Returns true at time instants `start + i*interval, (i=0, 1, ...)`a nd false else.
+ *
+ * \param [in]  time
+ * \param [in]  start_time
+ * \param [in]  interval
+ * \return      omsi_bool
+ */
+omsi_bool omsi_on_sample_event (omsi_real time,
+                                omsi_sample* sample)
+{
+    /* Variables */
+    omsi_real modulo_value;
+
+    if (time>= sample->start_time) {
+        modulo_value = (omsi_real)fmod(time+sample->start_time, sample->interval);
+        if (modulo_value > DBL_EPSILON  && modulo_value < DBL_EPSILON) {       /* Maybe bigger epsilon? */
+                return omsi_true;
+        }
+    }
+
+    return omsi_false;
+}
+
+
+omsi_real omsi_next_sample(omsi_real    time,
+                           omsi_sample* sample_event)
+{
+    /* Variables */
+    omsi_real dist_prev_event;
+
+    /* Compute next sample time */
+    if (time <= sample_event->start_time) {
+        return sample_event->start_time;
+    } else {
+        dist_prev_event = fmod(time+sample_event->start_time, sample_event->interval);
+        return time+sample_event->interval-dist_prev_event;
+    }
+}
+
+
+omsi_real omsi_compute_next_event_time (omsi_real           time,
+                                        omsi_sample*        sample_events,
+                                        omsi_unsigned_int   n_sample_events)
+{
+    /* Variables */
+    omsi_real next_event_time;
+    omsi_unsigned_int i;
+
+    if (n_sample_events>0) {
+        next_event_time = omsi_next_sample(time, &sample_events[0]);
+    }
+    else {
+        next_event_time = OMSI_DBL_MAX;
+    }
+
+    for (i=1; i<n_sample_events; i++) {
+        next_event_time = (omsi_real) fmin(omsi_next_sample(time, &sample_events[i]), next_event_time);
+    }
+
+    return next_event_time;
+}

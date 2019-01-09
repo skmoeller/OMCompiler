@@ -256,6 +256,13 @@ typedef struct omsi_values {
 } omsi_values;
 
 
+typedef struct omsi_sample {
+    omsi_unsigned_int id;
+    omsi_real start_time;
+    omsi_real interval;
+}omsi_sample;
+
+
 /** \brief General algebraic system.
  *
  *  Struct containing information for one linear or non-linear algebraic system

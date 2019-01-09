@@ -38,6 +38,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>   /* fmin, fmod */
 
 /* Public OMSI headers */
 #include <omsi.h>
@@ -50,6 +51,15 @@ omsi_bool omsi_function_zero_crossings (omsi_function_t*    this_function,
                                         omsi_unsigned_int   index,
                                         ModelState          model_state);
 
+omsi_bool omsi_on_sample_event (omsi_real time,
+                                omsi_sample* sample);
+
+omsi_real omsi_next_sample(omsi_real    time,
+                           omsi_sample* sample_event);
+
+omsi_real omsi_compute_next_event_time (omsi_real           time,
+                                        omsi_sample*        sample_events,
+                                        omsi_unsigned_int   n_sample_events);
 
 #ifdef __cplusplus
 }
