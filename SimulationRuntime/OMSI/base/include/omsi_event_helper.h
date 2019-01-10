@@ -51,8 +51,9 @@ omsi_bool omsi_function_zero_crossings (omsi_function_t*    this_function,
                                         omsi_unsigned_int   index,
                                         ModelState          model_state);
 
-omsi_bool omsi_on_sample_event (omsi_real time,
-                                omsi_sample* sample);
+omsi_bool omsi_on_sample_event (omsi_function_t*    this_function,
+                                omsi_unsigned_int   sample_id,
+                                ModelState          model_state);
 
 omsi_real omsi_next_sample(omsi_real    time,
                            omsi_sample* sample_event);

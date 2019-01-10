@@ -6076,9 +6076,10 @@ simple_alloc_1d_base_array(&<%tvar%>, <%nElts%>, <%tvardata%>);
 
   case CALL(path=IDENT(name="sample"), expLst={ICONST(integer=index), _, _}) then
     match Config.simCodeTarget()
-      case "omsic"
+      case "omsic" then
+        'omsi_on_sample_event(this_function, <%intSub(index,1)%>, omsic_get_model_state())'
       case "omsicpp" then
-        'omsi_on_sample_event(this_function->function_vars->time_value, &this_function->sample_events[<%intSub(index,1)%>])'
+        'omsi_on_sample_event(this_function, <%intSub(index,1)%>, omsicpp_get_model_state())'
       else
         'data->simulationInfo->samples[<%intSub(index, 1)%>]'
     end match

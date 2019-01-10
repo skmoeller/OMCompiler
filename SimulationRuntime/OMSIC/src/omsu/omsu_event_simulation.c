@@ -77,7 +77,7 @@ omsi_status omsi_get_event_indicators(osu_t*            OSU,
             modelContinuousTimeMode|modelTerminated|modelError, ~0)) {
         return omsi_error;
     }
-    /* Check if number of event indicators ni is valid */
+    /* Check if number of event indicators n_event_indicators is valid */
     if (invalidNumber(OSU, "fmi2GetEventIndicators", "n_event_indicators",
             n_event_indicators, OSU->osu_data->model_data->n_zerocrossings)) {
         return omsi_error;
