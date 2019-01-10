@@ -69,6 +69,8 @@ template generateOMSIC(SimCode simCode)
     let () = textFile(headerFileContent, headerFileName+".h")
 
     // generate content of C file
+    let functionInitSampleCode = CodegenOMSI_common.functionInitSample(timeEvents, modelNamePrefixStr)
+
     <<
     <%CodegenOMSI_common.insertCopyrightOpenModelica()%>
 
@@ -83,9 +85,12 @@ template generateOMSIC(SimCode simCode)
       callback->initialize_initialization_problem = <%fileNamePrefix%>_init_eqns_instantiate_allEqns_OMSIFunc;
       callback->initialize_simulation_problem = <%fileNamePrefix%>_sim_eqns_instantiate_allEqns_OMSIFunc;
 
+      callback->initialize_samples = <%fileNamePrefix%>_instantiate_samples;
+
       callback->isSet = omsi_true;
     }
 
+    <%functionInitSampleCode%>
     <%\n%>
     >>
     /* leave new line at end of file */

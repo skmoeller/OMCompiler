@@ -42,6 +42,7 @@ import interface SimCodeBackendTV;
 import CodegenOMSIC_Equations;
 import CodegenUtil;
 import CodegenUtilSimulation;
+import CodegenCFunctions;
 
 
 /* public */
@@ -647,6 +648,38 @@ template generateAlgebraicSystemInstantiation (String FileNamePrefix, Integer nA
   <%initialization%>
   >>
 end generateAlgebraicSystemInstantiation;
+
+
+template functionInitSample(list<BackendDAE.TimeEvent> timeEvents, String fileNamePrefix)
+  "Generates function initSample() in simulation file."
+::=
+  let &varDecls = buffer ""
+  let &auxFunction = buffer ""
+  let body = (timeEvents |> timeEvent hasindex i0 =>
+      match timeEvent
+        case SAMPLE_TIME_EVENT(__) then
+          let &preExp = buffer ""
+          let e1 = CodegenCFunctions.daeExp(startExp, contextOther, &preExp, &varDecls, &auxFunction)
+          let e2 = CodegenCFunctions.daeExp(intervalExp, contextOther, &preExp, &varDecls, &auxFunction)
+          <<
+          <%preExp%>
+          /* sample <%index%> */
+          sample_events[<%i0%>].id = <%index%>;
+          sample_events[<%i0%>].start_time = <%e1%>;
+          sample_events[<%i0%>].interval = <%e2%>;
+          >>
+        else '')
+
+  <<
+  <%auxFunction%>
+   /* Initializes sample time events */
+  void <%fileNamePrefix%>_instantiate_samples(omsi_sample* sample_events)
+  {
+    <%varDecls%>
+    <%body%>
+  }
+  >>
+end functionInitSample;
 
 
 template insertCopyrightOpenModelica()
