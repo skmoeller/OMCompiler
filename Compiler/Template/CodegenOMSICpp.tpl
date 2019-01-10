@@ -153,7 +153,6 @@ template fmuCalcHelperMainfile(SimCode simCode)
     #include "OMCpp<%fileNamePrefix%>Jacobian.h"
     #include "OMCpp<%fileNamePrefix%>Mixed.h"
     #include "OMCpp<%fileNamePrefix%>StateSelection.h"
-    #include "OMCpp<%fileNamePrefix%>WriteOutput.h"
     #include "OMCpp<%fileNamePrefix%>Initialize.h"
 
     #include "OMCpp<%fileNamePrefix%>AlgLoopMain.cpp"
@@ -166,7 +165,6 @@ template fmuCalcHelperMainfile(SimCode simCode)
     >>
     %>
     #include "OMCpp<%fileNamePrefix%>Initialize.cpp"
-    #include "OMCpp<%fileNamePrefix%>WriteOutput.cpp"
     #include "OMCpp<%fileNamePrefix%>Jacobian.cpp"
     #include "OMCpp<%fileNamePrefix%>StateSelection.cpp"
     #include "OMCpp<%fileNamePrefix%>.cpp"

@@ -84,9 +84,14 @@ template translateModel(SimCode simCode)
         let()= textFile(simulationMixedSystemCppFile(simCode  ,  updateResiduals(simCode,extraFuncs,extraResidualsFuncsDecl,className,stateDerVectorName /*=__zDot*/, false)
                                                 ,&extraFuncs , &extraFuncsDecl, "", stateDerVectorName, false),'OMCpp<%fileNamePrefix%>Mixed.cpp')
     let()= textFile(simulationMixedSystemHeaderFile(simCode , &extraFuncs , &extraResidualsFuncsDecl, ""),'OMCpp<%fileNamePrefix%>Mixed.h')
-
+        let _ =  match  Config.simCodeTarget()
+        case "Cpp" then
         let()= textFile(simulationWriteOutputHeaderFile(simCode , &extraFuncs , &extraFuncsDecl, ""),'OMCpp<%fileNamePrefix%>WriteOutput.h')
         let()= textFile(simulationWriteOutputCppFile(simCode , &extraFuncs , &extraFuncsDecl, "", stateDerVectorName, false),'OMCpp<%fileNamePrefix%>WriteOutput.cpp')
+        ""
+        else
+        ""
+        end match
         let()= textFile(simulationFactoryFile(simCode , &extraFuncs , &extraFuncsDecl, ""),'OMCpp<%fileNamePrefix%>FactoryExport.cpp')
         let()= textFile(simulationMainRunScript(simCode , &extraFuncs , &extraFuncsDecl, "", "", "", "exec"), '<%fileNamePrefix%><%simulationMainRunScriptSuffix(simCode , &extraFuncs , &extraFuncsDecl, "")%>')
         let jac =  (jacobianMatrixes |> JAC_MATRIX(columns=mat, partitionIndex=partIdx) =>
@@ -164,7 +169,7 @@ let initparameqs = generateEquationMemberFuncDecls(parameterEquations,"initParam
     *
     *****************************************************************************/
 
-    class <%lastIdentOfPath(modelInfo.name)%>Initialize : public ISystemInitialization <%match  Config.simCodeTarget() case "omsicpp" then ', public IOMSIInitialize' %> , public <%lastIdentOfPath(modelInfo.name)%>WriteOutput
+    class <%lastIdentOfPath(modelInfo.name)%>Initialize : public ISystemInitialization <%match  Config.simCodeTarget() case "omsicpp" then ', public IOMSIInitialize' %> , public   <%match  Config.simCodeTarget() case "omsicpp" then '<%lastIdentOfPath(modelInfo.name)%>StateSelection' else  '<%lastIdentOfPath(modelInfo.name)%>WriteOutput' %>
     {
      public:
 
@@ -493,14 +498,14 @@ case SIMCODE(modelInfo = MODELINFO(__)) then
    #include <omsi.h>
 
    <%lastIdentOfPath(modelInfo.name)%>Initialize::<%lastIdentOfPath(modelInfo.name)%>Initialize(shared_ptr<IGlobalSettings> globalSettings,omsi_t* omsu)
-   : <%lastIdentOfPath(modelInfo.name)%>WriteOutput(globalSettings,omsu)
+   : <%lastIdentOfPath(modelInfo.name)%><%match  Config.simCodeTarget() case "omsicpp" then 'StateSelection(globalSettings,omsu)' else  'WriteOutput(globalSettings,omsu)' %>
    , _constructedExternalObjects(false)
    {
      InitializeDummyTypeElems();
    }
 
    <%lastIdentOfPath(modelInfo.name)%>Initialize::<%lastIdentOfPath(modelInfo.name)%>Initialize(<%lastIdentOfPath(modelInfo.name)%>Initialize& instance)
-   : <%lastIdentOfPath(modelInfo.name)%>WriteOutput(instance)
+   : <%lastIdentOfPath(modelInfo.name)%><%match  Config.simCodeTarget() case "omsicpp" then 'StateSelection(instance)' else  'WriteOutput(instance)' %>
    {
      InitializeDummyTypeElems();
    }
@@ -2774,6 +2779,7 @@ template calcHelperMainfile(SimCode simCode ,Text& extraFuncs,Text& extraFuncsDe
     #include "OMCpp<%fileNamePrefix%>Mixed.h"
     #include "OMCpp<%fileNamePrefix%>StateSelection.h"
     #include "OMCpp<%fileNamePrefix%>WriteOutput.h"
+
     #include "OMCpp<%fileNamePrefix%>Initialize.h"
 
     #include "OMCpp<%fileNamePrefix%>AlgLoopMain.cpp"
@@ -2788,6 +2794,8 @@ template calcHelperMainfile(SimCode simCode ,Text& extraFuncs,Text& extraFuncsDe
     %>
     #include "OMCpp<%fileNamePrefix%>Initialize.cpp"
     #include "OMCpp<%fileNamePrefix%>WriteOutput.cpp"
+
+
     #include "OMCpp<%fileNamePrefix%>Jacobian.cpp"
     #include "OMCpp<%fileNamePrefix%>StateSelection.cpp"
     #include "OMCpp<%fileNamePrefix%>.cpp"
@@ -5809,8 +5817,10 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
       //create and initialize Algloopsolvers
       <%generateAlgloopSystems(listAppend(listAppend(allEquations, initialEquations), getClockedEquations(getSubPartitions(clockedPartitions))), simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace)%>
       <%generateAlgloopSolvers(modelInfo,listAppend(listAppend(allEquations, initialEquations), getClockedEquations(getSubPartitions(clockedPartitions))), simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace)%>
-
-      <%lastIdentOfPath(modelInfo.name)%>WriteOutput::initialize();
+      <%match  Config.simCodeTarget() case "Cpp" then
+      '<%lastIdentOfPath(modelInfo.name)%>WriteOutput::initialize();'
+      end match
+      %>
       <%lastIdentOfPath(modelInfo.name)%>Jacobian::initialize();
       <%lastIdentOfPath(modelInfo.name)%>Jacobian::initializeColoredJacobianA();
    }
