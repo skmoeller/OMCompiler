@@ -211,18 +211,19 @@ omsi_status omsu_allocate_sim_data(omsi_t*                          omsu,
         return omsi_error;
     }
 
-    /* Allocate memory for zero crossings and set pointers in omsi_functions */
+    /* Allocate memory for zero crossings and sample events and set pointers in omsi_functions */
     omsu->sim_data->zerocrossings_vars = (omsi_real *) global_callback->allocateMemory(omsu->model_data->n_zerocrossings, sizeof(omsi_real));
     omsu->sim_data->pre_zerocrossings_vars = (omsi_real *) global_callback->allocateMemory(omsu->model_data->n_zerocrossings, sizeof(omsi_real));
-    if (!omsu->sim_data->zerocrossings_vars || !omsu->sim_data->pre_zerocrossings_vars) {
+    omsu->sim_data->sample_events = (omsi_sample*) global_callback->allocateMemory(omsu->model_data->n_samples, sizeof(omsi_sample));
+    if (!omsu->sim_data->zerocrossings_vars || !omsu->sim_data->pre_zerocrossings_vars || !omsu->sim_data->sample_events) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: in omsu_allocate_sim_data: Not enough memory.");
         return omsi_error;
     }
     omsu_set_zerocrossings_omsi_functions(omsu->sim_data->initialization,
-            omsu->sim_data->zerocrossings_vars, omsu->sim_data->pre_zerocrossings_vars);
+            omsu->sim_data->zerocrossings_vars, omsu->sim_data->pre_zerocrossings_vars, omsu->sim_data->sample_events);
     omsu_set_zerocrossings_omsi_functions(omsu->sim_data->simulation,
-                omsu->sim_data->zerocrossings_vars, omsu->sim_data->pre_zerocrossings_vars);
+                omsu->sim_data->zerocrossings_vars, omsu->sim_data->pre_zerocrossings_vars, omsu->sim_data->sample_events);
 
     /* ToDo: Add error cases */
     return omsi_ok;
@@ -262,7 +263,8 @@ omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_f
 
 omsi_status omsu_set_zerocrossings_omsi_functions (omsi_function_t* omsi_function,
                                                    omsi_real*       pointer_to_zerocrossings_vars,
-                                                   omsi_real*       pointer_to_pre_zerocrossings_vars)
+                                                   omsi_real*       pointer_to_pre_zerocrossings_vars,
+                                                   omsi_sample*     sample_events)
 {
     /* Variables */
     omsi_unsigned_int i;
@@ -275,15 +277,18 @@ omsi_status omsu_set_zerocrossings_omsi_functions (omsi_function_t* omsi_functio
 
     omsi_function->zerocrossings_vars = pointer_to_zerocrossings_vars;
     omsi_function->pre_zerocrossings_vars = pointer_to_pre_zerocrossings_vars;
+    omsi_function->sample_events = sample_events;
 
-    /* ToDo: Do for all alg systesm recursevly */
+    /* ToDo: Do for all alg systems recursively */
     for (i=0; i<omsi_function->n_algebraic_system; i++){
         omsu_set_zerocrossings_omsi_functions (omsi_function->algebraic_system_t[i].functions,
                 pointer_to_zerocrossings_vars,
-                pointer_to_pre_zerocrossings_vars);
+                pointer_to_pre_zerocrossings_vars,
+                sample_events);
         omsu_set_zerocrossings_omsi_functions (omsi_function->algebraic_system_t[i].jacobian,
                 pointer_to_zerocrossings_vars,
-                pointer_to_pre_zerocrossings_vars);
+                pointer_to_pre_zerocrossings_vars,
+                sample_events);
     }
 
 

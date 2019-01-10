@@ -188,7 +188,8 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfIntegerAliasVariables"), &(osu_data->model_data->n_int_aliases));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfBooleanAliasVariables"), &(osu_data->model_data->n_bool_aliases));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringAliasVariables"), &(osu_data->model_data->n_string_aliases));
-    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data->n_zerocrossings));       /* ToDo: Is numberOfTimeEvents also part of n_zerocrossings???? */
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data->n_zerocrossings));
+    omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfTimeEvents"), &(osu_data->model_data->n_samples));        /* ToDo: Is numberOfTimeEvents also part of n_zerocrossings???? */
     osu_data->model_data->n_equations = -1; /* numberOfEquations is read from JSON */
 
     /* read model_vars_info */

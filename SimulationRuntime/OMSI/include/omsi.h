@@ -317,6 +317,8 @@ typedef struct omsi_function_t {
     omsi_real* zerocrossings_vars;                  /**< Conditions of zerocrossing functions. */
     omsi_real* pre_zerocrossings_vars;              /**< Pre conditions of zerocrossing functions. */
 
+    omsi_sample* sample_events;                     /**< Pointer to array of sample events in `sim_data_t struct`. */
+
     /** evaluate function
      * \param [in,out] this_function                Pointer to this `omsi_fucntion_t` struct.
      * \param [in]     read_only_vars_and_params    Pointer to read only struct with variables and parameters.
@@ -356,6 +358,8 @@ typedef struct sim_data_t{
 
     omsi_real* zerocrossings_vars;      /**< Conditions of zerocrossing functions. */
     omsi_real* pre_zerocrossings_vars;  /**< Pre conditions of zerocrossing functions. */
+
+    omsi_sample* sample_events;         /**< Array of sample events */
 
     /* start indices to model_vars_and_params */
     omsi_unsigned_int inputs_real_index;    /*start index of input real variables */
@@ -482,6 +486,7 @@ typedef struct model_data_t {
     omsi_unsigned_int   n_init_equations;       /**< Number of initial equations. */
     omsi_unsigned_int   n_regular_equations;    /**< Number of regular equations. */
     omsi_unsigned_int   n_alias_equations;      /**< Number of alias equations. */
+    omsi_unsigned_int   n_samples;              /**< Number of samples. */
 
     model_variable_info_t*  model_vars_info;  /**< Array of variable informations for all N variables and parameters,
                                                  * N = `n_states` + `n_derivatives` `n_$all_vars` + `n_$all_parameters`,  $all={real,int,bool}. */

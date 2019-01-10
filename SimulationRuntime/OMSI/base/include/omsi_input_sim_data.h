@@ -68,7 +68,8 @@ omsi_status omsu_instantiate_omsi_function_func_vars (omsi_function_t*    omsi_f
 
 omsi_status omsu_set_zerocrossings_omsi_functions (omsi_function_t* omsi_function,
                                                    omsi_real*       pointer_to_zerocrossings_vars,
-                                                   omsi_real*       pointer_to_pre_zerocrossings_vars);
+                                                   omsi_real*       pointer_to_pre_zerocrossings_vars,
+                                                   omsi_sample*     sample_events);
 
 omsi_function_t* omsu_instantiate_omsi_function (omsi_values*   function_vars,
                                                  omsi_values*   pre_vars);
