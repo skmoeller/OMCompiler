@@ -7005,10 +7005,14 @@ match modelInfo
       int _dimPartitions;
       bool* _partitionActivation;
       int* _stateActivator;
-
-      <%memberVariableDefinitions%>
-      <%memberPreVariableDefinitions%>
-      <%conditionvariables%>
+      <%match  Config.simCodeTarget()
+      case "Cpp" then
+      <<
+       <%memberVariableDefinitions%>
+       <%memberPreVariableDefinitions%>
+       <%conditionvariables%>
+      >>
+      %>
       Functions* _functions;
 
       shared_ptr<IPropertyReader> _reader;
