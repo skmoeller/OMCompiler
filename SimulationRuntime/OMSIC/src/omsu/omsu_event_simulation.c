@@ -125,15 +125,15 @@ omsi_status omsi_event_update(osu_t*              OSU,
 
     /* Variables */
     omsi_status status;
+    omsi_real nextSampleEvent;
 
     if (nullPointer(OSU, "fmi2EventUpdate", "eventInfo", eventInfo)) {
         return omsi_error;
     }
 
     /* Log function call */
-    filtered_base_logger(global_logCategories, log_fmi2_call, omsi_ok,
-            "fmi2EventUpdate: Start Event Update! Next Sample Event %u",
-            eventInfo->nextEventTime);
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2EventUpdate: Start Event Update!");
 
     eventInfo->valuesOfContinuousStatesChanged = omsi_false;
 
@@ -232,20 +232,22 @@ omsi_status omsi_event_update(osu_t*              OSU,
     /* ToDo: enable, when preValues are implemented */
     /* omsu_storePreValues(OSU->osu_data); */
     updateRelationsPre(OSU->old_data);
+#endif
 
-    //Get Next Event Time
-    omsi_real nextSampleEvent = 0;
-    nextSampleEvent = getNextSampleTimeFMU(OSU->old_data);
-    if (nextSampleEvent == -1) {
+    /* Get Next Event Time */
+    nextSampleEvent = omsi_compute_next_event_time(
+            OSU->osu_data->sim_data->model_vars_and_params->time_value,
+            OSU->osu_data->sim_data->sample_events,
+            OSU->osu_data->model_data->n_samples);
+    if (nextSampleEvent < 0) {
         eventInfo->nextEventTimeDefined = omsi_false;
     } else {
         eventInfo->nextEventTimeDefined = omsi_true;
         eventInfo->nextEventTime = nextSampleEvent;
     }
-#endif
 
     filtered_base_logger(global_logCategories, log_all, omsi_ok,
-            "fmi2EventUpdate: Checked for Sample Events! Next Sample Event %u",
+            "fmi2EventUpdate: Checked for Sample Events! Next Sample Event %f",
             eventInfo->nextEventTime);
 
     return omsi_ok;

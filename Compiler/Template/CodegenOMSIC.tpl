@@ -58,6 +58,7 @@ template generateOMSIC(SimCode simCode)
     let modelNamePrefixStr = CodegenUtilSimulation.modelNamePrefix(simCode)
 
     let &functionPrototypes += <<void initialize_start_function (omsi_template_callback_functions_t* callback);<%\n%>>>
+    let &functionPrototypes += <<void <%fileNamePrefix%>_instantiate_samples(omsi_sample* sample_events);<%\n%>>>
 
     // generate header file
     let &includes += <<#include "<%fileNamePrefix%>_sim_eqns.h"<%\n%>>>
