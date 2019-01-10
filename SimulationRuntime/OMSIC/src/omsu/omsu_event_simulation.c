@@ -152,8 +152,8 @@ omsi_status omsi_event_update(osu_t*              OSU,
 #endif
 #endif
 
-    /* ToDo: enable, when preValues are implemented */
-    /* omsu_storePreValues(OSU->osu_data); */
+    /* Store pre values */
+    omsu_storePreValues(OSU->osu_data);
     omsu_update_pre_zero_crossings(OSU->osu_data->sim_data, OSU->osu_data->model_data->n_zerocrossings);
 
     /* ToDo: Add sample events */
