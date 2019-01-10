@@ -353,8 +353,9 @@ void omsu_free_sim_data (sim_data_t* sim_data) {
     omsu_free_omsi_function (sim_data->simulation, omsi_true);
 
 
-    global_callback->freeMemory(sim_data->zerocrossings_vars);          /* ToDo: free inner stuff */
+    global_callback->freeMemory(sim_data->zerocrossings_vars);
     global_callback->freeMemory(sim_data->pre_zerocrossings_vars);
+    global_callback->freeMemory(sim_data->sample_events);
 
     global_callback->freeMemory(sim_data);
 }

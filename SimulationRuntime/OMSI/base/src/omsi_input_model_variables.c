@@ -426,6 +426,7 @@ omsi_status omsi_get_real(omsi_t*                    omsu,
     }
     return omsi_ok;
 }
+
 omsi_status omsi_get_string(omsi_t*                  omsu,
                             const omsi_unsigned_int vr[],
                             omsi_unsigned_int       nvr,

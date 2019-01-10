@@ -159,10 +159,11 @@ typedef omsi_status (*evaluate_function) (omsi_function_t*  function,
  * \brief Callback functions to generated code.
  */
 typedef struct omsi_template_callback_functions_t {
-    omsi_bool isSet;                                                  /**< Boolean if template functions are set */
-    omsu_initialize_omsi_function initialize_initialization_problem;  /**< Function pointer to initialize the initialization problem */
-    omsu_initialize_omsi_function initialize_simulation_problem;      /**< Function pointer to initialize the simulation problem */
+    omsi_bool isSet;                                                 /**< Boolean if template functions are set */
+    omsu_initialize_omsi_function initialize_initialization_problem; /**< Function pointer to initialize the initialization problem */
+    omsu_initialize_omsi_function initialize_simulation_problem;     /**< Function pointer to initialize the simulation problem */
 
+    void (*initialize_samples) (omsi_sample* sample_events);       /**< Function to initialize sampleEvents. */
 }omsi_template_callback_functions_t;
 
 

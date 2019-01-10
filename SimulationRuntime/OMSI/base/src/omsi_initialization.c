@@ -260,6 +260,9 @@ omsi_status omsi_intialize_callbacks(omsi_t*                                omsu
                                       "simulation",
                                       template_functions->initialize_simulation_problem);
 
+    /* Initialize sample events */
+    template_functions->initialize_samples(omsu->sim_data->sample_events);
+
     return omsi_ok;
 }
 

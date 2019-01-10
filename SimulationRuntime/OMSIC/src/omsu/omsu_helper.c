@@ -377,7 +377,7 @@ omsi_status omsu_copy_values(omsi_values*   target_vars,
 
     omsi_unsigned_int size;
 
-    if (target_vars == NULL || source_vars) {
+    if (target_vars == NULL || source_vars == NULL) {
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "copy_values: Pointer is NULL.");
         return omsi_error;
