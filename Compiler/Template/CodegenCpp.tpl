@@ -5947,9 +5947,16 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
 
    void <%lastIdentOfPath(modelInfo.name)%>Initialize::initEquations()
    {
-      <%(initialEquations |> eq  =>
+      <%match  Config.simCodeTarget()
+      case "Cpp" then
+      '<%(initialEquations |> eq  =>
                     equation_function_call(eq,  contextOther, &varDecls /*BUFC*/, simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace,"initEquation")
-                    ;separator="\n")%>
+                    ;separator="\n")%>'
+      case "omsicpp" then
+       'omsi_initializeAll(_omsu->sim_data->simulation,_omsu->sim_data->model_vars_and_params,NULL);'
+      end match
+      %>
+
    }
    <%initialequations%>
    void <%lastIdentOfPath(modelInfo.name)%>Initialize::initParameterEquations()
