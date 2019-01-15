@@ -326,6 +326,21 @@ template equationWhen(SimEqSystem eq, Context context, Text &varDecls, Text &aux
                     <%preExp%>
                     <%lhs%> = <%rhs%>;
                   >>
+
+                case REINIT(stateVar=stateVar, value=value, source=source) then
+                  let &preExp = buffer ""
+                  let val = CodegenCFunctions.daeExp(value, context, &preExp, &varDecls, &auxFunction)
+                  let lhs = match crefTypeConsiderSubs(stateVar)
+                    case DAE.T_ARRAY(__) then
+                      'TODO: Implement for arrays!'
+                    else
+                      '<%CodegenCFunctions.crefOMSI(stateVar, context)%> = <%val%>;'
+                  <<
+                  <%preExp%>
+                  <%lhs%>
+                  /* ToDo: Add some info that variable was reinitialized */
+                  >>
+
                 else
                   <<
                   TODO: when expression not supported yet

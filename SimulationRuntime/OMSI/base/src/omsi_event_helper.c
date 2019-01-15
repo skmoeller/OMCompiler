@@ -169,3 +169,27 @@ omsi_real omsi_compute_next_event_time (omsi_real           time,
 
     return next_event_time;
 }
+
+
+/**
+ * \brief Return reinitialized value in eventMode and tells the FMU to update
+ *        discrete states in modelContinousTimeMode.
+ *
+ * @param value
+ * @param new_value
+ * @param eventInfo
+ * @param model_state
+ */
+void omsi_reinit(omsi_real value,
+                 omsi_real new_value,
+                 omsi_event_info* eventInfo,
+                 ModelState model_state)
+{
+    if (model_state == modelEventMode ) {
+        value = new_value;
+    } else if (model_state == modelContinuousTimeMode) {
+        eventInfo->newDiscreteStatesNeeded = omsi_true;
+    } else if (model_state == modelInitializationMode) {
+        printf("Not implemented yet!"); fflush(stdout);
+    }
+}

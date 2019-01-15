@@ -368,17 +368,22 @@ algorithm
       omsiOptData := NONE();
       if debug then execStat("simCode: createEquationsForSystems"); end if;
     else
-       odeEquations :={};
-       algebraicEquations := {};
-       localKnownVars := {};
-       allEquations := {};
-       equationsForZeroCrossings := {};
-       equationSccMapping := {};
-       eqBackendSimCodeMapping := {};
-       sccOffset := 0;
-       (omsiAllEquations, uniqueEqIndex) :=
-           createAllEquationOMSI(contSysts, shared, zeroCrossings, uniqueEqIndex);
-       omsiOptData := SOME(SimCode.OMSI_DATA(simulation=omsiAllEquations, initialization=omsiInitEquations));
+      odeEquations :={};
+      algebraicEquations := {};
+      localKnownVars := {};
+      allEquations := {};
+      equationsForZeroCrossings := {};
+      equationSccMapping := {};
+      eqBackendSimCodeMapping := {};
+      sccOffset := 0;
+      (omsiAllEquations, uniqueEqIndex) :=
+          createAllEquationOMSI(contSysts, shared, zeroCrossings, uniqueEqIndex);
+
+      // Add removed equations (e.g. reinit)
+      ((uniqueEqIndex, removedEquations)) := BackendEquation.traverseEquationArray(removedEqs, traversedlowEqToSimEqSystem, (uniqueEqIndex, {}));
+      omsiAllEquations.equations := listAppend(omsiAllEquations.equations, removedEquations);
+
+      omsiOptData := SOME(SimCode.OMSI_DATA(simulation=omsiAllEquations, initialization=omsiInitEquations));
 
       // debug print
       if debug then
@@ -3792,7 +3797,7 @@ algorithm
     local
       BackendDAE.Equation eqn;
       BackendDAE.Var var;
-      
+
       BackendDAE.Jacobian jacobian;
       BackendDAE.JacobianType jacobianType;
       BackendDAE.InnerEquations innerEquations;
