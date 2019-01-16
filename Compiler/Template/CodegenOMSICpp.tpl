@@ -923,7 +923,7 @@ case "gcc" then
                $(eval LIBS=$(LIBS) -L$(LAPACK_LIBS) $(LAPACK_LIBRARIES))
                $(eval BINARIES=$(BINARIES) <%lapackbins%>)
             endif
-            LDFLAGS=-L"$(OMHOME)/lib/$(TRIPLET)/omc/omsicpp" -L"$(OMHOME)/lib/$(TRIPLET)/omc/omsi" <%additionalLinkerFlags_GCC%> -Wl,--no-undefined
+            LDFLAGS=-L"$(OMHOME)/lib/$(TRIPLET)/omc/omsicpp" -L"$(OMHOME)/lib/$(TRIPLET)/omc/omsi" -L"$(OMHOME)/lib/$(TRIPLET)/omc/" <%additionalLinkerFlags_GCC%> -Wl,--no-undefined
 
 
             BINARIES=<%fileNamePrefix%>$(DLLEXT) $(BOOST_LIBS)/lib$(BOOST_SYSTEM_LIB)$(DLLEXT) $(BOOST_LIBS)/lib$(BOOST_FILESYSTEM_LIB)$(DLLEXT)
