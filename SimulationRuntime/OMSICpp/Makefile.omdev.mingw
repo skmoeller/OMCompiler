@@ -153,7 +153,7 @@ runtimeCpp: omcCAPIinstall
 	$(foreach PLATFORM, $(PLATFORMS), \
 	  mkdir -p Build_$(PLATFORM); \
 	  (cd ./Build_$(PLATFORM); echo "change to Build_$(PLATFORM)"; \
-	   cmake -G "MSYS Makefiles" -DPLATFORM=$(PLATFORM) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" MAKE_CXX_COMPILER=g++ ../; \
+	   cmake -G "MSYS Makefiles" -DPLATFORM=$(PLATFORM) -DOMC_LIB=$(OMC_LIB) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" MAKE_CXX_COMPILER=g++ ../; \
 	   $(MAKE));)
 
 omcCAPImsvc: getMSVCversion
