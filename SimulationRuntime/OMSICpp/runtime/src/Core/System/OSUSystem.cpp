@@ -73,7 +73,7 @@ OSUSystem::OSUSystem(shared_ptr<IGlobalSettings> globalSettings, string osu_name
 	_osu_me->callbacks.realloc = realloc;
 	_osu_me->callbacks.free = free;
 	_osu_me->callbacks.logger = importFMU2logger;
-	_osu_me->callbacks.log_level = jm_log_level_warning;
+	_osu_me->callbacks.log_level = jm_log_level_nothing;
 	_osu_me->callbacks.context = 0;
 
 	_osu_me->context = fmi_import_allocate_context(&_osu_me->callbacks);
