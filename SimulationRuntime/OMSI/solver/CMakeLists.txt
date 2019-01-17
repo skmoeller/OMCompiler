@@ -23,6 +23,14 @@ IF (LAPACK_FOUND STREQUAL "NOTFOUND")
 ENDIF()
 MESSAGE(STATUS "Lapack Libraries: ${LAPACK_LIBRARIES}")
 
+IF(MSVC)
+  #workaround  because cmake does not find the lapack libraries for Visual Studio 10
+  SET(LAPACK_MSVC_10  $ENV{OMDEV}/lib/3rdParty/Lapack/Lib/lapack_win32.lib )
+  SET(BLAS_MSVC_10 $ENV{OMDEV}/lib/3rdParty/Lapack/Lib/blas_win32.lib )
+  SET(LAPACK_LIBRARIES  ${LAPACK_MSVC_10}   ${BLAS_MSVC_10} )
+  MESSAGE(STATUS "Using manual set Lapack Libraries: ${LAPACK_LIBRARIES}")
+ENDIF(MSVC)
+
 # Find SUNDIALS KINSOL libraries
 FIND_LIBRARY(KINSOL_LIBRARIE sundials_kinsol
 	PATH ${CMAKE_INSTALL_PREFIX}/${LIB_OMC})

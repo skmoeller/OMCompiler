@@ -111,10 +111,10 @@ omsi_t* omsi_instantiate(omsi_string                            instanceName,
         return NULL;
     }
 
-    /* Log function call */
+    /* Log function call
     filtered_base_logger(NULL, log_fmi2_call, omsi_ok,
             "fmi2Instantiate: Instantiate osu_data.");
-
+    */
     if (!functions->allocateMemory || !functions->freeMemory) {
         filtered_base_logger(NULL, log_statuserror, omsi_error,
                 "fmi2Instantiate: Missing callback function.");
