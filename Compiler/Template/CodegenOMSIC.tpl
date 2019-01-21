@@ -238,7 +238,7 @@ template createMakefile(SimCode simCode, String target, String FileNamePrefix, S
     %.o : %.c copyFiles
     <%\t%>$(CC) $(CFLAGS) -I$(INCLUDE_DIR_OMSI)  -I$(INCLUDE_DIR_OMSI_BASE) -I$(INCLUDE_DIR_OMSI_SOLVER) -I$(INCLUDE_DIR_OMSI_FMI2) -I$(INCLUDE_DIR_OMSIC) -I$(INCLUDE_DIR_OMSIC_FMI2) -c $<
 
-    createSimulation: <%fileNamePrefix%>_FMU
+    createSimulation:
     <%\t%>omc <%fileNamePrefix%>_simulation.mos
 
     clean:
