@@ -38,9 +38,9 @@ public:
   bool change(double& var);
 
 
-  bool changeDiscreteVar(double& var);
-  bool changeDiscreteVar(int& var);
-  bool changeDiscreteVar(bool& var);
+  bool changeDiscreteVar(const double& var);
+  bool changeDiscreteVar(const int& var);
+  bool changeDiscreteVar(const bool& var);
   //getCondition_type getCondition;
 
 private:

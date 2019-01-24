@@ -139,19 +139,19 @@ bool DiscreteEvents::change(bool& var)
   return var != pre(var);
 }
 
-bool DiscreteEvents::changeDiscreteVar(double& var)
+bool DiscreteEvents::changeDiscreteVar(const double& var)
 {
   double& pre_var = _sim_vars->getPreVar(var);
   return var != pre_var;
 }
 
-bool DiscreteEvents::changeDiscreteVar(int& var)
+bool DiscreteEvents::changeDiscreteVar(const int& var)
 {
   int& pre_var = _sim_vars->getPreVar(var);
   return var != pre_var;
 }
 
-bool DiscreteEvents::changeDiscreteVar(bool& var)
+bool DiscreteEvents::changeDiscreteVar(const bool& var)
 {
   bool& pre_var = _sim_vars->getPreVar(var);
   return var != pre_var;

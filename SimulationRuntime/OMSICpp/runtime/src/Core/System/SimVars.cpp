@@ -630,7 +630,7 @@ int& SimVars::getPreVar(const int& var)
 		size_t j = &var - _omsi_bool_vars;
 		if((j<0)||(j>_dim_bool))
 		  throw ModelicaSimulationError(MODEL_EQ_SYSTEM, "no pre-variable");
-		return _omsi_bool_vars[j];
+		return _pre_omsi_bool_vars[j];
 	}
 	else {
 

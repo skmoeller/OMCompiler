@@ -229,13 +229,26 @@ template generateOmsiMemberFunction(OMSIFunction omsiFunction, String FileNamePr
   case OMSI_FUNCTION(context=context as SimCodeFunction.OMSI_CONTEXT(__)) then
     let _ = (equations |> eqsystem hasindex i0 =>
       match eqsystem
-      case SES_SIMPLE_ASSIGN(__) then
+       case SES_SIMPLE_ASSIGN(__) then
+        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix,FunctionnamePrefix, context, &functionPrototypes) +"\n"
+        << >>
+      case SES_RESIDUAL(__) then
+        let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix, FunctionnamePrefix,context, &functionPrototypes) +"\n"
+
+        <<>>
+      case algSystem as SES_ALGEBRAIC_SYSTEM(__) then
+        "TODO: Equation  SES_ALGEBRAIC_SYSTEM not implemented yet"
+
+      case whenEq as SES_WHEN(__) then
         let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix,FunctionnamePrefix, context, &functionPrototypes) +"\n"
 
-        ""
+        <<>>
       else
         // NOT IMPLEMENTED YET
-        "ToDo: Fix this ERROR!"
+        // ToDo: add yl
+        <<
+        TODO: Equation not implemented
+        >>
       end match
     )
 

@@ -6629,9 +6629,12 @@ end alocateLinearSystemConstructor;
 template update(SimCode simCode ,Text& extraFuncs,Text& extraFuncsDecl,Text extraFuncsNamespace, Text stateDerVectorName /*=__zDot*/, Boolean useFlatArrayNotation)
 ::=
 match simCode
-case SIMCODE(__) then
+case SIMCODE(allEquations=eq) then
   <<
-  <%equationFunctions(allEquations, simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace,contextSimulationDiscrete,stateDerVectorName,useFlatArrayNotation,boolNot(stringEq(getConfigString(PROFILING_LEVEL),"none")))%>
+  <%match  Config.simCodeTarget()
+  case "Cpp" then
+  '<%equationFunctions(eq, simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace,contextSimulationDiscrete,stateDerVectorName,useFlatArrayNotation,boolNot(stringEq(getConfigString(PROFILING_LEVEL),"none")))%>'
+  end match %>
 
   <%clockedFunctions(getSubPartitions(clockedPartitions), simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, contextSimulationDiscrete, stateDerVectorName, useFlatArrayNotation, boolNot(stringEq(getConfigString(PROFILING_LEVEL), "none")))%>
 
@@ -12605,8 +12608,18 @@ template checkForDiscreteEvents(list<ComponentRef> discreteModelVars,SimCode sim
 ::=
    let &preExp = buffer ""
   let &varDecls = buffer ""
-  let changediscreteVars = (discreteModelVars |> var => match var case CREF_QUAL(__) case CREF_IDENT(__) then
+  let changediscreteVars =  match  Config.simCodeTarget() case "Cpp" then
+    (discreteModelVars |> var => match var case CREF_QUAL(__) case CREF_IDENT(__) then
        'if (_discrete_events->changeDiscreteVar(<%cref(var, useFlatArrayNotation)%>)) {  return true; }'
+       ;separator="\n")
+     case "omsicpp" then
+     (discreteModelVars |> var =>  match cref2simvar(var, simCode)
+       case v as SIMVAR(type_=T_BOOL(),index = i) then
+       'if (_discrete_events->changeDiscreteVar(getSimVars()->getOMSIBoolVar(<%i%>)/*<%cref(var, useFlatArrayNotation)%>)*/)) {  return true; }'
+        case v as SIMVAR(type_=T_INTEGER(),index = i) then
+       'if (_discrete_events->changeDiscreteVar(getSimVars()->getIntVar(<%i%>)/*<%cref(var, useFlatArrayNotation)%>)*/)) {  return true; }'
+         case v as SIMVAR(type_=T_REAL(),index = i) then
+       'if (_discrete_events->changeDiscreteVar(getSimVars()->getRealVar(<%i%>)/*<%cref(var, useFlatArrayNotation)%>)*/)) {  return true; }'
        ;separator="\n")
   match simCode
   case SIMCODE(modelInfo = MODELINFO(__)) then

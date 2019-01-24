@@ -5369,7 +5369,7 @@ case rel as RELATION(__) then
           case "omsic" then
             'omsi_function_zero_crossings(this_function, <%res%>, <%rel.index%>, omsic_get_model_state())'
           case "omsicpp" then
-            'omsi_function_zero_crossings(this_function, <%res%>, <%rel.index%>, omsicpp_get_event_mode())'
+            'getCondition(<%rel.index%>)'
         end match
   case DAE_MODE_CONTEXT(__)
   case SIMULATION_CONTEXT(__) then
