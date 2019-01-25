@@ -4968,7 +4968,7 @@ algorithm
     local
       BackendDAE.BackendDAE indexed_dlow_1;
       list<String> libs;
-      String file_dir,init_filename,method_str,filenameprefix,exeFile,s3,simflags;
+      String file_dir,init_filename,method_str,filenameprefix,exeFile,s3,simflags,sim_create_call;
       Absyn.Path classname;
       Absyn.Program p;
       Absyn.Class cdef;
@@ -5043,6 +5043,11 @@ algorithm
           try
             if Config.simCodeTarget() == "omsic" then
               CevalScript.compileModel(filenameprefix + "_FMU", libs);
+              sim_create_call := stringAppendList({System.getMakeCommand()," -f ",filenameprefix + "_FMU",".makefile"," ","createSimulation"});
+              if System.systemCall(sim_create_call,filenameprefix+"_FMU.log") <> 0 then
+                Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
+                fail();
+              end if;
               filenameprefix := filenameprefix + "_me_FMU";
             else
               CevalScript.compileModel(filenameprefix, libs);
