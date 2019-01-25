@@ -450,14 +450,15 @@ end createMakefileIn;
 template createSimulationScript(String FileNamePrefix)
 ""
 ::=
+  let loadName = makeC89Identifier(FileNamePrefix)
   <<
   importFMU("<%FileNamePrefix%>.fmu");
   getErrorString();
   setCommandLineOptions("--simCodeTarget=C");
 
-  loadFile("<%FileNamePrefix%>_me_FMU.mo");
+  loadFile("<%loadName%>_me_FMU.mo");
   getErrorString();
-  buildModel(<%FileNamePrefix%>_me_FMU);
+  buildModel(<%loadName%>_me_FMU);
   getErrorString();
   >>
 end createSimulationScript;
