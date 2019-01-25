@@ -731,7 +731,7 @@ algorithm
     guid := System.getUUIDStr();
     SerializeInitXML.simulationInitFileReturnBool(simCode=iSimCode, guid=guid);
     runTplWriteFile(func = function CodegenFMU2.fmiModelDescription(in_a_simCode=iSimCode, in_a_guid=guid,in_a_FMUType=fmuType), file="modelDescription.xml");
-    runTpl(func = function CodegenOMSI_common.generateEquationsCode(in_a_simCode=iSimCode, in_a_FileNamePrefix=fileprefix));
+    runTpl(func = function CodegenOMSI_common.generateEquationsCode(a_simCode=iSimCode, a_FileNamePrefix=fileprefix));
   Tpl.tplNoret3(CodegenOMSICpp.translateModel, iSimCode, fmuVersion, fmuType);
 end callTargetTemplatesOMSICpp;
 
@@ -805,14 +805,14 @@ algorithm
         SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
         SerializeModelInfo.serialize(simCode, Flags.isSet(Flags.INFO_XML_OPERATIONS));
         runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file="modelDescription.xml");
-        runTplWriteFile(func = function CodegenOMSIC.createMakefile(a_simCode=simCode, a_target=Config.simulationCodeTarget(), a_FileNamePrefix=fileprefix, a_makeflieName=fileprefix+"_FMU.makefile"), file=fileprefix+"_FMU.makefile");
+        runTplWriteFile(func = function CodegenOMSIC.createMakefile(a_simCode=simCode, a_target=Config.simulationCodeTarget(), a_makeflieName=fileprefix+"_FMU.makefile"), file=fileprefix+"_FMU.makefile");
 
         runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(a_simCode=simCode), file=fileprefix+"_omsic.c");
         
         //runTplWriteFile(func = function CodegenOMSIC_Equations.generateEquationFiles(a_simCode=simCode, a_fileNamePrefix=fileprefix, a_name="allEqns"), file=fileprefix+"_eqns.c");
 
         //runTplWriteFile(func = function CodegenOMSI_common.simulationFile_lsyOMSI(in_a_simCode=simCode), file=fileprefix+"_lsy.c");
-        runTpl(func = function CodegenOMSI_common.generateEquationsCode(in_a_simCode=simCode, in_a_FileNamePrefix=fileprefix));
+        runTpl(func = function CodegenOMSI_common.generateEquationsCode(a_simCode=simCode, a_FileNamePrefix=fileprefix));
 
         /*
         

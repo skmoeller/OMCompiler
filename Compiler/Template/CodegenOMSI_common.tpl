@@ -50,8 +50,10 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
 "Entrypoint to generate all Code for linear systems.
  Code is generated directly into files"
 ::=
+  let modelNamePrefix = makeC89Identifier(FileNamePrefix)
+
   match simCode
-  case SIMCODE(omsiData=omsiData as SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__),
+  case SIMCODE(fileNamePrefix=fileNamePrefix, omsiData=omsiData as SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__),
                                                    initialization=initialization as OMSI_FUNCTION(__)))) then
 
     /* generate file for algebraic systems in simulation problem */
@@ -59,24 +61,24 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
 
     let omsi_equations = match  Config.simCodeTarget()
     case "omsic" then
-        let content = generateOmsiFunctionCode(simulation, FileNamePrefix,"","sim_eqns")
-        let () = textFile(content, FileNamePrefix+"_sim_eqns.c")
+        let content = generateOmsiFunctionCode(simulation, modelNamePrefix,"","sim_eqns")
+        let () = textFile(content, fileNamePrefix+"_sim_eqns.c")
         <<>>
     case "omsicpp" then
-        let content = generateOmsiFunctionCode(simulation, FileNamePrefix,"evaluate","sim_eqns")
-        let () = textFile(content, 'OMCpp<%FileNamePrefix%>OMSIEquations.cpp')
+        let content = generateOmsiFunctionCode(simulation, modelNamePrefix,"evaluate","sim_eqns")
+        let () = textFile(content, 'OMCpp<%fileNamePrefix%>OMSIEquations.cpp')
         <<>>
     end match
 
 
     let omsi_equations = match  Config.simCodeTarget()
     case "omsic" then
-       let content = generateOmsiFunctionCode(initialization, FileNamePrefix,"", "init_eqns")
-       let () = textFile(content, FileNamePrefix+"_init_eqns.c")
+       let content = generateOmsiFunctionCode(initialization, modelNamePrefix,"", "init_eqns")
+       let () = textFile(content, fileNamePrefix+"_init_eqns.c")
         <<>>
     case "omsicpp" then
-        let content = generateOmsiFunctionCode(initialization, FileNamePrefix+"Initialize","initialize" ,"init_eqns")
-        let () = textFile(content, 'OMCpp<%FileNamePrefix%>OMSIInitEquations.cpp')
+        let content = generateOmsiFunctionCode(initialization, modelNamePrefix+"Initialize","initialize" ,"init_eqns")
+        let () = textFile(content, 'OMCpp<%fileNamePrefix%>OMSIInitEquations.cpp')
         <<>>
     end match
 
@@ -92,6 +94,8 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   let &functionCall = buffer ""
   let &functionPrototypes = buffer ""
 
+  let fileNamePrefix = CodegenUtilSimulation.fileNamePrefix(getSimCode())
+
   let initializationCode = generateInitalizationOMSIFunction(omsiFunction, "allEqns", FileNamePrefix,modelFunctionnamePrefixStr, &functionPrototypes, &includes, false, omsiName)
   let _ = generateOmsiFunctionCode_inner(omsiFunction, FileNamePrefix, modelFunctionnamePrefixStr,omsiName, &includes, &evaluationCode, &functionCall, "", &functionPrototypes, omsiName)
 
@@ -103,7 +107,7 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
 
   let headerFileName =     match  Config.simCodeTarget()
     case "omsic" then
-         '<%FileNamePrefix%>_<%omsiName%>'
+         '<%fileNamePrefix%>_<%omsiName%>'
     case "omsicpp" then
         ""
 
@@ -183,6 +187,7 @@ end generateOmsiFunctionCode;
 template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix,String modelFunctionnamePrefixStr, String funcCallArgName, Text &includes, Text &evaluationCode, Text &functionCall, Text &residualCall, Text &functionPrototypes, String omsiName)
 ""
 ::=
+  let fileNamePrefix = CodegenUtilSimulation.fileNamePrefix(getSimCode())
 
   match omsiFunction
   case OMSI_FUNCTION(context=context as SimCodeFunction.OMSI_CONTEXT(__)) then
@@ -197,11 +202,11 @@ template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNa
         let &residualCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix,modelFunctionnamePrefixStr, '<%funcCallArgName%>, model_vars_and_params, &res[i++]', omsiName) +"\n"
         <<>>
       case algSystem as SES_ALGEBRAIC_SYSTEM(__) then
-        let &includes += <<#include "<%FileNamePrefix%>_<%omsiName%>_algSyst_<%algSysIndex%>.h"<%\n%>>>
+        let &includes += <<#include "<%fileNamePrefix%>_<%omsiName%>_algSyst_<%algSysIndex%>.h"<%\n%>>>
         let &functionCall += CodegenOMSIC_Equations.equationCall(eqsystem, FileNamePrefix, modelFunctionnamePrefixStr,'&<%funcCallArgName%>->algebraic_system_t[<%algSysIndex%>], model_vars_and_params, <%omsiName%>->function_vars', omsiName) +"\n"
         // write own file for each algebraic system
         let content = generateOmsiAlgSystemCode(eqsystem, FileNamePrefix, omsiName)
-        let () = textFile(content, FileNamePrefix+"_"+omsiName+"_algSyst_"+ algSystem.algSysIndex + ".c")
+        let () = textFile(content, fileNamePrefix+"_"+omsiName+"_algSyst_"+ algSystem.algSysIndex + ".c")
         <<>>
       case whenEq as SES_WHEN(__) then
         let &evaluationCode += CodegenOMSIC_Equations.generateEquationFunction(eqsystem, FileNamePrefix,modelFunctionnamePrefixStr, context, &functionPrototypes) +"\n"
@@ -270,6 +275,8 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   let &derivativeMatrix = buffer ""
   let &functionPrototypes = buffer ""
 
+  let fileNamePrefix = CodegenUtilSimulation.fileNamePrefix(getSimCode())
+
   match equationSystem
   case algSystem as SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
     let &includes += <<#include <omsi_solve_alg_system.h><%\n%>>>
@@ -280,7 +287,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
 
     // generate jacobian matrix files
-    let &includes += <<#include "<%FileNamePrefix%>_<%omsiName%>_derMat_<%algSystem.algSysIndex%>.h"<%\n%>>>
+    let &includes += <<#include "<%fileNamePrefix%>_<%omsiName%>_derMat_<%algSystem.algSysIndex%>.h"<%\n%>>>
     let _ = generateDerivativeFile(matrix, FileNamePrefix, algSystem.algSysIndex, omsiName)
 
     // generate algebraic system header file
@@ -289,7 +296,7 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
       omsi_status <%FileNamePrefix%>_<%omsiName%>_resFunction_<%algSystem.algSysIndex%> (omsi_function_t* this_function, const omsi_values* model_vars_and_params, omsi_real* res);
       omsi_status <%FileNamePrefix%>_<%omsiName%>_algSystFunction_<%algSystem.algSysIndex%>(omsi_algebraic_system_t* this_alg_system, const omsi_values* model_vars_and_params, void* data);
       >>
-    let headerFileName = FileNamePrefix+"_"+omsiName+"_algSyst_"+algSystem.algSysIndex
+    let headerFileName = fileNamePrefix+"_"+omsiName+"_algSyst_"+algSystem.algSysIndex
     let headerFileContent = generateCodeHeader(FileNamePrefix, &includes, headerFileName, &functionPrototypes)
     let () = textFile(headerFileContent, headerFileName+".h")
 
@@ -352,11 +359,13 @@ end generateOmsiAlgSystemCode;
 template generateCodeHeader(String FileNamePrefix, Text &includes, String headerName, Text &functionPrototypes)
 "Generates Header for omsi algebraic system C files"
 ::=
+  let macro_name = makeC89Identifier(headerName)
+
   <<
   <%insertCopyrightOpenModelica()%>
 
-  #if !defined(<%headerName%>_H)
-  #define <%headerName%>_H
+  #if !defined(<%macro_name%>_H)
+  #define <%macro_name%>_H
 
   #include <omsi.h>
   #include <omsic.h>
@@ -407,7 +416,8 @@ template generateDerivativeFile (Option<DerivativeMatrix> matrix, String FileNam
 
   let body = CodegenOMSIC_Equations.generateDerivativeMatrix(matrix, FileNamePrefix, index, &functionPrototypes, omsiName)
 
-  let headerFileName = FileNamePrefix+"_"+omsiName+"_derMat_"+index
+  let headerFileName = CodegenUtilSimulation.fileNamePrefix(getSimCode())+"_"+omsiName+"_derMat_"+index
+  let fileNamePrefix = CodegenUtilSimulation.fileNamePrefix(getSimCode())
 
   let content =
     <<
@@ -434,12 +444,10 @@ template generateDerivativeFile (Option<DerivativeMatrix> matrix, String FileNam
     /* leave a newline at the end of file to get rid of the warning */
 
   // generate c and header files
-  let () = textFile(content, FileNamePrefix+"_"+omsiName+"_derMat_"+index+".c")
-//  let &functionPrototypes +=
+  let () = textFile(content, fileNamePrefix+"_"+omsiName+"_derMat_"+index+".c")
 
-
-      let headerFileContent = generateCodeHeader(FileNamePrefix, &includes, headerFileName, &functionPrototypes)
-      let()= textFile(headerFileContent, headerFileName+".h")
+  let headerFileContent = generateCodeHeader(FileNamePrefix, &includes, headerFileName, &functionPrototypes)
+  let()= textFile(headerFileContent, headerFileName+".h")
 
   <<>>
 end generateDerivativeFile;
