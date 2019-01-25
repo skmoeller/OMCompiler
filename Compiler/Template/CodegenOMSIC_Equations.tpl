@@ -318,9 +318,9 @@ template equationWhen(SimEqSystem eq, Context context, Text &varDecls, Text &aux
       // TODO: convert whenOperators to SImEqSystems
       let assign = ( whenStmtLst |>  stmt =>
                 match stmt
-                case ASSIGN(left=left, right=right) then
+                case ASSIGN(left=lhs as DAE.CREF(componentRef=left), right=right) then
                   let &preExp = buffer ""
-                  let lhs = CodegenCFunctions.daeExp(left, context, &preExp, &varDecls, &auxFunction)
+                  let lhs = CodegenCFunctions.crefOMSI(left, context)
                   let rhs = CodegenCFunctions.daeExp(right, context, &preExp, &varDecls, &auxFunction)
                   <<
                     <%preExp%>
