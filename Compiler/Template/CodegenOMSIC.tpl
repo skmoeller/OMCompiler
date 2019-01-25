@@ -204,7 +204,7 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
 
     all: compile
 
-    <%fileNamePrefix%>_FMU : compile
+    <%fileNamePrefix%>.fmu : compile
     <%\t%>cd <%fileNamePrefix%>.fmutmp; \
     <%\t%>zip<%makefileParams.exeext%> -r ../<%fileNamePrefix%>.fmu *;\
     <%\t%>cd ..;\
@@ -238,7 +238,7 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
     %.o : %.c copyFiles
     <%\t%>$(CC) $(CFLAGS) -I$(INCLUDE_DIR_OMSI)  -I$(INCLUDE_DIR_OMSI_BASE) -I$(INCLUDE_DIR_OMSI_SOLVER) -I$(INCLUDE_DIR_OMSI_FMI2) -I$(INCLUDE_DIR_OMSIC) -I$(INCLUDE_DIR_OMSIC_FMI2) -c $<
 
-    createSimulation:
+    createSimulation: <%fileNamePrefix%>.fmu
     <%\t%>omc <%fileNamePrefix%>_simulation.mos
 
     clean:

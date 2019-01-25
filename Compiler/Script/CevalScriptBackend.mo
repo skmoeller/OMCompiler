@@ -5048,7 +5048,7 @@ algorithm
                 Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
                 fail();
               end if;
-              filenameprefix := System.makeC89Identifier(filenameprefix) + "_me_FMU";
+              filenameprefix := filenameprefix + "_me_FMU";
             else
               CevalScript.compileModel(filenameprefix, libs);
             end if;
