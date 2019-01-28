@@ -146,7 +146,7 @@ template simulationInitHeaderFile(SimCode simCode ,Text& extraFuncs,Text& extraF
  "Generates code for header file for simulation target."
 ::=
 match simCode
-case SIMCODE(modelInfo=MODELINFO(__),initialEquations=initialequations,fileNamePrefix=fileNamePrefix,omsiData=omsiData as SOME(OMSI_DATA(initialization=initialization as OMSI_FUNCTION(__)))) then
+case SIMCODE(modelInfo=MODELINFO(__),initialEquations=initialequations,parameterEquations=parameterEquations,fileNamePrefix=fileNamePrefix,omsiData=omsiData as SOME(OMSI_DATA(initialization=initialization as OMSI_FUNCTION(__)))) then
 
 let initeqs = match  Config.simCodeTarget()
       case "Cpp" then
@@ -156,7 +156,11 @@ let initeqs = match  Config.simCodeTarget()
 end match
 
 
-let initparameqs = generateEquationMemberFuncDecls(parameterEquations,"initParameterEquation")
+let initparameqs   = match  Config.simCodeTarget()
+      case "Cpp" then
+       generateEquationMemberFuncDecls(parameterEquations,"initParameterEquation")
+      case "omsicpp" then ""
+      end match
   match modelInfo
     case modelInfo as MODELINFO(vars=SIMVARS(__)) then
       let functionPrefix = if(Flags.isSet(Flags.HARDCODED_START_VALUES)) then "initialize" else "check"
@@ -192,8 +196,11 @@ let initparameqs = generateEquationMemberFuncDecls(parameterEquations,"initParam
         >>
       %>
     private:
+
       <%initeqs%>
+
       <%initparameqs%>
+
       <%destructExtObjsDecl(simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, false)%>
 
       void InitializeDummyTypeElems();
@@ -225,6 +232,7 @@ let initparameqs = generateEquationMemberFuncDecls(parameterEquations,"initParam
         <%List.partition(vars.intParamVars, 100) |> ls hasindex idx => 'void <%functionPrefix%>IntParameterVars_<%idx%>();';separator="\n"%>
         <%List.partition(vars.boolParamVars, 100) |> ls hasindex idx => 'void <%functionPrefix%>BoolParameterVars_<%idx%>();';separator="\n"%>
         <%List.partition(vars.stringParamVars, 100) |> ls hasindex idx => 'void <%functionPrefix%>StringParameterVars_<%idx%>();';separator="\n"%>
+
         void <%functionPrefix%>ParameterVars();
         void <%functionPrefix%>IntParameterVars();
         void <%functionPrefix%>BoolParameterVars();
@@ -5785,7 +5793,7 @@ end destructExtObjsDecl;
 template init(SimCode simCode ,Text& extraFuncs,Text& extraFuncsDecl,Text extraFuncsNamespace, Text stateDerVectorName /*=__zDot*/, Boolean useFlatArrayNotation, Text& complexStartExpressions)
 ::=
 match simCode
-case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  then
+case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__),initialEquations=initialEquations,parameterEquations=parameterEquations)  then
    //let () = System.tmpTickReset(0)
    let &varDecls = buffer "" /*BUFD*/
    let modelname = identOfPathDot(modelInfo.name)
@@ -5797,8 +5805,8 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
    let initAlgloopSolvers = initAlgloopsolvers(listAppend(listAppend(allEquations, initialEquations), getClockedEquations(getSubPartitions(clockedPartitions))),simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace)
 
 
-   let initialequations  = functionInitialEquations(initialEquations,"initEquation",simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation, false, true, false)
-   let boundparameterequations  = functionInitialEquations(parameterEquations,"initParameterEquation",simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation, false, true, true)
+   let initialequations  =  match  Config.simCodeTarget()   case "Cpp" then functionInitialEquations(initialEquations,"initEquation",simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation, false, true, false) else ""
+   let boundparameterequations  =  match  Config.simCodeTarget() case "Cpp" then functionInitialEquations(parameterEquations,"initParameterEquation",simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, stateDerVectorName, useFlatArrayNotation, false, true, true) else ""
    let compiledir = makefileParams.compileDir
    <<
    // convenience function for full initialization
@@ -5958,13 +5966,20 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__))  th
       %>
 
    }
-   <%initialequations%>
-   void <%lastIdentOfPath(modelInfo.name)%>Initialize::initParameterEquations()
-   {
-      <%(parameterEquations |> eq  =>
+    <%match  Config.simCodeTarget()
+      case "Cpp" then
+      '<%initialequations%>
+      void <%lastIdentOfPath(modelInfo.name)%>Initialize::initParameterEquations()
+      {
+       <%(parameterEquations |> eq  =>
                     equation_function_call(eq,  contextOther, &varDecls /*BUFC*/, simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace,"initParameterEquation")
                     ;separator="\n")%>
-   }
+      }'
+      case "omsicpp" then
+      ''
+      end match
+      %>
+
    <%boundparameterequations%>
    <%init2(simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, modelInfo, stateDerVectorName, useFlatArrayNotation)%>
     >>
