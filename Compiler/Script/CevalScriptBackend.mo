@@ -1303,7 +1303,7 @@ algorithm
 
     case (cache,env,"translateModelFMU", Values.CODE(Absyn.C_TYPENAME(className))::Values.STRING(str1)::Values.STRING(str2)::Values.STRING(filenameprefix)::_,_)
       algorithm
-        (cache,ret_val) := buildModelFMU(cache, env, className, str1, str2, filenameprefix, true);
+        (cache,ret_val,_) := buildModelFMU(cache, env, className, str1, str2, filenameprefix, true);
       then (cache,ret_val);
 
     case (cache,_,"translateModelFMU", _,_)
@@ -1311,7 +1311,7 @@ algorithm
 
     case (cache,env,"buildModelFMU", Values.CODE(Absyn.C_TYPENAME(className))::Values.STRING(str1)::Values.STRING(str2)::Values.STRING(filenameprefix)::Values.ARRAY(valueLst=cvars)::_,_)
       algorithm
-        (cache,ret_val) := buildModelFMU(cache, env, className, str1, str2, filenameprefix, true, list(ValuesUtil.extractValueString(vv) for vv in cvars));
+        (cache,ret_val,_) := buildModelFMU(cache, env, className, str1, str2, filenameprefix, true, list(ValuesUtil.extractValueString(vv) for vv in cvars));
       then (cache,ret_val);
 
     case (cache,_,"buildModelFMU", _,_)
@@ -1497,7 +1497,27 @@ algorithm
     case (cache,env,"simulate",vals as Values.CODE(Absyn.C_TYPENAME(className))::_,_)
       algorithm
         System.realtimeTick(ClockIndexes.RT_CLOCK_SIMULATE_TOTAL);
-        (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues,vals) := buildModel(cache,env,vals,msg);
+        if not Config.simCodeTarget() == "omsic" then
+          (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues,vals) := buildModel(cache,env,vals,msg);
+        else
+          try
+            filenameprefix := Absyn.pathString(className);
+            filenameprefix := System.makeC89Identifier(filenameprefix);
+            (cache, _, resultValues) := buildModelFMU(cache, env, className, "2.0", "me", Absyn.pathString(className), true, {"static"});
+            sim_call := stringAppendList({System.getMakeCommand()," -f ",filenameprefix + "_FMU",".makefile"," ","createSimulation"});
+            if System.systemCall(sim_call,filenameprefix+"_FMU.log") <> 0 then
+              Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
+              fail();
+            end if;
+            b := true;
+          else
+            b := false;
+          end try;
+          compileDir := System.pwd() + System.pathDelimiter();
+          executable := filenameprefix;
+          outputFormat_str := "mat";
+          simflags := " -r " + filenameprefix + "_res." + outputFormat_str;
+        end if;
 
         if b then
           exeDir := compileDir;
@@ -2956,6 +2976,8 @@ algorithm
      then ".bat";
     case ("omsicpp","WIN32")
        then ".bat";
+    case ("omsic",_)
+       then "_me_FMU";
     else System.getExeExt();
   end match;
  end getSimulationExtension;
@@ -3463,6 +3485,7 @@ protected function buildModelFMU " author: Frenkel TUD
   input list<String> platforms = {"static"};
   output FCore.Cache cache;
   output Values.Value outValue;
+  output list<tuple<String, Values.Value>> resultValues;
 protected
   Boolean staticSourceCodeFMU, success;
   String filenameprefix, fmutmp, logfile, dir, cmd;
@@ -3472,6 +3495,7 @@ protected
   list<String> libs;
   Boolean isWindows;
   String FMUType = inFMUType;
+  Real timeCompile;
 algorithm
   cache := inCache;
   if not FMI.checkFMIVersion(FMUVersion) then
@@ -3500,7 +3524,7 @@ algorithm
   simSettings := convertSimulationOptionsToSimCode(defaulSimOpt);
   Flags.setConfigBool(Flags.BUILDING_FMU, true);
   try
-    (success, cache, libs,_, _) := SimCodeMain.translateModel(SimCodeMain.TranslateModelKind.FMU(FMUVersion, FMUType, fmuTargetName), cache, inEnv, className, filenameprefix, addDummy, SOME(simSettings));
+    (success, cache, libs, _, resultValues) := SimCodeMain.translateModel(SimCodeMain.TranslateModelKind.FMU(FMUVersion, FMUType, fmuTargetName), cache, inEnv, className, filenameprefix, addDummy, SOME(simSettings));
     true := success;
     outValue := Values.STRING((if not Config.getRunningTestsuite() then System.pwd() + System.pathDelimiter() else "") + fmuTargetName + ".fmu");
   else
@@ -3528,6 +3552,7 @@ algorithm
     return;
   end if;
 
+  System.realtimeTick(ClockIndexes.RT_CLOCK_BUILD_MODEL);
   CevalScript.compileModel(filenameprefix+"_FMU" , libs);
 
   ExecStat.execStat("buildModelFMU: Generate the FMI files");
@@ -3551,6 +3576,9 @@ algorithm
   if 0 <> System.systemCall(cmd, outFile=logfile) then
     Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {cmd + "\n\n" + System.readFile(logfile)});
     ExecStat.execStat("buildModelFMU failed");
+  else
+    timeCompile := System.realtimeTock(ClockIndexes.RT_CLOCK_BUILD_MODEL);
+    resultValues := ("timeCompile",Values.REAL(timeCompile)) :: resultValues;
   end if;
 
   if not System.regularFileExists(fmuTargetName + ".fmu") then
@@ -5041,21 +5069,11 @@ algorithm
         end if;
         if success then
           try
-            if Config.simCodeTarget() == "omsic" then
-              CevalScript.compileModel(filenameprefix + "_FMU", libs);
-              sim_create_call := stringAppendList({System.getMakeCommand()," -f ",filenameprefix + "_FMU",".makefile"," ","createSimulation"});
-              if System.systemCall(sim_create_call,filenameprefix+"_FMU.log") <> 0 then
-                Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
-                fail();
-              end if;
-              filenameprefix := System.makeC89Identifier(filenameprefix) + "_me_FMU";
-            else
-              CevalScript.compileModel(filenameprefix, libs);
-            end if;
+            CevalScript.compileModel(filenameprefix, libs);
+            timeCompile := System.realtimeTock(ClockIndexes.RT_CLOCK_BUILD_MODEL);
           else
             success := false;
           end try;
-          timeCompile := System.realtimeTock(ClockIndexes.RT_CLOCK_BUILD_MODEL);
         else
           timeCompile := 0.0;
         end if;

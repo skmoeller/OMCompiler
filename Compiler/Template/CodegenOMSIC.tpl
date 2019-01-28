@@ -200,11 +200,11 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
      $(KINSOL_LIBDIR)/lib$(KINSOL_LIB).<%libEnding%><%star%>                                \
      $(KINSOL_LIBDIR)/lib$(SUNDIALS_NVECSERIAL).<%libEnding%><%star%>                       \
 
-    .PHONY: clean
+    .PHONY: copyFiles makeStructure compile createSimulation clean
 
-    all: compile
+    all: <%fileNamePrefix%>.fmu
 
-    <%fileNamePrefix%>_FMU : compile
+    <%fileNamePrefix%>.fmu: compile
     <%\t%>cd <%fileNamePrefix%>.fmutmp; \
     <%\t%>zip<%makefileParams.exeext%> -r ../<%fileNamePrefix%>.fmu *;\
     <%\t%>cd ..;\
