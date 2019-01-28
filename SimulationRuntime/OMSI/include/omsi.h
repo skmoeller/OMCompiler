@@ -99,12 +99,13 @@ typedef const omsi_char*    omsi_string;
 #define OMSI_TYPES_DEFINED
 
 
-/* Typedef modelica types, so we don't need to change so much in CodegenCFunctions..tpl */
+/* Typedef modelica types, so we don't need to change so much in CodegenCFunctions.tpl */
 /* ToDo: Change */
 #ifndef MODELICATYPES_TYPEDEF
 #define MODELICATYPES_TYPEDEF
 typedef omsi_real           modelica_real;
 typedef omsi_int            modelica_int;
+typedef omsi_bool           modelica_boolean;
 #endif
 
 
