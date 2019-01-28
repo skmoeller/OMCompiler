@@ -172,24 +172,50 @@ omsi_real omsi_compute_next_event_time (omsi_real           time,
 
 
 /**
- * \brief Return reinitialized value in eventMode and tells the FMU to update
- *        discrete states in modelContinousTimeMode.
+ * \brief Checks for discrete changes.
  *
- * @param value
- * @param new_value
- * @param eventInfo
- * @param model_state
+ * Compares discrete real, integer and boolean variables to their pre values.
+ * Returns true if the values are different.
+ *
+ * \param omsi_data
+ * @return
  */
-void omsi_reinit(omsi_real value,
-                 omsi_real new_value,
-                 omsi_event_info* eventInfo,
-                 ModelState model_state)
+omsi_bool omsi_check_discrete_changes (omsi_t* omsi_data)
 {
-    if (model_state == modelEventMode ) {
-        value = new_value;
-    } else if (model_state == modelContinuousTimeMode) {
-        eventInfo->newDiscreteStatesNeeded = omsi_true;
-    } else if (model_state == modelInitializationMode) {
-        printf("Not implemented yet!"); fflush(stdout);
+    /* Variables */
+    omsi_unsigned_int i;
+    omsi_unsigned_int start_discrete_real_vars, n_discrete_real_vars;
+    omsi_values* model_vars_and_params;
+    omsi_values* pre_model_vars_and_params;
+
+    /* Set pointers */
+    start_discrete_real_vars = omsi_data->model_data->start_index_disc_reals;
+    n_discrete_real_vars = omsi_data->model_data->n_discrete_reals;
+    model_vars_and_params = omsi_data->sim_data->model_vars_and_params;
+    pre_model_vars_and_params = omsi_data->sim_data->pre_vars;
+
+    /* Compare all real discrete variables to pre variables */
+    for (i=start_discrete_real_vars; i<n_discrete_real_vars; i++) {
+        if (fabs(model_vars_and_params->reals[i] - pre_model_vars_and_params->reals[i]) > 1e-8) {  /* ToDo: insert pre vars mapping */
+            return omsi_true;
+        }
     }
+
+    /* Compare all integer variables to pre variables */
+    for (i=0; i<omsi_data->model_data->n_int_vars; i++) {
+        if (model_vars_and_params->ints[i] != pre_model_vars_and_params->ints[i] ) {  /* ToDo: insert pre vars mapping */
+            return omsi_true;
+        }
+    }
+
+    /* Compare all integer variables to pre variables */
+    for (i=0; i<omsi_data->model_data->n_bool_vars; i++) {
+        if (model_vars_and_params->bools[i] != pre_model_vars_and_params->bools[i] ) {  /* ToDo: insert pre vars mapping */
+            return omsi_true;
+        }
+    }
+
+    return omsi_false;
 }
+
+

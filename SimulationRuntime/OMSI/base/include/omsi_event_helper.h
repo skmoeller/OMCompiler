@@ -62,6 +62,8 @@ omsi_real omsi_compute_next_event_time (omsi_real           time,
                                         omsi_sample*        sample_events,
                                         omsi_unsigned_int   n_sample_events);
 
+omsi_bool omsi_check_discrete_changes (omsi_t* omsi_data);
+
 #ifdef __cplusplus
 }
 #endif

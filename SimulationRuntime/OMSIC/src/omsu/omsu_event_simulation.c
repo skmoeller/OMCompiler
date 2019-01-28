@@ -156,65 +156,21 @@ omsi_status omsi_event_update(osu_t*              OSU,
     omsu_storePreValues(OSU->osu_data);
     omsu_update_pre_zero_crossings(OSU->osu_data->sim_data, OSU->osu_data->model_data->n_zerocrossings);
 
-    /* ToDo: Add sample events */
-#if 0
-    /* activate sample event */
-    for (i = 0; i < OSU->old_data->modelData->nSamples; ++i) {
-        if (OSU->old_data->simulationInfo->nextSampleTimes[i]
-                <= OSU->old_data->localData[0]->timeValue) {
-            OSU->old_data->simulationInfo->samples[i] = 1;
-            //infoStreamPrint(LOG_EVENTS, 0, "[%ld] sample(%g, %g)", OSU->old_data->modelData->samplesInfo[i].index, OSU->old_data->modelData->samplesInfo[i].start, OSU->old_data->modelData->samplesInfo[i].interval);
-        }
-    }
-#endif
-
     /*evaluate functionDAE */
     status = OSU->osu_data->sim_data->simulation->evaluate(OSU->osu_data->sim_data->simulation, OSU->osu_data->sim_data->simulation->function_vars, NULL);
     if (status != omsi_ok) {
         return status;
     }
 
-#if 0
-    /* deactivate sample events */
-    for (i = 0; i < OSU->old_data->modelData->nSamples; ++i) {
-        if (OSU->old_data->simulationInfo->samples[i]) {
-            OSU->old_data->simulationInfo->samples[i] = 0;
-            OSU->old_data->simulationInfo->nextSampleTimes[i] +=
-                    OSU->old_data->modelData->samplesInfo[i].interval;
-        }
-    }
-
-    for (i = 0; i < OSU->old_data->modelData->nSamples; ++i)
-        if ((i == 0)
-                || (OSU->old_data->simulationInfo->nextSampleTimes[i]
-                        < OSU->old_data->simulationInfo->nextSampleEvent))
-            OSU->old_data->simulationInfo->nextSampleEvent =
-                    OSU->old_data->simulationInfo->nextSampleTimes[i];
-#endif
-
-    /* ToDo: check for discrete changes */
-#if 0
-    if (omsu_discrete_changes(OSU->osu_data, thread_data) || eventInfo->valuesOfContinuousStatesChanged) {
-        /* ? */
-    }
-
-    //if(OSU->old_data->callback->checkForDiscreteChanges(OSU->old_data, OSU->threadData) || OSU->old_data->simulationInfo->needToIterate || checkRelations(OSU->old_data) || eventInfo->valuesOfContinuousStatesChanged)
-    if (OSU->osu_functions->checkForDiscreteChanges(OSU->old_data,
-            OSU->threadData) || OSU->old_data->simulationInfo->needToIterate
-            || checkRelations(OSU->old_data)
-            || eventInfo->valuesOfContinuousStatesChanged) {
-        FILTERED_LOG(OSU, omsi_ok, LOG_FMI2_CALL,
-                "fmi2EventUpdate: Need to iterate(discrete changes)!")
+    /* Check for discrete changes */
+    if (omsi_check_discrete_changes(OSU->osu_data) || eventInfo->newDiscreteStatesNeeded) {
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+                "fmi2EventUpdate:  Need to iterate(discrete changes)!");
         eventInfo->newDiscreteStatesNeeded = omsi_true;
-        eventInfo->nominalsOfContinuousStatesChanged = omsi_false;
         eventInfo->valuesOfContinuousStatesChanged = omsi_true;
-        eventInfo->terminateSimulation = omsi_false;
     } else {
         eventInfo->newDiscreteStatesNeeded = omsi_false;
-        eventInfo->nominalsOfContinuousStatesChanged = omsi_false;
-        eventInfo->terminateSimulation = omsi_false;
     }
-#endif
 
     filtered_base_logger(global_logCategories, log_all, omsi_ok,
             "fmi2EventUpdate: newDiscreteStatesNeeded %s",

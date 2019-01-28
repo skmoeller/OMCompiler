@@ -190,7 +190,9 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfStringAliasVariables"), &(osu_data->model_data->n_string_aliases));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfEventIndicators"), &(osu_data->model_data->n_zerocrossings));
     omsu_read_value_uint(omsu_findHashStringString(mi.md,"numberOfTimeEvents"), &(osu_data->model_data->n_samples));        /* ToDo: Is numberOfTimeEvents also part of n_zerocrossings???? */
-    osu_data->model_data->n_equations = -1; /* numberOfEquations is read from JSON */
+    osu_data->model_data->n_equations = -1;             /* numberOfEquations is read from JSON */
+    osu_data->model_data->n_discrete_reals = 0;
+    osu_data->model_data->start_index_disc_reals = -1;  /* Gets set in omsu_read_var_infos */
 
     /* read model_vars_info */
     n_model_vars_and_params = osu_data->model_data->n_states + osu_data->model_data->n_derivatives
@@ -258,15 +260,74 @@ void omsu_read_var_info (omc_ScalarVariable*    v,
                          omsi_int               number_of_prev_variables) {
 
     /* Variables */
+    omsi_char* tmp_caus_var_init_attribute;
     omsi_string aliasTmp;
     real_var_attribute_t * attribute_real;
     int_var_attribute_t * attribute_int;
     bool_var_attribute_t * attribute_bool;
     string_var_attribute_t * attribute_string;
 
-    omsu_read_value_int(omsu_findHashStringString(v,"valueReference"), &model_var_info->id, 0);
     omsu_read_value_string(omsu_findHashStringString(v,"name"), (omsi_char**) &model_var_info->name);
+    omsu_read_value_int(omsu_findHashStringString(v,"valueReference"), &model_var_info->id, 0);
     omsu_read_value_string(omsu_findHashStringStringEmpty(v,"description"), (omsi_char**) &model_var_info->comment);
+    omsu_read_value_string(omsu_findHashStringStringEmpty(v,"causality"), &tmp_caus_var_init_attribute);
+    if (0 == strcmp(tmp_caus_var_init_attribute,"parameter")) {
+        model_var_info->causality = parameter;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"calculatedParameter")) {
+        model_var_info->causality = calculatedParameter;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"input")) {
+        model_var_info->causality = input;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"output")) {
+        model_var_info->causality = output;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"local")) {
+        model_var_info->causality = local;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"independent")) {
+        model_var_info->causality = independent;
+    }else if (tmp_caus_var_init_attribute==NULL) {
+        model_var_info->causality = local;
+    }else {
+        /* ToDo: Add error */
+    }
+    global_callback->freeMemory(tmp_caus_var_init_attribute);
+
+    omsu_read_value_string(omsu_findHashStringStringEmpty(v,"variability"), &tmp_caus_var_init_attribute);
+    if (0 == strcmp(tmp_caus_var_init_attribute,"constant")) {
+        model_var_info->variability = constant;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"fixed")) {
+        model_var_info->variability = fixed;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"tunable")) {
+        model_var_info->variability = tunable;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"discrete")) {
+        model_var_info->variability = discrete;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"continous")) {
+        model_var_info->variability = continous;
+    }else if (tmp_caus_var_init_attribute==NULL) {
+        model_var_info->variability = continous;
+    }else {
+        /* ToDo: Add error */
+    }
+    global_callback->freeMemory(tmp_caus_var_init_attribute);
+
+    omsu_read_value_string(omsu_findHashStringStringEmpty(v,"initial"), &tmp_caus_var_init_attribute);
+    if (0 == strcmp(tmp_caus_var_init_attribute,"exact")) {
+        model_var_info->initial = exact;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"approx")) {
+        model_var_info->initial = approx;
+    }else if (0 == strcmp(tmp_caus_var_init_attribute,"calculated")) {
+        model_var_info->initial = calculated;
+    }else if (tmp_caus_var_init_attribute==NULL) {
+        if (model_var_info->variability==constant || model_var_info->causality==parameter) {
+            model_var_info->initial = exact;
+        }else if (model_var_info->variability==fixed || model_var_info->variability==tunable
+                  || model_var_info->causality==output || model_var_info->causality==local) {
+            model_var_info->initial = calculated;
+        }else {
+            model_var_info->initial = no_initial;
+        }
+    }else {
+        /* ToDo: Add error */
+    }
+    global_callback->freeMemory(tmp_caus_var_init_attribute);
 
     model_var_info->type_index.type = type;
 
@@ -378,6 +439,12 @@ void omsu_read_var_infos(model_data_t*      model_data,
     for (i=0; i<model_data->n_real_vars; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rAlg ,i);
         omsu_read_var_info(v, &model_data->model_vars_info[j], OMSI_TYPE_REAL, &variable_index, -1);
+        /* Count discrete real variables and set start index */
+        if (model_data->model_vars_info[j].variability==discrete) {
+            model_data->n_discrete_reals++;
+            if (model_data->start_index_disc_reals == -1)
+            model_data->start_index_disc_reals=j;
+        }
     }
     for (i=0; i<model_data->n_real_parameters; i++, j++) {
         omc_ScalarVariable *v = *omsu_findHashLongVar(mi->rPar ,i);

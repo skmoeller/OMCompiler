@@ -223,6 +223,57 @@ typedef enum {
 }omsi_status;
 
 
+/**
+ * Enumeration that defines the causality of the variable.
+ */
+typedef enum {
+    parameter,              /**< Independent parameter. */
+    calculatedParameter,    /**< A data value that is constant during the
+                             *   simulation and is computed during initialization
+                             *   or when tunable parameters change. */
+    input,                  /**< The variable value can be provided from another
+                             *   model or slave. */
+    output,                 /**< The variable value can be used by another model
+                             *   or slave. */
+    local,                  /**< Local variable that is calculated from other
+                             *   variables or is a continuous time sate. */
+    independent             /**< The independent variable (usually `time`). */
+}omsi_causality;
+
+/**
+ * Enumeration that defines the time dependency of the variable, in other words
+ * it defines the time instants when a variable can change its value.
+ */
+typedef enum {
+    constant,   /**< The value of the variable never changes. */
+    fixed,      /**< The value of the variable is fixed after initialization. */
+    tunable,    /**< The value of the variable is constant between external
+                 *   events (ModelExchange) and between Communication Points
+                 *   (CoSimulation). */
+    discrete,   /**< ModelExchange: The value of the variable is constant
+                 *   between external and internal events.<br>
+                 *   CoSimulation: By convention, the variable is from a "real"
+                 *   sampled data system and its value is only changed at
+                 *   Communication Points. */
+    continous   /**< Only a variable of type = `Real` can be `continuous`. */
+}omsi_variability;
+
+/**
+ * Enumeration that defines how the variable is initialized.
+ */
+typedef enum {
+    exact,      /**< The variable is initialized with the start value. */
+    approx,     /**< The variable is an iteration variable of an algebraic loop
+                 *   and the iteration at initialization starts with the start
+                 *   value. */
+    calculated, /**< The variable is calculated from other variables during
+                 *   initialization. */
+    no_initial  /**< The variable is not initial (input variable or
+                 *   independent variable). */
+}omsi_initial;
+
+
+
 /*
  * ============================================================================
  * Definitions for simulation data
@@ -449,9 +500,12 @@ typedef struct string_var_attribute_t {
  * Informations for single variable or parameter
  */
 typedef struct model_variable_info_t {
-    omsi_int        id;                     /* unique value reference from *_init.xml */
     omsi_string     name;                   /* name of variable|parameter|alias */
+    omsi_int        id;                     /* unique value reference from *_init.xml */
     omsi_string     comment;                /* variable description  or modelica comment*/
+    omsi_causality  causality;              /* Causality if variable. */
+    omsi_variability variability;           /* Variability of Variable. */
+    omsi_initial    initial;                /* How the variable is initialized. */
     omsi_index_type type_index;             /* tuple of data_type and index in sim_data->model_vars_and_params->..., if isAlias=true then index from alias variable */
     void*           modelica_attributes;    /* pointer to modelica attributes  ( real_var_attribute | int_var_attribute | bool_var_attribute | string_var_attribute ) */
     omsi_bool       isAlias;                /* true if alias, else false */
@@ -470,6 +524,7 @@ typedef struct model_data_t {
     omsi_unsigned_int   n_states;               /**< Number of continuous states. */
     omsi_unsigned_int   n_derivatives;          /**< Number of derivatives. */
     omsi_unsigned_int   n_real_vars;            /**< Number of real algebraic variables. */
+    omsi_unsigned_int   n_discrete_reals;       /**< Number of discrete real variables */
     omsi_unsigned_int   n_real_parameters;      /**< Number of real parameters. */
     omsi_unsigned_int   n_real_aliases;         /**< Number of real alias variables. */
     omsi_unsigned_int   n_int_vars;             /**< Number of integer algebraic variables. */
@@ -487,6 +542,7 @@ typedef struct model_data_t {
     omsi_unsigned_int   n_regular_equations;    /**< Number of regular equations. */
     omsi_unsigned_int   n_alias_equations;      /**< Number of alias equations. */
     omsi_unsigned_int   n_samples;              /**< Number of samples. */
+    omsi_int            start_index_disc_reals; /**< Start index of discrete real variables */
 
     model_variable_info_t*  model_vars_info;  /**< Array of variable informations for all N variables and parameters,
                                                  * N = `n_states` + `n_derivatives` `n_$all_vars` + `n_$all_parameters`,  $all={real,int,bool}. */
