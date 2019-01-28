@@ -7127,7 +7127,7 @@ template varArrayNameValues(SimVar var, Integer ix, Boolean isPre, Boolean isSta
           <<
           <%if isStart then '<%varAttributes(var)%>.start'
              else if isPre then 'this_function->pre_vars-><%crefTypeOMSIC(name)%>[<%index%>] /* <%c_comment%> <%variabilityString(varKind)%> */'
-             else 'this_function->function_vars[<%ix%>]-><%crefTypeOMSIC(name)%>[<%index%>] /* <%c_comment%> <%variabilityString(varKind)%> */'
+             else 'this_function->function_vars-><%crefTypeOMSIC(name)%>[<%index%>] /* <%c_comment%> <%variabilityString(varKind)%> */'
           %>
           >>
       end match
