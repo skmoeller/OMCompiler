@@ -4046,7 +4046,6 @@ template assertCommon(Exp condition, list<Exp> messages, Exp level, Context cont
             case PARALLEL_FUNCTION_CONTEXT(__)
             then '' else '_withEquationIndexes'
   let addInfoTextContext = match context
-            case OMSI_CONTEXT(__) then '/* ToDo: Add assert warning? */'
             case FUNCTION_CONTEXT(__)
             case PARALLEL_FUNCTION_CONTEXT(__) then ''
             else '<%\n%>omc_assert_warning(info, "The following assertion has been violated %sat time %f\n<%Util.escapeModelicaStringToCString(ExpressionDumpTpl.dumpExp(condition,"\""))%>", initial() ? "during initialization " : "", data->localData[0]->timeValue);'
