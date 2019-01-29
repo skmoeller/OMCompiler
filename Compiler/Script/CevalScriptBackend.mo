@@ -1421,12 +1421,34 @@ algorithm
       then
         (cache,Values.BOOL(b));
 
-    case (cache,env,"buildModel",vals,_)
-      equation
+    case (cache,env,"buildModel", vals as Values.CODE(Absyn.C_TYPENAME(className))::_,_)
+      algorithm
         List.map_0(ClockIndexes.buildModelClocks,System.realtimeClear);
         System.realtimeTick(ClockIndexes.RT_CLOCK_SIMULATE_TOTAL);
-        (b,cache,compileDir,executable,_,_,initfilename,_,_,vals) = buildModel(cache,env, vals, msg);
-        executable = if not Config.getRunningTestsuite() then compileDir + executable else executable;
+        if not Config.simCodeTarget() == "omsic" then
+          (b,cache,compileDir,executable,_,_,initfilename,_,_,vals) := buildModel(cache,env, vals, msg);
+        else
+          try
+            filenameprefix := Absyn.pathString(className);
+            filenameprefix := System.makeC89Identifier(filenameprefix);
+            (cache, _, _) := buildModelFMU(cache, env, className, "2.0", "me", Absyn.pathString(className), true, {"static"});
+            sim_call := stringAppendList({System.getMakeCommand()," -f ",filenameprefix + "_FMU",".makefile"," ","createSimulation"});
+            if System.systemCall(sim_call,filenameprefix+"_FMU.log") <> 0 then
+              Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
+              fail();
+            end if;
+            // create executable with original name by copying
+            sim_call := stringAppendList({"cp", " ", filenameprefix, " ", Absyn.pathString(className)});
+            System.systemCall(sim_call, "");
+            b := true;
+          else
+            b := false;
+          end try;
+          compileDir := System.pwd() + System.pathDelimiter();
+          executable := filenameprefix + "_me_FMU";
+          initfilename := filenameprefix + "_init_xml";
+        end if;
+        executable := if not Config.getRunningTestsuite() then compileDir + executable else executable;
       then
         (cache,ValuesUtil.makeArray(if b then {Values.STRING(executable),Values.STRING(initfilename)} else {Values.STRING(""),Values.STRING("")}));
 

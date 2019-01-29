@@ -240,6 +240,7 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
 
     createSimulation:
     <%\t%>omc <%fileNamePrefix%>_simulation.mos
+    <%\t%>cp <%fileNamePrefix%>_me_FMU <%fileNamePrefix%>
 
     clean:
     <%\t%>rm -f <%fileNamePrefix%><%makefileParams.dllext%>
