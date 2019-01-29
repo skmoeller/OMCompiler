@@ -202,11 +202,11 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
 
     .PHONY: copyFiles makeStructure compile createSimulation clean
 
-    all: <%fileNamePrefix%>.fmu
+    all: <%fmuTargetName%>.fmu
 
-    <%fileNamePrefix%>.fmu: compile
+    <%fmuTargetName%>.fmu: compile
     <%\t%>cd <%fileNamePrefix%>.fmutmp; \
-    <%\t%>zip<%makefileParams.exeext%> -r ../<%fileNamePrefix%>.fmu *;\
+    <%\t%>zip<%makefileParams.exeext%> -r ../<%fmuTargetName%>.fmu *;\
     <%\t%>cd ..;\
 
     copyFiles: makeStructure
@@ -238,9 +238,9 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
     %.o : %.c copyFiles
     <%\t%>$(CC) $(CFLAGS) -I$(INCLUDE_DIR_OMSI)  -I$(INCLUDE_DIR_OMSI_BASE) -I$(INCLUDE_DIR_OMSI_SOLVER) -I$(INCLUDE_DIR_OMSI_FMI2) -I$(INCLUDE_DIR_OMSIC) -I$(INCLUDE_DIR_OMSIC_FMI2) -c $<
 
-    createSimulation: <%fileNamePrefix%>.fmu
+    createSimulation: <%fmuTargetName%>.fmu
     <%\t%>omc <%fileNamePrefix%>_simulation.mos
-    <%\t%>cp <%fileNamePrefix%>_me_FMU <%fileNamePrefix%>
+    <%\t%>mv <%fileNamePrefix%>_me_FMU <%fmuTargetName%>
 
     clean:
     <%\t%>rm -f <%fileNamePrefix%><%makefileParams.dllext%>
@@ -448,18 +448,17 @@ template createMakefileIn(SimCode simCode, String target, String FileNamePrefix,
 end createMakefileIn;
 
 
-template createSimulationScript(String FileNamePrefix)
+template createSimulationScript(String fileNamePrefix, String fmuTargetName)
 ""
 ::=
-  let loadName = makeC89Identifier(FileNamePrefix)
   <<
-  importFMU("<%FileNamePrefix%>.fmu");
+  importFMU("<%fmuTargetName%>.fmu");
   getErrorString();
   setCommandLineOptions("--simCodeTarget=C");
 
-  loadFile("<%loadName%>_me_FMU.mo");
+  loadFile("<%fileNamePrefix%>_me_FMU.mo");
   getErrorString();
-  buildModel(<%loadName%>_me_FMU);
+  buildModel(<%fileNamePrefix%>_me_FMU);
   getErrorString();
   >>
 end createSimulationScript;

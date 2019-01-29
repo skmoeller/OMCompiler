@@ -1429,17 +1429,13 @@ algorithm
           (b,cache,compileDir,executable,_,_,initfilename,_,_,vals) := buildModel(cache,env, vals, msg);
         else
           filenameprefix := Absyn.pathString(className);
-          filenameprefix := System.makeC89Identifier(filenameprefix);
           try
-            (cache, _, _) := buildModelFMU(cache, env, className, "2.0", "me", Absyn.pathString(className), true, {"static"});
-            sim_call := stringAppendList({System.getMakeCommand()," -f ",filenameprefix + "_FMU.makefile createSimulation"});
+            (cache, _, _) := buildModelFMU(cache, env, className, "2.0", "me", "<default>", true, {"static"});
+            sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU.makefile createSimulation"});
             if System.systemCall(sim_call,filenameprefix+"_FMU.log") <> 0 then
               Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
               fail();
             end if;
-            // create executable with original name by copying
-            sim_call := stringAppendList({"cp", " ", filenameprefix, " ", Absyn.pathString(className)});
-            System.systemCall(sim_call, "");
             b := true;
           else
             b := false;
@@ -1522,11 +1518,10 @@ algorithm
         if not Config.simCodeTarget() == "omsic" then
           (b,cache,compileDir,executable,_,outputFormat_str,_,simflags,resultValues,vals) := buildModel(cache,env,vals,msg);
         else
+          filenameprefix := Absyn.pathString(className);
           try
-            filenameprefix := Absyn.pathString(className);
-            filenameprefix := System.makeC89Identifier(filenameprefix);
-            (cache, _, resultValues) := buildModelFMU(cache, env, className, "2.0", "me", Absyn.pathString(className), true, {"static"});
-            sim_call := stringAppendList({System.getMakeCommand()," -f ",filenameprefix + "_FMU",".makefile"," ","createSimulation"});
+            (cache, _, resultValues) := buildModelFMU(cache, env, className, "2.0", "me", "<default>", true, {"static"});
+            sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU",".makefile"," ","createSimulation"});
             if System.systemCall(sim_call,filenameprefix+"_FMU.log") <> 0 then
               Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
               fail();
