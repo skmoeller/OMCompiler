@@ -261,9 +261,8 @@ omsi_status omsi_intialize_callbacks(omsi_t*                                omsu
                                       template_functions->initialize_simulation_problem);
 
     /* Initialize sample events */
-    /* ToDo: Temporary deactivated because it's not supported in omsicpp and causes a crash
-	template_functions->initialize_samples(omsu->sim_data->sample_events);
-	*/
+    template_functions->initialize_samples(omsu->sim_data->sample_events);
+
     return omsi_ok;
 }
 
