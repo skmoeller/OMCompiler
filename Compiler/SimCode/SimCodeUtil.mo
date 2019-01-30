@@ -3802,9 +3802,9 @@ algorithm
       BackendDAE.JacobianType jacobianType;
       BackendDAE.InnerEquations innerEquations;
       list<Integer> tearingVars, residualEqns;
-      list<BackendDAE.Var> tvars;
+      list<BackendDAE.Var> tvars, varlst;
       list<SimCodeVar.SimVar> loopIterationVars, loopSolvedVars;
-      list<BackendDAE.Equation> reqns;
+      list<BackendDAE.Equation> reqns, eqnlst;
       SimCode.SimEqSystem algSystem;
       list<SimCode.SimEqSystem> resEqs, simequations;
       SimCode.OMSIFunction omsiFunction;
@@ -3824,9 +3824,24 @@ algorithm
 
     // case for singe when equations
     case BackendDAE.SINGLEWHENEQUATION() equation
-      ({eqn}, {var}, _) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
+      (eqnlst, varlst, _) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
       (tmpEqns, tmpInputVars, tmpOutputVars, tmpInnerVars, uniqueEqIndex) =
-        generateSingleEquation(eqn, var, shared.functionTree, uniqueEqIndex);
+        generateSingleEquation(listHead(eqnlst), listHead(varlst), shared.functionTree, uniqueEqIndex);
+    then();
+
+    // case for single comlpex equation
+    case BackendDAE.SINGLECOMPLEXEQUATION() equation
+      (eqnlst, varlst,_) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
+      // States are solved for der(x) not x.
+      varlst = List.map(varlst, BackendVariable.transformXToXd);
+      (tmpEqns, uniqueEqIndex, _) = createSingleComplexEqnCode(listHead(eqnlst), varlst, uniqueEqIndex, {}, shared.info, true);
+    then();
+
+    // case for single algorithm equation
+    case BackendDAE.SINGLEALGORITHM() equation
+      (eqnlst, varlst,_) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
+      varlst = List.map(varlst, BackendVariable.transformXToXd);
+      (tmpEqns, uniqueEqIndex) = createSingleAlgorithmCode(eqnlst, varlst, false, uniqueEqIndex);
     then();
 
     // case for torn systems of equations
