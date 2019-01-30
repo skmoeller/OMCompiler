@@ -532,6 +532,8 @@ constant DebugFlag DEBUG_DAEMODE = DEBUG_FLAG(178, "debugDAEmode", false,
   Util.gettext("Dump debug output for the DAEmode."));
 constant DebugFlag NF_SCALARIZE = DEBUG_FLAG(179, "nfScalarize", true,
   Util.gettext("Run scalarization in NF, default true."));
+constant DebugFlag OMSIC_SIM_OMS = DEBUG_FLAG(180, "omsicOMS", false,
+  Util.gettext("Use OMSimulator to simulate omsic fmu."));
 
 // This is a list of all debug flags, to keep track of which flags are used. A
 // flag can not be used unless it's in this list, and the list is checked at
@@ -717,7 +719,8 @@ constant list<DebugFlag> allDebugFlags = {
   OLD_FE_UNITCHECK,
   EXEC_STAT_EXTRA_GC,
   DEBUG_DAEMODE,
-  NF_SCALARIZE
+  NF_SCALARIZE,
+  OMSIC_SIM_OMS
 };
 
 public
