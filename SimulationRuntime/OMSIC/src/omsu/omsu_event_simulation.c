@@ -135,8 +135,6 @@ omsi_status omsi_event_update(osu_t*              OSU,
     filtered_base_logger(global_logCategories, log_all, omsi_ok,
             "fmi2EventUpdate: Start Event Update!");
 
-    eventInfo->valuesOfContinuousStatesChanged = omsi_false;
-
     /* ToDo: try */
     /* MMC_TRY_INTERNAL(simulationJumpBuffer)*/
 
@@ -167,7 +165,7 @@ omsi_status omsi_event_update(osu_t*              OSU,
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
                 "fmi2EventUpdate:  Need to iterate(discrete changes)!");
         eventInfo->newDiscreteStatesNeeded = omsi_true;
-        eventInfo->valuesOfContinuousStatesChanged = omsi_true;
+        eventInfo->valuesOfContinuousStatesChanged = omsi_true;         /* ToDo: Is this correct? */
     } else {
         eventInfo->newDiscreteStatesNeeded = omsi_false;
     }
