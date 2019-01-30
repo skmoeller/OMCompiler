@@ -200,7 +200,7 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
      $(KINSOL_LIBDIR)/lib$(KINSOL_LIB).<%libEnding%><%star%>                                \
      $(KINSOL_LIBDIR)/lib$(SUNDIALS_NVECSERIAL).<%libEnding%><%star%>                       \
 
-    .PHONY: copyFiles makeStructure compile createSimulation clean
+    .PHONY: copyFiles makeStructure compile fmiImport OMSimulation clean
 
     all: <%fmuTargetName%>.fmu
 
@@ -238,9 +238,13 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
     %.o : %.c copyFiles
     <%\t%>$(CC) $(CFLAGS) -I$(INCLUDE_DIR_OMSI)  -I$(INCLUDE_DIR_OMSI_BASE) -I$(INCLUDE_DIR_OMSI_SOLVER) -I$(INCLUDE_DIR_OMSI_FMI2) -I$(INCLUDE_DIR_OMSIC) -I$(INCLUDE_DIR_OMSIC_FMI2) -c $<
 
-    createSimulation: <%fmuTargetName%>.fmu
-    <%\t%>omc <%fileNamePrefix%>_simulation.mos
+    fmiImport: <%fmuTargetName%>.fmu
+    <%\t%>omc <%fileNamePrefix%>_fmiImport.mos
     <%\t%>mv <%fileNamePrefix%>_me_FMU <%fmuTargetName%>
+
+    OMSimulation: <%fmuTargetName%>.fmu
+    <%\t%>@echo "#!/bin/bash\nOMSimulator <%fileNamePrefix%>.lua" > <%fmuTargetName%>
+    <%\t%>chmod +x <%fmuTargetName%>
 
     clean:
     <%\t%>rm -f <%fileNamePrefix%><%makefileParams.dllext%>
@@ -448,7 +452,7 @@ template createMakefileIn(SimCode simCode, String target, String FileNamePrefix,
 end createMakefileIn;
 
 
-template createSimulationScript(String fileNamePrefix, String fmuTargetName)
+template createFMIImportScript(String fileNamePrefix, String fmuTargetName)
 ""
 ::=
   <<
@@ -461,7 +465,30 @@ template createSimulationScript(String fileNamePrefix, String fmuTargetName)
   buildModel(<%fileNamePrefix%>_me_FMU);
   getErrorString();
   >>
-end createSimulationScript;
+end createFMIImportScript;
+
+template createOMSimulationScript(String fileNamePrefix, String fmuTargetName)
+""
+::=
+  <<
+  oms_setCommandLineOption("--suppressPath=true")
+  oms_setTempDirectory("./temp-<%fileNamePrefix%>/")
+
+  oms_newModel("<%fileNamePrefix%>")
+  oms_addSystem("<%fileNamePrefix%>.root", oms_system_sc)
+  oms_addSubModel("<%fileNamePrefix%>.root.A", "<%fmuTargetName%>.fmu")
+  oms_setResultFile("<%fileNamePrefix%>", "<%fmuTargetName%>_res.mat")
+
+  oms_instantiate("<%fileNamePrefix%>")
+
+  oms_initialize("<%fileNamePrefix%>")
+
+  oms_simulate("<%fileNamePrefix%>")
+
+  oms_terminate("<%fileNamePrefix%>")
+  oms_delete("<%fileNamePrefix%>")
+  >>
+end createOMSimulationScript;
 
 annotation(__OpenModelica_Interface="backend");
 end CodegenOMSIC;

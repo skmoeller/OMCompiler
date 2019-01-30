@@ -551,12 +551,6 @@ algorithm
         end for;
       then ();
 
-    case "omsic"
-      algorithm
-        runTplWriteFile(func = function CodegenOMSIC.createSimulationScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fileNamePrefix+"_simulation.mos");
-        callTargetTemplatesFMU(simCode, target, "2.0", "me");
-      then ();
-
     case "Adevs" equation
       Tpl.tplNoret(CodegenAdevs.translateModel, simCode);
     then ();
@@ -804,7 +798,10 @@ algorithm
 
         SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
         SerializeModelInfo.serialize(simCode, Flags.isSet(Flags.INFO_XML_OPERATIONS));
-        runTplWriteFile(func = function CodegenOMSIC.createSimulationScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fileNamePrefix+"_simulation.mos");
+
+        runTplWriteFile(func = function CodegenOMSIC.createFMIImportScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fileNamePrefix+"_fmiImport.mos");
+        runTplWriteFile(func = function CodegenOMSIC.createOMSimulationScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fileNamePrefix+".lua");
+
         runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file="modelDescription.xml");
         runTplWriteFile(func = function CodegenOMSIC.createMakefile(a_simCode=simCode, a_target=Config.simulationCodeTarget(), a_makeflieName=fileprefix+"_FMU.makefile"), file=fileprefix+"_FMU.makefile");
 

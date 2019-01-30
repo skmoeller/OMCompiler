@@ -1431,7 +1431,13 @@ algorithm
           filenameprefix := Absyn.pathString(className);
           try
             (cache, _, _) := buildModelFMU(cache, env, className, "2.0", "me", "<default>", true, {"static"});
-            sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU.makefile createSimulation"});
+
+            // choose the simulation tool OM FMU Import vs. OMSimulator
+            if Flags.isSet(Flags.OMSIC_SIM_OMS) then
+              sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU",".makefile"," ","OMSimulation"});
+            else
+              sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU",".makefile"," ","fmiImport"});
+            end if;
             if System.systemCall(sim_call,filenameprefix+"_FMU.log") <> 0 then
               Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
               fail();
@@ -1521,7 +1527,14 @@ algorithm
           filenameprefix := Absyn.pathString(className);
           try
             (cache, _, resultValues) := buildModelFMU(cache, env, className, "2.0", "me", "<default>", true, {"static"});
-            sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU",".makefile"," ","createSimulation"});
+
+            // choose the simulation tool OM FMU Import vs. OMSimulator
+            if Flags.isSet(Flags.OMSIC_SIM_OMS) then
+              sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU",".makefile"," ","OMSimulation"});
+            else
+              sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU",".makefile"," ","fmiImport"});
+            end if;
+
             if System.systemCall(sim_call,filenameprefix+"_FMU.log") <> 0 then
               Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
               fail();
@@ -2993,8 +3006,6 @@ algorithm
      then ".bat";
     case ("omsicpp","WIN32")
        then ".bat";
-    case ("omsic",_)
-       then "_me_FMU";
     else System.getExeExt();
   end match;
  end getSimulationExtension;
