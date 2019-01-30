@@ -1431,7 +1431,7 @@ algorithm
           filenameprefix := Absyn.pathString(className);
           try
             (cache, _, _) := buildModelFMU(cache, env, className, "2.0", "me", "<default>", true, {"static"});
-            sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU.makefile createSimulation"});
+            sim_call := stringAppendList({System.getMakeCommand()," -C"+System.makeC89Identifier(filenameprefix)+".fmutmp/", " -f ",System.makeC89Identifier(filenameprefix) + "_FMU.makefile createSimulation"});
             if System.systemCall(sim_call,filenameprefix+"_FMU.log") <> 0 then
               Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
               fail();
@@ -1521,7 +1521,7 @@ algorithm
           filenameprefix := Absyn.pathString(className);
           try
             (cache, _, resultValues) := buildModelFMU(cache, env, className, "2.0", "me", "<default>", true, {"static"});
-            sim_call := stringAppendList({System.getMakeCommand()," -f ",System.makeC89Identifier(filenameprefix) + "_FMU",".makefile"," ","createSimulation"});
+            sim_call := stringAppendList({System.getMakeCommand()," -C "+System.makeC89Identifier(filenameprefix)+".fmutmp/"," -f ",System.makeC89Identifier(filenameprefix) + "_FMU",".makefile"," ","createSimulation"});
             if System.systemCall(sim_call,filenameprefix+"_FMU.log") <> 0 then
               Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Compile imported FMU failed!\n",filenameprefix+"_FMU.log"});
               fail();
@@ -2993,8 +2993,6 @@ algorithm
      then ".bat";
     case ("omsicpp","WIN32")
        then ".bat";
-    case ("omsic",_)
-       then "_me_FMU";
     else System.getExeExt();
   end match;
  end getSimulationExtension;
@@ -3570,13 +3568,19 @@ algorithm
   end if;
 
   System.realtimeTick(ClockIndexes.RT_CLOCK_BUILD_MODEL);
-  CevalScript.compileModel(filenameprefix+"_FMU" , libs);
+  if not Config.simCodeTarget() == "omsic" then
+    CevalScript.compileModel(filenameprefix+"_FMU" , libs);
 
-  ExecStat.execStat("buildModelFMU: Generate the FMI files");
+    ExecStat.execStat("buildModelFMU: Generate the FMI files");
 
-  fmutmp := filenameprefix + ".fmutmp";
-  logfile := filenameprefix + ".log";
-  dir := fmutmp+"/sources/";
+    fmutmp := filenameprefix + ".fmutmp";
+    logfile := filenameprefix + ".log";
+    dir := fmutmp+"/sources/";
+  else
+    fmutmp := filenameprefix+".fmutmp" + System.pathDelimiter();
+    CevalScript.compileModel(filenameprefix+"_FMU" , libs, fmutmp);
+    logfile := filenameprefix + ".log";
+  end if;
 
   if not Config.simCodeTarget() == "omsic" then
     for platform in platforms loop
@@ -3589,7 +3593,12 @@ algorithm
     end for;
   end if;
 
-  cmd := "rm -f \"" + fmuTargetName + ".fmu\" && cd \"" +  fmutmp + "\" && zip -r \"../" + fmuTargetName + ".fmu\" *";
+  if not Config.simCodeTarget() == "omsic" then
+    cmd := "rm -f \"" + fmuTargetName + ".fmu\" && cd \"" +  fmutmp + "\" && zip -r \"../" + fmuTargetName + ".fmu\" *";
+  else
+    // fmu already created for omsi
+    cmd := "";
+  end if;
   if 0 <> System.systemCall(cmd, outFile=logfile) then
     Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {cmd + "\n\n" + System.readFile(logfile)});
     ExecStat.execStat("buildModelFMU failed");
@@ -3603,7 +3612,9 @@ algorithm
     fail();
   end if;
 
-  System.removeDirectory(fmutmp);
+  if not Config.simCodeTarget() == "omsic" then
+    System.removeDirectory(fmutmp);
+  end if;
 end buildModelFMU;
 
 protected function buildEncryptedPackage

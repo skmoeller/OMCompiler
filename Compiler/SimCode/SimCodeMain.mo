@@ -177,7 +177,11 @@ protected
 algorithm
   System.realtimeTick(ClockIndexes.RT_CLOCK_SIMCODE);
   a_cref := Absyn.pathToCref(className);
-  fileDir := CevalScriptBackend.getFileDir(a_cref, p);
+  if Config.simCodeTarget() ==  "omsic" then
+    fileDir := listHead(Absyn.pathToStringList(className))+".tmp";
+  else
+    fileDir := CevalScriptBackend.getFileDir(a_cref, p);
+  end if;
   (libs,libPaths,includes, includeDirs, recordDecls, functions, literals) :=
     SimCodeUtil.createFunctions(p, inBackendDAE.shared.functionTree);
   simCode := createSimCode(inBackendDAE, inInitDAE, inInitDAE_lambda0, NONE(),
@@ -553,7 +557,7 @@ algorithm
 
     case "omsic"
       algorithm
-        runTplWriteFile(func = function CodegenOMSIC.createSimulationScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fileNamePrefix+"_simulation.mos");
+        runTplWriteFile(func = function CodegenOMSIC.createSimulationScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fullPathPrefix +"/"+simCode.fileNamePrefix+"_simulation.mos");
         callTargetTemplatesFMU(simCode, target, "2.0", "me");
       then ();
 
@@ -730,7 +734,7 @@ algorithm
     fileprefix := iSimCode.fileNamePrefix;
     guid := System.getUUIDStr();
     SerializeInitXML.simulationInitFileReturnBool(simCode=iSimCode, guid=guid);
-    runTplWriteFile(func = function CodegenFMU2.fmiModelDescription(in_a_simCode=iSimCode, in_a_guid=guid,in_a_FMUType=fmuType), file="modelDescription.xml");
+    runTplWriteFile(func = function CodegenFMU2.fmiModelDescription(in_a_simCode=iSimCode, in_a_guid=guid,in_a_FMUType=fmuType), file=iSimCode.fullPathPrefix+"/" + "modelDescription.xml");
     runTpl(func = function CodegenOMSI_common.generateEquationsCode(a_simCode=iSimCode, a_FileNamePrefix=fileprefix));
   Tpl.tplNoret3(CodegenOMSICpp.translateModel, iSimCode, fmuVersion, fmuType);
 end callTargetTemplatesOMSICpp;
@@ -802,24 +806,27 @@ algorithm
         guid := System.getUUIDStr();
         fileprefix := simCode.fileNamePrefix;
 
+        // create tmp directory for generated files, but first remove the old one!
+        if System.directoryExists(simCode.fullPathPrefix) then
+          if not System.removeDirectory(simCode.fullPathPrefix) then
+            Error.addInternalError("Failed to remove directory: " + simCode.fullPathPrefix, sourceInfo());
+            fail();
+          end if;
+        end if;
+        if not System.createDirectory(simCode.fullPathPrefix) then
+          Error.addInternalError("Failed to create tmp folder", sourceInfo());
+          fail();
+        end if;
+
         SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
         SerializeModelInfo.serialize(simCode, Flags.isSet(Flags.INFO_XML_OPERATIONS));
-        runTplWriteFile(func = function CodegenOMSIC.createSimulationScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fileNamePrefix+"_simulation.mos");
-        runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file="modelDescription.xml");
-        runTplWriteFile(func = function CodegenOMSIC.createMakefile(a_simCode=simCode, a_target=Config.simulationCodeTarget(), a_makeflieName=fileprefix+"_FMU.makefile"), file=fileprefix+"_FMU.makefile");
+        runTplWriteFile(func = function CodegenOMSIC.createSimulationScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fullPathPrefix+"/"+simCode.fileNamePrefix+"_simulation.mos");
+        runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file=simCode.fullPathPrefix+"/"+"modelDescription.xml");
+        runTplWriteFile(func = function CodegenOMSIC.createMakefile(a_simCode=simCode, a_target=Config.simulationCodeTarget(), a_makeflieName=fileprefix+"_FMU.makefile"), file=simCode.fullPathPrefix+"/"+fileprefix+"_FMU.makefile");
 
-        runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(a_simCode=simCode), file=fileprefix+"_omsic.c");
-        
-        //runTplWriteFile(func = function CodegenOMSIC_Equations.generateEquationFiles(a_simCode=simCode, a_fileNamePrefix=fileprefix, a_name="allEqns"), file=fileprefix+"_eqns.c");
+        runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(a_simCode=simCode), file=simCode.fullPathPrefix+"/"+fileprefix+"_omsic.c");
 
-        //runTplWriteFile(func = function CodegenOMSI_common.simulationFile_lsyOMSI(in_a_simCode=simCode), file=fileprefix+"_lsy.c");
         runTpl(func = function CodegenOMSI_common.generateEquationsCode(a_simCode=simCode, a_FileNamePrefix=fileprefix));
-
-        /*
-        
-        runTplWriteFile(func = function CodegenOMSIC.generateEquationFilesHeader(simCode=simCode), file=fileprefix+"_eqns.h");
-        */
-        
       then ();
     case (_,"Cpp")
       equation
