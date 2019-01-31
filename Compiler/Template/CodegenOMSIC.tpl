@@ -54,7 +54,8 @@ template generateOMSIC(SimCode simCode)
   let &includes = buffer ""
 
   match simCode
-    case SIMCODE(fileNamePrefix=fileNamePrefix, modelInfo=MODELINFO(functions=functions, varInfo=varInfo as VARINFO(__))) then
+    case SIMCODE(fileNamePrefix=fileNamePrefix, fullPathPrefix=fullPathPrefix,
+                 modelInfo=MODELINFO(functions=functions, varInfo=varInfo as VARINFO(__))) then
     let modelNamePrefixStr = CodegenUtilSimulation.modelNamePrefix(simCode)
 
     let &functionPrototypes += <<void initialize_start_function (omsi_template_callback_functions_t* callback);<%\n%>>>
@@ -67,7 +68,7 @@ template generateOMSIC(SimCode simCode)
 
     let headerFileName = fileNamePrefix+"_omsic"
     let headerFileContent = CodegenOMSI_common.generateCodeHeader(modelNamePrefixStr, &includes, headerFileName, &functionPrototypes)
-    let () = textFile(headerFileContent, headerFileName+".h")
+    let () = textFile(headerFileContent, fullPathPrefix+"/"+headerFileName+".h")
 
     // generate content of C file
     let functionInitSampleCode = CodegenOMSI_common.functionInitSample(timeEvents, modelNamePrefixStr)
@@ -206,7 +207,7 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
 
     <%fmuTargetName%>.fmu: compile
     <%\t%>cd <%fileNamePrefix%>.fmutmp; \
-    <%\t%>zip<%makefileParams.exeext%> -r ../<%fmuTargetName%>.fmu *;\
+    <%\t%>zip<%makefileParams.exeext%> -r ../../<%fmuTargetName%>.fmu *;\
     <%\t%>cd ..;\
 
     copyFiles: makeStructure
@@ -241,6 +242,9 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
     fmiImport: <%fmuTargetName%>.fmu
     <%\t%>omc <%fileNamePrefix%>_fmiImport.mos
     <%\t%>mv <%fileNamePrefix%>_me_FMU <%fmuTargetName%>
+
+    createSimulation: <%fmuTargetName%>.fmu
+    <%\t%>cd ..;omc <%fileNamePrefix%>.fmutmp/<%fileNamePrefix%>_simulation.mos && mv <%fileNamePrefix%>_me_FMU <%fmuTargetName%>
 
     OMSimulation: <%fmuTargetName%>.fmu
     <%\t%>@echo "#!/bin/bash\nOMSimulator <%fileNamePrefix%>.lua" > <%fmuTargetName%>

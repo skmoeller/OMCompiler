@@ -277,6 +277,7 @@ protected
   SimCodeVar.SimVar dtSimVar;
   BackendDAE.Var dtVar;
   HashTableSimCodeEqCache.HashTable eqCache;
+  String fullPathPrefix;
   
   SimCode.OMSIFunction omsiAllEquations, omsiInitEquations;
   Option<SimCode.OMSIData> omsiOptData;
@@ -624,6 +625,19 @@ algorithm
       execStat("simCode: alias equations");
     end if;
 
+    // Set fullPathPrefix for FMUs
+    if isFMU then
+      if Config.simCodeTarget()=="omsic" then
+        fullPathPrefix := filenamePrefix+".fmutmp";
+      elseif Config.simCodeTarget()=="omsicpp" then
+        fullPathPrefix := inFileDir;
+      else
+        fullPathPrefix := filenamePrefix+".fmutmp/sources/";
+      end if;
+    else
+      fullPathPrefix := "";
+    end if;
+
     simCode := SimCode.SIMCODE(modelInfo,
                               {}, // Set by the traversal below...
                               recordDecls,
@@ -658,7 +672,7 @@ algorithm
                               SymbolicJacs,
                               simSettingsOpt,
                               filenamePrefix,
-                              if isFMU then (filenamePrefix+".fmutmp/sources/") else "",
+                              fullPathPrefix,
                               fmuTargetName,
                               HpcOmSimCode.emptyHpcomData,
                               if isFMU then getValueReferenceMapping(modelInfo) else AvlTreeCRToInt.EMPTY(),
