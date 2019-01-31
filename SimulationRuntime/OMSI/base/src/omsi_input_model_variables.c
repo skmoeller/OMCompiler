@@ -329,6 +329,8 @@ omsi_status omsi_get_boolean(omsi_t*                    omsu,
 
     /* Variables */
     omsi_unsigned_int i;
+    omsi_unsigned_int n_prev_model_vars;
+    omsi_int index;
 
     if (!model_variables_allocated(omsu, "fmi2GetBoolean")) {
         return omsi_error;
@@ -347,10 +349,22 @@ omsi_status omsi_get_boolean(omsi_t*                    omsu,
 
     /* Get bool values */
     for (i = 0; i < nvr; i++){
-        if (omsi_vr_out_of_range(omsu, "fmi2GetBoolean", vr[i], omsu->sim_data->model_vars_and_params->n_bools)) {
-            return omsi_error;
+        /* Check for negated alias */
+        n_prev_model_vars = omsu->model_data->n_states +omsu->model_data->n_derivatives + omsu->model_data->n_real_vars + omsu->model_data->n_real_parameters + omsu->model_data->n_real_aliases
+                          + omsu->model_data->n_int_vars + omsu->model_data->n_int_parameters + omsu->model_data->n_int_aliases;
+        index = omsi_get_negated_index(&omsu->model_data->model_vars_info[vr[i]+n_prev_model_vars], vr[i]);
+
+        if (index < 0) {
+            if (omsi_vr_out_of_range(omsu, "fmi2GetBoolean", -index, omsu->sim_data->model_vars_and_params->n_bools)) {
+                return omsi_error;
+            }
+            value[i] =getBoolean(omsu, -index);
+        } else {
+            if (omsi_vr_out_of_range(omsu, "fmi2GetBoolean", index, omsu->sim_data->model_vars_and_params->n_bools)) {
+                return omsi_error;
+            }
+            value[i] =getBoolean(omsu, index);
         }
-        value[i] = getBoolean(omsu, vr[i]);
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
             "fmi2GetBoolean: #b%u# = %s", vr[i], value[i] ? "true" : "false");
     }
@@ -364,6 +378,8 @@ omsi_status omsi_get_integer(omsi_t*                     omsu,
 
     /* Variables */
     omsi_unsigned_int i;
+    omsi_unsigned_int n_prev_model_vars;
+    omsi_int index;
 
     if (!model_variables_allocated(omsu, "fmi2GetInteger")) {
         return omsi_error;
@@ -382,12 +398,23 @@ omsi_status omsi_get_integer(omsi_t*                     omsu,
 
     /* Get integers */
     for (i = 0; i < nvr; i++) {
-      if (omsi_vr_out_of_range(omsu, "fmi2GetInteger", vr[i], omsu->sim_data->model_vars_and_params->n_ints)) {
-          return omsi_error;
-      }
-      value[i] = getInteger(omsu, vr[i]);
-      filtered_base_logger(global_logCategories, log_all, omsi_ok,
-          "fmi2GetInteger: #i%u# = %d", vr[i], value[i]);
+        /* Check for negated alias */
+        n_prev_model_vars = omsu->model_data->n_states +omsu->model_data->n_derivatives + omsu->model_data->n_real_vars + omsu->model_data->n_real_parameters + omsu->model_data->n_real_aliases;
+        index = omsi_get_negated_index(&omsu->model_data->model_vars_info[vr[i]+n_prev_model_vars], vr[i]);
+
+        if (index < 0) {
+            if (omsi_vr_out_of_range(omsu, "fmi2GetInteger", -index, omsu->sim_data->model_vars_and_params->n_ints)) {
+                return omsi_error;
+            }
+            value[i] =getInteger(omsu, -index);
+        } else {
+            if (omsi_vr_out_of_range(omsu, "fmi2GetInteger", index, omsu->sim_data->model_vars_and_params->n_ints)) {
+                return omsi_error;
+            }
+            value[i] =getInteger(omsu, index);
+        }
+        filtered_base_logger(global_logCategories, log_all, omsi_ok,
+            "fmi2GetInteger: #i%u# = %d", vr[i], value[i]);
     }
     return omsi_ok;
 }
@@ -399,6 +426,7 @@ omsi_status omsi_get_real(omsi_t*                    omsu,
 
     /* Variables */
     omsi_unsigned_int i;
+    omsi_int index;
 
     if (!model_variables_allocated(omsu, "fmi2GetReal")) {
         return omsi_error;
@@ -417,10 +445,20 @@ omsi_status omsi_get_real(omsi_t*                    omsu,
 
     /* Get reals */
     for (i = 0; i < nvr; i++) {
-        if (omsi_vr_out_of_range(omsu, "fmi2GetReal", vr[i], omsu->sim_data->model_vars_and_params->n_reals)) {
-            return omsi_error;
+        /* Check for negated alias */
+        index = omsi_get_negated_index(&omsu->model_data->model_vars_info[vr[i]], vr[i]);
+
+        if (index < 0) {
+            if (omsi_vr_out_of_range(omsu, "fmi2GetReal", -index, omsu->sim_data->model_vars_and_params->n_reals)) {
+                return omsi_error;
+            }
+            value[i] =getReal(omsu, -index);
+        } else {
+            if (omsi_vr_out_of_range(omsu, "fmi2GetReal", index, omsu->sim_data->model_vars_and_params->n_reals)) {
+                return omsi_error;
+            }
+            value[i] =getReal(omsu, index);
         }
-        value[i] =getReal(omsu, vr[i]);
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
             "fmi2GetReal: vr = %i, value = %f", vr[i], value[i]);
     }
@@ -434,6 +472,8 @@ omsi_status omsi_get_string(omsi_t*                  omsu,
 
     /* Variables */
     omsi_unsigned_int i;
+    omsi_unsigned_int n_prev_model_vars;
+    omsi_int index;
 
     if (!model_variables_allocated(omsu, "fmi2GetString")) {
         return omsi_error;
@@ -451,10 +491,26 @@ omsi_status omsi_get_string(omsi_t*                  omsu,
     }
 
     for (i = 0; i < nvr; i++) {
+        /* Check for negated alias */
+        n_prev_model_vars = omsu->model_data->n_states +omsu->model_data->n_derivatives + omsu->model_data->n_real_vars + omsu->model_data->n_real_parameters + omsu->model_data->n_real_aliases
+                          + omsu->model_data->n_int_vars + omsu->model_data->n_int_parameters + omsu->model_data->n_int_aliases
+                          + omsu->model_data->n_bool_vars + omsu->model_data->n_bool_parameters + omsu->model_data->n_bool_aliases;
+        index = omsi_get_negated_index(&omsu->model_data->model_vars_info[vr[i]+n_prev_model_vars], vr[i]);
+
+        if (index < 0) {
+            if (omsi_vr_out_of_range(omsu, "fmi2GetString", -index, omsu->sim_data->model_vars_and_params->n_strings)) {
+                return omsi_error;
+            }
+            value[i] =getString(omsu, -index);
+        } else {
+            if (omsi_vr_out_of_range(omsu, "fmi2GetString", index, omsu->sim_data->model_vars_and_params->n_strings)) {
+                return omsi_error;
+            }
+            value[i] =getString(omsu, index);
+        }
         if (omsi_vr_out_of_range(omsu, "fmi2GetString", vr[i], omsu->sim_data->model_vars_and_params->n_strings)) {
             return omsi_error;
         }
-        value[i] = getString(omsu, vr[i]);
         filtered_base_logger(global_logCategories, log_all, omsi_ok,
             "fmi2GetString: #s%u# = '%s'", vr[i], value[i]);
     }
@@ -467,6 +523,7 @@ omsi_status omsi_get_string(omsi_t*                  omsu,
  * ============================================================================
  */
 
+/* ToDo: Include code for negated aliases */
 omsi_status omsi_set_boolean(omsi_t*                    omsu,
                              const omsi_unsigned_int    vr[],
                              omsi_unsigned_int          nvr,

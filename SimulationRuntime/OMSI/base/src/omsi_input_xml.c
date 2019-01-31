@@ -208,7 +208,6 @@ omsi_status omsu_process_input_xml(omsi_t*                         osu_data,
         filtered_base_logger(global_logCategories, log_statuserror, omsi_error,
                 "fmi2Instantiate: Not enough memory to allocate osu_data->model_data->model_vars_info.");
         return omsi_error;
-
     }
 
     /*read model_vars_info inner stuff */

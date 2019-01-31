@@ -186,7 +186,7 @@ omsi_bool isCategoryLogged(omsi_bool*       logCategories,
  * Returns true if vr is out of range of end and emits error message.
  * Otherwise it returns false.
  */
-omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
+omsi_bool omsi_vr_out_of_range(omsi_t*              omsu,
                                omsi_string          function_name,
                                omsi_unsigned_int    vr,
                                omsi_int             end) {
@@ -202,6 +202,20 @@ omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
     return omsi_false;
 }
 
+
+omsi_int omsi_get_negated_index (model_variable_info_t* model_var_info,
+                                 omsi_unsigned_int      value_reference)
+{
+    if (model_var_info->isAlias) {
+        if (model_var_info->negate == -1) {
+            return -model_var_info->aliasID;
+        } else {
+            return model_var_info->aliasID;
+        }
+    }
+
+    return value_reference;
+}
 
 /*
  * ============================================================================

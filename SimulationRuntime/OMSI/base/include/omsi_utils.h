@@ -101,6 +101,9 @@ omsi_bool omsi_vr_out_of_range(omsi_t*               omsu,
                                omsi_unsigned_int    vr,
                                omsi_int             end);
 
+omsi_int omsi_get_negated_index (model_variable_info_t* model_var_info,
+                                 omsi_unsigned_int      value_reference);
+
 void omsu_print_omsi_t (omsi_t*     omsi,
                         omsi_string indent);
 
