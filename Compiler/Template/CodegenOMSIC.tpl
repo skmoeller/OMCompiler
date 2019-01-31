@@ -239,16 +239,12 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
     %.o : %.c copyFiles
     <%\t%>$(CC) $(CFLAGS) -I$(INCLUDE_DIR_OMSI)  -I$(INCLUDE_DIR_OMSI_BASE) -I$(INCLUDE_DIR_OMSI_SOLVER) -I$(INCLUDE_DIR_OMSI_FMI2) -I$(INCLUDE_DIR_OMSIC) -I$(INCLUDE_DIR_OMSIC_FMI2) -c $<
 
-    fmiImport: <%fmuTargetName%>.fmu
-    <%\t%>omc <%fileNamePrefix%>_fmiImport.mos
-    <%\t%>mv <%fileNamePrefix%>_me_FMU <%fmuTargetName%>
+    fmiImport:
+    <%\t%>cd ..; omc <%fileNamePrefix%>.fmutmp/<%fileNamePrefix%>_fmiImport.mos
+    <%\t%>cd ..; mv <%fileNamePrefix%>_me_FMU <%fmuTargetName%>
 
-    createSimulation: <%fmuTargetName%>.fmu
-    <%\t%>cd ..;omc <%fileNamePrefix%>.fmutmp/<%fileNamePrefix%>_simulation.mos && mv <%fileNamePrefix%>_me_FMU <%fmuTargetName%>
-
-    OMSimulation: <%fmuTargetName%>.fmu
-    <%\t%>@echo "#!/bin/bash\nOMSimulator <%fileNamePrefix%>.lua" > <%fmuTargetName%>
-    <%\t%>chmod +x <%fmuTargetName%>
+    OMSimulation:
+    <%\t%>cd ..; @echo "#!/bin/bash\nOMSimulator <%fileNamePrefix%>.lua" > <%fmuTargetName%>; chmod +x <%fmuTargetName%>
 
     clean:
     <%\t%>rm -f <%fileNamePrefix%><%makefileParams.dllext%>
