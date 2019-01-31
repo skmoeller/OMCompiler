@@ -230,7 +230,7 @@ protected
   Boolean isWindows = System.os() == "Windows_NT";
   list<String> makeVarsNoBinding;
 algorithm
-  libsfilename := fileprefix + ".libs";
+  libsfilename := workDir + fileprefix + ".libs";
   libs_str := stringDelimitList(libs, " ");
   makeVarsNoBinding := makeVars; // OMC is stupid and wants to constant evaluate inputs with bindings for iterator variables...
 

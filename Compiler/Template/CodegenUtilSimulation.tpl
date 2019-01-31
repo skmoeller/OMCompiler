@@ -61,6 +61,12 @@ template fileNamePrefix(SimCode simCode)
   case simCode as SIMCODE(__) then fileNamePrefix
 end fileNamePrefix;
 
+template fullPathPrefix(SimCode simCode)
+::=
+  match simCode
+  case simCode as SIMCODE(__) then fullPathPrefix
+end fullPathPrefix;
+
 /********* Equation Dumps *****************************/
 
 template equationIndex(SimEqSystem eq)

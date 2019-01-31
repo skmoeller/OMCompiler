@@ -76,7 +76,17 @@ protected
   String FMUType;
 algorithm
   try
-  File.open(file, simCode.fileNamePrefix + "_init.xml", File.Mode.Write);
+  _ := match Config.simCodeTarget()
+    case "omsic" algorithm
+      File.open(file, simCode.fullPathPrefix+"/"+simCode.fileNamePrefix + "_init.xml", File.Mode.Write);
+      then();
+    case "omsicpp" algorithm
+      File.open(file, simCode.fullPathPrefix+"/"+simCode.fileNamePrefix + "_init.xml", File.Mode.Write);
+      then();
+    else algorithm
+      File.open(file, simCode.fileNamePrefix + "_init.xml", File.Mode.Write);
+      then();
+  end match;
   makefileParams := simCode.makefileParams;
   modelInfo := simCode.modelInfo;
   vi := modelInfo.varInfo;
