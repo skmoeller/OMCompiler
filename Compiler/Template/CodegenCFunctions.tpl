@@ -4271,7 +4271,7 @@ template crefTypeNameOMSIC(DAE.Type type)
   case T_REAL(__)          then "reals"
   case T_STRING(__)        then "strings"
   case T_BOOL(__)          then "bools"
-  case T_ENUMERATION(__)   then "integers"
+  case T_ENUMERATION(__)   then "ints"
   case T_SUBTYPE_BASIC(__) then crefTypeNameOMSIC(complexType)
   case T_ARRAY(__)         then crefTypeNameOMSIC(ty)
   case T_COMPLEX(complexClassType=EXTERNAL_OBJ(__)) then "complex"
