@@ -161,11 +161,11 @@ template equationCall(SimEqSystem eq, String modelNamePrefixStr,String modelFunc
     match  Config.simCodeTarget()
     case "omsic" then
     <<
-      <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%i%>(<%input%>);
+    <%CodegenUtil.symbolName(modelNamePrefixStr,"eqFunction")%>_<%i%>(<%input%>);
     >>
     case "omsicpp" then
     <<
-     omsi_<%modelFunctionnamePrefixStr%>_<%i%>(<%input%>);
+    omsi_<%modelFunctionnamePrefixStr%>_<%i%>(<%input%>);
     >>
     end match
   case SES_RESIDUAL(__) then
