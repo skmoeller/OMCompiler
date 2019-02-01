@@ -508,4 +508,12 @@ omsi_real division_error_time(const char*   msg,
   return 0;
 }
 
+/*
+ *  Modelica built-in homotopy function
+ */
+omsi_real homotopy(omsi_real actual, omsi_real siple) {
+
+  /* call an assert after lgging */
+  return actual;
+}
 
