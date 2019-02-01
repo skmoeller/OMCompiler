@@ -558,9 +558,10 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       if (!algSystem->jacobian) {
         return omsi_error;
       }
-      if (<%FileNamePrefix%>_<%omsiName%>_instantiate_derivativeMatFunc_<%algSysIndex%>_OMSIFunc(algSystem->jacobian) == omsi_error){
+      <%match matrix case SOME(__) then
+      'if (<%FileNamePrefix%>_<%omsiName%>_instantiate_derivativeMatFunc_<%algSysIndex%>_OMSIFunc(algSystem->jacobian) == omsi_error){
         return omsi_error;
-      }
+      }' else '' %>
 
       /* Instantiate omsi_function_t function */
       algSystem->functions = omsu_instantiate_omsi_function (function_vars, pre_vars);
