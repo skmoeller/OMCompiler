@@ -115,6 +115,9 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
     case SIMCODE(fileNamePrefix=fileNamePrefix, omsiData=SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__), initialization=initialization as OMSI_FUNCTION(__)))) then
       let _ = ( initialization.equations |> eq =>
         match eq
+        case system as SES_ALGEBRAIC_SYSTEM(matrix=NONE()) then
+          let &InitAlgSystemFiles += " " + fileNamePrefix + "_init_eqns_algSyst_" + system.algSysIndex + ".c"
+          <<>>
         case system as SES_ALGEBRAIC_SYSTEM(__) then
           let &InitAlgSystemFiles += " " + fileNamePrefix + "_init_eqns_algSyst_" + system.algSysIndex + ".c"
           let &InitDerMatFiles += " " + fileNamePrefix + "_init_eqns_derMat_" + system.algSysIndex + ".c"
@@ -123,6 +126,10 @@ template createMakefile(SimCode simCode, String target, String makeflieName)
       )
       let _ = ( simulation.equations |> eq =>
         match eq
+        case system as SES_ALGEBRAIC_SYSTEM(matrix=NONE()) then
+          let &SimAlgSystemFiles += " " + fileNamePrefix + "_sim_eqns_algSyst_" + system.algSysIndex + ".c"
+          let &SimDerMatFiles += " " + fileNamePrefix + "_sim_eqns_derMat_" + system.algSysIndex + ".c"
+          <<>>
         case system as SES_ALGEBRAIC_SYSTEM(__) then
           let &SimAlgSystemFiles += " " + fileNamePrefix + "_sim_eqns_algSyst_" + system.algSysIndex + ".c"
           let &SimDerMatFiles += " " + fileNamePrefix + "_sim_eqns_derMat_" + system.algSysIndex + ".c"

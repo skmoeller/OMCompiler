@@ -3863,7 +3863,7 @@ algorithm
            BackendDAE.TEARINGSET(tearingvars=tearingVars, residualequations=residualEqns, innerEquations=innerEquations, jac=jacobian),
            linear = linear, mixedSystem = mixedSystem)
     algorithm
-      if not SymbolicJacobian.isJacobianGeneric(jacobian) then
+      if not SymbolicJacobian.isJacobianGeneric(jacobian) and linear then
         Error.addMessage(Error.NO_JACONIAN_TORNLINEAR_SYSTEM, {});
         fail();
       end if;
@@ -3934,10 +3934,12 @@ algorithm
                                    mixedSystem = mixedSystem)
       algorithm
 
+      /*
       if not SymbolicJacobian.isJacobianGeneric(jacobian) then
         Error.addMessage(Error.NO_JACONIAN_TORNLINEAR_SYSTEM, {});    // ToDo: edit error message
         fail();
       end if;
+      */
 
       algEqIndex := uniqueEqIndex;
       uniqueEqIndex := uniqueEqIndex+1;
