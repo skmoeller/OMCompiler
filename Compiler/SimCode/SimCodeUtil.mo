@@ -3884,7 +3884,7 @@ algorithm
       reqns := BackendEquation.replaceDerOpInEquationList(reqns);
       (resEqs, uniqueEqIndex, tempVars) := createNonlinearResidualEquations(reqns, uniqueEqIndex, {});
 
-      simequations := listReverse(listAppend(simequations, listReverse(resEqs)));
+      simequations := listAppend(simequations, resEqs);
 
       //set index
       (loopIterationVars, index) := rewriteIndex(loopIterationVars, 0);
