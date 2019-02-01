@@ -3858,6 +3858,13 @@ algorithm
       (tmpEqns, uniqueEqIndex) = createSingleAlgorithmCode(eqnlst, varlst, false, uniqueEqIndex);
     then();
 
+    // case for single algorithm equation
+    case BackendDAE.SINGLEARRAY() equation
+      (eqnlst, varlst,_) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
+      varlst = List.map(varlst, BackendVariable.transformXToXd);
+      (tmpEqns, _, uniqueEqIndex, _) = createSingleArrayEqnCode(true, eqnlst, varlst, uniqueEqIndex, {}, shared.info);
+    then();
+
     // case for torn systems of equations
     case BackendDAE.TORNSYSTEM(strictTearingSet = 
            BackendDAE.TEARINGSET(tearingvars=tearingVars, residualequations=residualEqns, innerEquations=innerEquations, jac=jacobian),
