@@ -5926,7 +5926,14 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__),init
       if (_constructedExternalObjects)
         destructExternalObjects();
 
-      initParameterEquations();
+      <%match  Config.simCodeTarget()
+      case "Cpp" then
+      'initParameterEquations();'
+      case "omsicpp" then
+       ''
+      end match
+      %>
+
 
       //mark external objects constructed during initParameterEquations
       _constructedExternalObjects = true;
@@ -5966,19 +5973,23 @@ case SIMCODE(modelInfo = MODELINFO(__),makefileParams = MAKEFILE_PARAMS(__),init
       %>
 
    }
-    <%match  Config.simCodeTarget()
+      <%match  Config.simCodeTarget()
       case "Cpp" then
-      '<%initialequations%>
+      '<%initialequations%>'
+       end match
+      %>
       void <%lastIdentOfPath(modelInfo.name)%>Initialize::initParameterEquations()
       {
-       <%(parameterEquations |> eq  =>
+       <%match  Config.simCodeTarget()
+       case "Cpp" then
+       '<%(parameterEquations |> eq  =>
                     equation_function_call(eq,  contextOther, &varDecls /*BUFC*/, simCode , &extraFuncs , &extraFuncsDecl,  extraFuncsNamespace,"initParameterEquation")
-                    ;separator="\n")%>
-      }'
-      case "omsicpp" then
-      ''
-      end match
-      %>
+                    ;separator="\n")%>'
+        end match
+        %>
+      }
+
+
 
    <%boundparameterequations%>
    <%init2(simCode, &extraFuncs, &extraFuncsDecl, extraFuncsNamespace, modelInfo, stateDerVectorName, useFlatArrayNotation)%>
