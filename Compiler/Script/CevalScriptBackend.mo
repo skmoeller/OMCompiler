@@ -1538,6 +1538,7 @@ algorithm
             end if;
             b := true;
           else
+          
             b := false;
           end try;
           compileDir := System.pwd() + System.pathDelimiter();
@@ -3588,27 +3589,27 @@ algorithm
     dir := fmutmp+"/sources/";
   else
     fmutmp := filenameprefix+".fmutmp" + System.pathDelimiter();
-    CevalScript.compileModel(filenameprefix+"_FMU" , libs, fmutmp);
-    logfile := filenameprefix + ".log";
+    try
+      CevalScript.compileModel(filenameprefix+"_FMU" , libs, fmutmp);
+      timeCompile := System.realtimeTock(ClockIndexes.RT_CLOCK_BUILD_MODEL);
+      resultValues := ("timeCompile",Values.REAL(timeCompile)) :: resultValues;
+    else
+      Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {System.readFile(fmutmp + filenameprefix+"_FMU.log")});
+      resultValues := ("timeCompile",Values.REAL(0)) :: resultValues;
+    end try;
+    return;
   end if;
 
-  if not Config.simCodeTarget() == "omsic" then
-    for platform in platforms loop
-      try
-        configureFMU(platform, fmutmp, System.realpath(fmutmp)+"/resources/"+System.stringReplace(listGet(Util.stringSplitAtChar(platform," "),1),"/","-")+".log", isWindows);
-        ExecStat.execStat("buildModelFMU: Generate platform " + platform);
-      else
-        Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Configure for platform:\"" + platform + "\" does not exist"});
-      end try;
-    end for;
-  end if;
+  for platform in platforms loop
+    try
+      configureFMU(platform, fmutmp, System.realpath(fmutmp)+"/resources/"+System.stringReplace(listGet(Util.stringSplitAtChar(platform," "),1),"/","-")+".log", isWindows);
+      ExecStat.execStat("buildModelFMU: Generate platform " + platform);
+    else
+      Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {"Configure for platform:\"" + platform + "\" does not exist"});
+    end try;
+  end for;
 
-  if not Config.simCodeTarget() == "omsic" then
-    cmd := "rm -f \"" + fmuTargetName + ".fmu\" && cd \"" +  fmutmp + "\" && zip -r \"../" + fmuTargetName + ".fmu\" *";
-  else
-    // fmu already created for omsi
-    cmd := "";
-  end if;
+  cmd := "rm -f \"" + fmuTargetName + ".fmu\" && cd \"" +  fmutmp + "\" && zip -r \"../" + fmuTargetName + ".fmu\" *";
   if 0 <> System.systemCall(cmd, outFile=logfile) then
     Error.addMessage(Error.SIMULATOR_BUILD_ERROR, {cmd + "\n\n" + System.readFile(logfile)});
     ExecStat.execStat("buildModelFMU failed");
@@ -3622,9 +3623,7 @@ algorithm
     fail();
   end if;
 
-  if not Config.simCodeTarget() == "omsic" then
-    System.removeDirectory(fmutmp);
-  end if;
+  System.removeDirectory(fmutmp);
 end buildModelFMU;
 
 protected function buildEncryptedPackage
