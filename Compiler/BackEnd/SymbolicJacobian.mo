@@ -2642,7 +2642,7 @@ algorithm
       case (comp as BackendDAE.EQUATIONSYSTEM(jacType=BackendDAE.JAC_LINEAR()), _, _, _) guard Config.simCodeTarget() <> "omsic"
       then (comp, inShared);
 
-      case (BackendDAE.EQUATIONSYSTEM(eqns=residualequations, vars=iterationvarsInts, mixedSystem=mixedSystem), _, _, _)
+      case (BackendDAE.EQUATIONSYSTEM(eqns=residualequations, vars=iterationvarsInts, mixedSystem=mixedSystem), _, _, _) guard Config.simCodeTarget() <> "omsic"
         equation
           //generate jacobian name
           name = "NLSJac" + intString(System.tmpTickIndex(Global.backendDAE_jacobianSeq));

@@ -387,13 +387,16 @@ omsi_status omsu_copy_values(omsi_values*   target_vars,
     size = sizeof(omsi_real)*source_vars->n_reals;
     memcpy(target_vars->reals, source_vars->reals, size);
 
-    size = sizeof(omsi_real)*source_vars->n_bools;
+    size = sizeof(omsi_int)*source_vars->n_reals;
+    memcpy(target_vars->reals, source_vars->reals, size);
+
+    size = sizeof(omsi_bool)*source_vars->n_bools;
     memcpy(target_vars->bools, source_vars->bools, size);
 
-    size = sizeof(omsi_real)*source_vars->n_strings;
+    size = sizeof(omsi_string)*source_vars->n_strings;
     memcpy(target_vars->strings, source_vars->strings, size);
 
-    size = sizeof(omsi_real)*source_vars->n_externs;
+    size = sizeof(void*)*source_vars->n_externs;
     memcpy(target_vars->externs, source_vars->externs, size);
 
     target_vars->time_value = source_vars->time_value;
@@ -508,4 +511,12 @@ omsi_real division_error_time(const char*   msg,
   return 0;
 }
 
+/*
+ *  Modelica built-in homotopy function
+ */
+omsi_real homotopy(omsi_real actual, omsi_real siple) {
+
+  /* call an assert after lgging */
+  return actual;
+}
 

@@ -282,15 +282,86 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
   let fullPathPrefix = CodegenUtilSimulation.fullPathPrefix(getSimCode())
 
   match equationSystem
-  case algSystem as SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
+  case algSystem as SES_ALGEBRAIC_SYSTEM(matrix = NONE()) then
     let &includes += <<#include <omsi_solve_alg_system.h><%\n%>>>
-
     let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix, &functionPrototypes, &includes, omsiName)
     let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix,"", "this_function", &includes, &evaluationCode, &functionCall, &residualCall, &functionPrototypes, omsiName)
-    let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
+
+    let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
+
+    // no need to generate jacobian matrix files
+    let matrixString = ""
+
+    // generate algebraic system header file
+    let &functionPrototypes +=
+      <<
+      omsi_status <%FileNamePrefix%>_<%omsiName%>_resFunction_<%algSystem.algSysIndex%> (omsi_function_t* this_function, const omsi_values* model_vars_and_params, omsi_real* res);
+      omsi_status <%FileNamePrefix%>_<%omsiName%>_algSystFunction_<%algSystem.algSysIndex%>(omsi_algebraic_system_t* this_alg_system, const omsi_values* model_vars_and_params, void* data);
+      >>
+    let headerFileName = fileNamePrefix+"_"+omsiName+"_algSyst_"+algSystem.algSysIndex
+    let headerFileContent = generateCodeHeader(FileNamePrefix, &includes, headerFileName, &functionPrototypes)
+    let () = textFile(headerFileContent, fullPathPrefix+"/"+headerFileName+".h")
+  <<
+  <%insertCopyrightOpenModelica()%>
+
+  /* Algebraic system code */
+  #include "<%headerFileName%>.h"
+
+  #if defined(__cplusplus)
+  extern "C" {
+  #endif
+
+  /* Instantiation and initialization */
+  <%initlaizationFunction%>
+
+  <%matrixString%>
+
+  /* Evaluation functions for <%FileNamePrefix%>_<%omsiName%>_resFunction_<%algSystem.algSysIndex%> */
+  <%evaluationCode%>
+
+  omsi_status <%FileNamePrefix%>_<%omsiName%>_resFunction_<%algSystem.algSysIndex%> (omsi_function_t* this_function, const omsi_values* model_vars_and_params, omsi_real* res) {
+    omsi_unsigned_int i=0;
+    <%functionCall%>
+    <%residualCall%>
+
+    return omsi_ok;
+  }
+
+  /* Algebraic system evaluation */
+  /*
+  <%equationInfos%>
+  */
+  omsi_status <%FileNamePrefix%>_<%omsiName%>_algSystFunction_<%algSystem.algSysIndex%>(omsi_algebraic_system_t* this_alg_system,
+                            const omsi_values* model_vars_and_params,
+                            void* data){
+
+    /* Variables */
+    omsi_status status;
+
+    /* Log function call */
+    filtered_base_logger(global_logCategories, log_all, omsi_ok,
+        "fmi2Evaluate: Solve algebraic system <%algSystem.algSysIndex%>.");
+
+    /* call API function something */
+    status = omsi_solve_algebraic_system(this_alg_system, model_vars_and_params);
+
+    return status;
+  }
+
+  #if defined(__cplusplus)
+  }
+  #endif
+  <%\n%>
+  >>
+  case algSystem as SES_ALGEBRAIC_SYSTEM(matrix = matrix as SOME(DERIVATIVE_MATRIX(__))) then
+    let &includes += <<#include <omsi_solve_alg_system.h><%\n%>>>
+    let initlaizationFunction = generateInitalizationAlgSystem(equationSystem, FileNamePrefix, &functionPrototypes, &includes, omsiName)
+    let _ = generateOmsiFunctionCode_inner(residual, FileNamePrefix,"", "this_function", &includes, &evaluationCode, &functionCall, &residualCall, &functionPrototypes, omsiName)
+
     let equationInfos = CodegenUtilSimulation.dumpEqs(fill(equationSystem,1))
 
     // generate jacobian matrix files
+    let matrixString = CodegenOMSIC_Equations.generateMatrixInitialization(matrix)
     let &includes += <<#include "<%fileNamePrefix%>_<%omsiName%>_derMat_<%algSystem.algSysIndex%>.h"<%\n%>>>
     let _ = generateDerivativeFile(matrix, FileNamePrefix, algSystem.algSysIndex, omsiName)
 
@@ -303,7 +374,6 @@ template generateOmsiAlgSystemCode (SimEqSystem equationSystem, String FileNameP
     let headerFileName = fileNamePrefix+"_"+omsiName+"_algSyst_"+algSystem.algSysIndex
     let headerFileContent = generateCodeHeader(FileNamePrefix, &includes, headerFileName, &functionPrototypes)
     let () = textFile(headerFileContent, fullPathPrefix+"/"+headerFileName+".h")
-
   <<
   <%insertCopyrightOpenModelica()%>
 
@@ -462,7 +532,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
 ""
 ::=
   match equationSystem
-  case SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__)) then
+  case SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__),matrix=matrix) then
 
     let &functionPrototypes += <<omsi_status <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars, omsi_values* pre_vars);<%\n%>>>
 
@@ -488,9 +558,10 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
       if (!algSystem->jacobian) {
         return omsi_error;
       }
-      if (<%FileNamePrefix%>_<%omsiName%>_instantiate_derivativeMatFunc_<%algSysIndex%>_OMSIFunc(algSystem->jacobian) == omsi_error){
+      <%match matrix case SOME(__) then
+      'if (<%FileNamePrefix%>_<%omsiName%>_instantiate_derivativeMatFunc_<%algSysIndex%>_OMSIFunc(algSystem->jacobian) == omsi_error){
         return omsi_error;
-      }
+      }' else '' %>
 
       /* Instantiate omsi_function_t function */
       algSystem->functions = omsu_instantiate_omsi_function (function_vars, pre_vars);
@@ -503,7 +574,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
 
       /* ToDo: put into init functions */
       algSystem->functions->evaluate = <%FileNamePrefix%>_<%omsiName%>_resFunction_<%algSysIndex%>;
-      algSystem->jacobian->evaluate = <%FileNamePrefix%>_<%omsiName%>_derivativeMatFunc_<%algSysIndex%>;
+      algSystem->jacobian->evaluate = <%match  matrix case NONE() then 'NULL;' else '<%FileNamePrefix%>_<%omsiName%>_derivativeMatFunc_<%algSysIndex%>;' %>
 
       algSystem->solver_data = NULL;
 

@@ -3858,12 +3858,19 @@ algorithm
       (tmpEqns, uniqueEqIndex) = createSingleAlgorithmCode(eqnlst, varlst, false, uniqueEqIndex);
     then();
 
+    // case for single algorithm equation
+    case BackendDAE.SINGLEARRAY() equation
+      (eqnlst, varlst,_) = BackendDAETransform.getEquationAndSolvedVar(component, constSyst.orderedEqs, constSyst.orderedVars);
+      varlst = List.map(varlst, BackendVariable.transformXToXd);
+      (tmpEqns, _, uniqueEqIndex, _) = createSingleArrayEqnCode(true, eqnlst, varlst, uniqueEqIndex, {}, shared.info);
+    then();
+
     // case for torn systems of equations
     case BackendDAE.TORNSYSTEM(strictTearingSet = 
            BackendDAE.TEARINGSET(tearingvars=tearingVars, residualequations=residualEqns, innerEquations=innerEquations, jac=jacobian),
            linear = linear, mixedSystem = mixedSystem)
     algorithm
-      if not SymbolicJacobian.isJacobianGeneric(jacobian) then
+      if not SymbolicJacobian.isJacobianGeneric(jacobian) and linear then
         Error.addMessage(Error.NO_JACONIAN_TORNLINEAR_SYSTEM, {});
         fail();
       end if;
@@ -3934,10 +3941,12 @@ algorithm
                                    mixedSystem = mixedSystem)
       algorithm
 
+      /*
       if not SymbolicJacobian.isJacobianGeneric(jacobian) then
         Error.addMessage(Error.NO_JACONIAN_TORNLINEAR_SYSTEM, {});    // ToDo: edit error message
         fail();
       end if;
+      */
 
       algEqIndex := uniqueEqIndex;
       uniqueEqIndex := uniqueEqIndex+1;
