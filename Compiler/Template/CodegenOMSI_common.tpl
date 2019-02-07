@@ -67,7 +67,7 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
         <<>>
     case "omsicpp" then
         let content = generateOmsiFunctionCode(simulation, modelNamePrefix,"evaluate","sim_eqns")
-        let () = textFile(content, '<%fullPathPrefix%>/OMCpp<%fileNamePrefix%>OMSIEquations.cpp')
+        let () = textFile(content, 'OMCpp<%fileNamePrefix%>OMSIEquations.cpp')
         <<>>
     end match
 
@@ -79,7 +79,7 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
         <<>>
     case "omsicpp" then
         let content = generateOmsiFunctionCode(initialization, modelNamePrefix+"Initialize","initialize" ,"init_eqns")
-        let () = textFile(content, '<%fullPathPrefix%>/OMCpp<%fileNamePrefix%>OMSIInitEquations.cpp')
+        let () = textFile(content, 'OMCpp<%fileNamePrefix%>OMSIInitEquations.cpp')
         <<>>
     end match
 
