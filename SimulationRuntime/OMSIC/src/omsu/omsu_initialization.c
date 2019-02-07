@@ -115,6 +115,9 @@ osu_t* omsic_instantiate(omsi_string                            instanceName,
     /* Initialize callbacks for initialization and simulation omsi_functions */
     omsi_intialize_callbacks(OSU->osu_data, OSU->osu_functions);
 
+    /* Initialize sample events */
+    OSU->osu_functions->initialize_samples(OSU->osu_data->sim_data->sample_events);
+
     OSU->vrStates = (omsi_unsigned_int *) functions->allocateMemory(OSU->osu_data->model_data->n_states, sizeof(omsi_unsigned_int));
     OSU->vrStatesDerivatives = (omsi_unsigned_int *) functions->allocateMemory(OSU->osu_data->model_data->n_states, sizeof(omsi_unsigned_int));
     if (!OSU->vrStates || !OSU->vrStatesDerivatives) {
