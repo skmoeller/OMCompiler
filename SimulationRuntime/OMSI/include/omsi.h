@@ -104,8 +104,7 @@ typedef const omsi_char*    omsi_string;
 #ifndef MODELICATYPES_TYPEDEF
 #define MODELICATYPES_TYPEDEF
 typedef omsi_real           modelica_real;
-typedef omsi_int            modelica_int;
-typedef omsi_bool           modelica_boolean;
+typedef omsi_int            modelica_integer;
 #endif
 
 
