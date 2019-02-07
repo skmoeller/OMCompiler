@@ -532,7 +532,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
 ""
 ::=
   match equationSystem
-  case SES_ALGEBRAIC_SYSTEM(residual=residual as OMSI_FUNCTION(__),matrix=matrix) then
+  case SES_ALGEBRAIC_SYSTEM(dim_n=dim_n, residual=residual as OMSI_FUNCTION(__),matrix=matrix) then
 
     let &functionPrototypes += <<omsi_status <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars, omsi_values* pre_vars);<%\n%>>>
 
@@ -542,7 +542,7 @@ template generateInitalizationAlgSystem (SimEqSystem equationSystem, String File
     <<
     /* Function instantiate omsi_algebraic_system_t struct */
     omsi_status <%FileNamePrefix%>_<%omsiName%>_instantiate_AlgSystem_<%algSysIndex%>(omsi_algebraic_system_t* algSystem, omsi_values* function_vars, omsi_values* pre_vars) {
-      algSystem->n_iteration_vars = <%listLength(residual.outputVars)%>;
+      algSystem->n_iteration_vars = <%dim_n%>;
 
       algSystem->n_conditions = <%listLength(zeroCrossingConditions)%>;
       <% if listLength(zeroCrossingConditions) then

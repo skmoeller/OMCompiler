@@ -540,6 +540,7 @@ end OMSIFunction;
     record SES_ALGEBRAIC_SYSTEM
       Integer index;
       Integer algSysIndex;
+      Integer dim_n;
       Boolean partOfMixed;
       Boolean tornSystem;
       Boolean linearSystem;

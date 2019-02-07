@@ -3921,6 +3921,7 @@ algorithm
       (derivativeMatrix, uniqueEqIndex) := createDerivativeMatrix(jacobian, uniqueEqIndex);
       algSystem := SimCode.SES_ALGEBRAIC_SYSTEM(index = algEqIndex,
                                                 algSysIndex = nAlgebraicSystems,
+                                                dim_n = listLength(tvars),
                                                 partOfMixed = mixedSystem,
                                                 tornSystem = true,
                                                 linearSystem = linear,
@@ -3983,6 +3984,7 @@ algorithm
       (derivativeMatrix, uniqueEqIndex) := createDerivativeMatrix(jacobian, uniqueEqIndex);
       algSystem := SimCode.SES_ALGEBRAIC_SYSTEM(index = algEqIndex,
                                                 algSysIndex = nAlgebraicSystems,
+                                                dim_n = listLength(tvars),
                                                 partOfMixed = mixedSystem,
                                                 tornSystem = false,
                                                 linearSystem = false,             // ToDo: check if system is linear

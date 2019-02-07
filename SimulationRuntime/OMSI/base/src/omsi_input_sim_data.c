@@ -448,7 +448,7 @@ omsi_status omsu_set_default_solvers (omsi_function_t*  omsi_function,
     }
 
     for(i=0; i<omsi_function->n_algebraic_system; i++) {
-        dim_n = omsi_function->algebraic_system_t[i].jacobian->n_output_vars;       /* Dimension of jacobian */
+        dim_n = omsi_function->algebraic_system_t[i].n_iteration_vars;      /* Dimension of algebraic system */
 
         /* Check if solver_data still unallocated */
         if (omsi_function->algebraic_system_t[i].solver_data!=NULL) {

@@ -430,6 +430,8 @@ uniontype SimEqSystem
     Integer index;            // equation index
     Integer algSysIndex;      // index of algebraic system
 
+    Integer dim_n;            // dimension of algebraic loop (after tearing)
+
     Boolean partOfMixed;
     Boolean tornSystem;
     Boolean linearSystem;
