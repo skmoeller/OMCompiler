@@ -38,7 +38,6 @@ import Absyn;
 import DAE;
 import HashTableCrefSimVar;
 import HashTableStringToPath;
-import HashTableCrefSimVar;
 import Tpl;
 
 uniontype FunctionCode

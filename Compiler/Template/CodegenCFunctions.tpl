@@ -3550,7 +3550,7 @@ template crefOMSI(ComponentRef cref, Context context)
     // cref in default omsi context
     case omsiContext as OMSI_CONTEXT(hashTable=SOME(hashTable)) then
         '<%crefToOMSICStr(cref, hashTable)%>'
-    case jacobianContext as JACOBIAN_CONTEXT(hashTable=SOME(hashTable)) then
+    case jacobianContext as JACOBIAN_CONTEXT(jacHT=SOME(hashTable)) then
         '<%crefToOMSICStr(cref, hashTable)%>'
     // error case
     else "ERROR in crefOMSI: No valid SimCodeFunction.Context"
