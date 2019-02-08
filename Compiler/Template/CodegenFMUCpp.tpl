@@ -146,7 +146,7 @@ case SIMCODE(modelInfo=MODELINFO(__),simulationSettingsOpt = SOME(settings as SI
   class <%lastIdentOfPath(modelInfo.name)%>WriteOutput  : public IWriteOutput,public <%lastIdentOfPath(modelInfo.name)%>StateSelection
   {
    public:
-    <%lastIdentOfPath(modelInfo.name)%>WriteOutput(IGlobalSettings* globalSettings, shared_ptr<ISimObjects> simObjects): <%lastIdentOfPath(modelInfo.name)%>StateSelection(globalSettings, simObjects) {}
+    <%lastIdentOfPath(modelInfo.name)%>WriteOutput(shared_ptr<IGlobalSettings> globalSettings): <%lastIdentOfPath(modelInfo.name)%>StateSelection(globalSettings) {}
     virtual ~<%lastIdentOfPath(modelInfo.name)%>WriteOutput() {}
 
     virtual void writeOutput(const IWriteOutput::OUTPUT command = IWriteOutput::UNDEF_OUTPUT) {}
@@ -171,7 +171,7 @@ case SIMCODE(modelInfo=MODELINFO(__)) then
   class <%modelShortName%>FMU: public <%modelShortName%>Initialize {
    public:
     // constructor
-    <%modelShortName%>FMU(IGlobalSettings* globalSettings, shared_ptr<ISimObjects> simObjects);
+    <%modelShortName%>FMU(shared_ptr<IGlobalSettings> globalSettings);
 
     // initialization
     virtual void initialize();
@@ -199,7 +199,7 @@ case SIMCODE(modelInfo=MODELINFO(__)) then
   };
 
   /// create instance of <%modelShortName%>FMU
-  static <%modelShortName%>FMU *createSystemFMU(IGlobalSettings *globalSettings);
+  static <%modelShortName%>FMU *createSystemFMU(shared_ptr<IGlobalSettings> globalSettings);
   >>
 end fmuModelHeaderFile;
 
@@ -207,7 +207,7 @@ template fmuModelCppFile(SimCode simCode,Text& extraFuncs,Text& extraFuncsDecl,T
  "Generates code for FMU target."
 ::=
 match simCode
-case SIMCODE(modelInfo=MODELINFO(vars=SIMVARS(inputVars=inputVars, algVars=algVars)), modelStructure=modelStructure) then
+case SIMCODE(modelInfo=MODELINFO(vars=SIMVARS(inputVars=inputVars, outputVars=outputVars, algVars=algVars)), modelStructure=modelStructure) then
   let modelName = dotPath(modelInfo.name)
   let modelShortName = lastIdentOfPath(modelInfo.name)
   let modelLongName = System.stringReplace(modelName, ".", "_")
@@ -233,54 +233,11 @@ case SIMCODE(modelInfo=MODELINFO(vars=SIMVARS(inputVars=inputVars, algVars=algVa
   else
     '#include "FMU2/FMU2Interface.cpp"'%>
 
-  // SimObjects for <%modelShortName%>FMU
-  shared_ptr<IAlgLoopSolverFactory> createStaticAlgLoopSolverFactory(IGlobalSettings*, PATH, PATH);
-
-  class <%modelShortName%>SimObjects : public ISimObjects {
-   public:
-    <%modelShortName%>SimObjects(IGlobalSettings *globalSettings) {
-      _algLoopSolverFactory = shared_ptr<IAlgLoopSolverFactory>(<%solverFactory%>);
-    }
-    <%modelShortName%>SimObjects(<%modelShortName%>SimObjects& instance) {
-      _algLoopSolverFactory = instance._algLoopSolverFactory;
-    }
-    weak_ptr<ISimData> LoadSimData(string modelKey) {
-      return shared_ptr<ISimData>();
-    }
-    weak_ptr<ISimVars> LoadSimVars(string modelKey, size_t dim_real, size_t dim_int, size_t dim_bool, size_t dim_string, size_t dim_pre_vars, size_t dim_z, size_t z_i) {
-      _simVars = shared_ptr<ISimVars>(new SimVars(dim_real, dim_int, dim_bool, dim_string, dim_pre_vars, dim_z, z_i));
-      return _simVars;
-    }
-    weak_ptr<IHistory> LoadWriter(size_t) {
-      return shared_ptr<IHistory>();
-    }
-    shared_ptr<ISimData> getSimData(string modelKey) {
-      return shared_ptr<ISimData>();
-    }
-    shared_ptr<ISimVars> getSimVars(string modelKey) {
-      return _simVars;
-    }
-    void eraseSimData(string modelKey) {}
-    void eraseSimVars(string modelKey) {}
-    shared_ptr<IAlgLoopSolverFactory> getAlgLoopSolverFactory() {
-      return _algLoopSolverFactory;
-    }
-
-    ISimObjects* clone() {
-      return new <%modelShortName%>SimObjects(*this);
-    }
-   protected:
-    shared_ptr<ISimVars> _simVars;
-    shared_ptr<IAlgLoopSolverFactory> _algLoopSolverFactory;
-  };
 
   // create instance of <%modelShortName%>FMU
-  <%modelShortName%>FMU *createSystemFMU(IGlobalSettings *globalSettings) {
-    shared_ptr<ISimObjects> simObjects(new <%modelShortName%>SimObjects(globalSettings));
-    simObjects->LoadSimVars("<%modelShortName%>", <%numRealvars(modelInfo)%>, <%numIntvars(modelInfo)%>, <%numBoolvars(modelInfo)%>, <%numStringvars(modelInfo)%>, <%getPreVarsCount(modelInfo)%>, <%numStatevars(modelInfo)%>, <%numStateVarIndex(modelInfo)%>);
-    simObjects->LoadSimData("<%modelShortName%>");
+  <%modelShortName%>FMU *createSystemFMU(shared_ptr<IGlobalSettings> globalSettings) {
     globalSettings->setOutputFormat(EMPTY);
-    return new <%modelShortName%>FMU(globalSettings, simObjects);
+    return new <%modelShortName%>FMU(globalSettings);
   }
 
   // value references of real inputs
@@ -294,8 +251,8 @@ case SIMCODE(modelInfo=MODELINFO(vars=SIMVARS(inputVars=inputVars, algVars=algVa
       intSub(getVariableIndex(cref2simvar(name, simCode)), 1) ;separator=", "%>};
 
   // constructor
-  <%modelShortName%>FMU::<%modelShortName%>FMU(IGlobalSettings* globalSettings, shared_ptr<ISimObjects> simObjects)
-    : <%modelShortName%>Initialize(globalSettings, simObjects) {
+  <%modelShortName%>FMU::<%modelShortName%>FMU(shared_ptr<IGlobalSettings> globalSettings)
+    : <%modelShortName%>Initialize(globalSettings) {
   }
 
   // initialization
@@ -710,7 +667,7 @@ case SIMCODE(modelInfo=MODELINFO(__), makefileParams=MAKEFILE_PARAMS(__), simula
   OMCPP_SOLVER_LIBS=OMCppNewton_static.lib OMCppDgesv_static.lib OMCppDgesvSolver_static.lib -lOMCppSolver_static
   MODELICA_UTILITIES_LIB=OMCppModelicaUtilities_static.lib
   EXTRA_LIBS=<%dirExtra%> <%libsExtra%>
-  LDFLAGS=/link /DLL /NOENTRY /LIBPATH:"<%makefileParams.omhome%>/lib/omc/cpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/bin" OMCppSystem_static.lib OMCppMath_static.lib OMCppExtensionUtilities_static.lib OMCppFMU_static.lib $(OMCPP_SOLVER_LIBS) $(EXTRA_LIBS) $(MODELICA_UTILITIES_LIB)
+  LDFLAGS=/link /DLL /NOENTRY /LIBPATH:"<%makefileParams.omhome%>/lib/omc/cpp/msvc" /LIBPATH:"<%makefileParams.omhome%>/bin" OMCppSystem_static.lib OMCppMath_static.lib OMCppExtensionUtilities_static.lib OMCppDataExchange_static.lib OMCppFMU_static.lib  $(OMCPP_SOLVER_LIBS)  $(EXTRA_LIBS) $(MODELICA_UTILITIES_LIB)
   PLATFORM="<%makefileParams.platform%>"
 
   MODELICA_SYSTEM_LIB=<%fileNamePrefix%>
@@ -805,10 +762,10 @@ case SIMCODE(modelInfo=MODELINFO(__), makefileParams=MAKEFILE_PARAMS(__), simula
 
   BINARIES=<%fileNamePrefix%>$(DLLEXT)
 
-  OMCPP_LIBS=-lOMCppSystem_static -lOMCppMath_static -lOMCppModelicaUtilities_static -lOMCppFMU_static $(OMCPP_SOLVER_LIBS) -lOMCppExtensionUtilities_static
+  OMCPP_LIBS=-lOMCppSystem_static -lOMCppMath_static -lOMCppDataExchange_static -lOMCppFMU_static $(OMCPP_SOLVER_LIBS) -lOMCppExtensionUtilities_static
   MODELICA_UTILITIES_LIB=-lOMCppModelicaUtilities_static
   EXTRA_LIBS=<%dirExtra%> <%libsExtra%>
-  LIBS=$(OMCPP_LIBS) $(EXTRA_LIBS) $(MODELICA_UTILITIES_LIB) $(BASE_LIB)
+  LIBS=$(OMCPP_LIBS) $(MODELICA_UTILITIES_LIB) $(BASE_LIB) $(EXTRA_LIBS)
 
   # link with simple dgesv or full lapack
   ifeq ($(USE_DGESV),ON)

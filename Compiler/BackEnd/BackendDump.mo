@@ -270,7 +270,7 @@ algorithm
   dumpEquationArray(inShared.initialEqs, "Initial Equations");
   dumpZeroCrossingList(ZeroCrossings.toList(inShared.eventInfo.zeroCrossings), "Zero Crossings");
   dumpZeroCrossingList(DoubleEndedList.toListNoCopyNoClear(inShared.eventInfo.relations), "Relations");
-  if stringEqual(Config.simCodeTarget(), "Cpp") then
+  if (stringEqual(Config.simCodeTarget(), "Cpp") or stringEqual(Config.simCodeTarget(), "omsicpp")) then
     dumpZeroCrossingList(ZeroCrossings.toList(inShared.eventInfo.samples), "Samples");
   else
     dumpTimeEvents(inShared.eventInfo.timeEvents, "Time Events");
@@ -2483,7 +2483,9 @@ algorithm
     case BackendDAE.ALG_STATE()  then "ALG_STATE";
     case BackendDAE.ALG_STATE_OLD()  then "ALG_STATE_OLD";
     case BackendDAE.DAE_RESIDUAL_VAR() then "DAE_RESIDUAL_VAR";
-    case BackendDAE.DAE_AUX_VAR() then "DAE_AUX_VAR";
+    case BackendDAE.LOOP_ITERATION() then "LOOP_ITERATION";
+    case BackendDAE.LOOP_SOLVED() then "LOOP_SOLVED";
+    else then "ERROR: BackendDump.kindString varKind not implemented";
   end match;
 end kindString;
 

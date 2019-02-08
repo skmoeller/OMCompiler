@@ -544,6 +544,8 @@ constant DebugFlag WARNING_MINMAX_ATTRIBUTES = DEBUG_FLAG(184, "warnMinMax", tru
   Util.gettext("Makes a warning assert from min/max variable attributes instead of error."));
 constant DebugFlag NF_EXPAND_FUNC_ARGS = DEBUG_FLAG(185, "nfExpandFuncArgs", false,
   Util.gettext("Expand all function arguments in the new frontend."));
+constant DebugFlag OMSIC_SIM_OMS = DEBUG_FLAG(186, "omsicOMS", false,
+  Util.gettext("Use OMSimulator to simulate omsic fmu."));
 
 // This is a list of all debug flags, to keep track of which flags are used. A
 // flag can not be used unless it's in this list, and the list is checked at
@@ -735,7 +737,8 @@ constant list<DebugFlag> allDebugFlags = {
   NF_API,
   FMI20_DEPENDENCIES,
   WARNING_MINMAX_ATTRIBUTES,
-  NF_EXPAND_FUNC_ARGS
+  NF_EXPAND_FUNC_ARGS,
+  OMSIC_SIM_OMS
 };
 
 public
@@ -949,7 +952,7 @@ constant ConfigFlag POST_OPT_MODULES = CONFIG_FLAG(16, "postOptModules",
 
 constant ConfigFlag SIMCODE_TARGET = CONFIG_FLAG(17, "simCodeTarget",
   NONE(), EXTERNAL(), STRING_FLAG("C"),
-  SOME(STRING_OPTION({"None", "Adevs", "C", "Cpp", "CSharp", "ExperimentalEmbeddedC", "Java", "JavaScript", "sfmi", "XML", "MidC"})),
+  SOME(STRING_OPTION({"None", "Adevs", "C", "Cpp", "omsicpp", "CSharp", "ExperimentalEmbeddedC", "Java", "JavaScript", "omsic", "sfmi", "XML", "MidC"})),
   Util.gettext("Sets the target language for the code generation."));
 
 constant ConfigFlag ORDER_CONNECTIONS = CONFIG_FLAG(18, "orderConnections",

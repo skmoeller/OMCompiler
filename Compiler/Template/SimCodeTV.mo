@@ -395,6 +395,7 @@ package SimCode
       PartitionData partitionData;
       Option<DaeModeData> daeModeData;
       list<SimEqSystem> inlineEquations;
+      Option<OMSIData> omsiData;
     end SIMCODE;
   end SimCode;
 
@@ -452,6 +453,25 @@ package SimCode
       list<ExtAlias> aliases;
     end EXTOBJINFO;
   end ExtObjInfo;
+  
+  uniontype OMSIData
+  record OMSI_DATA
+    OMSIFunction initialization;
+    OMSIFunction simulation;
+  end OMSI_DATA;
+end OMSIData;
+
+uniontype OMSIFunction
+  record OMSI_FUNCTION
+    list<SimEqSystem> equations;
+    list<SimCodeVar.SimVar> inputVars;
+    list<SimCodeVar.SimVar> outputVars;
+    list<SimCodeVar.SimVar> innerVars;
+    Integer nAllVars;
+    SimCodeFunction.Context context;
+    Integer nAlgebraicSystems;
+  end OMSI_FUNCTION;
+end OMSIFunction;
 
   uniontype SimEqSystem
     record SES_RESIDUAL
@@ -553,7 +573,37 @@ package SimCode
     record SES_ALIAS
       Integer aliasOf;
     end SES_ALIAS;
+
+    record SES_ALGEBRAIC_SYSTEM
+      Integer index;
+      Integer algSysIndex;
+      Integer dim_n;
+      Boolean partOfMixed;
+      Boolean tornSystem;
+      Boolean linearSystem;
+      OMSIFunction residual;
+      Option<DerivativeMatrix> matrix;
+      list<Integer> zeroCrossingConditions;
+      list<DAE.ElementSource> sources;
+      BackendDAE.EquationAttributes eqAttr;
+    end SES_ALGEBRAIC_SYSTEM;
   end SimEqSystem;
+
+  uniontype DerivativeMatrix
+    "represents directional derivatives with sparsity and coloring"
+    record DERIVATIVE_MATRIX
+      list<OMSIFunction> columns;         // column(s) equations and variables
+                                          // inputVars:  seedVars
+                                          // innerVars:  inner column vars
+                                          // outputVars: result vars of the column
+
+      String matrixName;                  // unique matrix name
+      SparsityPattern sparsity;
+      SparsityPattern sparsityT;
+      list<list<Integer>> coloredCols;
+      Integer maxColorCols;
+    end DERIVATIVE_MATRIX;
+  end DerivativeMatrix;
 
   uniontype LinearSystem
     record LINEARSYSTEM
@@ -876,6 +926,9 @@ package SimCodeFunction
     end FMI_CONTEXT;
     record DAE_MODE_CONTEXT
     end DAE_MODE_CONTEXT;
+    record OMSI_CONTEXT
+      Option<HashTableCrefSimVar.HashTable> hashTable;
+    end OMSI_CONTEXT;
   end Context;
 
   constant Context contextSimulationNonDiscrete;
@@ -891,6 +944,7 @@ package SimCodeFunction
   constant Context contextOptimization;
   constant Context contextFMI;
   constant Context contextDAEmode;
+  constant Context contextOMSI;
   constant list<DAE.Exp> listExpLength1;
   constant list<SimCodeFunction.Variable> boxedRecordOutVars;
 end SimCodeFunction;
@@ -989,6 +1043,14 @@ package SimCodeUtil
     output String outValueReference;
   end getValueReference;
 
+  function getLocalValueReference
+    input SimCodeVar.SimVar inSimVar;
+    input SimCode.SimCode inSimCode;
+    input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
+    input Boolean inElimNegAliases;
+    output String outValueReference;
+  end getLocalValueReference;
+
   function getVarIndexListByMapping
     input HashTableCrIListArray.HashTable iVarToArrayIndexMapping;
     input DAE.ComponentRef iVarName;
@@ -1078,6 +1140,18 @@ package SimCodeUtil
     input Option<HashTableCrefSimVar.HashTable> jacHT;
     output SimCodeFunction.Context outContext;
   end createJacContext;
+
+  function localCref2SimVar
+    input DAE.ComponentRef inCref;
+    input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
+    output SimCodeVar.SimVar outSimVar;
+  end localCref2SimVar;
+
+  function localCref2Index
+    input DAE.ComponentRef inCref;
+    input HashTableCrefSimVar.HashTable inCrefToSimVarHT;
+    output String outIndex;
+  end localCref2Index;
 
   function isModelTooBigForCSharpInOneFile
     input SimCode.SimCode simCode;
@@ -1299,6 +1373,8 @@ package BackendDAE
   record ALG_STATE_OLD  end ALG_STATE_OLD; // algebraic state old value used by inline solver
   record DAE_RESIDUAL_VAR end DAE_RESIDUAL_VAR; // variable kind used for DAEmode
   record DAE_AUX_VAR end DAE_AUX_VAR; // auxiliary variable used for DAEmode
+  record LOOP_ITERATION end LOOP_ITERATION; // used in SIMCODE, iteration variables in algebraic loops
+  record LOOP_SOLVED end LOOP_SOLVED; // used in SIMCODE, inner variables of a torn algebraic loop
   end VarKind;
 
   uniontype SubClock
@@ -3347,6 +3423,11 @@ package ComponentReference
     input DAE.ComponentRef inCref;
     output DAE.ComponentRef outCref;
   end crefPrefixPrevious;
+
+  function crefPrefixPre
+    input DAE.ComponentRef inCref;
+    output DAE.ComponentRef outCref;
+  end crefPrefixPre;
 
   function crefPrefixDer
     input DAE.ComponentRef inCref;

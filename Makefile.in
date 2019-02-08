@@ -1,4 +1,4 @@
-all: omc
+all: omc OMSICInstall
 
 autoconfGeneratedFiles = @GENERATED_AUTOCONF_FILES@
 
@@ -74,6 +74,7 @@ MINGW_EXTRA_LIBS=@MINGW_EXTRA_LIBS@
 SUITESPARSE_LIBS = -DKLU_LIBRARY="libklu$(SHREXT)" -DAMD_LIBRARY="libamd$(SHREXT)" -DCOLAMD_LIBRARY="libcolamd$(SHREXT)" -DBTF_LIBRARY="libbtf$(SHREXT)"
 
 include Makefile.common
+include Makefile.omsi.common
 
 # We don't need OMDEV hacks, but using the same Makefile sure is nice!
 .testvariables:

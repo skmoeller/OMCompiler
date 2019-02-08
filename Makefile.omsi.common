@@ -1,0 +1,192 @@
+# Makefile for build omsi base libraries
+
+# specify a list of target platforms, including dynamic, static
+PLATFORMS=static dynamic
+
+ifeq ($(BUILDTYPE),)
+BUILDTYPE=$(BuildType)
+endif
+ifeq ($(BUILDTYPE),)
+BUILDTYPE=Debug
+endif
+
+ifeq (MINGW32,$(findstring MINGW32,$(shell uname)))
+	IS_MINGW32 = -DIS_MINGW32=ON
+	IS_MINGW64 = -DIS_MINGW64=OFF
+endif
+ifeq (MINGW32,$(findstring MINGW64,$(shell uname)))
+	IS_MINGW32 = -DIS_MINGW32=OFF
+	IS_MINGW64 = -DIS_MINGW64=ON
+endif
+
+BOOST_STATIC_LINKING="false"
+ifeq ($(BOOST_STATIC_LINKING),"true")
+	BOOST_STATIC_LINKING_COMMAND=-DBOOST_STATIC_LINKING=ON
+else
+	BOOST_STATIC_LINKING_COMMAND=-DBOOST_STATIC_LINKING=OFF
+endif
+
+BOOST_REALPATHS="false"
+ifeq ($(BOOST_REALPATHS),"true")
+	BOOST_REALPATHS_COMMAND=-DUSE_BOOST_REALPATHS=ON
+else
+	BOOST_REALPATHS_COMMAND=-DUSE_BOOST_REALPATHS=OFF
+endif
+
+RUNTIME_PROFILING="false"
+ifeq ($(RUNTIME_PROFILING),"true")
+	RUNTIME_PROFILING_COMMAND=-DRUNTIME_PROFILING=ON
+else
+	RUNTIME_PROFILING_COMMAND=-DRUNTIME_PROFILING=OFF
+endif
+
+SCOREP="false"
+ifeq ($(SCOREP),"true")
+	USE_SCOREP_COMMAND=-DUSE_SCOREP=ON
+else
+	USE_SCOREP_COMMAND=-DUSE_SCOREP=OFF
+endif
+
+SCOREP_HOME=""
+SCOREP_HOME_COMMAND=-DSCOREP_HOME=$(SCOREP_HOME)
+
+FMU_SUNDIALS="false"
+ifeq ($(FMU_SUNDIALS),"true")
+	FMU_SUNDIALS_COMMAND=-DFMU_SUNDIALS=ON
+else
+	FMU_SUNDIALS_COMMAND=-DFMU_SUNDIALS=OFF
+endif
+
+PARALLEL_OUTPUT="false"
+ifeq ($(PARALLEL_OUTPUT),"true")
+	PARALLEL_OUTPUT_COMMAND=-DUSE_PARALLEL_OUTPUT=ON
+else
+	PARALLEL_OUTPUT_COMMAND=-DUSE_PARALLEL_OUTPUT=OFF
+endif
+
+USE_LOGGER="true"
+ifeq ($(USE_LOGGER),"true")
+	USE_LOGGER_COMMAND=-DUSE_LOGGER:BOOL=ON
+else
+	USE_LOGGER_COMMAND=-DUSE_LOGGER:BOOL=OFF
+endif
+
+USE_TRILINOS="false"
+ifeq ($(USE_TRILINOS),"true")
+	USE_TRILINOS_COMMAND=-DUSE_TRILINOS:BOOL=ON
+else
+	USE_TRILINOS_COMMAND=-DUSE_TRILINOS:BOOL=OFF
+endif
+
+USE_KLU="false"
+ifeq ($(USE_KLU),"true")
+	USE_KLU_COMMAND=-DUSE_KLU:BOOL=ON
+else
+	USE_KLU_COMMAND=-DUSE_KLU:BOOL=OFF
+endif
+
+
+CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=$(BUILDTYPE) $(BOOST_STATIC_LINKING_COMMAND) $(BOOST_REALPATHS_COMMAND) $(RUNTIME_PROFILING_COMMAND) $(USE_SCOREP_COMMAND) $(SCOREP_HOME_COMMAND) $(FMU_SUNDIALS_COMMAND) $(PARALLEL_OUTPUT_COMMAND) $(USE_LOGGER_COMMAND) $(USE_TRILINOS_COMMAND) $(USE_KLU_COMMAND)
+
+CMAKE_CALL=cmake -G $(CMAKE_TARGET) --build . -DPLATFORM=$(PLATFORM) $(CMAKE_FLAGS) $(IS_MINGW32) $(IS_MINGW64) -DCMAKE_INSTALL_PREFIX:PATH="$(OMBUILDDIR)" -DMAKE_CXX_COMPILER=$(CXX) -DLIB_OMC=$(LIB_OMC) -DSHREXT=$(SHREXT) ..
+
+.PHONY: OMSIBaseClean OMSICClean
+
+
+#############################
+# Rules for OMSI
+#############################
+
+OMSI: OMSIBaseInstall OMSICInstall
+
+
+
+OMSI-clean: OMSIBaseClean OMSICClean
+	cd $(OMBUILDDIR);                             \
+	rm -rf include/omc/omsi include/omc/omsic;    \
+	rm -rf lib/omc/omsi
+
+
+#############################
+# Rules for OMSIBase library
+#############################
+
+OMSIBase: sundials umfpack fmil Cdaskr CMinpack
+	cd SimulationRuntime/OMSI; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  mkdir -p Build_$(PLATFORM); \
+	  (cd ./Build_$(PLATFORM); echo "change to Build_$(PLATFORM)"; \
+		 $(CMAKE_CALL); \
+	   $(MAKE) );)
+
+OMSIBaseMSVC: getMSVCversion
+	test -f """${VSCOMNTOOLS}/../../VC/vcvarsall.bat"""
+	echo 'Build the cppRuntime with MSVC' buildtype: $(BUILDTYPE)
+	#rm -rf Build_MSVC
+	mkdir -p Build_MSVC
+	echo call '"${VSCOMNTOOLS}\\..\\..\\VC\\vcvarsall.bat" ${VCVARS_PARAMS}' > Build_MSVC/build.bat
+
+	echo echo Running CMake from '%OMDEV%\\bin\\cmake\\bin\\cmake' >> Build_MSVC/build.bat
+	echo '%OMDEV%\\bin\\cmake\\bin\\cmake -DCMAKE_VERBOSE_MAKEFILE:Bool=ON -DPLATFORM="dynamic" $(CMAKE_FLAGS) -DIS_MINGW32=OFF -DIS_MINGW64=OFF -DCMAKE_INSTALL_PREFIX:PATH=./tmp ../ -G "NMake Makefiles JOM" -D"CMAKE_MAKE_PROGRAM:PATH=%OMDEV%\\tools\\jom\\jom.exe"' >> Build_MSVC/build.bat
+
+	# for some reason, the environment variable 'MAKEFLAGS' was set to 'w' on my and Niklas' machine?!
+	echo set MAKEFLAGS="" >> Build_MSVC/build.bat
+	echo echo Running NMake JOM >> Build_MSVC/build.bat
+	echo %OMDEV%\\tools\\jom\\jom.exe /f Makefile install >> Build_MSVC/build.bat
+	cd ./Build_MSVC; echo "change to Build_MSVC";\
+	cmd /c build.bat
+
+	echo 'Build cppRuntime (static) with MSVC'
+	#rm -rf Build_MSVC_static
+	mkdir -p Build_MSVC_static
+	echo call '"${VSCOMNTOOLS}\\..\\..\\VC\\vcvarsall.bat" ${VCVARS_PARAMS}' > Build_MSVC_static/build.bat
+
+	echo echo Running CMake from '%OMDEV%\\bin\\cmake\\bin\\cmake' >> Build_MSVC_static/build.bat
+	echo '%OMDEV%\\bin\\cmake\\bin\\cmake -DCMAKE_VERBOSE_MAKEFILE:Bool=ON -DPLATFORM="static" $(CMAKE_FLAGS) -DIS_MINGW32=OFF -DIS_MINGW64=OFF -DCMAKE_INSTALL_PREFIX:PATH=./tmp ../ -G "NMake Makefiles JOM" -D"CMAKE_MAKE_PROGRAM:PATH=%OMDEV%\\tools\\jom\\jom.exe"' >> Build_MSVC_static/build.bat
+
+	# for some reason, the environment variable 'MAKEFLAGS' was set to 'w' on my and Niklas' machine?!
+	echo set MAKEFLAGS="" >> Build_MSVC_static/build.bat
+	echo echo Running NMake JOM >> Build_MSVC_static/build.bat
+	echo %OMDEV%\\tools\\jom\\jom.exe /f Makefile install >> Build_MSVC_static/build.bat
+	cd ./Build_MSVC_static; echo "change to Build_MSVC_static";\
+	cmd /c build.bat
+
+	# move folder to build dir
+	cp -R --verbose Build_MSVC/tmp/* $(builddir_build)
+	cp -R --verbose Build_MSVC_static/tmp/lib/* $(builddir_build)/lib
+
+OMSIBaseInstall: OMSIBase
+	cd SimulationRuntime/OMSI; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  (cd Build_$(PLATFORM); $(MAKE) install);)
+
+OMSIBaseClean:
+	cd SimulationRuntime/OMSI; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  (cd Build_$(PLATFORM); $(MAKE) DESTDIR=$(OMBUILDDIR) clean; cd ..; \
+	  rm -R -f Build_$(PLATFORM));)
+
+
+
+#############################
+# Rules for OMSIC libraries
+#############################
+
+OMSIC: OMSIBaseInstall
+	cd SimulationRuntime/OMSIC; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  mkdir -p Build_$(PLATFORM); \
+	  (cd ./Build_$(PLATFORM); echo "change to Build_$(PLATFORM)"; \
+		 $(CMAKE_CALL); \
+		 $(MAKE) ); )
+
+OMSICInstall: OMSIC
+	cd SimulationRuntime/OMSIC; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  (cd Build_$(PLATFORM); $(MAKE) install);)
+
+OMSICClean:
+	cd SimulationRuntime/OMSIC; \
+	$(foreach PLATFORM, $(PLATFORMS), \
+	  (cd Build_$(PLATFORM); $(MAKE) DESTDIR=$(OMBUILDDIR) clean; cd ..; \
+	  rm -R -f Build_$(PLATFORM));)

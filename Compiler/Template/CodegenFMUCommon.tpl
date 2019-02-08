@@ -450,7 +450,7 @@ template FmiUnknownAttributes(FmiUnknown fmiUnknown)
 match fmiUnknown
 case FMIUNKNOWN(__) then
   <<
-  <Unknown index="<%index%>"<%FmiUnknownDependencies(dependencies)%><%FmiUnknownDependenciesKind(dependenciesKind)%> />
+  <Unknown index="<%index%>" <%FmiUnknownDependencies(dependencies)%> <%FmiUnknownDependenciesKind(dependenciesKind)%> />
   >>
 end FmiUnknownAttributes;
 
@@ -591,7 +591,7 @@ case SIMVAR(varKind = varKind, isValueChangeable = isValueChangeable, index = in
     case STATE_DER(__) then ' derivative="<%getStateSimVarIndexFromIndex(stateVars, index)%>"'
     case PARAM(__) then if isValueChangeable then '<%StartString2(simvar)%>' else ''
     else '<%StartString2(simvar)%>'
-  '<%extraAttributes%><%MinString2(simvar)%><%MaxString2(simvar)%><%NominalString2(simvar)%><%UnitString2(simvar)%>'
+  '<%extraAttributes%> <%MinString2(simvar)%> <%MaxString2(simvar)%> <%NominalString2(simvar)%><%UnitString2(simvar)%>'
 end ScalarVariableTypeCommonAttribute2;
 
 template StartString2(SimVar simvar)

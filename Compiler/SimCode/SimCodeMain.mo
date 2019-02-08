@@ -65,14 +65,18 @@ import ClockIndexes;
 import CevalScriptBackend;
 import CodegenC;
 import CodegenEmbeddedC;
+import CodegenFMU2;
 import CodegenFMU;
 import CodegenFMUCpp;
+import CodegenOMSICpp;
 import CodegenFMUCppHpcom;
 import CodegenAdevs;
 import CodegenSparseFMI;
 import CodegenCSharp;
 import CodegenCpp;
 import CodegenCppHpcom;
+import CodegenOMSIC;
+import CodegenOMSIC_Equations;
 import CodegenXML;
 import CodegenJava;
 import CodegenJS;
@@ -87,6 +91,7 @@ import Flags;
 import FMI;
 import GC;
 import HashTable;
+import HashTableCrefSimVar;
 import HashTableCrIListArray;
 import HashTableCrILst;
 import HpcOmSimCodeMain;
@@ -172,7 +177,11 @@ protected
 algorithm
   System.realtimeTick(ClockIndexes.RT_CLOCK_SIMCODE);
   a_cref := Absyn.pathToCref(className);
-  fileDir := CevalScriptBackend.getFileDir(a_cref, p);
+  if Config.simCodeTarget() ==  "omsic" then
+    fileDir := listHead(Absyn.pathToStringList(className))+".tmp";
+  else
+    fileDir := CevalScriptBackend.getFileDir(a_cref, p);
+  end if;
   (libs,libPaths,includes, includeDirs, recordDecls, functions, literals) :=
     SimCodeUtil.createFunctions(p, inBackendDAE.shared.functionTree);
   simCode := createSimCode(inBackendDAE, inInitDAE, inInitDAE_lambda0, NONE(),
@@ -244,6 +253,7 @@ public function generateModelCode "
   input String filenamePrefix;
   input Option<SimCode.SimulationSettings> simSettingsOpt;
   input Absyn.FunctionArgs args;
+  input BackendDAE.SymbolicJacobians inFMIDer = {};
   output list<String> libs;
   output String fileDir;
   output Real timeSimCode;
@@ -270,7 +280,7 @@ algorithm
   fileDir := CevalScriptBackend.getFileDir(a_cref, p);
 
   (libs, libPaths, includes, includeDirs, recordDecls, functions, literals) := SimCodeUtil.createFunctions(p, inBackendDAE.shared.functionTree);
-  simCode := createSimCode(inBackendDAE, inInitDAE, inInitDAE_lambda0, inInlineData, inRemovedInitialEquationLst, className, filenamePrefix, fileDir, functions, includes, includeDirs, libs,libPaths, p, simSettingsOpt, recordDecls, literals, args);
+  simCode := createSimCode(inBackendDAE, inInitDAE, inInitDAE_lambda0, inInlineData, inRemovedInitialEquationLst, className, filenamePrefix, fileDir, functions, includes, includeDirs, libs,libPaths, p, simSettingsOpt, recordDecls, literals, args,inFMIDer=inFMIDer);
   timeSimCode := System.realtimeTock(ClockIndexes.RT_CLOCK_SIMCODE);
   ExecStat.execStat("SimCode");
 
@@ -360,6 +370,55 @@ algorithm
     then tmpSimCode;
   end matchcontinue;
 end createSimCode;
+
+protected
+partial function PartialRunTpl
+  output tuple<Boolean,list<String>> res;
+end PartialRunTpl;
+
+partial function FuncText
+  input Tpl.Text txt;
+  output Tpl.Text out_txt;
+end FuncText;
+
+// TODO: function is duplicate of later protected function
+function runTplWriteFile
+  extends PartialRunTpl;
+  input FuncText func;
+  input String file;
+protected
+  Integer nErr;
+algorithm
+  res := (false,{});
+  try
+    SimCodeUtil.resetFunctionIndex();
+    SimCodeFunctionUtil.codegenResetTryThrowIndex();
+    if Config.acceptMetaModelicaGrammar() or Flags.isSet(Flags.GEN_DEBUG_SYMBOLS) then
+      Tpl.textFileConvertLines(Tpl.tplCallWithFailErrorNoArg(func), file);
+    else
+      nErr := Error.getNumErrorMessages();
+      Tpl.closeFile(Tpl.tplCallWithFailErrorNoArg(func,Tpl.redirectToFile(Tpl.emptyTxt, file)));
+      Tpl.failIfTrue(Error.getNumErrorMessages() > nErr);
+    end if;
+    res := (true,SimCodeUtil.getFunctionIndex());
+  else
+  end try;
+end runTplWriteFile;
+
+// TODO: function is duplicate of later protected function
+function runTpl
+  extends PartialRunTpl;
+  input FuncText func;
+algorithm
+  res := (false,{});
+  try
+    SimCodeUtil.resetFunctionIndex();
+    SimCodeFunctionUtil.codegenResetTryThrowIndex();
+    Tpl.tplCallWithFailErrorNoArg(func);
+    res := (true,SimCodeUtil.getFunctionIndex());
+  else
+  end try;
+end runTpl;
 
 // TODO: use another switch ... later make it first class option like -target or so
 protected function callTargetTemplates "
@@ -464,9 +523,7 @@ protected
     res := (func(),{});
   end runToBoolean;
 
-  partial function PartialRunTpl
-    output tuple<Boolean,list<String>> res;
-  end PartialRunTpl;
+
   AvlSetString.Tree generatedObjects=AvlSetString.EMPTY();
 algorithm
   setGlobalRoot(Global.optionSimCode, SOME(simCode));
@@ -485,6 +542,14 @@ algorithm
     case "Cpp"
       algorithm
         callTargetTemplatesCPP(simCode);
+        for str in {"CalcHelperMain.o\n",".so\n"} loop
+          generatedObjects := AvlSetString.add(generatedObjects, "OMCpp" + simCode.fileNamePrefix + str);
+        end for;
+      then ();
+
+    case "omsicpp"
+      algorithm
+        callTargetTemplatesOMSICpp(simCode);
         for str in {"CalcHelperMain.o\n",".so\n"} loop
           generatedObjects := AvlSetString.add(generatedObjects, "OMCpp" + simCode.fileNamePrefix + str);
         end for;
@@ -650,6 +715,24 @@ algorithm
   end if;
 end callTargetTemplatesCPP;
 
+protected function callTargetTemplatesOMSICpp
+  input SimCode.SimCode iSimCode;
+  protected
+  String fmuVersion;
+  String fmuType;
+  String guid;
+  String fileprefix;
+algorithm
+    fmuVersion:="2.0";
+    fmuType:="me";
+    fileprefix := iSimCode.fileNamePrefix;
+    guid := System.getUUIDStr();
+    SerializeInitXML.simulationInitFileReturnBool(simCode=iSimCode, guid=guid);
+    runTplWriteFile(func = function CodegenFMU2.fmiModelDescription(in_a_simCode=iSimCode, in_a_guid=guid,in_a_FMUType=fmuType), file="modelDescription.xml");
+    runTpl(func = function CodegenOMSI_common.generateEquationsCode(a_simCode=iSimCode, a_FileNamePrefix=fileprefix));
+  Tpl.tplNoret3(CodegenOMSICpp.translateModel, iSimCode, fmuVersion, fmuType);
+end callTargetTemplatesOMSICpp;
+
 protected function callTargetTemplatesFMU
 "Generate target code by passing the SimCode data structure to templates."
   input SimCode.SimCode simCode;
@@ -662,7 +745,9 @@ algorithm
     local
       String str, newdir, newpath, resourcesDir, dirname;
       String fmutmp;
+      String guid;
       Boolean b;
+      String fileprefix;
     case (SimCode.SIMCODE(),"C")
       algorithm
         fmutmp := simCode.fileNamePrefix + ".fmutmp";
@@ -709,6 +794,36 @@ algorithm
         SimCodeUtil.resetFunctionIndex();
         Tpl.tplNoret3(CodegenFMU.translateModel, simCode, FMUVersion, FMUType);
         Tpl.closeFile(Tpl.tplCallWithFailError4(CodegenFMU.fmuMakefile,Config.simulationCodeTarget(),simCode,FMUVersion,SimCodeUtil.getFunctionIndex(),txt=Tpl.redirectToFile(Tpl.emptyTxt, simCode.fileNamePrefix+".fmutmp/sources/Makefile.in")));
+      then ();
+    case (_,"omsic")
+      algorithm
+        guid := System.getUUIDStr();
+        fileprefix := simCode.fileNamePrefix;
+
+        // create tmp directory for generated files, but first remove the old one!
+        if System.directoryExists(simCode.fullPathPrefix) then
+          if not System.removeDirectory(simCode.fullPathPrefix) then
+            Error.addInternalError("Failed to remove directory: " + simCode.fullPathPrefix, sourceInfo());
+            fail();
+          end if;
+        end if;
+        if not System.createDirectory(simCode.fullPathPrefix) then
+          Error.addInternalError("Failed to create tmp folder", sourceInfo());
+          fail();
+        end if;
+
+        SerializeInitXML.simulationInitFileReturnBool(simCode=simCode, guid=guid);
+        SerializeModelInfo.serialize(simCode, Flags.isSet(Flags.INFO_XML_OPERATIONS));
+
+        runTplWriteFile(func = function CodegenOMSIC.createFMIImportScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fullPathPrefix+"/"+simCode.fileNamePrefix+"_fmiImport.mos");
+        runTplWriteFile(func = function CodegenOMSIC.createOMSimulationScript(a_fileNamePrefix=simCode.fileNamePrefix, a_fmuTargetName=simCode.fmuTargetName), file=simCode.fileNamePrefix+".lua");
+
+        runTplWriteFile(func = function CodegenFMU.fmuModelDescriptionFile(in_a_simCode=simCode, in_a_guid=guid, in_a_FMUVersion=FMUVersion, in_a_FMUType=FMUType), file=simCode.fullPathPrefix+"/"+"modelDescription.xml");
+        runTplWriteFile(func = function CodegenOMSIC.createMakefile(a_simCode=simCode, a_target=Config.simulationCodeTarget(), a_makeflieName=fileprefix+"_FMU.makefile"), file=simCode.fullPathPrefix+"/"+fileprefix+"_FMU.makefile");
+
+        runTplWriteFile(func = function CodegenOMSIC.generateOMSIC(a_simCode=simCode), file=simCode.fullPathPrefix+"/"+fileprefix+"_omsic.c");
+
+        runTpl(func = function CodegenOMSI_common.generateEquationsCode(a_simCode=simCode, a_FileNamePrefix=fileprefix));
       then ();
     case (_,"Cpp")
       equation
@@ -778,6 +893,7 @@ algorithm
       Boolean isFMI2;
       String fmiVersion;
       BackendDAE.SymbolicJacobians fmiDer;
+      Boolean symJacBackup;
       DAE.FunctionTree funcs;
       list<Option<Integer>> allRoots;
 
@@ -844,13 +960,13 @@ algorithm
         else false;
       end match;
       // FMI 2.0: enable postOptModule to create alias variables for output states
-      strPreOptModules := if isFMI2 then SOME("introduceOutputAliases"::BackendDAEUtil.getPreOptModulesString()) else NONE();
+      strPreOptModules := if (isFMI2 or Config.simCodeTarget() ==  "omsicpp") then SOME("introduceOutputAliases"::BackendDAEUtil.getPreOptModulesString()) else NONE();
 
       //BackendDump.printBackendDAE(dlow);
       (dlow, initDAE, initDAE_lambda0, inlineData, removedInitialEquationLst) := BackendDAEUtil.getSolvedSystem(dlow,inFileNamePrefix,strPreOptModules=strPreOptModules);
 
       // generate derivatives
-      if isFMI2 and not Flags.isSet(Flags.FMI20_DEPENDENCIES) then
+      if (isFMI2 or Config.simCodeTarget() == "omsicpp") and not Flags.isSet(Flags.FMI20_DEPENDENCIES) then
         // activate symolic jacobains for fmi 2.0
         // to provide dependence information and partial derivatives
         (fmiDer, funcs) := SymbolicJacobian.createFMIModelDerivatives(dlow);
@@ -872,7 +988,7 @@ algorithm
       (libs, file_dir, timeSimCode, timeTemplates) := match kind
         case TranslateModelKind.NORMAL()
           algorithm
-            (libs, file_dir, timeSimCode, timeTemplates) := generateModelCode(dlow, initDAE, initDAE_lambda0, inlineData, removedInitialEquationLst, SymbolTable.getAbsyn(), className, filenameprefix, inSimSettingsOpt, args);
+            (libs, file_dir, timeSimCode, timeTemplates) := generateModelCode(dlow, initDAE, initDAE_lambda0, inlineData, removedInitialEquationLst, SymbolTable.getAbsyn(), className, filenameprefix, inSimSettingsOpt, args,fmiDer);
           then (libs, file_dir, timeSimCode, timeTemplates);
         case TranslateModelKind.FMU()
           algorithm
@@ -1219,7 +1335,7 @@ algorithm
     ((residualVars, _)) :=  BackendVariable.traverseBackendDAEVars(resVars, SimCodeUtil.traversingdlowvarToSimvar, ({}, BackendVariable.emptyVars()));
     residualVars := SimCodeUtil.rewriteIndex(residualVars, 0);
     (residualVars, _) := SimCodeUtil.setVariableIndexHelper(residualVars, 0);
-    crefToSimVarHT:= List.fold(residualVars,SimCodeUtil.addSimVarToHashTable,crefToSimVarHT);
+    crefToSimVarHT:= List.fold(residualVars,HashTableCrefSimVar.addSimVarToHashTable,crefToSimVarHT);
 
     // create auxiliary variables, set index and push them SimCode Hash Table
     ((_, auxVars)) := BackendVariable.traverseBackendDAEVars(daeVars, BackendVariable.collectVarKindVarinVariables, (BackendVariable.isDAEmodeAuxVar, BackendVariable.emptyVars()));
@@ -1227,7 +1343,7 @@ algorithm
     auxiliaryVars := List.sort(auxiliaryVars, SimCodeUtil.simVarCompareByCrefSubsAtEndlLexical);
     auxiliaryVars := SimCodeUtil.rewriteIndex(auxiliaryVars, 0);
     (auxiliaryVars, _) := SimCodeUtil.setVariableIndexHelper(auxiliaryVars, 0);
-    crefToSimVarHT:= List.fold(auxiliaryVars,SimCodeUtil.addSimVarToHashTable,crefToSimVarHT);
+    crefToSimVarHT:= List.fold(auxiliaryVars,HashTableCrefSimVar.addSimVarToHashTable,crefToSimVarHT);
 
     // create SimCodeVars for algebraic states
     algStateVars := BackendVariable.listVar(inBackendDAE.shared.daeModeData.algStateVars);
@@ -1236,7 +1352,7 @@ algorithm
 
     algebraicStateVars := SimCodeUtil.sortSimVarsAndWriteIndex(algebraicStateVars, crefToSimVarHT);
     (algebraicStateVars, _) := SimCodeUtil.setVariableIndexHelper(algebraicStateVars, 2*nStates);
-    crefToSimVarHT:= List.fold(algebraicStateVars,SimCodeUtil.addSimVarToHashTable,crefToSimVarHT);
+    crefToSimVarHT:= List.fold(algebraicStateVars,HashTableCrefSimVar.addSimVarToHashTable,crefToSimVarHT);
 
     // create DAE mode Sparse pattern and TODO: Jacobians
     // sparsity pattern generation
@@ -1298,7 +1414,8 @@ algorithm
                               NONE(),
                               SimCode.emptyPartitionData,
                               daeModeData,
-                              {}
+                              {},
+                              NONE()
                               );
 
     (simCode, (_, _, lits)) := SimCodeUtil.traverseExpsSimCode(simCode, SimCodeFunctionUtil.findLiteralsHelper, literals);
