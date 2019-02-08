@@ -13,7 +13,7 @@ ifeq (clang,$(findstring clang,$(CC)))
 endif
 
 # makefile for Windows MinGW OMDev
-all : .testvariables settings mkbuilddirs omc OMSICInstall
+all : .testvariables settings omc OMSICInstall
 
 autoconfGeneratedFiles =
 
@@ -456,7 +456,7 @@ nox_msvc: getMSVCversion 3rdParty/trilinos-nox/CMakeLists.txt
 omcCAPImsvcinstall:
 	$(MAKE) -C SimulationRuntime/omsicpp/ -f Makefile.omdev.mingw omcCAPImsvc OMBUILDDIR=$(OMBUILDDIR)
 
-runtimeCPPmsvcinstall: mkbuilddirs CMinpack_msvc Umfpack_msvc fmil_msvc sundials_msvc copycppmsvcheader
+runtimeCPPmsvcinstall: CMinpack_msvc Umfpack_msvc fmil_msvc sundials_msvc copycppmsvcheader
 	$(MAKE) -C SimulationRuntime/omsicpp/ -f Makefile.omdev.mingw runtimeCPPmsvc OMBUILDDIR=$(OMBUILDDIR)
 	cp -p $(BOOST_PATH_MSVC)/lib/*vc*.dll $(OMBUILDDIR)/bin/msvc
 	cp -p $(BOOST_PATH_MSVC)/lib/*vc*.lib $(OMBUILDDIR)/lib/omc/omsicpp/msvc
