@@ -27,12 +27,13 @@ using std::ios;
 class MatFileWriter : public ContainerManager
 {
  public:
-    MatFileWriter(unsigned long size, string file_name)
+    MatFileWriter(unsigned long size, string output_path, string file_name)
             : ContainerManager(),
               _dataHdrPos(),
               _dataEofPos(),
               _curser_position(0),
               _uiValueCount(0),
+		      _output_path(output_path),
               _file_name(file_name),
               _doubleMatrixData1(NULL),
               _doubleMatrixData2(NULL),
@@ -233,17 +234,21 @@ class MatFileWriter : public ContainerManager
      * \return
      */
     /*========================================================================================{end}==*/
-    void init(std::string file_name, size_t dim)
+    void init(std::string output_path, std::string file_name, size_t dim)
     {
         const char Aclass[] = "A1 bt. ir1 na  Tj  re  ac  nt  so   r   y   ";  // special header string
 
         _file_name = file_name;
-
+		_output_path = output_path;
         if (_output_stream.is_open())
             _output_stream.close();
 
+		// building complete file path
+		std::stringstream res_output_path;
+		res_output_path << output_path << file_name;
+
         // open new file
-        _output_stream.open(file_name.c_str(), ios::binary | ios::trunc);
+		_output_stream.open(res_output_path.str().c_str(), ios::binary | ios::trunc);
         if (_output_stream.fail())
           throw ModelicaSimulationError(DATASTORAGE, string("Failed to open results file ") + file_name);
 
@@ -814,5 +819,6 @@ class MatFileWriter : public ContainerManager
     char *_pacString;
     int *_intMatrix;
     vector<string> _var_outputs;
+	std::string _output_path;
 };
 /** @} */ // end of dataexchangePolicies
