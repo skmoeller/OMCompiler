@@ -224,6 +224,16 @@ int OMSIGlobalSettings::getSolverThreads()
  {
      return _outputFormat;
  }
+ string OMSIGlobalSettings::getInputPath()
+{
+  return _input_path;
+}
+
+void OMSIGlobalSettings::setInputPath(string path)
+{
+  _input_path = path;
+}
+
   void OMSIGlobalSettings::setOutputFormat(OutputFormat outputFormat)
   {
       _outputFormat = outputFormat;
