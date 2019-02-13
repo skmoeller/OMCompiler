@@ -243,12 +243,9 @@ class MatFileWriter : public ContainerManager
         if (_output_stream.is_open())
             _output_stream.close();
 
-		// building complete file path
-		std::stringstream res_output_path;
-		res_output_path << output_path << file_name;
 
         // open new file
-		_output_stream.open(res_output_path.str().c_str(), ios::binary | ios::trunc);
+		_output_stream.open(file_name.c_str(), ios::binary | ios::trunc);
         if (_output_stream.fail())
           throw ModelicaSimulationError(DATASTORAGE, string("Failed to open results file ") + file_name);
 
