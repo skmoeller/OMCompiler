@@ -50,15 +50,22 @@ template generateEquationsCode (SimCode simCode, String FileNamePrefix)
 "Entrypoint to generate all Code for linear systems.
  Code is generated directly into files"
 ::=
-  let modelNamePrefix = makeC89Identifier(FileNamePrefix)
 
+   let modelNameOMSIC = makeC89Identifier(FileNamePrefix)
   match simCode
-  case SIMCODE(fileNamePrefix=fileNamePrefix, fullPathPrefix=fullPathPrefix,
+  case SIMCODE(modelInfo = MODELINFO(__),fileNamePrefix=fileNamePrefix, fullPathPrefix=fullPathPrefix,
                omsiData=omsiData as SOME(OMSI_DATA(simulation=simulation as OMSI_FUNCTION(__),
                initialization=initialization as OMSI_FUNCTION(__)))) then
 
     /* generate file for algebraic systems in simulation problem */
 
+    let modeNameOMSICpp = lastIdentOfPath(modelInfo.name)
+    let modelNamePrefix =  match  Config.simCodeTarget()
+    case "omsic" then
+      modelNameOMSIC
+    case "omsicpp" then
+      modeNameOMSICpp
+    end match
 
     let omsi_equations = match  Config.simCodeTarget()
     case "omsic" then
@@ -185,6 +192,12 @@ template generateOmsiFunctionCode(OMSIFunction omsiFunction, String FileNamePref
   /* leave a newline at the end of file to get rid of the warning */
 end generateOmsiFunctionCode;
 
+template lastIdentOfPath(Path modelName) ::=
+  match modelName
+  case QUALIFIED(__) then lastIdentOfPath(path)
+  case IDENT(__)     then name
+  case FULLYQUALIFIED(__) then lastIdentOfPath(path)
+end lastIdentOfPath;
 
 template generateOmsiFunctionCode_inner(OMSIFunction omsiFunction, String FileNamePrefix,String modelFunctionnamePrefixStr, String funcCallArgName, Text &includes, Text &evaluationCode, Text &functionCall, Text &residualCall, Text &functionPrototypes, String omsiName)
 ""
