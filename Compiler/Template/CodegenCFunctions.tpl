@@ -4146,8 +4146,10 @@ template contextCref(ComponentRef cr, Context context, Text &auxFunction)
       >>
     else "_" + System.unquoteIdentifier(crefStr(cr))
     )
-  /* TODO: OMSIMerge check jacobian cref generation */
-  case JACOBIAN_CONTEXT(jacHT=SOME(_)) then jacCrefs(cr, context, 0)
+  case JACOBIAN_CONTEXT(jacHT=SOME(_))
+    then (match Config.simCodeTarget()
+          case "omsic" then crefOMSI(cr, context)
+          else jacCrefs(cr, context, 0))
 
   case OMSI_CONTEXT(__) then crefOMSI(cr, context)
   else cref(cr)
