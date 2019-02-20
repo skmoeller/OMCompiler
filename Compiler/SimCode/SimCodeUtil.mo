@@ -282,8 +282,8 @@ protected
   list<SimCodeVar.SimVar> tmpsetcVars;
   SimCode.JacobianMatrix dataReconSimJac;
   String fullPathPrefix;
-  
-  SimCode.OMSIFunction omsiAllEquations, omsiInitEquations;
+
+  SimCode.OMSIFunction omsiInitEquations, omsiSimEquations;
   Option<SimCode.OMSIData> omsiOptData;
 
   constant Boolean debug = false;
@@ -366,7 +366,7 @@ algorithm
 
     if not (Config.simCodeTarget() == "omsic" or
             Config.simCodeTarget() == "omsicpp")
-    then 
+    then
       (uniqueEqIndex, odeEquations, algebraicEquations, localKnownVars, allEquations, equationsForZeroCrossings, tempvars,
         equationSccMapping, eqBackendSimCodeMapping, backendMapping, sccOffset) :=
            createEquationsForSystems(contSysts, shared, uniqueEqIndex, zeroCrossings, tempvars, 1, backendMapping, true);
@@ -381,14 +381,14 @@ algorithm
       equationSccMapping := {};
       eqBackendSimCodeMapping := {};
       sccOffset := 0;
-      (omsiAllEquations, uniqueEqIndex) :=
+      (omsiSimEquations, uniqueEqIndex) :=
           createAllEquationOMSI(contSysts, shared, zeroCrossings, uniqueEqIndex);
 
       // Add removed equations (e.g. reinit)
       ((uniqueEqIndex, removedEquations)) := BackendEquation.traverseEquationArray(removedEqs, traversedlowEqToSimEqSystem, (uniqueEqIndex, {}));
-      omsiAllEquations.equations := listAppend(omsiAllEquations.equations, removedEquations);
+      omsiSimEquations.equations := listAppend(omsiSimEquations.equations, removedEquations);
 
-      omsiOptData := SOME(SimCode.OMSI_DATA(simulation=omsiAllEquations, initialization=omsiInitEquations));
+      omsiOptData := SOME(SimCode.OMSI_DATA(simulation=omsiSimEquations, initialization=omsiInitEquations));
 
       // debug print
       if debug then
@@ -3844,7 +3844,7 @@ algorithm
   omsiAllEquations.context := SimCodeFunction.OMSI_CONTEXT(SOME(HashTableCrefSimVar.emptyHashTableSized(1013)));
 
   for constSyst in constSysts loop
-    try 
+    try
       BackendDAE.MATCHING(comps=components) := constSyst.matching;
     else
       Error.addInternalError("The matching information is missing in function createAllEquationOMSI!", sourceInfo());
@@ -3943,7 +3943,7 @@ algorithm
     then();
 
     // case for torn systems of equations
-    case BackendDAE.TORNSYSTEM(strictTearingSet = 
+    case BackendDAE.TORNSYSTEM(strictTearingSet =
            BackendDAE.TEARINGSET(tearingvars=tearingVars, residualequations=residualEqns, innerEquations=innerEquations, jac=jacobian),
            linear = linear, mixedSystem = mixedSystem)
     algorithm
@@ -4087,7 +4087,7 @@ algorithm
     end match;
 
     // append OMSI_FUNCTION data
-    equations := listAppend(tmpEqns, equations);   
+    equations := listAppend(tmpEqns, equations);
     inputVars := listAppend(tmpInputVars, inputVars);
     outputVars := listAppend(tmpOutputVars, outputVars);
     innerVars := listAppend(tmpInnerVars, innerVars);
@@ -4225,7 +4225,7 @@ algorithm
       Error.addInternalError("- " + str + " not implemented SimCodeUtil.generateSingleEquation", sourceInfo());
       fail();
     then ();
-  end match;  
+  end match;
 end generateSingleEquation;
 
 protected function generateInnerEqns
@@ -4997,7 +4997,7 @@ algorithm
     Option<DAE.VariableAttributes> dae_var_attr;
     Boolean isProtected;
     Boolean hideResult = false;
-    Integer resIndex, tmpIndex=0;
+    Integer resIndex=inResIndex, tmpIndex=inTmpIndex;
     BackendDAE.VarKind varkind;
 
     case ({}) then (listReverse(tmpVars), listReverse(resVars));
@@ -8934,14 +8934,9 @@ algorithm
     outHT := List.fold(vars.intConstVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     outHT := List.fold(vars.boolConstVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     outHT := List.fold(vars.stringConstVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
-    if (Config.simCodeTarget()=="Cpp" or Config.simCodeTarget()=="omsicpp") then
-      // Not needed in the hashtable (actually breaks code generation
-      // due to bad indexes, no information that they are seed variables
-      // and so on...
-      outHT := List.fold(vars.sensitivityVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
-      outHT := List.fold(vars.jacobianVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
-      outHT := List.fold(vars.seedVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
-    end if;
+    outHT := List.fold(vars.sensitivityVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.jacobianVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
+    outHT := List.fold(vars.seedVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     outHT := List.fold(vars.realOptimizeConstraintsVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
     outHT := List.fold(vars.realOptimizeFinalConstraintsVars, HashTableCrefSimVar.addSimVarToHashTable, outHT);
   else

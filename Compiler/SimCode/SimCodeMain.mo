@@ -381,7 +381,6 @@ partial function FuncText
   output Tpl.Text out_txt;
 end FuncText;
 
-// TODO: function is duplicate of later protected function
 function runTplWriteFile
   extends PartialRunTpl;
   input FuncText func;
@@ -405,7 +404,6 @@ algorithm
   end try;
 end runTplWriteFile;
 
-// TODO: function is duplicate of later protected function
 function runTpl
   extends PartialRunTpl;
   input FuncText func;
@@ -442,43 +440,6 @@ protected
   end BoolFunc;
   Func func;
   Tpl.Text txt;
-
-  function runTplWriteFile
-    extends PartialRunTpl;
-    input FuncText func;
-    input String file;
-  protected
-    Integer nErr;
-  algorithm
-    res := (false,{});
-    try
-      SimCodeUtil.resetFunctionIndex();
-      SimCodeFunctionUtil.codegenResetTryThrowIndex();
-      if Config.acceptMetaModelicaGrammar() or Flags.isSet(Flags.GEN_DEBUG_SYMBOLS) then
-        Tpl.textFileConvertLines(Tpl.tplCallWithFailErrorNoArg(func), file);
-      else
-        nErr := Error.getNumErrorMessages();
-        Tpl.closeFile(Tpl.tplCallWithFailErrorNoArg(func,Tpl.redirectToFile(Tpl.emptyTxt, file)));
-        Tpl.failIfTrue(Error.getNumErrorMessages() > nErr);
-      end if;
-      res := (true,SimCodeUtil.getFunctionIndex());
-    else
-    end try;
-  end runTplWriteFile;
-
-  function runTpl
-    extends PartialRunTpl;
-    input FuncText func;
-  algorithm
-    res := (false,{});
-    try
-      SimCodeUtil.resetFunctionIndex();
-      SimCodeFunctionUtil.codegenResetTryThrowIndex();
-      Tpl.tplCallWithFailErrorNoArg(func);
-      res := (true,SimCodeUtil.getFunctionIndex());
-    else
-    end try;
-  end runTpl;
 
   function runToStr
     extends PartialRunTpl;

@@ -286,7 +286,7 @@ uniontype DaeModeData
   record DAEMODEDATA
     list<list<SimEqSystem>> daeEquations "daeModel residuals equations";
     Option<JacobianMatrix> sparsityPattern "contains the sparsity pattern for the daeMode";
-    list<SimCodeVar.SimVar> residualVars;  // variable used to calculate residuals of a DAE form, they are real
+    list<SimCodeVar.SimVar> residualVars "variable used to calculate residuals of a DAE form, they are real";
     list<SimCodeVar.SimVar> algebraicVars;
     list<SimCodeVar.SimVar> auxiliaryVars;
     DaeModeConfig modeCreated; // indicates the mode in which
@@ -304,7 +304,7 @@ end OMSIData;
 uniontype OMSIFunction
   "contains equations and variables for initialization or simulation problem"
   record OMSI_FUNCTION
-    list<SimEqSystem>       equations   "list of single equations and systems of equations";
+    list<SimEqSystem>       equations   "causalized list of single equations and systems of equations";
     list<SimCodeVar.SimVar> inputVars   "list of simcode variables determining input variables for equation(s)";
     list<SimCodeVar.SimVar> outputVars  "list of simcode variables determining output variables for equation(s)";
     list<SimCodeVar.SimVar> innerVars   "list of simcode variables determining inner variables for equation(s), e.g $DER(x)";
@@ -312,9 +312,9 @@ uniontype OMSIFunction
     SimCodeFunction.Context context     "contains crefToSimVar hash table for lookup function in templates";
     Integer nAlgebraicSystems           "number of linear and non-linear algebraic systems in OMSI_FUNCTION.equations";
   end OMSI_FUNCTION;
-end OMSIFunction; 
+end OMSIFunction;
 
-public constant 
+public constant
 OMSIFunction emptyOMSIFunction = OMSI_FUNCTION(equations = {},
                                                inputVars = {},
                                                outputVars = {},
@@ -322,7 +322,7 @@ OMSIFunction emptyOMSIFunction = OMSI_FUNCTION(equations = {},
                                                nAllVars = 0,
                                                context = SimCodeFunction.contextOMSI,
                                                nAlgebraicSystems = 0);
-  
+
 
 uniontype SimEqSystem
   "Represents a single equation or a system of equations that must be solved together."
@@ -453,6 +453,31 @@ uniontype SimEqSystem
     BackendDAE.EquationAttributes eqAttr;
   end SES_ALGEBRAIC_SYSTEM;
 
+  record SES_ALGEBRAIC_SYSTEM
+    Integer index "equation index";
+    Integer algSysIndex "index of algebraic system";
+
+    Integer dim_n "dimension of algebraic loop (after tearing)";
+
+    Boolean partOfMixed;
+    Boolean tornSystem;
+    Boolean linearSystem;
+
+    // residual.inputVars = dependentVars
+    // residual.innerVars = otherTearingVars
+    // residual.outputVars = iterationsVars
+    OMSIFunction residual; // linear: A*x-b = res
+                           // non-linear: f(x) = res
+
+    Option<DerivativeMatrix> matrix;  // linear => A
+                                      // non-linear => f'(x)
+
+    list<Integer> zeroCrossingConditions;
+
+    list<DAE.ElementSource> sources;
+    BackendDAE.EquationAttributes eqAttr;
+  end SES_ALGEBRAIC_SYSTEM;
+
 end SimEqSystem;
 
 
@@ -465,7 +490,7 @@ uniontype DerivativeMatrix
                                         // innerVars:  inner column vars
                                         // outputVars: result vars of the column
 
-    String matrixName;                  // unique matrix name
+    String matrixName "unique matrix name";
     SparsityPattern sparsity;
     SparsityPattern sparsityT;
     list<list<Integer>> coloredCols;

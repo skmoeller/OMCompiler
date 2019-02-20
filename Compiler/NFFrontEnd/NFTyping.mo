@@ -366,8 +366,11 @@ algorithm
       flows := c :: flows;
     elseif cty == ConnectorType.STREAM then
       streams := c :: streams;
-    else
+    elseif cty == ConnectorType.POTENTIAL then
       pots := c :: pots;
+    else
+      Error.addInternalError("Invalid connector type on component " + InstNode.name(c), InstNode.info(c));
+      fail();
     end if;
   end for;
 
@@ -432,13 +435,17 @@ algorithm
         // The Modelica specification forbids using stream outside connector
         // declarations, but has no such restriction for flow. To compromise we
         // print a warning for both flow and stream.
-        if cty <> ConnectorType.POTENTIAL and not checkConnectorType(component) then
-          Error.addSourceMessage(Error.CONNECTOR_PREFIX_OUTSIDE_CONNECTOR,
-            {Prefixes.connectorTypeString(cty)}, InstNode.info(component));
+        if not checkConnectorType(component) then
+          if (cty == ConnectorType.STREAM or cty == ConnectorType.FLOW) then
+            Error.addSourceMessage(Error.CONNECTOR_PREFIX_OUTSIDE_CONNECTOR,
+              {Prefixes.connectorTypeString(cty)}, InstNode.info(component));
+          end if;
           // Remove the prefix from the component, to avoid issues like a flow
           // equation being generated for it.
-          attr.connectorType := ConnectorType.POTENTIAL;
-          InstNode.componentApply(component, Component.setAttributes, attr);
+          if not (InstNode.isEmpty(component) or InstNode.isInnerOuterNode(component)) then
+            attr.connectorType := ConnectorType.NON_CONNECTOR;
+            InstNode.componentApply(component, Component.setAttributes, attr);
+          end if;
         end if;
       then
         ();
@@ -450,12 +457,14 @@ end checkComponentAttributes;
 function checkConnectorType
   input InstNode node;
   output Boolean isConnector;
+protected
+  InstNode dnode = InstNode.getDerivedNode(node);
 algorithm
-  if InstNode.isEmpty(node) then
+  if InstNode.isEmpty(dnode) or InstNode.isInnerOuterNode(dnode) then
     isConnector := false;
   else
-    isConnector := Class.isConnectorClass(InstNode.getClass(node)) or
-                   checkConnectorType(InstNode.parent(node));
+    isConnector := Class.isConnectorClass(InstNode.getClass(dnode)) or
+                   checkConnectorType(InstNode.parent(dnode));
   end if;
 end checkConnectorType;
 
