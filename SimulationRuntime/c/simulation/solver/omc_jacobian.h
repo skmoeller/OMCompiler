@@ -38,7 +38,6 @@
 typedef struct {
  int index;           /* index of ANALYTICAL_JACOBIAN Structure: data->simulationInfo->analyticJacobians */
  int (*columnCall)(void*, threadData_t*, ANALYTIC_JACOBIAN*, ANALYTIC_JACOBIAN*);
- ANALYTIC_JACOBIAN* parentJacobian;
  omc_matrix* matrix;  /* matrix data */
  ANALYTIC_JACOBIAN* parentJacobian; /* is only used in the algebraic loop of the jacobian calculation */
 } omc_jacobian;

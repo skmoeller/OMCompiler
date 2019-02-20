@@ -295,7 +295,6 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
   for(i=0; i<data->modelData->nLinearSystems; ++i)
   {
     /* free system and solver data */
-    free(linsys[i].b);
     free(linsys[i].nominal);
     free(linsys[i].min);
     free(linsys[i].max);
@@ -306,12 +305,14 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
       {
     #if !defined(OMC_MINIMAL_RUNTIME)
       case LSS_LIS:
+        free(linsys[i].b);
         freeLisData(linsys[i].solverData);
         break;
     #endif
 
     #ifdef WITH_UMFPACK
       case LSS_UMFPACK:
+        free(linsys[i].b);
         freeUmfPackData(linsys[i].solverData);
         break;
       case LSS_KLU:
@@ -333,17 +334,18 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
       {
       case LS_LAPACK:
         freeLapackData(linsys[i].solverData);
-        free(linsys[i].A);
         break;
 
   #if !defined(OMC_MINIMAL_RUNTIME)
       case LS_LIS:
+        free(linsys[i].b);
         freeLisData(linsys[i].solverData);
         break;
   #endif
 
   #ifdef WITH_UMFPACK
       case LS_UMFPACK:
+        free(linsys[i].b);
         freeUmfPackData(linsys[i].solverData);
         break;
       case LS_KLU:
@@ -356,13 +358,15 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
   #endif
 
       case LS_TOTALPIVOT:
+        free(linsys[i].b);
         free(linsys[i].A);
         freeTotalPivotData(linsys[i].solverData);
         break;
 
       case LS_DEFAULT:
-        free(linsys[i].A);
         freeLapackData(linsys[i].solverData);
+        free(linsys[i].b);
+        free(linsys[i].A);
         freeTotalPivotData(linsys[i].solverData);
         break;
 
@@ -394,7 +398,7 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
  *
  *  \author wbraun
  */
-int solve_linear_system(DATA *data, threadData_t *threadData, sysNumber, double* aux_x)
+int solve_linear_system(DATA *data, threadData_t *threadData, int sysNumber, double* aux_x)
 {
   TRACE_PUSH
   int success;

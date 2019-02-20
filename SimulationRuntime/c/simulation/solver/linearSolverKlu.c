@@ -88,12 +88,16 @@ freeKluData(void **voiddata)
   DATA_KLU* data = (DATA_KLU*) *voiddata;
 
   free_omc_jacobian(data->jacobian);
-  free(data->work);
+  _omc_destroyVector(data->x);
+  _omc_deallocateVectorData(data->b);
+  _omc_deallocateVectorData(data->work);
 
   if(data->symbolic)
     klu_free_symbolic(&data->symbolic, &data->common);
   if(data->numeric)
     klu_free_numeric(&data->numeric, &data->common);
+
+  free(data);
 
   TRACE_POP
   return 0;
@@ -274,4 +278,4 @@ solveKlu(DATA *data, threadData_t *threadData, LINEAR_SYSTEM_DATA* systemData, d
   return success;
 }
 
-//#endif
+#endif
