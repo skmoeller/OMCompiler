@@ -212,6 +212,7 @@ get_sparse_matrix_element(omc_sparse_matrix* A, int row, int col)
            }
       }
        return 0.0;
+    }
   }
 }
 
