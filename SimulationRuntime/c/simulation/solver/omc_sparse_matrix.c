@@ -137,7 +137,7 @@ copy_sparse_matrix(omc_sparse_matrix* A)
 
 /**
  * Sets the (i,j) Element in an omc_sparse_matrix.
- *
+ ***CAREFULL WITH ROW_WISE -> ORDER COMES FROM JACOBIAN****
  * \param [ref]     omc_sparse_matrix    Structure.
  * \param [in]      row                  Index Row.
  * \param [in]      col                  Index Column.
@@ -169,7 +169,6 @@ set_sparse_matrix_element(omc_sparse_matrix* A, int row, int col, int nth, doubl
 
 /**
  * Gets the (i,j) Element in the omc_sparse_matrix.
- ********DO NOT WORK******************
  * \param [ref]     omc_sparse_matrix    Structure.
  * \param [in]      row                  Index Row.
  * \param [in]      col                  Index Column.
@@ -177,14 +176,43 @@ set_sparse_matrix_element(omc_sparse_matrix* A, int row, int col, int nth, doubl
  */
 double
 get_sparse_matrix_element(omc_sparse_matrix* A, int row, int col)
-{/*
+{
   if (COLUMN_WISE == A->orientation){
-    return(A->data[A->ptr[col]]);
+    int nnz_col, i, j, c;
+    c = 0;
+    nnz_col = A->ptr[col+1]-A->ptr[col];
+    if (0 != nnz_col){
+      for (i = A->ptr[row]; i <= A->ptr[row+1]-1; i++){
+         if (row == A->index[i]){
+           if (1 == nnz_col){
+           return A->data[A->ptr[col]];
+             } else {
+                 j = A->ptr[col];
+                 return A->data[j + c];
+             }
+            c++;
+           }
+      }
+       return 0.0;
+    }
+  } else{
+    int nnz_row, i, j, c;
+    c = 0;
+    nnz_row = A->ptr[row+1]-A->ptr[row];
+    if (0 != nnz_row){
+      for (i = A->ptr[col]; i <= A->ptr[col+1]-1; i++){
+         if (col == A->index[i]){
+           if (1 == nnz_row){
+           return A->data[A->ptr[row]];
+             } else {
+                 j = A->ptr[row];
+                 return A->data[j + c];
+             }
+            c++;
+           }
+      }
+       return 0.0;
   }
-  else{
-    return(A->data[A->ptr[col]]);
-  }
-  */
 }
 
 /**

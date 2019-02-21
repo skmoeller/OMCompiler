@@ -342,7 +342,7 @@ typedef struct LINEAR_SYSTEM_DATA
   void *solverData[2]; /* [1] is the totalPivot solver; [0] holds other solvers ; both are used for the default solver */
   modelica_real *x;                     /* solution vector x */
   modelica_real *A;                     /* matrix A */
-  modelica_real *b;                     /* vector b */ //REMOVEED IT FROM LINSYS!!!!!
+  modelica_real *b;                     /* vector b */
 
   modelica_integer method;              /* not used yet*/
   modelica_real residualError;          /* not used yet*/
