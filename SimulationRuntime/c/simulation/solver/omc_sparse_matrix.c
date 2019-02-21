@@ -91,8 +91,6 @@ free_sparse_matrix(omc_sparse_matrix* A)
   free(A->ptr);
   free(A->index);
   free(A->data);
-
-  free(A);
 }
 
 /**
@@ -150,13 +148,13 @@ copy_sparse_matrix(omc_sparse_matrix* A)
 void
 set_sparse_matrix_element(omc_sparse_matrix* A, int row, int col, int nth, double value)
 {
-  if (COLUMN_WISE == A->orientation){
+  if (ROW_WISE == A->orientation){
     if (col>0){
       if(0 == A->ptr[col]){
         A->ptr[col] = nth;
       }
     }
-    A->index[nth] = col;
+    A->index[nth] = row;
   }
   else{
     if (row>0){
@@ -164,14 +162,14 @@ set_sparse_matrix_element(omc_sparse_matrix* A, int row, int col, int nth, doubl
         A->ptr[row]=nth;
       }
     }
-    A->index[nth] = row;
+    A->index[nth] = col;
   }
   A->data[nth] = value;
 }
 
 /**
  * Gets the (i,j) Element in the omc_sparse_matrix.
- *
+ ********DO NOT WORK******************
  * \param [ref]     omc_sparse_matrix    Structure.
  * \param [in]      row                  Index Row.
  * \param [in]      col                  Index Column.
@@ -179,13 +177,14 @@ set_sparse_matrix_element(omc_sparse_matrix* A, int row, int col, int nth, doubl
  */
 double
 get_sparse_matrix_element(omc_sparse_matrix* A, int row, int col)
-{
-  if (COLUMN_WISE==A->orientation){
+{/*
+  if (COLUMN_WISE == A->orientation){
     return(A->data[A->ptr[col]]);
   }
   else{
-    return(A->data[A->ptr[row]]);
+    return(A->data[A->ptr[col]]);
   }
+  */
 }
 
 /**

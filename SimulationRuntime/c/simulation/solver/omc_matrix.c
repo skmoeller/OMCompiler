@@ -114,13 +114,9 @@ free_matrix(omc_matrix* A)
   switch (A->type){
     case DENSE_MATRIX:
       _omc_deallocateMatrixData((_omc_dense_matrix*)A->data);
-      free(A->data);
-      free(A);
       break;
     case SPARSE_MATRIX:
       free_sparse_matrix((omc_sparse_matrix*)A->data);
-      free(A->data);
-      free(A);
       break;
     default:
       break;

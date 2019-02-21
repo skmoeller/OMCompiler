@@ -87,7 +87,6 @@ freeKluData(void **voiddata)
 
   DATA_KLU* data = (DATA_KLU*) *voiddata;
 
-  free_omc_jacobian(data->jacobian);
   _omc_destroyVector(data->x);
   _omc_deallocateVectorData(data->b);
   _omc_deallocateVectorData(data->work);
@@ -97,8 +96,8 @@ freeKluData(void **voiddata)
   if(data->numeric)
     klu_free_numeric(&data->numeric, &data->common);
 
+  free_omc_jacobian(data->jacobian);
   free(data);
-
   TRACE_POP
   return 0;
 }
@@ -175,7 +174,6 @@ solveKlu(DATA *data, threadData_t *threadData, LINEAR_SYSTEM_DATA* systemData, d
   tmpJacEvalTime = rt_ext_tp_tock(&(solverData->timeClock));
   systemData->jacobianTime += tmpJacEvalTime;
   infoStreamPrint(LOG_LS_V, 0, "###  %f  time to set Matrix A and vector b.", tmpJacEvalTime);
-
   if (ACTIVE_STREAM(LOG_LS_V))
   {
     infoStreamPrint(LOG_LS_V, 1, "Old solution x:");
@@ -226,7 +224,7 @@ solveKlu(DATA *data, threadData_t *threadData, LINEAR_SYSTEM_DATA* systemData, d
       }
     }
   }
-
+  _omc_printVector(solverData->b, "Vector b", LOG_LS_V);
   if (0 == solverData->common.status){
     if (1 == systemData->method){
       if (klu_solve(solverData->symbolic, solverData->numeric, matrixData->size_cols, 1, solverData->b->data, &solverData->common)){
@@ -247,13 +245,13 @@ solveKlu(DATA *data, threadData_t *threadData, LINEAR_SYSTEM_DATA* systemData, d
     if (1 == systemData->method){
 
       /* take the solution */
-      solverData->x = _omc_addVectorVector(solverData->x, solverData->work, solverData->b); // x = xold(work) + xnew(b)
+      solverData->x = _omc_addVectorVector(solverData->x, solverData->x, solverData->b); // x = xold(work) + xnew(b)
 
       /* update inner equations */
       residual_wrapper(solverData->x, solverData->work, dataAndThreadData, systemData);
     } else {
       /* the solution is automatically in x */
-      memcpy(aux_x, systemData->b, sizeof(double)*systemData->size);
+      _omc_copyVector(solverData->x, solverData->b);
     }
 
     if (ACTIVE_STREAM(LOG_LS_V))

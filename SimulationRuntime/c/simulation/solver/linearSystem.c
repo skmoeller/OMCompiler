@@ -94,6 +94,9 @@ int initializeLinearSystems(DATA *data, threadData_t *threadData)
     linsys[i].totalTime = 0;
     linsys[i].failed = 0;
 
+    /*allocate system data*/
+    linsys[i].b = (double*) malloc(size*sizeof(double));
+
     /* check if analytical jacobian is created */
     if (1 == linsys[i].method)
     {
@@ -295,6 +298,7 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
   for(i=0; i<data->modelData->nLinearSystems; ++i)
   {
     /* free system and solver data */
+    free(linsys[i].b);
     free(linsys[i].nominal);
     free(linsys[i].min);
     free(linsys[i].max);
@@ -305,14 +309,12 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
       {
     #if !defined(OMC_MINIMAL_RUNTIME)
       case LSS_LIS:
-        free(linsys[i].b);
         freeLisData(linsys[i].solverData);
         break;
     #endif
 
     #ifdef WITH_UMFPACK
       case LSS_UMFPACK:
-        free(linsys[i].b);
         freeUmfPackData(linsys[i].solverData);
         break;
       case LSS_KLU:
@@ -334,18 +336,17 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
       {
       case LS_LAPACK:
         freeLapackData(linsys[i].solverData);
+        free(linsys[i].A);
         break;
 
   #if !defined(OMC_MINIMAL_RUNTIME)
       case LS_LIS:
-        free(linsys[i].b);
         freeLisData(linsys[i].solverData);
         break;
   #endif
 
   #ifdef WITH_UMFPACK
       case LS_UMFPACK:
-        free(linsys[i].b);
         freeUmfPackData(linsys[i].solverData);
         break;
       case LS_KLU:
@@ -358,15 +359,13 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
   #endif
 
       case LS_TOTALPIVOT:
-        free(linsys[i].b);
-        free(linsys[i].A);
         freeTotalPivotData(linsys[i].solverData);
+        free(linsys[i].A);
         break;
 
       case LS_DEFAULT:
-        freeLapackData(linsys[i].solverData);
-        free(linsys[i].b);
         free(linsys[i].A);
+        freeLapackData(linsys[i].solverData);
         freeTotalPivotData(linsys[i].solverData);
         break;
 
