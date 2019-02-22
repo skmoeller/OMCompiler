@@ -183,7 +183,7 @@ get_sparse_matrix_element(omc_sparse_matrix* A, int row, int col)
     c = 0;
     nnz_col = A->ptr[col+1]-A->ptr[col];
     if (0 != nnz_col){
-      for (i = A->ptr[row]; i < A->ptr[row+1]; i++){
+      for (i = A->ptr[col]; i < A->ptr[col+1]; i++){
          if (row == A->index[i]){
            if (1 == nnz_col){
              return A->data[A->ptr[col]];
@@ -201,7 +201,7 @@ get_sparse_matrix_element(omc_sparse_matrix* A, int row, int col)
     c = 0;
     nnz_row = A->ptr[row+1]-A->ptr[row];
     if (0 != nnz_row){
-      for (i = A->ptr[col]; i < A->ptr[col+1]; i++){
+      for (i = A->ptr[row]; i < A->ptr[row+1]; i++){
         if (col == A->index[i]){
           if (1 == nnz_row){
             return A->data[A->ptr[row]];
