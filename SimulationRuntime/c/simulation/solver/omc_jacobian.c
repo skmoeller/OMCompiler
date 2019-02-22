@@ -97,51 +97,7 @@ int get_analytic_jacobian(DATA* data, threadData_t* threadData, omc_jacobian* ja
 int get_numeric_jacobian(DATA* data, threadData_t *threadData, omc_jacobian* jac)
 {
   /*
-  const double delta_h = sqrt(DBL_EPSILON*2e1);
-  double delta_hh;
-  double xsave;
-
-  double* x;
-
-  int i,j,k,val;
-  int nth = 0;
-
-  int size_A = data->modelData->nStates;
-  int size_z = data->modelData->nVariablesReal - 2*data->modelData->nStates;
-
-  double* x0 = (double*)calloc(size_A,sizeof(double));
-  double* x1 = (double*)calloc(size_A,sizeof(double));
-  double *xScaling = (double*)calloc(size_A,sizeof(double));
-
-  assertStreamPrint(threadData,0!=x0,"calloc failed");
-  assertStreamPrint(threadData,0!=x1,"calloc failed");
-
-  function_residual(data, threadData, x0);
-
-
-  // solverData->f1 must be set outside this function based on x
-  for(i = 0; i < size_A; i++) {
-      xsave = x[i];
-      delta_hh = delta_h * (fabs(xsave) + 1.0);
-      if ((xsave + delta_hh >=  data->modelData->realVarsData[i].attribute.max))
-          delta_hh *= -1;
-      x[i] += delta_hh / xScaling[i];
-      // Calculate scaled difference quotient
-      delta_hh = 1. / delta_hh * xScaling[i];
-
-      function_residual(data, threadData, x1);
-
-      for(j = 0; j < size_A; j++) {
-        val = (x1[j] - x0[j]) * delta_hh;
-        set_matrix_element(jac->matrix, i, j, nth, val);
-        nth++;
-      }
-      x[i] = xsave;
-      }
-
-  free(xScaling);
-  free(x0);
-  free(x1);
+   *
   */
 
   return 0;
