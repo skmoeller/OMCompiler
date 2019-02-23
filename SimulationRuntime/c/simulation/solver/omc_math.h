@@ -32,6 +32,7 @@
 #define OMCMATH_H_
 
 #include "simulation/simulation_info_json.h"
+#include "omc_matrix.h"
 
 typedef double _omc_scalar;
 
@@ -39,8 +40,8 @@ typedef double _omc_scalar;
 typedef int _omc_integer;
 typedef unsigned int _omc_size;
 #else
-typedef long int _omc_integer;
-typedef unsigned long int _omc_size;
+typedef int _omc_integer;
+typedef unsigned int _omc_size;
 #endif
 
 typedef struct
@@ -51,10 +52,11 @@ typedef struct
 
 typedef struct
 {
-  _omc_size rows;
-  _omc_size cols;
+  _omc_size size_rows;
+  _omc_size size_cols;
   _omc_scalar *data;
-} _omc_matrix;
+  omc_matrix_orientation orientation;
+} _omc_dense_matrix;
 
 /* memory management vector */
 _omc_vector* _omc_allocateVectorData(const _omc_size size);
@@ -64,11 +66,11 @@ void _omc_destroyVector(_omc_vector* vec);
 void _omc_copyVector(_omc_vector* dest, const _omc_vector* src);
 
 /* memory management matrix */
-_omc_matrix* _omc_allocateMatrixData(const _omc_size rows, const _omc_size cols);
-void _omc_deallocateMatrixData(_omc_matrix* mat);
-_omc_matrix* _omc_createMatrix(const _omc_size rows, const _omc_size cols, _omc_scalar* data);
-void _omc_destroyMatrix(_omc_matrix* mat);
-_omc_matrix* _omc_copyMatrix(_omc_matrix* mat);
+_omc_dense_matrix* _omc_allocateMatrixData(const _omc_size rows, const _omc_size cols, omc_matrix_orientation orientation);
+void _omc_deallocateMatrixData(_omc_dense_matrix* mat);
+_omc_dense_matrix* _omc_createMatrix(const _omc_size rows, const _omc_size cols, _omc_scalar* data, omc_matrix_orientation orientation);
+void _omc_destroyMatrix(_omc_dense_matrix* mat);
+_omc_dense_matrix* _omc_copyMatrix(_omc_dense_matrix* mat);
 
 /* get and set vector */
 _omc_scalar* _omc_getVectorData(_omc_vector* vec);
@@ -78,13 +80,13 @@ void _omc_setVectorElement(_omc_vector* vec, const _omc_size i, _omc_scalar s);
 _omc_scalar* _omc_setVectorData(_omc_vector* vec, _omc_scalar* data);
 
 /* get and set matrix */
-_omc_scalar* _omc_getMatrixData(_omc_matrix* mat);
-_omc_size _omc_getMatrixRows(_omc_matrix* mat);
-_omc_size _omc_getMatrixCols(_omc_matrix* mat);
-_omc_size _omc_getMatrixSize(_omc_matrix* mat);
-_omc_scalar _omc_getMatrixElement(_omc_matrix* mat, const _omc_size i, const _omc_size j);
-void _omc_setMatrixElement(_omc_matrix* mat, const _omc_size i, const _omc_size j, _omc_scalar s);
-_omc_scalar* _omc_setMatrixData(_omc_matrix* mat, _omc_scalar* data);
+_omc_scalar* _omc_getMatrixData(_omc_dense_matrix* mat);
+_omc_size _omc_getMatrixRows(_omc_dense_matrix* mat);
+_omc_size _omc_getMatrixCols(_omc_dense_matrix* mat);
+_omc_size _omc_getMatrixSize(_omc_dense_matrix* mat);
+_omc_scalar _omc_getMatrixElement(_omc_dense_matrix* mat, const _omc_size i, const _omc_size j);
+void _omc_setMatrixElement(_omc_dense_matrix* mat, const _omc_size i, const _omc_size j, _omc_scalar s);
+_omc_scalar* _omc_setMatrixData(_omc_dense_matrix* mat, _omc_scalar* data);
 
 /* vector operations */
 _omc_vector* _omc_fillVector(_omc_vector* vec, _omc_scalar s);
@@ -99,19 +101,19 @@ _omc_scalar _omc_scalarProduct(const _omc_vector* vec1, const _omc_vector* vec2)
 _omc_scalar _omc_sumVector(const _omc_vector* vec);
 
 /* matrix operations */
-_omc_matrix* _omc_fillMatrix(_omc_matrix* mat, _omc_scalar s);
-_omc_matrix* _omc_fillIndentityMatrix(_omc_matrix* mat);
-_omc_matrix* _omc_negateMatrix(_omc_matrix* mat);
+_omc_dense_matrix* _omc_fillMatrix(_omc_dense_matrix* mat, _omc_scalar s);
+_omc_dense_matrix* _omc_fillIndentityMatrix(_omc_dense_matrix* mat);
+_omc_dense_matrix* _omc_negateMatrix(_omc_dense_matrix* mat);
 
-_omc_matrix* _omc_multiplyScalarMatrix(_omc_matrix* mat, _omc_scalar s);
-_omc_matrix* _omc_addMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2);
-_omc_matrix* _omc_subtractMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2);
-_omc_matrix* _omc_multiplyMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2);
+_omc_dense_matrix* _omc_multiplyScalarMatrix(_omc_dense_matrix* mat, _omc_scalar s);
+_omc_dense_matrix* _omc_addMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2);
+_omc_dense_matrix* _omc_subtractMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2);
+_omc_dense_matrix* _omc_multiplyMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2);
 
 /* print functions */
 void _omc_printVectorWithEquationInfo(_omc_vector* vec, const char* name, const int logLevel, EQUATION_INFO eqnInfo);
 void _omc_printVector(_omc_vector* vec, const char* name, const int logLevel);
-void _omc_printMatrix(_omc_matrix* mat, const char* name, const int logLevel);
+void _omc_printMatrix(_omc_dense_matrix* mat, const char* name, const int logLevel);
 
 /* norm functions */
 _omc_scalar _omc_euclideanVectorNorm(const _omc_vector* vec);

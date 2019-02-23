@@ -1513,7 +1513,7 @@ static int callDenseJacobian(long int Neq, double tt, double cj,
 
   /* debug */
   if (ACTIVE_STREAM(LOG_JAC)){
-    _omc_matrix* dumpJac = _omc_createMatrix(idaData->N, idaData->N, Jac->data);
+    _omc_dense_matrix* dumpJac = _omc_createMatrix(idaData->N, idaData->N, Jac->data, ROW_WISE);
     _omc_printMatrix(dumpJac, "IDA-Solver: Matrix A", LOG_JAC);
     _omc_destroyMatrix(dumpJac);
   }

@@ -38,6 +38,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+#include "simulation/options.h"
 #include "simulation_data.h"
 #include "simulation/simulation_info_json.h"
 #include "util/omc_error.h"
@@ -46,32 +48,26 @@
 
 #include "linearSystem.h"
 #include "linearSolverKlu.h"
-
-
-static void printMatrixCSC(int* Ap, int* Ai, double* Ax, int n);
-static void printMatrixCSR(int* Ap, int* Ai, double* Ax, int n);
+#include "omc_math.h"
+#include "omc_matrix.h"
+#include "omc_sparse_matrix.h"
 
 /*! \fn allocate memory for linear system solver Klu
  *
  */
 int
-allocateKluData(int n_row, int n_col, int nz, void** voiddata)
+allocateKluData(int index, int (*columnCall)(void* vptr, threadData_t* thread, struct ANALYTIC_JACOBIAN* jac, struct ANALYTIC_JACOBIAN* parjac), struct ANALYTIC_JACOBIAN* parentJacobian, unsigned int size_rows, unsigned int size_cols, int nnz, omc_matrix_orientation orientation, omc_matrix_type type, void **voiddata)
 {
   DATA_KLU* data = (DATA_KLU*) malloc(sizeof(DATA_KLU));
   assertStreamPrint(NULL, 0 != data, "Could not allocate data for linear solver Klu.");
 
+  data->jacobian = create_omc_jacobian(index, columnCall, parentJacobian, size_rows, size_cols, nnz, orientation, type);
+
   data->symbolic = NULL;
   data->numeric = NULL;
-
-  data->n_col = n_col;
-  data->n_row = n_row;
-  data->nnz = nz;
-
-  data->Ap = (int*) calloc((n_row+1),sizeof(int));
-
-  data->Ai = (int*) calloc(nz,sizeof(int));
-  data->Ax = (double*) calloc(nz,sizeof(double));
-  data->work = (double*) calloc(n_col,sizeof(double));
+  data->work = _omc_allocateVectorData(size_rows);
+  data->b = _omc_allocateVectorData(size_rows);
+  data->x = _omc_createVector(size_rows, NULL);
 
   data->numberSolving = 0;
   klu_defaults(&(data->common));
@@ -80,7 +76,6 @@ allocateKluData(int n_row, int n_col, int nz, void** voiddata)
 
   return 0;
 }
-
 
 /*! \fn free memory for linear system solver Klu
  *
@@ -92,79 +87,29 @@ freeKluData(void **voiddata)
 
   DATA_KLU* data = (DATA_KLU*) *voiddata;
 
-  free(data->Ap);
-  free(data->Ai);
-  free(data->Ax);
-  free(data->work);
+  _omc_destroyVector(data->x);
+  _omc_deallocateVectorData(data->b);
+  _omc_deallocateVectorData(data->work);
 
   if(data->symbolic)
     klu_free_symbolic(&data->symbolic, &data->common);
   if(data->numeric)
     klu_free_numeric(&data->numeric, &data->common);
 
+  free_omc_jacobian(data->jacobian);
+  free(data);
   TRACE_POP
-  return 0;
-}
-
-/*! \fn getAnalyticalJacobian
- *
- *  function calculates analytical jacobian
- *
- *  \param [ref] [data]
- *  \param [in]  [sysNumber]
- *
- *  \author wbraun
- *
- */
-static
-int getAnalyticalJacobian(DATA* data, threadData_t *threadData, int sysNumber)
-{
-  int i,ii,j,k,l;
-  LINEAR_SYSTEM_DATA* systemData = &(((DATA*)data)->simulationInfo->linearSystemData[sysNumber]);
-
-  const int index = systemData->jacobianIndex;
-  ANALYTIC_JACOBIAN* jacobian = &(data->simulationInfo->analyticJacobians[systemData->jacobianIndex]);
-  ANALYTIC_JACOBIAN* parentJacobian = systemData->parentJacobian;
-
-  int nth = 0;
-  int nnz = jacobian->sparsePattern.numberOfNoneZeros;
-
-  for(i=0; i < jacobian->sizeRows; i++)
-  {
-    jacobian->seedVars[i] = 1;
-
-    ((systemData->analyticalJacobianColumn))(data, threadData, jacobian, parentJacobian);
-
-    for(j = 0; j < jacobian->sizeCols; j++)
-    {
-      if(jacobian->seedVars[j] == 1)
-      {
-        ii = jacobian->sparsePattern.leadindex[j];
-        while(ii < jacobian->sparsePattern.leadindex[j+1])
-        {
-          l  = jacobian->sparsePattern.index[ii];
-          systemData->setAElement(i, l, -jacobian->resultVars[l], nth, (void*) systemData, threadData);
-          nth++;
-          ii++;
-        };
-      }
-    };
-
-    /* de-activate seed variable for the corresponding color */
-    jacobian->seedVars[i] = 0;
-  }
-
   return 0;
 }
 
 /*! \fn residual_wrapper for the residual function
  *
  */
-static int residual_wrapper(double* x, double* f, void** data, int sysNumber)
+static int residual_wrapper(_omc_vector* x, _omc_vector* f, void** data, LINEAR_SYSTEM_DATA* systemData)
 {
   int iflag = 0;
 
-  (*((DATA*)data[0])->simulationInfo->linearSystemData[sysNumber].residualFunc)(data, x, f, &iflag);
+  systemData->residualFunc(data, x->data, f->data, &iflag);
   return 0;
 }
 
@@ -177,71 +122,76 @@ static int residual_wrapper(double* x, double* f, void** data, int sysNumber)
  * author: wbraun
  */
 int
-solveKlu(DATA *data, threadData_t *threadData, int sysNumber, double* aux_x)
+solveKlu(DATA *data, threadData_t *threadData, LINEAR_SYSTEM_DATA* systemData, double* aux_x)
 {
   void *dataAndThreadData[2] = {data, threadData};
-  LINEAR_SYSTEM_DATA* systemData = &(data->simulationInfo->linearSystemData[sysNumber]);
   DATA_KLU* solverData = (DATA_KLU*)systemData->solverData[0];
+  omc_sparse_matrix* matrixData = (omc_sparse_matrix*)solverData->jacobian->matrix->data;
 
   int i, j, status = 0, success = 0, n = systemData->size, eqSystemNumber = systemData->equationIndex, indexes[2] = {1,eqSystemNumber};
   double tmpJacEvalTime;
   int reuseMatrixJac = (data->simulationInfo->currentContext == CONTEXT_SYM_JACOBIAN && data->simulationInfo->currentJacobianEval > 0);
 
-  infoStreamPrintWithEquationIndexes(LOG_LS, 0, indexes, "Start solving Linear System %d (size %d) at time %g with Klu Solver",
-   eqSystemNumber, (int) systemData->size,
-   data->localData[0]->timeValue);
+  _omc_setVectorData(solverData->x, aux_x);
 
+  infoStreamPrintWithEquationIndexes(LOG_LS, 0, indexes, "Start solving Linear System %d (size %d) at time %g with Klu Solver",
+  eqSystemNumber, (int) systemData->size,
+  data->localData[0]->timeValue);
   rt_ext_tp_tick(&(solverData->timeClock));
-  if (0 == systemData->method)
-  {
+
+  if (0 == systemData->method){
     if (!reuseMatrixJac){
       /* set A matrix */
-      solverData->Ap[0] = 0;
+      matrixData->ptr[0] = 0;
       systemData->setA(data, threadData, systemData);
-      solverData->Ap[solverData->n_row] = solverData->nnz;
+      matrixData->ptr[matrixData->size_rows] = matrixData->nnz;
     }
 
     /* set b vector */
     systemData->setb(data, threadData, systemData);
   } else {
-
     if (!reuseMatrixJac){
-      solverData->Ap[0] = 0;
+      matrixData->ptr[0] = 0;
       /* calculate jacobian -> matrix A*/
-      if(systemData->jacobianIndex != -1){
-        getAnalyticalJacobian(data, threadData, sysNumber);
+      if (omc_flag[FLAG_LS_JACOBIAN]){
+        get_numeric_jacobian(data, threadData, solverData->jacobian);
+        infoStreamPrint(LOG_LS_V, 0, "jacobian uses numeric calculation\n");
       } else {
-        assertStreamPrint(threadData, 1, "jacobian function pointer is invalid" );
+        if(systemData->jacobianIndex != -1){
+          get_analytic_jacobian(data, threadData, solverData->jacobian);
+          infoStreamPrint(LOG_LS_V, 0, "jacobian uses analytic calculation\n");
+        } else {
+          assertStreamPrint(threadData, 1, "jacobian function pointer is invalid" );
+        }
       }
-      solverData->Ap[solverData->n_row] = solverData->nnz;
+      matrixData->ptr[matrixData->size_rows] = matrixData->nnz;
     }
-
     /* calculate vector b (rhs) */
-    memcpy(solverData->work, aux_x, sizeof(double)*solverData->n_row);
-    residual_wrapper(solverData->work, systemData->b, dataAndThreadData, sysNumber);
+    _omc_copyVector(solverData->work, solverData->x);
+    residual_wrapper(solverData->work, solverData->b, dataAndThreadData, systemData);
+    _omc_negateVector(solverData->b);
   }
   tmpJacEvalTime = rt_ext_tp_tock(&(solverData->timeClock));
   systemData->jacobianTime += tmpJacEvalTime;
   infoStreamPrint(LOG_LS_V, 0, "###  %f  time to set Matrix A and vector b.", tmpJacEvalTime);
-
   if (ACTIVE_STREAM(LOG_LS_V))
   {
     infoStreamPrint(LOG_LS_V, 1, "Old solution x:");
-    for(i = 0; i < solverData->n_row; ++i)
+    for(i = 0; i < matrixData->size_rows; ++i)
       infoStreamPrint(LOG_LS_V, 0, "[%d] %s = %g", i+1, modelInfoGetEquation(&data->modelData->modelDataXml,eqSystemNumber).vars[i], aux_x[i]);
     messageClose(LOG_LS_V);
 
-    infoStreamPrint(LOG_LS_V, 1, "Matrix A n_rows = %d", solverData->n_row);
-    for (i=0; i<solverData->n_row; i++){
-      infoStreamPrint(LOG_LS_V, 0, "%d. Ap => %d -> %d", i, solverData->Ap[i], solverData->Ap[i+1]);
-      for (j=solverData->Ap[i]; j<solverData->Ap[i+1]; j++){
-        infoStreamPrint(LOG_LS_V, 0, "A[%d,%d] = %f", i, solverData->Ai[j], solverData->Ax[j]);
+    infoStreamPrint(LOG_LS_V, 1, "Matrix A n_rows = %d", matrixData->size_rows);
+    for (i=0; i<matrixData->size_rows; i++){
+      infoStreamPrint(LOG_LS_V, 0, "%d. Ap => %d -> %d", i, matrixData->ptr[i], matrixData->ptr[i+1]);
+      for (j = matrixData->ptr[i]; j<matrixData->ptr[i+1]; j++){
+        infoStreamPrint(LOG_LS_V, 0, "A[%d,%d] = %f", i, matrixData->index[j], matrixData->data[j]);
       }
     }
     messageClose(LOG_LS_V);
 
-    for (i=0; i<solverData->n_row; i++)
-      infoStreamPrint(LOG_LS_V, 0, "b[%d] = %e", i, systemData->b[i]);
+    for (i = 0; i<matrixData->size_rows; i++)
+      infoStreamPrint(LOG_LS_V, 0, "b[%d] = %e", i, solverData->b->data[i]);
   }
   rt_ext_tp_tick(&(solverData->timeClock));
 
@@ -250,7 +200,7 @@ solveKlu(DATA *data, threadData_t *threadData, int sysNumber, double* aux_x)
   if (0 == solverData->numberSolving)
   {
     infoStreamPrint(LOG_LS_V, 0, "Perform analyze settings:\n - ordering used: %d\n - current status: %d", solverData->common.ordering, solverData->common.status);
-    solverData->symbolic = klu_analyze(solverData->n_col, solverData->Ap, solverData->Ai, &solverData->common);
+    solverData->symbolic = klu_analyze(matrixData->size_cols, matrixData->ptr, matrixData->index, &solverData->common);
   }
 
   /* if reuseMatrixJac use also previous factorization */
@@ -260,28 +210,28 @@ solveKlu(DATA *data, threadData_t *threadData, int sysNumber, double* aux_x)
     if (0 == solverData->common.status){
       if(solverData->numeric){
         /* Just refactor using the same pivots, but check that the refactor is still accurate */
-        klu_refactor(solverData->Ap, solverData->Ai, solverData->Ax, solverData->symbolic, solverData->numeric, &solverData->common);
-        klu_rgrowth(solverData->Ap, solverData->Ai, solverData->Ax, solverData->symbolic, solverData->numeric, &solverData->common);
+        klu_refactor(matrixData->ptr, matrixData->index, matrixData->data, solverData->symbolic, solverData->numeric, &solverData->common);
+        klu_rgrowth(matrixData->ptr, matrixData->index, matrixData->data, solverData->symbolic, solverData->numeric, &solverData->common);
         infoStreamPrint(LOG_LS_V, 0, "Klu rgrowth after refactor: %f", solverData->common.rgrowth);
         /* If rgrowth is small then do a whole factorization with new pivots (What should this tolerance be?) */
         if (solverData->common.rgrowth < 1e-3){
           klu_free_numeric(&solverData->numeric, &solverData->common);
-          solverData->numeric = klu_factor(solverData->Ap, solverData->Ai, solverData->Ax, solverData->symbolic, &solverData->common);
+          solverData->numeric = klu_factor(matrixData->ptr, matrixData->index, matrixData->data, solverData->symbolic, &solverData->common);
           infoStreamPrint(LOG_LS_V, 0, "Klu new factorization performed.");
         }
       } else {
-        solverData->numeric = klu_factor(solverData->Ap, solverData->Ai, solverData->Ax, solverData->symbolic, &solverData->common);
+        solverData->numeric = klu_factor(matrixData->ptr, matrixData->index, matrixData->data, solverData->symbolic, &solverData->common);
       }
     }
   }
-
+  _omc_printVector(solverData->b, "Vector b", LOG_LS_V);
   if (0 == solverData->common.status){
     if (1 == systemData->method){
-      if (klu_solve(solverData->symbolic, solverData->numeric, solverData->n_col, 1, systemData->b, &solverData->common)){
+      if (klu_solve(solverData->symbolic, solverData->numeric, matrixData->size_cols, 1, solverData->b->data, &solverData->common)){
         success = 1;
       }
     } else {
-      if (klu_tsolve(solverData->symbolic, solverData->numeric, solverData->n_col, 1, systemData->b, &solverData->common)){
+      if (klu_tsolve(solverData->symbolic, solverData->numeric, matrixData->size_cols, 1, solverData->b->data, &solverData->common)){
         success = 1;
       }
     }
@@ -293,15 +243,15 @@ solveKlu(DATA *data, threadData_t *threadData, int sysNumber, double* aux_x)
   if (1 == success){
 
     if (1 == systemData->method){
+
       /* take the solution */
-      for(i = 0; i < solverData->n_row; ++i)
-        aux_x[i] += systemData->b[i];
+      solverData->x = _omc_addVectorVector(solverData->x, solverData->x, solverData->b); // x = xold(work) + xnew(b)
 
       /* update inner equations */
-      residual_wrapper(aux_x, solverData->work, dataAndThreadData, sysNumber);
+      residual_wrapper(solverData->x, solverData->work, dataAndThreadData, systemData);
     } else {
       /* the solution is automatically in x */
-      memcpy(aux_x, systemData->b, sizeof(double)*systemData->size);
+      _omc_copyVector(solverData->x, solverData->b);
     }
 
     if (ACTIVE_STREAM(LOG_LS_V))
@@ -324,68 +274,6 @@ solveKlu(DATA *data, threadData_t *threadData, int sysNumber, double* aux_x)
   solverData->numberSolving += 1;
 
   return success;
-}
-
-static
-void printMatrixCSC(int* Ap, int* Ai, double* Ax, int n)
-{
-  int i, j, k, l;
-
-  char **buffer = (char**)malloc(sizeof(char*)*n);
-  for (l=0; l<n; l++)
-  {
-    buffer[l] = (char*)malloc(sizeof(char)*n*20);
-    buffer[l][0] = 0;
-  }
-
-  k = 0;
-  for (i = 0; i < n; i++)
-  {
-    for (j = 0; j < n; j++)
-    {
-      if ((k < Ap[i + 1]) && (Ai[k] == j))
-      {
-        sprintf(buffer[j], "%s %5g ", buffer[j], Ax[k]);
-        k++;
-      }
-      else
-      {
-        sprintf(buffer[j], "%s %5g ", buffer[j], 0.0);
-      }
-    }
-  }
-  for (l = 0; l < n; l++)
-  {
-    infoStreamPrint(LOG_LS_V, 0, "%s", buffer[l]);
-    free(buffer[l]);
-  }
-  free(buffer);
-}
-
-static
-void printMatrixCSR(int* Ap, int* Ai, double* Ax, int n)
-{
-  int i, j, k;
-  char *buffer = (char*)malloc(sizeof(char)*n*15);
-  k = 0;
-  for (i = 0; i < n; i++)
-  {
-    buffer[0] = 0;
-    for (j = 0; j < n; j++)
-    {
-      if ((k < Ap[i + 1]) && (Ai[k] == j))
-      {
-        sprintf(buffer, "%s %5.2g ", buffer, Ax[k]);
-        k++;
-      }
-      else
-      {
-        sprintf(buffer, "%s %5.2g ", buffer, 0.0);
-      }
-    }
-    infoStreamPrint(LOG_LS_V, 0, "%s", buffer);
-  }
-  free(buffer);
 }
 
 #endif

@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h> /* memcpy */
 
+#include "simulation/options.h"
 #include "simulation_data.h"
 #include "simulation/simulation_info_json.h"
 #include "util/omc_error.h"
@@ -54,7 +55,7 @@ extern int dgetrs_(char* tran, int *n, int *nrhs, double *a, int *lda,
 /*! \fn allocate memory for linear system solver lapack
  *
  */
-int allocateLapackData(int size, void** voiddata)
+int allocateLapackData(int size, void** voiddata, int index, int (*columnCall)(void* vptr, threadData_t* thread, ANALYTIC_JACOBIAN* jac, ANALYTIC_JACOBIAN* parjac), ANALYTIC_JACOBIAN* parentJacobian, int nnz, omc_matrix_orientation orientation, omc_matrix_type type)
 {
   DATA_LAPACK* data = (DATA_LAPACK*) calloc(1, sizeof(DATA_LAPACK));
 
@@ -65,8 +66,8 @@ int allocateLapackData(int size, void** voiddata)
   data->work = _omc_allocateVectorData(size);
 
   data->x = _omc_createVector(size, NULL);
-  data->b = _omc_createVector(size, NULL);
-  data->A = _omc_createMatrix(size, size, NULL);
+  data->b = _omc_allocateVectorData(size);
+  data->jacobian = create_omc_jacobian(index, columnCall, parentJacobian, size, size, nnz, orientation, type);
 
   *voiddata = (void*)data;
   return 0;
@@ -83,8 +84,8 @@ int freeLapackData(void **voiddata)
   _omc_deallocateVectorData(data->work);
 
   _omc_destroyVector(data->x);
-  _omc_destroyVector(data->b);
-  _omc_destroyMatrix(data->A);
+  _omc_deallocateVectorData(data->b);
+  free_omc_jacobian(data->jacobian);
 
   free(data);
   voiddata[0] = 0;
@@ -92,65 +93,12 @@ int freeLapackData(void **voiddata)
   return 0;
 }
 
-/*! \fn getAnalyticalJacobian
- *
- *  function calculates analytical jacobian
- *
- *  \param [ref] [data]
- *  \param [out] [jac]
- *
- *  \author wbraun
- *
- */
-int getAnalyticalJacobianLapack(DATA* data, threadData_t *threadData, double* jac, int sysNumber)
-{
-  int i,j,k,l,ii,currentSys = sysNumber;
-  LINEAR_SYSTEM_DATA* systemData = &(((DATA*)data)->simulationInfo->linearSystemData[currentSys]);
-
-  const int index = systemData->jacobianIndex;
-  ANALYTIC_JACOBIAN* jacobian = &(data->simulationInfo->analyticJacobians[systemData->jacobianIndex]);
-
-  memset(jac, 0, (systemData->size)*(systemData->size)*sizeof(double));
-
-  for(i=0; i < jacobian->sparsePattern.maxColors; i++)
-  {
-    /* activate seed variable for the corresponding color */
-    for(ii=0; ii < jacobian->sizeCols; ii++)
-      if(jacobian->sparsePattern.colorCols[ii]-1 == i)
-        jacobian->seedVars[ii] = 1;
-
-    ((systemData->analyticalJacobianColumn))(data, threadData, jacobian, systemData->parentJacobian);
-
-    for(j = 0; j < jacobian->sizeCols; j++)
-    {
-      if(jacobian->seedVars[j] == 1)
-      {
-        ii = jacobian->sparsePattern.leadindex[j];
-        while(ii < jacobian->sparsePattern.leadindex[j+1])
-        {
-          l  = jacobian->sparsePattern.index[ii];
-          k  = j*jacobian->sizeRows + l;
-          jac[k] = -jacobian->resultVars[l];
-          ii++;
-        };
-      }
-      /* de-activate seed variable for the corresponding color */
-      if(jacobian->sparsePattern.colorCols[j]-1 == i)
-        jacobian->seedVars[j] = 0;
-    }
-  }
-
-  return 0;
-}
-
 /*! \fn wrapper_fvec_lapack for the residual function
  *
  */
-static int wrapper_fvec_lapack(_omc_vector* x, _omc_vector* f, int* iflag, void** data, int sysNumber)
+static int wrapper_fvec_lapack(_omc_vector* x, _omc_vector* f, int* iflag, void** data,  LINEAR_SYSTEM_DATA* systemData)
 {
-  int currentSys = sysNumber;
-
-  (*((DATA*)data[0])->simulationInfo->linearSystemData[currentSys].residualFunc)(data, x->data, f->data, iflag);
+  systemData->residualFunc(data, x->data, f->data, iflag);
   return 0;
 }
 
@@ -161,12 +109,12 @@ static int wrapper_fvec_lapack(_omc_vector* x, _omc_vector* f, int* iflag, void*
  *
  *  \author wbraun
  */
-int solveLapack(DATA *data, threadData_t *threadData, int sysNumber, double* aux_x)
+int solveLapack(DATA *data, threadData_t *threadData, LINEAR_SYSTEM_DATA* systemData, double* aux_x)
 {
   void *dataAndThreadData[2] = {data, threadData};
   int i, iflag = 1;
-  LINEAR_SYSTEM_DATA* systemData = &(data->simulationInfo->linearSystemData[sysNumber]);
   DATA_LAPACK* solverData = (DATA_LAPACK*)systemData->solverData[0];
+  _omc_dense_matrix* matrixData = (_omc_dense_matrix*)solverData->jacobian->matrix->data;
 
   int success = 1;
 
@@ -185,15 +133,13 @@ int solveLapack(DATA *data, threadData_t *threadData, int sysNumber, double* aux
 
   /* set data */
   _omc_setVectorData(solverData->x, aux_x);
-  _omc_setVectorData(solverData->b, systemData->b);
-  _omc_setMatrixData(solverData->A, systemData->A);
 
   rt_ext_tp_tick(&(solverData->timeClock));
   if (0 == systemData->method) {
 
     if (!reuseMatrixJac){
       /* reset matrix A */
-      memset(systemData->A, 0, (systemData->size)*(systemData->size)*sizeof(double));
+      set_zero_matrix(solverData->jacobian->matrix);
 
       /* update matrix A */
       systemData->setA(data, threadData, systemData);
@@ -202,19 +148,24 @@ int solveLapack(DATA *data, threadData_t *threadData, int sysNumber, double* aux
     /* update vector b (rhs) */
     systemData->setb(data, threadData, systemData);
   } else {
-
     if (!reuseMatrixJac){
       /* calculate jacobian -> matrix A*/
-      if(systemData->jacobianIndex != -1){
-        getAnalyticalJacobianLapack(data, threadData, solverData->A->data, sysNumber);
+      if (omc_flag[FLAG_LS_JACOBIAN]){
+        get_numeric_jacobian(data, threadData, solverData->jacobian);
+        infoStreamPrint(LOG_LS_V, 0, "jacobian uses numeric calculation\n");
       } else {
-        assertStreamPrint(threadData, 1, "jacobian function pointer is invalid" );
+        if(systemData->jacobianIndex != -1){
+          get_analytic_jacobian(data, threadData, solverData->jacobian);
+          infoStreamPrint(LOG_LS_V, 0, "jacobian uses analytic calculation\n");
+        } else {
+          assertStreamPrint(threadData, 1, "jacobian function pointer is invalid" );
+        }
       }
     }
-
     /* calculate vector b (rhs) */
     _omc_copyVector(solverData->work, solverData->x);
-    wrapper_fvec_lapack(solverData->work, solverData->b, &iflag, dataAndThreadData, sysNumber);
+    wrapper_fvec_lapack(solverData->work, solverData->b, &iflag, dataAndThreadData, systemData);
+    _omc_negateVector(solverData->b);
   }
   tmpJacEvalTime = rt_ext_tp_tock(&(solverData->timeClock));
   systemData->jacobianTime += tmpJacEvalTime;
@@ -223,7 +174,7 @@ int solveLapack(DATA *data, threadData_t *threadData, int sysNumber, double* aux
   /* Log A*x=b */
   if(ACTIVE_STREAM(LOG_LS_V)){
     _omc_printVector(solverData->x, "Vector old x", LOG_LS_V);
-    _omc_printMatrix(solverData->A, "Matrix A", LOG_LS_V);
+    _omc_printMatrix(matrixData, "Matrix A", LOG_LS_V);
     _omc_printVector(solverData->b, "Vector b", LOG_LS_V);
   }
 
@@ -235,7 +186,7 @@ int solveLapack(DATA *data, threadData_t *threadData, int sysNumber, double* aux
     /* Solve system */
     dgesv_((int*) &systemData->size,
            (int*) &solverData->nrhs,
-           solverData->A->data,
+           matrixData->data,
            (int*) &systemData->size,
            solverData->ipiv,
            solverData->b->data,
@@ -250,7 +201,7 @@ int solveLapack(DATA *data, threadData_t *threadData, int sysNumber, double* aux
     dgetrs_(&trans,
             (int*) &systemData->size,
             (int*) &solverData->nrhs,
-            solverData->A->data,
+            matrixData->data,
             (int*) &systemData->size,
             solverData->ipiv,
             solverData->b->data,
@@ -276,7 +227,7 @@ int solveLapack(DATA *data, threadData_t *threadData, int sysNumber, double* aux
 
     /* debug output */
     if (ACTIVE_STREAM(LOG_LS)){
-      _omc_printMatrix(solverData->A, "Matrix U", LOG_LS);
+      _omc_printMatrix(matrixData, "Matrix U", LOG_LS);
 
       _omc_printVector(solverData->b, "Output vector x", LOG_LS);
     }
@@ -289,7 +240,7 @@ int solveLapack(DATA *data, threadData_t *threadData, int sysNumber, double* aux
       solverData->x = _omc_addVectorVector(solverData->x, solverData->work, solverData->b); // x = xold(work) + xnew(b)
 
       /* update inner equations */
-      wrapper_fvec_lapack(solverData->x, solverData->work, &iflag, dataAndThreadData, sysNumber);
+      wrapper_fvec_lapack(solverData->x, solverData->work, &iflag, dataAndThreadData, systemData);
       residualNorm = _omc_euclideanVectorNorm(solverData->work);
 
       if ((isnan(residualNorm)) || (residualNorm>1e-4)){

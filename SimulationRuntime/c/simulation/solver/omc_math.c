@@ -116,46 +116,46 @@ void _omc_copyVector(_omc_vector* dest, const _omc_vector* src)
   memcpy(dest->data, src->data, sizeof(_omc_scalar) * dest->size);
 }
 
-/*! \fn _omc_matrix* _omc_allocateMatrixData(_omc_size rows, _omc_size cols)
+/*! \fn _omc_matrix* _omc_dense_allocateMatrixData(_omc_size rows, _omc_size cols)
  *
- *  allocate _omc_matrix and memory of size rows*cols for data
+ *  allocate _omc_dense_matrix and memory of size rows*cols for data
  *
  *  \param [in]  [rows] Number of rows
  *  \param [in]  [cols] Number of cols
  */
-_omc_matrix* _omc_allocateMatrixData(const _omc_size rows, const _omc_size cols)
+_omc_dense_matrix* _omc_allocateMatrixData(const _omc_size rows, const _omc_size cols, omc_matrix_orientation orientation)
 {
-  _omc_matrix* mat = NULL;
+  _omc_dense_matrix* mat = NULL;
   _omc_scalar* data = NULL;
   assertStreamPrint(NULL, rows > 0, "size of rows need greater zero");
   assertStreamPrint(NULL, cols > 0, "size of cols need greater zero");
 
-  mat = (_omc_matrix*) malloc(sizeof(_omc_matrix));
+  mat = (_omc_dense_matrix*) malloc(sizeof(_omc_dense_matrix));
   assertStreamPrint(NULL, NULL != mat, "out of memory");
 
   data = (_omc_scalar*) malloc(rows * cols * sizeof(_omc_scalar));
   assertStreamPrint(NULL, NULL != mat, "data out of memory");
 
-  mat->rows = rows;
-  mat->cols = cols;
+  mat->size_rows = rows;
+  mat->size_cols = cols;
   mat->data = data;
+  mat->orientation = orientation;
 
   return mat;
 }
 
-/*! \fn void _omc_deallocateMatrixData(_omc_matrix* mat)
+/*! \fn void _omc_deallocateMatrixData(_omc_dense_matrix* mat)
  *
  *  free memory in data
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  */
-void _omc_deallocateMatrixData(_omc_matrix* mat)
+void _omc_deallocateMatrixData(_omc_dense_matrix* mat)
 {
   free(mat->data);
-  free(mat);
 }
 
-/*! \fn _omc_matrix* _omc_createMatrix(_omc_size rows, _omc_size cols, _omc_scalar* data)
+/*! \fn _omc_dense_matrix* _omc_createMatrix(_omc_size rows, _omc_size cols, _omc_scalar* data)
  *
  *  creates a _omc_matrix with a data of _omc_matrix
  *
@@ -163,42 +163,43 @@ void _omc_deallocateMatrixData(_omc_matrix* mat)
  *  \param [in]  [cols] Number of cols
  *  \param [ref] [data] !TODO: DESCRIBE ME!
  */
-_omc_matrix* _omc_createMatrix(const _omc_size rows, const _omc_size cols, _omc_scalar* data)
+_omc_dense_matrix* _omc_createMatrix(const _omc_size rows, const _omc_size cols, _omc_scalar* data, omc_matrix_orientation orientation)
 {
-  _omc_matrix* mat = NULL;
+  _omc_dense_matrix* mat = NULL;
   assertStreamPrint(NULL, rows > 0, "size of rows need greater zero");
   assertStreamPrint(NULL, cols > 0, "size of cols need greater zero");
 
-  mat = (_omc_matrix*) malloc(sizeof(_omc_matrix));
+  mat = (_omc_dense_matrix*) malloc(sizeof(_omc_dense_matrix));
   assertStreamPrint(NULL, NULL != mat, "out of memory");
 
-  mat->rows = rows;
-  mat->cols = cols;
-  mat->data = data;
+    mat->size_rows = rows;
+    mat->size_cols = cols;
+    mat->data = data;
+    mat->orientation = orientation;
 
   return mat;
 }
 
-/*! \fn void _omc_destroyMatrix(_omc_matrix* mat)
+/*! \fn void _omc_destroyMatrix(_omc_dense_matrix* mat)
  *
- *  free _omc_matrix
+ *  free _omc_dense_matrix
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  */
-void _omc_destroyMatrix(_omc_matrix* mat)
+void _omc_destroyMatrix(_omc_dense_matrix* mat)
 {
   free(mat);
 }
 
-/*! \fn _omc_matrix* _omc_copyMatrix(_omc_matrix* mat1)
+/*! \fn _omc_dense_matrix* _omc_copyMatrix(_omc_dense_matrix* mat1)
  *
- *  creates a new _omc_matrix by coping all data
+ *  creates a new _omc_dense_matrix by coping all data
  *
  *  \param [in]  [mat1] the original matrix
  */
-_omc_matrix* _omc_copyMatrix(_omc_matrix* mat1)
+_omc_dense_matrix* _omc_copyMatrix(_omc_dense_matrix* mat1)
 {
-  _omc_matrix* mat = _omc_allocateMatrixData(mat1->rows, mat1->cols);
+  _omc_dense_matrix* mat = _omc_allocateMatrixData(mat1->size_rows, mat1->size_cols, mat1->orientation);
   memcpy(mat->data, mat1->data, sizeof(_omc_scalar) * _omc_getMatrixSize(mat1));
   return mat;
 }
@@ -268,91 +269,109 @@ _omc_scalar* _omc_setVectorData(_omc_vector* vec, _omc_scalar* data)
   return output;
 }
 
-/*! \fn _omc_scalar* _omc_getMatrixData(_omc_matrix* mat)
+/*! \fn _omc_scalar* _omc_getMatrixData(_omc_dense_matrix* mat)
  *
- *  get data of _omc_matrix
+ *  get data of _omc_dense_matrix
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  */
-_omc_scalar* _omc_getMatrixData(_omc_matrix* mat)
+_omc_scalar* _omc_getMatrixData(_omc_dense_matrix* mat)
 {
   return mat->data;
 }
 
-/*! \fn _omc_size _omc_getMatrixRows(_omc_matrix* mat)
+/*! \fn _omc_size _omc_getMatrixRows(_omc_dense_matrix* mat)
  *
- *  get rows size of _omc_matrix
- *
- *  \param [ref] [mat] !TODO: DESCRIBE ME!
- */
-_omc_size _omc_getMatrixRows(_omc_matrix* mat)
-{
-  return mat->rows;
-}
-
-/*! \fn _omc_size _omc_getMatrixCols(_omc_matrix* mat)
- *
- *  get cols size of _omc_matrix
+ *  get rows size of _omc_dense_matrix
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  */
-_omc_size _omc_getMatrixCols(_omc_matrix* mat)
+_omc_size _omc_getMatrixRows(_omc_dense_matrix* mat)
 {
-  return mat->cols;
+  return mat->size_rows;
 }
 
-/*! \fn _omc_size _omc_getMatrixSize(_omc_matrix* mat)
+/*! \fn _omc_size _omc_getMatrixCols(_omc_dense_matrix* mat)
  *
- *  get size of _omc_matrix
+ *  get cols size of _omc_dense_matrix
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  */
-_omc_size _omc_getMatrixSize(_omc_matrix* mat)
+_omc_size _omc_getMatrixCols(_omc_dense_matrix* mat)
 {
-  return mat->rows * mat->cols;
+  return mat->size_cols;
 }
 
-/*! \fn _omc_scalar _omc_getMatrixElement(_omc_matrix* mat, _omc_size i, _omc_size j)
+/*! \fn _omc_size _omc_getMatrixSize(_omc_dense_matrix* mat)
  *
- *  get (i,j)-th element of _omc_matrix
+ *  get size of _omc_dense_matrix
  *
- *  \param [ref] [_omc_matrix] !TODO: DESCRIBE ME!
+ *  \param [ref] [mat] !TODO: DESCRIBE ME!
+ */
+_omc_size _omc_getMatrixSize(_omc_dense_matrix* mat)
+{
+  return mat->size_rows * mat->size_cols;
+}
+
+/*! \fn _omc_scalar _omc_getMatrixElement(_omc_dense_matrix* mat, _omc_size i, _omc_size j)
+ *
+ *  get (i,j)-th element of _omc_dense_matrix
+ *
+ *  \param [ref] [_omc_dense_matrix] !TODO: DESCRIBE ME!
  *  \param [in]  [_omc_size]   rows
  *  \param [in]  [_omc_size]   cols
  */
-_omc_scalar _omc_getMatrixElement(_omc_matrix* mat, const _omc_size i, const _omc_size j)
+_omc_scalar _omc_getMatrixElement(_omc_dense_matrix* mat, const _omc_size i, const _omc_size j)
 {
   assertStreamPrint(NULL, 0 <= i, "index i out of bounds: %d", (int)i);
   assertStreamPrint(NULL, 0 <= j, "index j out of bounds: %d", (int)j);
-  assertStreamPrint(NULL, i < mat->rows, "_omc_matrix rows(%d) too small for %d", (int)mat->rows, (int)i);
-  assertStreamPrint(NULL, j < mat->cols, "_omc_matrix cols(%d) too small for %d", (int)mat->cols, (int)j);
-  return mat->data[i + j * mat->cols];
+  assertStreamPrint(NULL, i < mat->size_rows, "_omc_dense_matrix rows(%d) too small for %d", (int)mat->size_rows, (int)i);
+  assertStreamPrint(NULL, j < mat->size_cols, "_omc_dense_matrix cols(%d) too small for %d", (int)mat->size_cols, (int)j);
+
+  if(ROW_WISE == mat->orientation)
+  {
+    return mat->data[i + j * mat->size_cols];
+  }
+  else
+  {
+    return mat->data[j + i*mat->size_rows];
+  }
+
 }
 
-/*! \fn void _omc_setMatrixElement(_omc_matrix* mat, _omc_size i, _omc_size j, _omc_scalar s)
+/*! \fn void _omc_setMatrixElement(_omc_dense_matrix* mat, _omc_size i, _omc_size j, _omc_scalar s)
  *
- *  set i-th element of _omc_matrix
+ *  set i-th element of _omc_dense_matrix
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  *  \param [in]  [i]   rows
  *  \param [in]  [j]   cols
  *  \param [in]  [s]   !TODO: DESCRIBE ME!
  */
-void _omc_setMatrixElement(_omc_matrix* mat, const _omc_size i, const _omc_size j, _omc_scalar s)
+void _omc_setMatrixElement(_omc_dense_matrix* mat, const _omc_size i, const _omc_size j, _omc_scalar s)
 {
-  assertStreamPrint(NULL, i < mat->rows, "_omc_matrix rows(%d) too small for %d", (int)mat->rows, (int)i);
-  assertStreamPrint(NULL, j < mat->cols, "_omc_matrix cols(%d) too small for %d", (int)mat->cols, (int)j);
-  mat->data[i + j * mat->cols] = s;
+  assertStreamPrint(NULL, i < mat->size_rows, "_omc_dense_matrix rows(%d) too small for %d", (int)mat->size_rows, (int)i);
+  assertStreamPrint(NULL, j < mat->size_cols, "_omc_dense_matrix cols(%d) too small for %d", (int)mat->size_cols, (int)j);
+  mat->data[i + j * mat->size_cols] = s;
+  if(ROW_WISE == mat->orientation)
+  {
+   mat->data[i + j * mat->size_cols] = s;
+  }
+  else
+  {
+   mat->data[j + i*mat->size_rows] = s;
+  }
+
 }
 
-/*! \fn _omc_scalar* _omc_setMatrixData(_omc_matrix* mat, _omc_scalar* data)
+/*! \fn _omc_scalar* _omc_setMatrixData(_omc_dense_matrix* mat, _omc_scalar* data)
  *
- *  get data of _omc_matrix
+ *  get data of _omc_dense_matrix
  *
  *  \param [ref] [mat]  !TODO: DESCRIBE ME!
  *  \param [in]  [data] !TODO: DESCRIBE ME!
  */
-_omc_scalar* _omc_setMatrixData(_omc_matrix* mat, _omc_scalar* data)
+_omc_scalar* _omc_setMatrixData(_omc_dense_matrix* mat, _omc_scalar* data)
 {
   _omc_scalar* output = mat->data;
   mat->data = data;
@@ -389,7 +408,6 @@ _omc_vector* _omc_fillVector(_omc_vector* vec, _omc_scalar s)
 _omc_vector* _omc_negateVector(_omc_vector* vec)
 {
   _omc_size i;
-
   assertStreamPrint(NULL, NULL != vec->data, "_omc_vector data is NULL pointer");
   for (i = 0; i < vec->size; ++i)
   {
@@ -549,17 +567,17 @@ _omc_scalar _omc_sumVector(const _omc_vector* vec) {
   return sum;
 }
 
-/*! \fn _omc_matrix* _omc_fillMatrix(_omc_matrix* mat, _omc_scalar s)
+/*! \fn _omc_dense_matrix* _omc_fillMatrix(_omc_dense_matrix* mat, _omc_scalar s)
  *
- *  fill all elements of _omc_matrix by s
+ *  fill all elements of _omc_dense_matrix by s
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  *  \param [in]  [s]   !TODO: DESCRIBE ME!
  */
-_omc_matrix* _omc_fillMatrix(_omc_matrix* mat, _omc_scalar s) {
+_omc_dense_matrix* _omc_fillMatrix(_omc_dense_matrix* mat, _omc_scalar s) {
   _omc_size i;
-  _omc_size size = mat->rows * mat->cols;
-  assertStreamPrint(NULL, NULL != mat->data, "_omc_matrix data is NULL pointer");
+  _omc_size size = mat->size_rows * mat->size_cols;
+  assertStreamPrint(NULL, NULL != mat->data, "_omc_dense_matrix data is NULL pointer");
   for (i = 0; i < size; ++i) {
     mat->data[i] = s;
   }
@@ -567,18 +585,18 @@ _omc_matrix* _omc_fillMatrix(_omc_matrix* mat, _omc_scalar s) {
   return mat;
 }
 
-/*! \fn _omc_matrix* _omc_fillIndentityMatrix(_omc_matrix* mat)
+/*! \fn _omc_dense_matrix* _omc_fillIndentityMatrix(_omc_dense_matrix* mat)
  *
- *  fill identity _omc_matrix
+ *  fill identity _omc_dense_matrix
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  */
-_omc_matrix* _omc_fillIndentityMatrix(_omc_matrix* mat)
+_omc_dense_matrix* _omc_fillIndentityMatrix(_omc_dense_matrix* mat)
 {
   _omc_size i, min;
-  assertStreamPrint(NULL, NULL != mat->data, "_omc_matrix data is NULL pointer");
+  assertStreamPrint(NULL, NULL != mat->data, "_omc_dense_matrix data is NULL pointer");
   mat = _omc_fillMatrix(mat, 0);
-  min = mat->rows <= mat->cols ? mat->rows : mat->cols;
+  min = mat->size_rows <= mat->size_cols ? mat->size_rows : mat->size_cols;
   for (i = 0; i < min; ++i)
   {
     _omc_setMatrixElement(mat, i, i, 1.0);
@@ -587,16 +605,16 @@ _omc_matrix* _omc_fillIndentityMatrix(_omc_matrix* mat)
   return mat;
 }
 
-/*! \fn _omc_matrix* _omc_negateMatrix(_omc_matrix* mat)
+/*! \fn _omc_dense_matrix* _omc_negateMatrix(_omc_dense_matrix* mat)
  *
- *  negate all elements of _omc_matrix
+ *  negate all elements of _omc_dense_matrix
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  */
-_omc_matrix* _omc_negateMatrix(_omc_matrix* mat)
+_omc_dense_matrix* _omc_negateMatrix(_omc_dense_matrix* mat)
 {
-  _omc_size i, size = mat->rows * mat->cols;
-  assertStreamPrint(NULL, NULL != mat->data, "_omc_matrix data is NULL pointer");
+  _omc_size i, size = mat->size_rows * mat->size_cols;
+  assertStreamPrint(NULL, NULL != mat->data, "_omc_dense_matrix data is NULL pointer");
   for (i = 0; i < size; ++i) {
     mat->data[i] = -mat->data[i];
   }
@@ -604,17 +622,17 @@ _omc_matrix* _omc_negateMatrix(_omc_matrix* mat)
   return mat;
 }
 
-/*! \fn _omc_matrix* _omc_multiplyScalarMatrix(_omc_matrix* mat, _omc_scalar s)
+/*! \fn _omc_dense_matrix* _omc_multiplyScalarMatrix(_omc_dense_matrix* mat, _omc_scalar s)
  *
  *  multiply all elements of _omc_matrix by s
  *
  *  \param [ref] [mat] !TODO: DESCRIBE ME!
  *  \param [in]  [s]   !TODO: DESCRIBE ME!
  */
-_omc_matrix* _omc_multiplyScalarMatrix(_omc_matrix* mat, _omc_scalar s)
+_omc_dense_matrix* _omc_multiplyScalarMatrix(_omc_dense_matrix* mat, _omc_scalar s)
 {
-  _omc_size i, size = mat->rows * mat->cols;
-  assertStreamPrint(NULL, NULL != mat->data, "_omc_matrix data is NULL pointer");
+  _omc_size i, size = mat->size_rows * mat->size_cols;
+  assertStreamPrint(NULL, NULL != mat->data, "_omc_dense_matrix data is NULL pointer");
   for (i = 0; i < size; ++i)
   {
     mat->data[i] *= s;
@@ -623,23 +641,23 @@ _omc_matrix* _omc_multiplyScalarMatrix(_omc_matrix* mat, _omc_scalar s)
   return mat;
 }
 
-/*! \fn _omc_matrix* _omc_addMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2)
+/*! \fn _omc_dense_matrix* _omc_addMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2)
  *
  *  addition of two matrixs to the first one
  *
  *  \param [ref] [mat1] !TODO: DESCRIBE ME!
  *  \param [ref] [mat2] !TODO: DESCRIBE ME!
  */
-_omc_matrix* _omc_addMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2)
+_omc_dense_matrix* _omc_addMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2)
 {
   _omc_size i, j;
-  assertStreamPrint(NULL, mat1->rows == mat2->rows && mat1->cols == mat2->cols,
+  assertStreamPrint(NULL, mat1->size_rows == mat2->size_rows && mat1->size_cols == mat2->size_cols,
       "matrixes have not the same size ((%d,%d)!=(%d,%d))",
-      (int)mat1->rows, (int)mat1->cols, (int)mat2->rows, (int)mat2->cols);
+      (int)mat1->size_rows, (int)mat1->size_cols, (int)mat2->size_rows, (int)mat2->size_cols);
   assertStreamPrint(NULL, NULL != mat1->data, "matrix1 data is NULL pointer");
   assertStreamPrint(NULL, NULL != mat2->data, "matrix2 data is NULL pointer");
-  for (i = 0; i < mat1->rows; ++i) {
-    for (j = 0; j < mat1->cols; ++j) {
+  for (i = 0; i < mat1->size_rows; ++i) {
+    for (j = 0; j < mat1->size_cols; ++j) {
       _omc_setMatrixElement(mat1, i, j,
           _omc_getMatrixElement(mat1, i, j)
               + _omc_getMatrixElement(mat2, i, j));
@@ -649,23 +667,23 @@ _omc_matrix* _omc_addMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2)
   return mat1;
 }
 
-/*! \fn _omc_matrix* _omc_subtractMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2)
+/*! \fn _omc_dense_matrix* _omc_subtractMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2)
  *
  *  subtraction of two matrixs to the first one
  *
  *  \param [ref] [mat1] !TODO: DESCRIBE ME!
  *  \param [ref] [mat2] !TODO: DESCRIBE ME!
  */
-_omc_matrix* _omc_subtractMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2)
+_omc_dense_matrix* _omc_subtractMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2)
 {
   _omc_size i, j;
-  assertStreamPrint(NULL, mat1->rows == mat2->rows && mat1->cols == mat2->cols,
+  assertStreamPrint(NULL, mat1->size_rows == mat2->size_rows && mat1->size_cols == mat2->size_cols,
       "matrixes have not the same size ((%d,%d)!=(%d,%d))",
-      (int)mat1->rows, (int)mat1->cols, (int)mat2->rows, (int)mat2->cols);
+      (int)mat1->size_rows, (int)mat1->size_cols, (int)mat2->size_rows, (int)mat2->size_cols);
   assertStreamPrint(NULL, NULL != mat1->data, "matrix1 data is NULL pointer");
   assertStreamPrint(NULL, NULL != mat2->data, "matrix2 data is NULL pointer");
-  for (i = 0; i < mat1->rows; ++i) {
-    for (j = 0; j < mat1->cols; ++j) {
+  for (i = 0; i < mat1->size_rows; ++i) {
+    for (j = 0; j < mat1->size_cols; ++j) {
       _omc_setMatrixElement(mat1, i, j,
           _omc_getMatrixElement(mat1, i, j)
               - _omc_getMatrixElement(mat2, i, j));
@@ -675,20 +693,20 @@ _omc_matrix* _omc_subtractMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2)
   return mat1;
 }
 
-/*! \fn _omc_matrix* _omc_multiplyMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2)
+/*! \fn _omc_dense_matrix* _omc_multiplyMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2)
  *
- *  _omc_matrix multiplication of two matrixes into matrix one
+ *  _omc_dense_matrix multiplication of two matrixes into matrix one
  *
  *  \param [ref] [mat1] !TODO: DESCRIBE ME!
  *  \param [ref] [mat2] !TODO: DESCRIBE ME!
  */
-_omc_matrix* _omc_multiplyMatrixMatrix(_omc_matrix* mat1, _omc_matrix* mat2)
+_omc_dense_matrix* _omc_multiplyMatrixMatrix(_omc_dense_matrix* mat1, _omc_dense_matrix* mat2)
 {
   _omc_size i, j, k;
-  _omc_size l = mat1->rows, m = mat1->cols, n = mat2->cols;
-  assertStreamPrint(NULL, mat1->cols == mat2->rows,
+  _omc_size l = mat1->size_rows, m = mat1->size_cols, n = mat2->size_cols;
+  assertStreamPrint(NULL, mat1->size_cols == mat2->size_rows,
       "matrixes size doesn't match to multiply"
-          "(%d!=%d)", (int)mat1->cols, (int)mat2->rows);
+          "(%d!=%d)", (int)mat1->size_cols, (int)mat2->size_rows);
   assertStreamPrint(NULL, NULL != mat1->data, "matrix1 data is NULL pointer");
   assertStreamPrint(NULL, NULL != mat2->data, "matrix2 data is NULL pointer");
   for (i = 0; i < l; ++i) {
@@ -754,7 +772,7 @@ void _omc_printVector(_omc_vector* vec, const char* name, const int logLevel)
   messageClose(logLevel);
 }
 
-/*! \fn void _omc_printMatrix(_omc_matrix* mat, char* name, int logLevel)
+/*! \fn void _omc_printMatrix(_omc_dense_matrix* mat, char* name, int logLevel)
  *
  *  outputs the _omc_matrix
  *
@@ -762,19 +780,19 @@ void _omc_printVector(_omc_vector* vec, const char* name, const int logLevel)
  *  \param [in]  [name]     !TODO: DESCRIBE ME!
  *  \param [in]  [logLevel] !TODO: DESCRIBE ME!
  */
-void _omc_printMatrix(_omc_matrix* mat, const char* name, const int logLevel) {
+void _omc_printMatrix(_omc_dense_matrix* mat, const char* name, const int logLevel) {
   if (ACTIVE_STREAM(logLevel))
   {
     _omc_size i, j;
-    char *buffer = (char*)malloc(sizeof(char)*mat->cols*20);
+    char *buffer = (char*)malloc(sizeof(char)*mat->size_cols*20);
 
     assertStreamPrint(NULL, NULL != mat->data, "matrix data is NULL pointer");
 
     infoStreamPrint(logLevel, 1, "%s", name);
-    for (i = 0; i < mat->rows; ++i)
+    for (i = 0; i < mat->size_rows; ++i)
     {
       buffer[0] = 0;
-      for (j = 0; j < mat->cols; ++j)
+      for (j = 0; j < mat->size_cols; ++j)
       {
         sprintf(buffer, "%s%10g ", buffer, _omc_getMatrixElement(mat, i, j));
       }

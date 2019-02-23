@@ -1097,7 +1097,7 @@ static int callJacobian(double *t, double *y, double *yprime, double *deltaD, do
 
   /* debug */
   if (ACTIVE_STREAM(LOG_JAC)){
-    _omc_matrix* dumpJac = _omc_createMatrix(dasslData->N, dasslData->N, pd);
+    _omc_dense_matrix* dumpJac = _omc_createMatrix(dasslData->N, dasslData->N, pd, ROW_WISE);
     _omc_printMatrix(dumpJac, "DASSL-Solver: Matrix A", LOG_JAC);
     _omc_destroyMatrix(dumpJac);
   }

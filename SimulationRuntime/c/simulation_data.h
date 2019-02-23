@@ -152,6 +152,7 @@ typedef struct ANALYTIC_JACOBIAN
   modelica_real* seedVars;
   modelica_real* tmpVars;
   modelica_real* resultVars;
+
 }ANALYTIC_JACOBIAN;
 
 /* EXTERNAL_INPUT
@@ -320,14 +321,14 @@ typedef struct LINEAR_SYSTEM_DATA
   void (*setAElement)(int row, int col, double value, int nth, void *data, threadData_t *threadData);
   void (*setBElement)(int row, double value, void *data, threadData_t *threadData);
 
-  int (*analyticalJacobianColumn)(void*, threadData_t*, ANALYTIC_JACOBIAN*, ANALYTIC_JACOBIAN* parentJacobian);
-  int (*initialAnalyticalJacobian)(void*, threadData_t*, ANALYTIC_JACOBIAN*);
-  modelica_integer jacobianIndex;
-
   void (*residualFunc)(void**, const double*, double*, const int*);
   void (*initializeStaticLSData)(void*, threadData_t *threadData, void*);
   int (*strictTearingFunctionCall)(struct DATA*, threadData_t *threadData);
   int (*checkConstraints)(struct DATA*, threadData_t *threadData);
+
+  int (*analyticalJacobianColumn)(void*, threadData_t*, struct ANALYTIC_JACOBIAN*, struct ANALYTIC_JACOBIAN* parentJacobian);
+  int (*initialAnalyticalJacobian)(void*, threadData_t*, struct ANALYTIC_JACOBIAN*);
+  modelica_integer jacobianIndex;
 
   /* attributes of iteration variables */
   modelica_real *min;
@@ -592,6 +593,7 @@ typedef struct SIMULATION_INFO
   int nlsLinearSolver;                 /* nls linear solver setting =1 totalpivot, =2 lapack, =3=klu */
   /* current context evaluation, set by dassl and used for extrapolation
    * of next non-linear guess */
+
   int currentContext;
   int currentContextOld;
   int jacobianEvals;                   /* number of different columns to evaluate functionODE */

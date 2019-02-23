@@ -159,3 +159,4 @@ SimulationRuntime/cpp/build_msvc/
 SimulationRuntime/cpp/.vs/
 SimulationRuntime/cpp/CMakeSettings.json
 tags
+/bin/

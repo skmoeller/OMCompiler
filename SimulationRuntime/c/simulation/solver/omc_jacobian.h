@@ -26,37 +26,32 @@
  * EXPRESSLY SET FORTH IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE
  * CONDITIONS OF OSMC-PL.
  *
+ *! \file omc_jacobian.h
+ *
  */
 
-/*! \file linearSolverLapack.h
- */
+#ifndef _OMC_JACOCOBIAN_H_
+#define _OMC_JACOCOBIAN_H_
 
-#ifndef _LINEARSOLVERLAPACK_H_
-#define _LINEARSOLVERLAPACK_H_
+#include "omc_matrix.h"
 
-#include "simulation_data.h"
-#include "omc_math.h"
-#include "omc_jacobian.h"
+typedef struct {
+ int index;           /* index of ANALYTICAL_JACOBIAN Structure: data->simulationInfo->analyticJacobians */
+ int (*columnCall)(void*, threadData_t*, ANALYTIC_JACOBIAN*, ANALYTIC_JACOBIAN*);
+ omc_matrix* matrix;  /* matrix data */
+ ANALYTIC_JACOBIAN* parentJacobian; /* is only used in the algebraic loop of the jacobian calculation */
+} omc_jacobian;
 
-typedef struct DATA_LAPACK
-{
-  int *ipiv;  /* vector pivot values */
-  int nrhs;   /* number of righthand sides*/
-  int info;   /* output */
-  _omc_vector* work;
+omc_jacobian* create_omc_jacobian(int index,
+                                  int (*columnCall)(void*, threadData_t*, ANALYTIC_JACOBIAN*, ANALYTIC_JACOBIAN*), ANALYTIC_JACOBIAN* parentJacobian,
+                                  unsigned int size_rows, unsigned int size_cols, int nnz, omc_matrix_orientation orientation, omc_matrix_type type);
 
-  _omc_vector* x;
-  _omc_vector* b;
-  omc_jacobian* jacobian;
+/*Analytic Jacobian*/
+int get_analytic_jacobian(DATA* data, threadData_t* threadData, omc_jacobian* jac);
+/*Numerical Jacobian -> Call may by flag; not used yet!*/
+int function_residual(DATA* data, threadData_t *threadData, double *dx);
+int get_numeric_jacobian(DATA* data, threadData_t *threadData, omc_jacobian* jac);
 
-  rtclock_t timeClock;             /* time clock */
-
-} DATA_LAPACK;
-
-int allocateLapackData(int size, void **data, int index, int (*columnCall)(void*, threadData_t*, ANALYTIC_JACOBIAN*, ANALYTIC_JACOBIAN*), ANALYTIC_JACOBIAN* parentJacobian,
-                       int nnz, omc_matrix_orientation orientation, omc_matrix_type type);
-int freeLapackData(void **data);
-int solveLapack(DATA *data, threadData_t *threadData, struct LINEAR_SYSTEM_DATA *linsys, double* aux_x);
+void free_omc_jacobian(omc_jacobian* jac);
 
 #endif
-

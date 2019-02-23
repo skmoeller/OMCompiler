@@ -93,6 +93,7 @@ const char *FLAG_NAME[FLAG_MAX+1] = {
   /* FLAG_LOG_FORMAT */                   "logFormat",
   /* FLAG_LS */                           "ls",
   /* FLAG_LS_IPOPT */                     "ls_ipopt",
+  /* FLAG_LS_JACOBIAN */                  "ls_jacobian",
   /* FLAG_LSS */                          "lss",
   /* FLAG_LSS_MAX_DENSITY */              "lssMaxDensity",
   /* FLAG_LSS_MIN_SIZE */                 "lssMinSize",
@@ -193,7 +194,7 @@ const char *FLAG_DESC[FLAG_MAX+1] = {
   /* FLAG_INITIAL_STEP_SIZE */            "value specifies an initial step size for supported solver",
   /* FLAG_INPUT_CSV */                    "value specifies an csv-file with inputs for the simulation/optimization of the model",
   /* FLAG_INPUT_FILE */                   "value specifies an external file with inputs for the simulation/optimization of the model",
-  /* FLAG_INPUT_FILE_STATES */            "value specifies an file with states start values for the optimization of the model",
+  /* FLAG_INPUT_FILE_STATES */            "value specifies an filNUMERIC_JACOBIANe with states start values for the optimization of the model",
   /* FLAG_INPUT_PATH */                   "value specifies a path for reading the input files i.e., model_init.xml and model_info.json",
   /* FLAG_IPOPT_HESSE */                  "value specifies the hessian for Ipopt",
   /* FLAG_IPOPT_INIT */                   "value specifies the initial guess for optimization",
@@ -206,6 +207,7 @@ const char *FLAG_DESC[FLAG_MAX+1] = {
   /* FLAG_LOG_FORMAT */                   "value specifies the log format of the executable. -logFormat=text (default), -logFormat=xml or -logFormat=xmltcp",
   /* FLAG_LS */                           "value specifies the linear solver method (default: lapack, totalpivot (fallback))",
   /* FLAG_LS_IPOPT */                     "value specifies the linear solver method for ipopt",
+  /* FLAG_LS_JACOBIAN */                  "value specifies the jacobian function in the linear solver",
   /* FLAG_LSS */                          "value specifies the linear sparse solver method (default: umfpack)",
   /* FLAG_LSS_MAX_DENSITY */              "[double (default 0.2)] value specifies the maximum density for using a linear sparse solver",
   /* FLAG_LSS_MIN_SIZE */                 "[int (default 4001)] value specifies the minimum system size for using a linear sparse solver",
@@ -385,6 +387,8 @@ const char *FLAG_DETAILED_DESC[FLAG_MAX+1] = {
   "  Value specifies lvl for a warm start in ipopt: 1,2,3,...",
   /* FLAG_JACOBIAN */
   "  Select the calculation method for Jacobian used by the integration method:\n",
+  /* FLAG_LS_JACOBIAN */
+  "  value specifies the jacobian function in the linear solver",
   /* FLAG_L */
   "  Value specifies a time where the linearization of the model should be performed.",
   /* FLAG_L_DATA_RECOVERY */
@@ -591,6 +595,7 @@ const int FLAG_TYPE[FLAG_MAX] = {
   /* FLAG_LOG_FORMAT */                   FLAG_TYPE_OPTION,
   /* FLAG_LS */                           FLAG_TYPE_OPTION,
   /* FLAG_LS_IPOPT */                     FLAG_TYPE_OPTION,
+  /* FLAG_LS_JACOBIAN */                  FLAG_TYPE_FLAG,
   /* FLAG_LSS */                          FLAG_TYPE_OPTION,
   /* FLAG_LSS_MAX_DENSITY */              FLAG_TYPE_OPTION,
   /* FLAG_LSS_MIN_SIZE */                 FLAG_TYPE_OPTION,

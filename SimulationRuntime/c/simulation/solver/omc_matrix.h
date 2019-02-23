@@ -28,35 +28,44 @@
  *
  */
 
-/*! \file linearSolverLapack.h
+/*! \file omc_matrix.h
  */
 
-#ifndef _LINEARSOLVERLAPACK_H_
-#define _LINEARSOLVERLAPACK_H_
+#ifndef _OMC_MATRIX_H_
+#define _OMC_MATRIX_H_
 
-#include "simulation_data.h"
-#include "omc_math.h"
-#include "omc_jacobian.h"
 
-typedef struct DATA_LAPACK
-{
-  int *ipiv;  /* vector pivot values */
-  int nrhs;   /* number of righthand sides*/
-  int info;   /* output */
-  _omc_vector* work;
+typedef enum {
+    ROW_WISE,
+    COLUMN_WISE
+} omc_matrix_orientation;
 
-  _omc_vector* x;
-  _omc_vector* b;
-  omc_jacobian* jacobian;
+typedef enum {
+    DENSE_MATRIX,
+    SPARSE_MATRIX
+} omc_matrix_type;
 
-  rtclock_t timeClock;             /* time clock */
+typedef struct {
+  void* data;
+  omc_matrix_orientation orientation;
+  omc_matrix_type type;
+}omc_matrix;
 
-} DATA_LAPACK;
+/* memory management */
+omc_matrix* allocate_matrix(unsigned int size_rows, unsigned int size_cols, int nnz, omc_matrix_orientation orientation, omc_matrix_type type);
+void free_matrix(omc_matrix* A);
+omc_matrix* copy_matrix(omc_matrix* A);
 
-int allocateLapackData(int size, void **data, int index, int (*columnCall)(void*, threadData_t*, ANALYTIC_JACOBIAN*, ANALYTIC_JACOBIAN*), ANALYTIC_JACOBIAN* parentJacobian,
-                       int nnz, omc_matrix_orientation orientation, omc_matrix_type type);
-int freeLapackData(void **data);
-int solveLapack(DATA *data, threadData_t *threadData, struct LINEAR_SYSTEM_DATA *linsys, double* aux_x);
+/* get and set functions */
+double get_matrix_element(omc_matrix* A, int row, int col);
+void set_matrix_element(omc_matrix* A, int row, int col, int nth, double value);
+
+/* matrix operations */
+void scale_matrix(omc_matrix* A, double scalar);
+void set_zero_matrix(omc_matrix* A);
+
+/* print functions */
+void print_matrix(omc_matrix* A, const char* name, const int logLevel);
+
 
 #endif
-

@@ -39,6 +39,7 @@
 #include "util/rtclock.h"
 #include "nonlinearSystem.h"
 #include "linearSystem.h"
+#include "omc_jacobian.h"
 #include "linearSolverLapack.h"
 #if !defined(OMC_MINIMAL_RUNTIME)
 #include "linearSolverKlu.h"
@@ -48,12 +49,16 @@
 #include "linearSolverTotalPivot.h"
 #include "simulation/simulation_info_json.h"
 
+
 static void setAElement(int row, int col, double value, int nth, void *data, threadData_t *);
 static void setAElementLis(int row, int col, double value, int nth, void *data, threadData_t *);
 static void setAElementUmfpack(int row, int col, double value, int nth, void *data, threadData_t *);
 static void setAElementKlu(int row, int col, double value, int nth, void *data, threadData_t *);
+static void setAElementLapack(int row, int col, double value, int nth, void *data, threadData_t *threadData);
 static void setBElement(int row, double value, void *data, threadData_t*);
 static void setBElementLis(int row, double value, void *data, threadData_t*);
+static void setBElementLapack(int row, double value, void *data, threadData_t *threadData);
+static void setBElementKLU(int row, double value, void *data, threadData_t *threadData);
 
 int check_linear_solution(DATA *data, int printFailingSystems, int sysNumber);
 
@@ -89,7 +94,7 @@ int initializeLinearSystems(DATA *data, threadData_t *threadData)
     linsys[i].totalTime = 0;
     linsys[i].failed = 0;
 
-    /* allocate system data */
+    /*allocate system data*/
     linsys[i].b = (double*) malloc(size*sizeof(double));
 
     /* check if analytical jacobian is created */
@@ -136,8 +141,8 @@ int initializeLinearSystems(DATA *data, threadData_t *threadData)
         break;
       case LSS_KLU:
         linsys[i].setAElement = setAElementKlu;
-        linsys[i].setBElement = setBElement;
-        allocateKluData(size, size, nnz, linsys[i].solverData);
+        linsys[i].setBElement = setBElementKLU;
+        allocateKluData(linsys[i].jacobianIndex, linsys[i].analyticalJacobianColumn, linsys[i].parentJacobian, size, size, nnz, COLUMN_WISE, SPARSE_MATRIX, linsys[i].solverData);
         break;
     #else
       case LSS_KLU:
@@ -173,10 +178,9 @@ int initializeLinearSystems(DATA *data, threadData_t *threadData)
     switch(data->simulationInfo->lsMethod)
     {
       case LS_LAPACK:
-        linsys[i].A = (double*) malloc(size*size*sizeof(double));
-        linsys[i].setAElement = setAElement;
-        linsys[i].setBElement = setBElement;
-        allocateLapackData(size, linsys[i].solverData);
+        linsys[i].setAElement = setAElementLapack;
+        linsys[i].setBElement = setBElementLapack;
+        allocateLapackData(size, linsys[i].solverData, linsys[i].jacobianIndex, linsys[i].analyticalJacobianColumn, linsys[i].parentJacobian, nnz, ROW_WISE, DENSE_MATRIX);
         break;
 
     #if !defined(OMC_MINIMAL_RUNTIME)
@@ -194,8 +198,8 @@ int initializeLinearSystems(DATA *data, threadData_t *threadData)
         break;
       case LS_KLU:
         linsys[i].setAElement = setAElementKlu;
-        linsys[i].setBElement = setBElement;
-        allocateKluData(size, size, nnz, linsys[i].solverData);
+        linsys[i].setBElement = setBElementKLU;
+        allocateKluData(linsys[i].jacobianIndex, linsys[i].analyticalJacobianColumn, linsys[i].parentJacobian, size, size, nnz, COLUMN_WISE, SPARSE_MATRIX, linsys[i].solverData);
         break;
     #else
       case LS_UMFPACK:
@@ -215,7 +219,7 @@ int initializeLinearSystems(DATA *data, threadData_t *threadData)
         linsys[i].setAElement = setAElement;
         linsys[i].setBElement = setBElement;
 
-        allocateLapackData(size, linsys[i].solverData);
+        allocateLapackData(size, linsys[i].solverData, linsys[i].jacobianIndex, linsys[i].analyticalJacobianColumn, linsys[i].parentJacobian, nnz, ROW_WISE, DENSE_MATRIX);
         allocateTotalPivotData(size, linsys[i].solverData);
 
         break;
@@ -355,8 +359,8 @@ int freeLinearSystems(DATA *data, threadData_t *threadData)
   #endif
 
       case LS_TOTALPIVOT:
-        free(linsys[i].A);
         freeTotalPivotData(linsys[i].solverData);
+        free(linsys[i].A);
         break;
 
       case LS_DEFAULT:
@@ -421,12 +425,12 @@ int solve_linear_system(DATA *data, threadData_t *threadData, int sysNumber, dou
   #endif
   #ifdef WITH_UMFPACK
     case LSS_KLU:
-      success = solveKlu(data, threadData, sysNumber, aux_x);
+      success = solveKlu(data, threadData, linsys, aux_x);
       break;
     case LSS_UMFPACK:
       success = solveUmfPack(data, threadData, sysNumber, aux_x);
       if (!success && linsys->strictTearingFunctionCall != NULL){
-        debugString(LOG_DT, "Solving the casual tearing set failed! Now the strict tearing set is used.");
+        debugString(LOG_DT, "Solving the casual tearing set failed! Now the stDATArict tearing set is used.");
         success = linsys->strictTearingFunctionCall(data, threadData);
         if (success) success=2;
       }
@@ -446,7 +450,7 @@ int solve_linear_system(DATA *data, threadData_t *threadData, int sysNumber, dou
     switch(data->simulationInfo->lsMethod)
     {
     case LS_LAPACK:
-      success = solveLapack(data, threadData, sysNumber, aux_x);
+      success = solveLapack(data, threadData, linsys, aux_x);
       break;
 
   #if !defined(OMC_MINIMAL_RUNTIME)
@@ -456,7 +460,7 @@ int solve_linear_system(DATA *data, threadData_t *threadData, int sysNumber, dou
   #endif
   #ifdef WITH_UMFPACK
     case LS_KLU:
-      success = solveKlu(data, threadData, sysNumber, aux_x);
+      success = solveKlu(data, threadData, linsys, aux_x);
       break;
     case LS_UMFPACK:
       success = solveUmfPack(data, threadData, sysNumber, aux_x);
@@ -477,7 +481,7 @@ int solve_linear_system(DATA *data, threadData_t *threadData, int sysNumber, dou
       break;
 
     case LS_DEFAULT:
-      success = solveLapack(data, threadData, sysNumber, aux_x);
+      success = solveLapack(data, threadData, linsys, aux_x);
 
       /* check if solution process was successful, if not use alternative tearing set if available (dynamic tearing)*/
       if (!success && linsys->strictTearingFunctionCall != NULL){
@@ -632,6 +636,14 @@ static void setAElement(int row, int col, double value, int nth, void *data, thr
   linsys->A[row + col * linsys->size] = value;
 }
 
+static void setAElementLapack(int row, int col, double value, int nth, void *data, threadData_t *threadData)
+{
+  LINEAR_SYSTEM_DATA* linSys = (LINEAR_SYSTEM_DATA*) data;
+  DATA_LAPACK* sData = (DATA_LAPACK*) linSys->solverData[0];
+
+  set_matrix_element(sData->jacobian->matrix, row, col, nth, value);
+}
+
 /*! \fn setBElement
  *  This function sets the row-th value of linsys->b[row] = value.
  *
@@ -644,6 +656,14 @@ static void setBElement(int row, double value, void *data, threadData_t *threadD
   LINEAR_SYSTEM_DATA* linsys = (LINEAR_SYSTEM_DATA*) data;
   linsys->b[row] = value;
 }
+
+static void setBElementLapack(int row, double value, void *data, threadData_t *threadData)
+{
+  LINEAR_SYSTEM_DATA* linSys = (LINEAR_SYSTEM_DATA*) data;
+  DATA_LAPACK* sData = (DATA_LAPACK*) linSys->solverData[0];
+  sData->b->data[row] = value;
+}
+
 
 #if !defined(OMC_MINIMAL_RUNTIME)
 static void setAElementLis(int row, int col, double value, int nth, void *data, threadData_t *threadData)
@@ -659,6 +679,7 @@ static void setBElementLis(int row, double value, void *data, threadData_t *thre
   DATA_LIS* sData = (DATA_LIS*) linsys->solverData[0];
   lis_vector_set_value(LIS_INS_VALUE, row, value, sData->b);
 }
+
 #endif
 
 #ifdef WITH_UMFPACK
@@ -677,18 +698,20 @@ static void setAElementUmfpack(int row, int col, double value, int nth, void *da
   sData->Ai[nth] = col;
   sData->Ax[nth] = value;
 }
+
 static void setAElementKlu(int row, int col, double value, int nth, void *data, threadData_t *threadData)
 {
   LINEAR_SYSTEM_DATA* linSys = (LINEAR_SYSTEM_DATA*) data;
   DATA_KLU* sData = (DATA_KLU*) linSys->solverData[0];
 
-  if (row > 0){
-    if (sData->Ap[row] == 0){
-      sData->Ap[row] = nth;
-    }
-  }
-
-  sData->Ai[nth] = col;
-  sData->Ax[nth] = value;
+  set_matrix_element(sData->jacobian->matrix, row, col, nth, value);
 }
+
+static void setBElementKLU(int row, double value, void *data, threadData_t *threadData)
+{
+  LINEAR_SYSTEM_DATA* linSys = (LINEAR_SYSTEM_DATA*) data;
+  DATA_KLU* sData = (DATA_KLU*) linSys->solverData[0];
+  sData->b->data[row] = value;
+}
+
 #endif
