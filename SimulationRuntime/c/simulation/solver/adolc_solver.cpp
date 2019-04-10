@@ -214,7 +214,7 @@ public:
      * \param [in] [**x]		Independent vector x
      * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
      * \param [in] [**y]		Dependent vector y
-     * \param [in] [ctx]		information about tags for tape
+     * \param [in] [ctx]		information about tags for tape; Context obj.
      *
      * Evaluate the desired function from the tape instead of executing the corresponding source code.
      *
@@ -231,7 +231,7 @@ public:
      * \param [in] [**x]		Independent vector x
      * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
      * \param [in] [**y]		Dependent vector y
-     * \param [in] [ctx]		information about tags for tape
+     * \param [in] [ctx]		information about tags for tape; Context obj.
       *
       * Evaluation in the zero-order scalar forward mode.
       *
@@ -250,7 +250,7 @@ public:
      * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
      * \param [in] [**y]		Dependent vector y0; y0=F(x0)
      * \param [in] [**yp]		first derivative y1=F'(x0)*x1
-     * \param [in] [ctx]		information about tags for tape
+     * \param [in] [ctx]		information about tags for tape; Context obj.
        *
        * Compute first-order derivatives in the first-order scalar forward mode.
        *
@@ -270,7 +270,7 @@ public:
      * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
      * \param [in] [**y]		Dependent vector y0; y0=F(x0)
      * \param [in] [**yp]		first derivative y1=F'(x0)*x1
-     * \param [in] [ctx]		information about counts for tape
+     * \param [in] [ctx]		information about counts for tape; Context obj.
        *
        * Compute first-order derivatives in the first-order vector forward mode.
        *
@@ -289,7 +289,7 @@ public:
      * \param [in] [**zp]		resulting adjoint value
      * \param [in] [**x]		Independent vector x0
      * \param [in] [**y]		Dependent vector y0; y0=F(x0)
-     * \param [in] [ctx]		information about counts for tape
+     * \param [in] [ctx]		information about counts for tape; Context obj.
        *
        * First-order scalar reverse mode implementation that computes the product zp^T=up^T*F'(x).
        *
@@ -309,7 +309,7 @@ public:
      * \param [in] [***zp]		resulting adjoint zp=up*F'(x)
      * \param [in] [**x]		Independent vector x0
      * \param [in] [**y]		Dependent vector y0; y0=F(x0)
-     * \param [in] [ctx]		information about counts for tape
+     * \param [in] [ctx]		information about counts for tape; Context obj.
        *
        * First-order vector reverse mode driver.
        *
@@ -379,22 +379,22 @@ int LinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int *in
       Map = (int*)calloc(nnz,sizeof(int));
       umfpack_di_triplet_to_col(nb,nx,nnz,rind,cind,x[0],Ap,Ai,A,Map);
   } else {
-      for (int p = 0 ; p < Ap [nb] ; p++) A [p] = 0 ;
+      for (int p = 0 ; p < Ap [nb] ; p++) A [p] = 0 ;			//init. Data
       for (int k = 0 ; k < nnz ; k++) A [Map [k]] += x[0][k] ;
   }
 
   if ( symbolic == NULL ) {
-      symbolic = klu_analyze(nb,Ap,Ai,&common);
+      symbolic = klu_analyze(nb,Ap,Ai,&common); //klu ordering
    }
   info = 0;
   if(common.status == 0) {
       if (numeric != NULL) {
-          klu_refactor(Ap, Ai, A, symbolic, numeric, &common);
-          klu_rgrowth(Ap, Ai, A, symbolic, numeric, &common);
+          klu_refactor(Ap, Ai, A, symbolic, numeric, &common); //klu uses old matrix struct.
+          klu_rgrowth(Ap, Ai, A, symbolic, numeric, &common); //Calculate error
           infoStreamPrint(LOG_LS_V, 0, "Klu rgrowth after refactor: %f", common.rgrowth);
           if (common.rgrowth < 1e-3) {
               klu_free_numeric(&numeric,&common);
-              numeric = klu_factor(Ap,Ai,A,symbolic,&common);
+              numeric = klu_factor(Ap,Ai,A,symbolic,&common);  //new lu-fact.
               infoStreamPrint(LOG_LS_V, 0, "Klu new factorization performed.");
           }
       } else {
@@ -402,7 +402,7 @@ int LinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int *in
       }
   }
   if(common.status == 0) {
-     info = klu_solve(symbolic,numeric,nb,1,b,&common);
+     info = klu_solve(symbolic,numeric,nb,1,b,&common); //solve the system.
   }
   if (!info) {
       printf("function: Error solving linear system of equations\n");
@@ -419,7 +419,7 @@ int LinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int *in
     //printf("A[%d, %d] = %f\n", iArr[2*i], iArr[2*i+1], A[iArr[2*i]+iArr[2*i+1]*nb]);
   }
 
-  dgesv_(&nx, &nrhs, A, &nx, ipriv, b, &nb, &info);
+  dgesv_(&nx, &nrhs, A, &nx, ipriv, b, &nb, &info); //solve system with lapack
 
   /*
   for(int i=0; i<nb; ++i){
