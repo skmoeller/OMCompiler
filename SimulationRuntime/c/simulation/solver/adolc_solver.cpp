@@ -177,7 +177,7 @@ public:
         Map = NULL;
         Ap = (int*)calloc(nb+1,sizeof(int));
         Ai = (int*)calloc(nnz,sizeof(int));
-        A = (double*)calloc(nnz,sizeof(double));int function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx)
+        A = (double*)calloc(nnz,sizeof(double));int function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx);
 #endif
     }
 
