@@ -659,14 +659,16 @@ int LinearSolverEdf::fov_reverse(int iArrLen, int* iArr, int nout, int nin, int 
 
 #include <simulation/solver/newtonIteration.h>
 
+/*Class to register the nonlinear Solver externally differentiated function*/
 class NonLinearSolverEdf : public EDFobject_v2 {
 protected:
-    short trace1, trace2, trace3, nexttag;
+    short trace1, trace2, trace3;	/* param	[trace1,trace2,trace3]	Parameter to identify the start tag of the tape.*/
+	short nexttag;					/* param	[nexttag]	Parameter to identify the next tag.*/
 public:
-    DATA_NEWTON* data;
-	double **J, **I2;
-	int numIterVar;
-	char *tmp;
+    DATA_NEWTON* data;	/*Data for Newton-Solver*/
+	double **J, **I2;	/*Data for Jacobian and tangent matrix*/
+	int numIterVar;		/*Size for dependent vector y1*/
+	char *tmp; 			/**/
 
     NonLinearSolverEdf(const char* nlsfbase, short tagstart);
     virtual ~NonLinearSolverEdf();
