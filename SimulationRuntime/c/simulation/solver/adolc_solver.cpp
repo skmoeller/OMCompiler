@@ -56,23 +56,47 @@
 
 extern "C" {
 
+/*Lapack Routine to compute an LU factorization
+ * A=P*L*U
+ */
 int dgetrf_(int *m, int *n, double *a, int *lda,
             int *ipiv, int *info);
 
+/*Lapack Routine to solve a system of linear equations
+ * A*X=B or A'*X=B
+ */
 int dgetrs_(char* trans, int *n, int *nrhs, double *a, int *lda, int *ipiv,
             double *b, int *ldb, int *info);
 
+/*Lapack Routine to compute the solution to a real system of linear equations
+ * A*X=B
+ */
 int dgesv_(int *n, int *nrhs, double *a, int *lda,
            int *ipiv, double *b, int *ldb, int *info);
 
+/*
+ * Lapack Routine to perform Matrix-Vektor Operations
+ */
 int dgemv_(char* trans, int* m, int *n, double *alpha, double *A,
            int *lda, double *x, int *incx, double *beta, double *y, int *incy);
 
+/*
+ * Lapack Routine to perform Matrix-Matrix Operations
+ */
 int dgemm_(char* transa, char* transb, int* m, int* n, int* k, double* alpha, 
            double* a, int* lda, double* b, int* ldb, double* beta, double* c, 
            int* ldc);
 }
 
+/* \fn printvec(const char* name, int m, double* v)
+ *
+ * \param [in] [name]	Name of Vector
+ * \param [in] [m]		Size Vector
+ * \param [in] [v]		Vector Data
+ *
+ * This function outputs vector v with size m.
+ *
+ */
 static void printvec(const char* name, int m, double* v) {
     int i,j;
 
@@ -83,6 +107,16 @@ static void printvec(const char* name, int m, double* v) {
     printf("\n");
 }
 
+/* \fn printmat(const char* name, int m, int n, double** M)
+ *
+ * \param [in] [name]	Name of Matrix
+ * \param [in] [m]		Size Rows
+ * \param [in] [n]		Size Columns
+ * \param [in] [M]		Matrix Data
+ *
+ * This function outputs Matrix M with size mxn.
+ *
+ */
 static void printmat(const char* name, int m, int n, double** M) {
     int i,j;
 
@@ -94,18 +128,39 @@ static void printmat(const char* name, int m, int n, double** M) {
     }
     printf("\n");
 }
-
+/*Class to register the linear Solver externally differentiated function*/
 class LinearSolverEdf : public EDFobject_v2 {
 protected:
-    int *rind, *cind;
+	/* \param [*rind] 	Row Index of Matrix*/
+    int *rind;
+    /* \param [*cind] 	Column Index of Matrix*/
+	int *cind; /**/
 #ifdef WITH_UMFPACK
+	/* \param [*symbolic] 	Pointer to symbolic Object for KLU solver*/
     klu_symbolic *symbolic;
+    /* \param [*numeric] 	Pointer to numeric Object for KLU solver*/
     klu_numeric *numeric;
+    /* \param [*common] 	Pointer to common Object for KLU solver*/
     klu_common common;
+    /* \param [*Ap] 	Array contains the row indices of the NNZ*/
+    /* \param [*Ai] 	Array Ai[Ap[j]] contains the column indices of NNZ in row j*/
+    /* \param [*Map]	Array holds the position of the triplets in the column form matrix (UMFPACK)*/
     int *Ap, *Ai, *Map;
+    /* \param [*A] 		Array contains the NNZ */
     double *A;
 #endif
 public:
+
+    /* LinearSolverEdf(char* fname, int nnz, int nb, int nx) : EDFobject_v2()
+     *
+     * \param [in] [fname]	Filename
+     * \param [in] [nnz]	Number of Nonzeros
+     * \param [in] [nb]		Size Vector b
+     * \param [in] [nx]		Size Vector x
+     *
+     * Constructor in Class LinearSolverEdf.
+     *
+     */
     LinearSolverEdf(char* fname, int nnz, int nb, int nx) : EDFobject_v2() {
         FILE *patfile;
         rind = (int*) calloc(nnz,sizeof(int));
@@ -122,9 +177,16 @@ public:
         Map = NULL;
         Ap = (int*)calloc(nb+1,sizeof(int));
         Ai = (int*)calloc(nnz,sizeof(int));
-        A = (double*)calloc(nnz,sizeof(double));
+        A = (double*)calloc(nnz,sizeof(double));int function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx)
 #endif
     }
+
+    /* ~LinearSolverEdf()
+        *
+        * Destructor in Class LinearSolverEdf.
+        *
+    */
+
     virtual ~LinearSolverEdf() {
 #ifdef WITH_UMFPACK
         free(Ap);
@@ -141,16 +203,132 @@ public:
         free(rind);
         free(cind);
     }
+
+    /* fn int function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx)
+     *
+     * \param [in] [iArrLen]	Length Array for Complex Case (2*nnz)
+     * \param [in] [*iArr]		holds the imaginary part of A
+     * \param [in] [nin]		Input Var.; Default-Value: 2
+     * \param [in] [nout]		Output Var.; Default-Value: 1
+     * \param [in] [*insz]		Size of Input Var.;insz[0] == nnz; insz[1] == nb
+     * \param [in] [**x]		Independent vector x
+     * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
+     * \param [in] [**y]		Dependent vector y
+     * \param [in] [ctx]		information about tags for tape
+     *
+     * Evaluate the desired function from the tape instead of executing the corresponding source code.
+     *
+     */
     virtual int function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx);
+
+    /* fn int zos_forward(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx)
+      *
+     * \param [in] [iArrLen]	Length Array for Complex Case (2*nnz)
+     * \param [in] [*iArr]		holds the imaginary part of A
+     * \param [in] [nin]		Input Var.; Default-Value: 2
+     * \param [in] [nout]		Output Var.; Default-Value: 1
+     * \param [in] [*insz]		Size of Input Var.;insz[0] == nnz; insz[1] == nb
+     * \param [in] [**x]		Independent vector x
+     * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
+     * \param [in] [**y]		Dependent vector y
+     * \param [in] [ctx]		information about tags for tape
+      *
+      * Evaluation in the zero-order scalar forward mode.
+      *
+      */
     virtual int zos_forward(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx);
+
+    /* fn int int fos_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, double **xp, int *outsz, double **y, double **yp, void *ctx)
+       *
+     * \param [in] [iArrLen]	Length Array for Complex Case (2*nnz)
+     * \param [in] [*iArr]		holds the imaginary part of A
+     * \param [in] [nin]		Input Var.; Default-Value: 2
+     * \param [in] [nout]		Output Var,; Default-Value: 1
+     * \param [in] [*insz]		Size of Input Var.;insz[0] == nnz; insz[1] == nb
+     * \param [in] [**x]		Independent vector x0
+     * \param [in] [**xp]		tangent vector x1
+     * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
+     * \param [in] [**y]		Dependent vector y0; y0=F(x0)
+     * \param [in] [**yp]		first derivative y1=F'(x0)*x1
+     * \param [in] [ctx]		information about tags for tape
+       *
+       * Compute first-order derivatives in the first-order scalar forward mode.
+       *
+       */
     virtual int fos_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, double **xp, int *outsz, double **y, double **yp, void *ctx);
+
+    /* fn int fov_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, int ndir, double ***Xp, int *outsz, double **y, double ***Yp, void* ctx)
+       *
+     * \param [in] [iArrLen]	Length Array for Complex Case (2*nnz)
+     * \param [in] [*iArr]		holds the imaginary part of A
+     * \param [in] [nin]		Input Var.;Default-Value: 2
+     * \param [in] [nout]		Output Var.;Default-Value: 1
+     * \param [in] [*insz]		Size of Input Var.;insz[0] == nnz; insz[1] == nb
+     * \param [in] [**x]		Independent vector x0
+     * \param [in] [ndir]		number of directions
+     * \param [in] [**xp]		tangent vector x1
+     * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
+     * \param [in] [**y]		Dependent vector y0; y0=F(x0)
+     * \param [in] [**yp]		first derivative y1=F'(x0)*x1
+     * \param [in] [ctx]		information about counts for tape
+       *
+       * Compute first-order derivatives in the first-order vector forward mode.
+       *
+       */
     virtual int fov_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, int ndir, double ***Xp, int *outsz, double **y, double ***Yp, void* ctx);
+
+    /* fn int fos_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, double **up, int *insz, double **zp, double **x, double **y, void *ctx)
+       *
+     * \param [in] [iArrLen]	Length Array for Complex Case (2*nnz)
+     * \param [in] [*iArr]		holds the imaginary part of A
+     * \param [in] [nout]		Output Var.;Default-Value: 1
+     * \param [in] [nin]		Input Var.;Default-Value: 2
+     * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
+     * \param [in] [**up]		weight vector
+     * \param [in] [*insz]		Size of Input Var.;insz[0] == nnz; insz[1] == nb
+     * \param [in] [**zp]		resulting adjoint value
+     * \param [in] [**x]		Independent vector x0
+     * \param [in] [**y]		Dependent vector y0; y0=F(x0)
+     * \param [in] [ctx]		information about counts for tape
+       *
+       * First-order scalar reverse mode implementation that computes the product zp^T=up^T*F'(x).
+       *
+       */
     virtual int fos_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, double **up, int *insz, double **zp, double **x, double **y, void *ctx);
+
+    /* fn int fov_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, int dir, double ***Up, int *insz, double ***Zp, double **x, double **y, void* ctx)
+       *
+     * \param [in] [iArrLen]	Length Array for Complex Case (2*nnz)
+     * \param [in] [*iArr]		holds the imaginary part of A
+     * \param [in] [nout]		Output Var.;Default-Value: 1
+     * \param [in] [nin]		Input Var.;Default-Value: 2
+     * \param [in] [*outsz]		Size of Output Var.;outsz[0] == nx
+     * \param [in] [dir]		number of weight vectors
+     * \param [in] [***up]		weight matrix
+     * \param [in] [*insz]		Size of Input Var.;insz[0] == nnz; insz[1] == nb
+     * \param [in] [***zp]		resulting adjoint zp=up*F'(x)
+     * \param [in] [**x]		Independent vector x0
+     * \param [in] [**y]		Dependent vector y0; y0=F(x0)
+     * \param [in] [ctx]		information about counts for tape
+       *
+       * First-order vector reverse mode driver.
+       *
+       */
     virtual int fov_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, int dir, double ***Up, int *insz, double ***Zp, double **x, double **y, void* ctx);
 };
 
 static std::forward_list<LinearSolverEdf> linSolEdfVec;
 
+/* \fn printMatrixCSR(int* Ap, int* Ai, double* Ax, int n)
+ *
+ * \param [in] [*Ap]	Array contains the row indices of the NNZ
+ * \param [in] [*Ai]	Array Ai[Ap[j]] contains the column indices of NNZ in row j
+ * \param [in] [*Ax]	NNZ Data
+ * \param [in] [n]		Size Matrix
+ *
+ * This function prints a sparse Matrix in CSR-Format with size n.
+ *
+ */
 void printMatrixCSR(int* Ap, int* Ai, double* Ax, int n)
 {
   int i, j, k;
@@ -176,11 +354,15 @@ void printMatrixCSR(int* Ap, int* Ai, double* Ax, int n)
   free(buffer);
 }
 
+/* fn int LinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx)
+     *
+     * Solve Linearsystem with lapack or KLU.
+     * assumption:
+     * 			-nin == 2 and nout == 1
+     * 			-iArrlen == 2*nnz
+     *
+     */
 int LinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx) {
-
-  // nin == 2 and nout == 1
-  // iArrlen == 2*nnz
-
   int nnz = insz[0];
   int nb  = insz[1];
   int nx  = outsz[0];
@@ -259,12 +441,22 @@ int LinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int *in
   return 0;
 }
 
+/* fn int int LinearSolverEdf::zos_forward(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx)
+     *
+     * param[out]		function(iArrLen, iArr, nin, nout, insz, x, outsz, y, ctx)
+     *
+     * Solve Linearsystem with lapack or KLU in zos forward mode.
+     */
 int LinearSolverEdf::zos_forward(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx) {
 
   return this->function(iArrLen, iArr, nin, nout, insz, x, outsz, y, ctx);
 }
 
-
+/* fn int LinearSolverEdf::fos_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, double **xp, int *outsz, double **y, double **yp, void *ctx)
+     *
+     * Solve Linearsystem with lapack or KLU in fos forward mode.
+     *
+     */
 int LinearSolverEdf::fos_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, double **xp, int *outsz, double **y, double **yp, void *ctx) {
 
   int ret;
@@ -339,8 +531,11 @@ int LinearSolverEdf::fos_forward(int iArrLen, int* iArr, int nin, int nout, int 
   } else return ret;
 }
 
-
-
+/* fn int LinearSolverEdf::fov_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, int ndir, double ***Xp, int *outsz, double **y, double ***Yp, void* ctx
+     *
+     * Solve Linearsystem with lapack or KLU in fov forward mode.
+     *
+     */
 int LinearSolverEdf::fov_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, int ndir, double ***Xp, int *outsz, double **y, double ***Yp, void* ctx) {
   int ret;
   // x = A^{-1}*b
@@ -437,10 +632,23 @@ int LinearSolverEdf::fov_forward(int iArrLen, int* iArr, int nin, int nout, int 
   } else return ret;
 }
 
-
+/* fn int LinearSolverEdf::fos_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, double **up, int *insz, double **zp, double **x, double **y, void *ctx)
+     *
+     *param[out]		0
+     *
+     *fn not used here.
+     *
+     */
 int LinearSolverEdf::fos_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, double **up, int *insz, double **zp, double **x, double **y, void *ctx){
   return 0;
 }
+/* fn int LinearSolverEdf::fov_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, int dir, double ***Up, int *insz, double ***Zp, double **x, double **y, void* ctx)
+     *
+     *param[out]		0
+     *
+     *fn not used here.
+     *
+     */
 int LinearSolverEdf::fov_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, int dir, double ***Up, int *insz, double ***Zp, double **x, double **y, void* ctx){
   return 0;
 }

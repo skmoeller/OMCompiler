@@ -155,3 +155,4 @@ SimulationRuntime/**/test_files/*.jar
 SimulationRuntime/cpp/build_msvc/
 
 tags
+/bin/
