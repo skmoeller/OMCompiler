@@ -452,7 +452,7 @@ int LinearSolverEdf::zos_forward(int iArrLen, int *iArr, int nin, int nout, int 
   return this->function(iArrLen, iArr, nin, nout, insz, x, outsz, y, ctx);
 }
 
-/* fn int LinearSolverEdf::fos_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, double **xp, int *outsz, double **y, double **yp, void *ctx)
+/* \fn int LinearSolverEdf::fos_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, double **xp, int *outsz, double **y, double **yp, void *ctx)
  *
  * Solve Linearsystem with lapack or KLU in fos forward mode.
  *
@@ -718,14 +718,14 @@ NonLinearSolverEdf::~NonLinearSolverEdf() {
 
 /* \fn template <typename Type> static inline char* populate_dpp_with_contigdata(Type ***const pointer, char *const memory, int n, int m, Type *const data)
  *
- * param[in] [***pointer]
- * param[in] [*memory]
+ * param[in] [***pointer]   Pointer
+ * param[in] [*memory]      Name of File where to write
  * param[in] [n]            number independent variables
  * param[in] [m]            number dependent variables
  * param[in] [data]         data
- * param[out] [temp]        temporary file for taylor coefficients
+ * param[out] [temp]        temporary file
  *
- * Template function to allocate the temporary file for taylor coefficients.
+ * Template function to allocate and to set a temporary file.
  *
  */
 template <typename Type>
@@ -760,10 +760,11 @@ int wrapper_fvec_newton_adolc(int* n, double* x, double* fvec, void* userdata, i
 
 /* \fn NonLinearSolverEdf::NonLinearSolverEdf(const char* nlsfbase, short tagstart) : EDFobject_v2()
  *
- * param[in] [nlsfbase]
- * param[in] [tagstart]     memory size
+ * param[in] [nlsfbase]     NonLinearSolver Filebase
+ * param[in] [tagstart]     Identifier for next Tape
  *
- *.
+ *
+ *Outputs Data for Tapes and read sets start tag for trace and converts it to a real trace.
  *
  */
 NonLinearSolverEdf::NonLinearSolverEdf(const char* nlsfbase, short tagstart) : EDFobject_v2() {
@@ -809,11 +810,17 @@ NonLinearSolverEdf::NonLinearSolverEdf(const char* nlsfbase, short tagstart) : E
     delete [] nlsfilename;
 }
 
+/* \fn int NonLinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx)
+ *
+ * Solve NonLinearsystem with Newton.
+ * assumption:
+ *      -nin == 1, nout == 2
+ *      -insz[0] == sizeof input vars x
+ *      -outsz[0] == sizeof output vars y0
+ *      -outsz[1] == sizeof output vars y1
+ *
+ */
 int NonLinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx) {
-    // assumption: nin == 1, nout == 2
-    //             insz[0] == sizeof input vars x
-    //             outsz[0] == sizeof output vars y0
-    //             outsz[1] == sizeof output vars y1
     int numouterparams, i;
     double *outerparams;
     numouterparams = alloc_copy_current_params(&outerparams);
@@ -846,18 +853,27 @@ int NonLinearSolverEdf::function(int iArrLen, int *iArr, int nin, int nout, int 
     return 0;
 }
 
+/* \fn int NonLinearSolverEdf::zos_forward(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx)
+ *
+ *Returns function(iArrLen, iArr, nin, nout, insz, x, outsz, y, ctx)
+ *
+ */
 int NonLinearSolverEdf::zos_forward(int iArrLen, int *iArr, int nin, int nout, int *insz, double **x, int *outsz, double **y, void* ctx) {
 
   return this->function(iArrLen, iArr, nin, nout, insz, x, outsz, y, ctx);
 }
 
-
+/* \fn int NonLinearSolverEdf::fos_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, double **xp, int *outsz, double **y, double **yp, void *ctx)
+ *
+ * Same as in function.
+ * assumption:
+ *      -nin == 1, nout == 2
+ *      -insz[0] == sizeof input vars x
+ *      -outsz[0] == sizeof output vars y1
+ *      -outsz[1] == sizeof output vars y2
+ *
+ */
 int NonLinearSolverEdf::fos_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, double **xp, int *outsz, double **y, double **yp, void *ctx) {
-    // do everything as in function
-    // assumption: nin == 1, nout == 2
-    //             insz[0] == sizeof input vars x
-    //             outsz[0] == sizeof output vars y1
-    //             outsz[1] == sizeof output vars y2
     int numouterparams, i;
     double *outerparams;
     numouterparams = alloc_copy_current_params(&outerparams);
@@ -979,16 +995,17 @@ int NonLinearSolverEdf::fos_forward(int iArrLen, int* iArr, int nin, int nout, i
     return 0;
 }
 
-
-
+/* \fn int NonLinearSolverEdf::fov_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, int ndir, double ***Xp, int *outsz, double **y, double ***Yp, void* ctx)
+ *
+ * Same as fos_forward.
+ * assumption:
+ *      -nin == 1, nout == 2
+ *      -insz[0] == sizeof input vars x
+ *      -outsz[0] == sizeof output vars y0
+ *      -outsz[1] == sizeof output vars y1
+ *
+ */
 int NonLinearSolverEdf::fov_forward(int iArrLen, int* iArr, int nin, int nout, int *insz, double **x, int ndir, double ***Xp, int *outsz, double **y, double ***Yp, void* ctx) {
-
-    // almost same as fos_forward
-    // do everything as in function
-    // assumption: nin == 1, nout == 2
-    //             insz[0] == sizeof input vars x
-    //             outsz[0] == sizeof output vars y0
-    //             outsz[1] == sizeof output vars y1
     int numouterparams, i;
     double *outerparams;
     numouterparams = alloc_copy_current_params(&outerparams);
@@ -1150,15 +1167,38 @@ int NonLinearSolverEdf::fov_forward(int iArrLen, int* iArr, int nin, int nout, i
     return 0;
 }
 
-
+/* \fn int NonLinearSolverEdf::fos_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, double **up, int *insz, double **zp, double **x, double **y, void *ctx){
+ *
+ *param[out]    0
+ *
+ *fn not used here.
+ *
+ */
 int NonLinearSolverEdf::fos_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, double **up, int *insz, double **zp, double **x, double **y, void *ctx){
   return 0;
 }
+
+/* \fn int NonLinearSolverEdf::fov_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, int dir, double ***Up, int *insz, double ***Zp, double **x, double **y, void* ctx)
+ *
+ *param[out]    0
+ *
+ *fn not used here.
+ *
+ */
 int NonLinearSolverEdf::fov_reverse(int iArrLen, int* iArr, int nout, int nin, int *outsz, int dir, double ***Up, int *insz, double ***Zp, double **x, double **y, void* ctx){
   return 0;
 }
 
-
+/* \fn unsigned int alloc_adolc_lin_sol(char* fname, int nnz, int nb, int nx)
+ *
+ * param[in] [*fname]   Name of File
+ * param[in] [nnz]      Number of nonzeros
+ * param[in] [nb]       Size Vector b
+ * param[in] [nx]       Size Vector x
+ *
+ *Allocate Data for Linear Solver in adolc. Returns Index.
+ *
+ */
 unsigned int alloc_adolc_lin_sol(char* fname, int nnz, int nb, int nx) {
     int insz[2], outsz[1];
     insz[0] = nnz;
@@ -1171,6 +1211,17 @@ unsigned int alloc_adolc_lin_sol(char* fname, int nnz, int nb, int nx) {
     return edf.get_index();
 }
 
+/* \fn unsigned int alloc_adolc_nonlin_sol(char* fbase,int nx, int ny1, int ny2,short* usetag)
+ *
+ * param[in] [fbase]   NonLinearSolver Filebase
+ * param[in] [nx]      Size inputvars x (Size Vector x)
+ * param[in] [ny1]     Size outputvars y1
+ * param[in] [ny2]     Size outputvars y2
+ * param[in] [usetag]  Tag
+ *
+ *Allocate Data for nonlinear Solver in adolc. Returns Index.
+ *
+ */
 unsigned int alloc_adolc_nonlin_sol(char* fbase,int nx, int ny1, int ny2,short* usetag) {
     int insz[1], outsz[2];
     insz[0] = nx;
@@ -1189,12 +1240,26 @@ unsigned int alloc_adolc_nonlin_sol(char* fbase,int nx, int ny1, int ny2,short* 
     return edf.get_index();
 }
 
+/* \fn double *adolc_nonlin_sol_get_values_buffer(int index)
+ *
+ * param[in] [index]     Index of System
+ *
+ *Get Values from the Buffer.
+ *
+ */
 double *adolc_nonlin_sol_get_values_buffer(int index) {
     ext_diff_fct_v2* estruct = get_ext_diff_fct_v2(index);
     NonLinearSolverEdf* edf = reinterpret_cast<NonLinearSolverEdf*>(estruct->obj);
     return edf->data->x;
 }
 
+/* \fn void initialize_linearSystems(DATA *data)
+ *
+ * param[in] [data]     Data struct for linear System
+ *
+ *Initialize linear Systems.
+ *
+ */
 void initialize_linearSystems(DATA *data)
 {
     LINEAR_SYSTEM_DATA *lsData = data->simulationInfo->linearSystemData;
@@ -1214,6 +1279,14 @@ void initialize_linearSystems(DATA *data)
     }
 }
 
+/* \fn void initialize_nonLinearSystems(DATA *data, short* usertag)
+ *
+ * param[in] [data]     NonLinearSolver Filebase
+ * param[in] [usertag]  Identifier for the tape
+ *
+ *Initialize nonlinearSystem.
+ *
+ */
 void initialize_nonLinearSystems(DATA *data, short* usertag)
 {
     NONLINEAR_SYSTEM_DATA *nlsData = data->simulationInfo->nonlinearSystemData;
@@ -1234,6 +1307,13 @@ void initialize_nonLinearSystems(DATA *data, short* usertag)
     }
 }
 
+/* void setAllNonLinearIterationVars(DATA *data)
+ *
+ * param[in] [data]     Data Struct.
+ *
+ *Sets the NonLinear Iteration Variables.
+ *
+ */
 void setAllNonLinearIterationVars(DATA *data)
 {
     NONLINEAR_SYSTEM_DATA *nlsData = data->simulationInfo->nonlinearSystemData;
